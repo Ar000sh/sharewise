@@ -1,0 +1,441 @@
+openapi: 3.1.0
+info:
+  title: ShareWise API
+  version: 0.1.0-ex4
+  description: >
+    Backend contract for the Ex4 slice (create group, invite and join, record an
+    equal-split expense, see balances). Paths are the backend's. The browser calls
+    them under /api on Next.js, which forwards /api/x to BACKEND_URL/x.
+    Money is an integer in cents (EUR). Ids are UUIDs.
+    Change this file first, in its own commit, before any code that depends on it.
+servers:
+  - url: http://localhost:8080
+security:
+  - devUser: []
+tags:
+  - name: account
+  - name: group
+  - name: expense
+  - name: settlement
+
+paths:
+  /me:
+    get:
+      tags: [account]
+      operationId: getMe
+      summary: The current user
+      responses:
+        "200":
+          description: The caller
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+              example: { userId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+
+  /users:
+    get:
+      tags: [account]
+      operationId: listUsers
+      summary: Seeded dev users (dev profile only, powers the user switcher)
+      security: []
+      responses:
+        "200":
+          description: All dev users
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/User" }
+              example:
+                - { userId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice }
+                - { userId: "aaaaaaaa-0000-0000-0000-000000000002", displayName: Bob }
+                - { userId: "aaaaaaaa-0000-0000-0000-000000000003", displayName: Carol }
+                - { userId: "aaaaaaaa-0000-0000-0000-000000000004", displayName: David }
+
+  /groups:
+    get:
+      tags: [group]
+      operationId: listGroups
+      summary: Groups the caller is a member of
+      responses:
+        "200":
+          description: My groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Group" }
+              example:
+                - { id: "bbbbbbbb-0000-0000-0000-000000000001", name: "Mallorca 2027", status: OPEN, memberCount: 4 }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+    post:
+      tags: [group]
+      operationId: createGroup
+      summary: Create a group. The caller becomes its ADMIN member. Status starts OPEN, currency is EUR.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateGroupRequest" }
+            example: { name: "Mallorca 2027" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Group" }
+              example: { id: "bbbbbbbb-0000-0000-0000-000000000001", name: "Mallorca 2027", status: OPEN, memberCount: 1 }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+
+  /groups/{groupId}:
+    parameters:
+      - { $ref: "#/components/parameters/GroupId" }
+    get:
+      tags: [group]
+      operationId: getGroup
+      summary: Group detail with members
+      responses:
+        "200":
+          description: The group
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GroupDetail" }
+              example:
+                id: "bbbbbbbb-0000-0000-0000-000000000001"
+                name: "Mallorca 2027"
+                status: OPEN
+                memberCount: 2
+                members:
+                  - { memberId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice, role: ADMIN }
+                  - { memberId: "aaaaaaaa-0000-0000-0000-000000000002", displayName: Bob, role: MEMBER }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/NotAMember" }
+        "404": { $ref: "#/components/responses/GroupNotFound" }
+
+  /groups/{groupId}/invitations:
+    parameters:
+      - { $ref: "#/components/parameters/GroupId" }
+    post:
+      tags: [group]
+      operationId: createInvitation
+      summary: Create an invite link token (valid 7 days). The caller must be a member.
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invitation" }
+              example: { token: "k3Xq9v2mT8aLw0pZr7YdNc4HbJf1UeS5", expiresAt: "2027-06-08T10:00:00Z" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/NotAMember" }
+        "404": { $ref: "#/components/responses/GroupNotFound" }
+
+  /invitations/{token}/accept:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        schema: { type: string, minLength: 16 }
+    post:
+      tags: [group]
+      operationId: acceptInvitation
+      summary: Join the group the token belongs to. The caller becomes a MEMBER.
+      responses:
+        "200":
+          description: Joined
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Group" }
+              example: { id: "bbbbbbbb-0000-0000-0000-000000000001", name: "Mallorca 2027", status: OPEN, memberCount: 2 }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/InvitationNotFound" }
+        "409": { $ref: "#/components/responses/AlreadyMember" }
+        "410": { $ref: "#/components/responses/InvitationExpired" }
+
+  /groups/{groupId}/expenses:
+    parameters:
+      - { $ref: "#/components/parameters/GroupId" }
+    get:
+      tags: [expense]
+      operationId: listExpenses
+      summary: Expenses of the group, newest first
+      responses:
+        "200":
+          description: Expenses with their shares
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Expense" }
+              example:
+                - id: "cccccccc-0000-0000-0000-000000000002"
+                  title: Dinner
+                  amountCents: 18000
+                  date: "2027-06-02"
+                  payerId: "aaaaaaaa-0000-0000-0000-000000000002"
+                  shares:
+                    - { memberId: "aaaaaaaa-0000-0000-0000-000000000001", shareCents: 4500 }
+                    - { memberId: "aaaaaaaa-0000-0000-0000-000000000002", shareCents: 4500 }
+                    - { memberId: "aaaaaaaa-0000-0000-0000-000000000003", shareCents: 4500 }
+                    - { memberId: "aaaaaaaa-0000-0000-0000-000000000004", shareCents: 4500 }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/NotAMember" }
+        "404": { $ref: "#/components/responses/GroupNotFound" }
+    post:
+      tags: [expense]
+      operationId: recordExpense
+      summary: Record an expense. Only split EQUAL is supported in Ex4.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExpenseRequest" }
+            example:
+              title: Hotel
+              amountCents: 90000
+              date: "2027-06-01"
+              payerId: "aaaaaaaa-0000-0000-0000-000000000001"
+              participantIds:
+                - "aaaaaaaa-0000-0000-0000-000000000001"
+                - "aaaaaaaa-0000-0000-0000-000000000002"
+                - "aaaaaaaa-0000-0000-0000-000000000003"
+                - "aaaaaaaa-0000-0000-0000-000000000004"
+              split: EQUAL
+      responses:
+        "201":
+          description: Recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Expense" }
+              example:
+                id: "cccccccc-0000-0000-0000-000000000001"
+                title: Hotel
+                amountCents: 90000
+                date: "2027-06-01"
+                payerId: "aaaaaaaa-0000-0000-0000-000000000001"
+                shares:
+                  - { memberId: "aaaaaaaa-0000-0000-0000-000000000001", shareCents: 22500 }
+                  - { memberId: "aaaaaaaa-0000-0000-0000-000000000002", shareCents: 22500 }
+                  - { memberId: "aaaaaaaa-0000-0000-0000-000000000003", shareCents: 22500 }
+                  - { memberId: "aaaaaaaa-0000-0000-0000-000000000004", shareCents: 22500 }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/NotAMember" }
+        "404": { $ref: "#/components/responses/GroupNotFound" }
+        "422": { $ref: "#/components/responses/DomainRule" }
+
+  /groups/{groupId}/balances:
+    parameters:
+      - { $ref: "#/components/parameters/GroupId" }
+    get:
+      tags: [settlement]
+      operationId: getBalances
+      summary: Balance of every current member (0 when no expenses). The sum is always 0.
+      description: Balances are eventually consistent with recorded expenses.
+      responses:
+        "200":
+          description: Balances (+ is owed, - owes)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Balance" }
+              example:
+                - { memberId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice, balanceCents: 63000 }
+                - { memberId: "aaaaaaaa-0000-0000-0000-000000000002", displayName: Bob, balanceCents: -9000 }
+                - { memberId: "aaaaaaaa-0000-0000-0000-000000000003", displayName: Carol, balanceCents: -27000 }
+                - { memberId: "aaaaaaaa-0000-0000-0000-000000000004", displayName: David, balanceCents: -27000 }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/NotAMember" }
+        "404": { $ref: "#/components/responses/GroupNotFound" }
+
+components:
+  securitySchemes:
+    devUser:
+      type: apiKey
+      in: header
+      name: X-User-Id
+      description: Stub identity (dev profile only). Replaced by a JWT when Keycloak arrives.
+
+  parameters:
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    BadRequest:
+      description: Malformed JSON, missing or mistyped fields, malformed UUID
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example: { type: "about:blank", title: Bad Request, status: 400, code: BAD_REQUEST, detail: "name must not be blank" }
+    Unauthenticated:
+      description: No or unknown X-User-Id
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example: { type: "about:blank", title: Unauthorized, status: 401, code: UNAUTHENTICATED, detail: "Missing or unknown X-User-Id" }
+    NotAMember:
+      description: The caller is not a member of the group
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example: { type: "about:blank", title: Forbidden, status: 403, code: NOT_A_MEMBER, detail: "You are not a member of this group" }
+    GroupNotFound:
+      description: Unknown group
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example: { type: "about:blank", title: Not Found, status: 404, code: GROUP_NOT_FOUND, detail: "Group not found" }
+    InvitationNotFound:
+      description: Unknown invitation token
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example: { type: "about:blank", title: Not Found, status: 404, code: INVITATION_NOT_FOUND, detail: "Invitation not found" }
+    AlreadyMember:
+      description: The caller is already a member
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example: { type: "about:blank", title: Conflict, status: 409, code: ALREADY_MEMBER, detail: "You are already a member of this group" }
+    InvitationExpired:
+      description: The invitation is older than 7 days
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example: { type: "about:blank", title: Gone, status: 410, code: INVITATION_EXPIRED, detail: "This invitation has expired" }
+    DomainRule:
+      description: >
+        A domain rule was violated. code is one of AMOUNT_NOT_POSITIVE, PAYER_NOT_IN_GROUP,
+        PARTICIPANT_NOT_IN_GROUP, NO_PARTICIPANTS, GROUP_NOT_OPEN, SPLIT_NOT_SUPPORTED.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example: { type: "about:blank", title: Unprocessable Entity, status: 422, code: PAYER_NOT_IN_GROUP, detail: "The payer is not a member of this group" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [status, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code:
+          type: string
+          enum:
+            - BAD_REQUEST
+            - UNAUTHENTICATED
+            - NOT_A_MEMBER
+            - GROUP_NOT_FOUND
+            - INVITATION_NOT_FOUND
+            - ALREADY_MEMBER
+            - INVITATION_EXPIRED
+            - AMOUNT_NOT_POSITIVE
+            - PAYER_NOT_IN_GROUP
+            - PARTICIPANT_NOT_IN_GROUP
+            - NO_PARTICIPANTS
+            - GROUP_NOT_OPEN
+            - SPLIT_NOT_SUPPORTED
+        detail: { type: string }
+
+    User:
+      type: object
+      required: [userId, displayName]
+      properties:
+        userId: { type: string, format: uuid }
+        displayName: { type: string }
+
+    CreateGroupRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+
+    Group:
+      type: object
+      required: [id, name, status, memberCount]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        status: { type: string, enum: [OPEN, CLOSED_FOR_SETTLEMENT, ARCHIVED] }
+        memberCount: { type: integer, minimum: 0 }
+
+    Member:
+      type: object
+      required: [memberId, displayName, role]
+      properties:
+        memberId: { type: string, format: uuid }
+        displayName: { type: string }
+        role: { type: string, enum: [ADMIN, MEMBER] }
+
+    GroupDetail:
+      allOf:
+        - $ref: "#/components/schemas/Group"
+        - type: object
+          required: [members]
+          properties:
+            members:
+              type: array
+              items: { $ref: "#/components/schemas/Member" }
+
+    Invitation:
+      type: object
+      required: [token, expiresAt]
+      properties:
+        token: { type: string }
+        expiresAt: { type: string, format: date-time }
+
+    ExpenseRequest:
+      type: object
+      required: [title, amountCents, date, payerId, participantIds, split]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        amountCents: { type: integer, format: int64, description: "Must be > 0 (AMOUNT_NOT_POSITIVE otherwise)" }
+        date: { type: string, format: date }
+        payerId: { type: string, format: uuid }
+        participantIds:
+          type: array
+          items: { type: string, format: uuid }
+          description: Distinct member ids, at least one. Order decides who gets the remainder cents.
+        split:
+          type: string
+          enum: [EQUAL, EXACT, PERCENTAGE]
+          description: Only EQUAL is accepted in Ex4. The others answer 422 SPLIT_NOT_SUPPORTED.
+
+    Share:
+      type: object
+      required: [memberId, shareCents]
+      properties:
+        memberId: { type: string, format: uuid }
+        shareCents: { type: integer, format: int64 }
+
+    Expense:
+      type: object
+      required: [id, title, amountCents, date, payerId, shares]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        amountCents: { type: integer, format: int64 }
+        date: { type: string, format: date }
+        payerId: { type: string, format: uuid }
+        shares:
+          type: array
+          items: { $ref: "#/components/schemas/Share" }
+
+    Balance:
+      type: object
+      required: [memberId, displayName, balanceCents]
+      properties:
+        memberId: { type: string, format: uuid }
+        displayName: { type: string }
+        balanceCents: { type: integer, format: int64, description: "+ is owed, - owes" }
