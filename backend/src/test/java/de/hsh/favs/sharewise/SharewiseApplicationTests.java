@@ -1,0 +1,15 @@
+package de.hsh.favs.sharewise;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+
+@Import(TestcontainersConfiguration.class)
+@SpringBootTest
+class SharewiseApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
+}

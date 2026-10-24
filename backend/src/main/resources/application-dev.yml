@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/sharewise
+    username: sharewise
+    password: sharewise
+  flyway:
+    locations:
+      - classpath:db/migration/shared
+      - classpath:db/migration/account
+      - classpath:db/migration/group
+      - classpath:db/migration/expense
+      - classpath:db/migration/settlement
+      - classpath:db/migration-dev

@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: sharewise
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    # One folder per module. Versions are prefixed per module:
+    # shared V0xx, account V1xx, group V2xx, expense V3xx, settlement V4xx.
+    locations:
+      - classpath:db/migration/shared
+      - classpath:db/migration/account
+      - classpath:db/migration/group
+      - classpath:db/migration/expense
+      - classpath:db/migration/settlement
