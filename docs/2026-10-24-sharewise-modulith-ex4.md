@@ -18,7 +18,7 @@
 - Money is `long` cents everywhere (API `amountCents`, domain `Money(long cents, Currency currency)`); currency fixed to EUR. No floating point.
 - IDs are UUIDs; `MemberId` is a distinct type carrying the same UUID as `UserId`.
 - Modules own their tables, no foreign keys across modules, Flyway versions prefixed per module: shared `V0xx`, account `V1xx`, group `V2xx`, expense `V3xx`, settlement `V4xx`; dev seed in `db/migration-dev` (dev profile only).
-- `ApplicationModules.verify()` must pass; declared dependencies only: `group → account`, `settlement → account`, `settlement → group`, `expense → group`.
+- `ApplicationModules.verify()` must pass; declared dependencies only: `group → account`, `settlement → account`, `settlement → group`, `settlement → expense` (event consumption), `expense → group`, `expense → account` (caller identity).
 - Events are records published via `ApplicationEventPublisher`, consumed with `@ApplicationModuleListener`; they carry ids only.
 - Stub identity: header `X-User-Id`, filter registered only under profile `dev`; missing or unknown → 401 `UNAUTHENTICATED`.
 - Errors are `application/problem+json` with the status/code table of spec §7: 400 `BAD_REQUEST`, 401 `UNAUTHENTICATED`, 403 `NOT_A_MEMBER`, 404 `GROUP_NOT_FOUND`/`INVITATION_NOT_FOUND`, 409 `ALREADY_MEMBER`, 410 `INVITATION_EXPIRED`, 422 `AMOUNT_NOT_POSITIVE`/`PAYER_NOT_IN_GROUP`/`PARTICIPANT_NOT_IN_GROUP`/`NO_PARTICIPANTS`/`GROUP_NOT_OPEN`/`SPLIT_NOT_SUPPORTED`.
