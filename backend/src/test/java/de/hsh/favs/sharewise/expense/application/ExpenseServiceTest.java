@@ -77,7 +77,7 @@ class ExpenseServiceTest {
 		var event = ArgumentCaptor.forClass(ExpenseRecorded.class);
 		order.verify(events).publishEvent(event.capture());
 		assertThat(event.getValue()).isEqualTo(new ExpenseRecorded(expense.id(), group, BOB, 1_000,
-				java.util.List.of(new ExpenseRecorded.Share(ALICE, 334), new ExpenseRecorded.Share(BOB, 333),
+				List.of(new ExpenseRecorded.Share(ALICE, 334), new ExpenseRecorded.Share(BOB, 333),
 						new ExpenseRecorded.Share(CAROL, 333))));
 	}
 
@@ -101,30 +101,33 @@ class ExpenseServiceTest {
 
 	@Test
 	void payerOutsideTheGroupIsRejected() {
+		// when / then
 		assertRejectedWith(new RecordExpenseCommandFixture().withPayer(outsider).build(),
 				ErrorCode.PAYER_NOT_IN_GROUP);
 	}
 
 	@Test
 	void participantOutsideTheGroupIsRejected() {
+		// when / then
 		assertRejectedWith(new RecordExpenseCommandFixture().withParticipants(ALICE, outsider).build(),
 				ErrorCode.PARTICIPANT_NOT_IN_GROUP);
 	}
 
 	@Test
 	void splitOtherThanEqualIsRejected() {
+		// when / then
 		assertRejectedWith(new RecordExpenseCommandFixture().withSplit(SplitType.PERCENTAGE).build(),
 				ErrorCode.SPLIT_NOT_SUPPORTED);
 	}
 
 	@Test
 	void domainRulesAreAppliedAfterTheMembershipChecks() {
+		// when / then
 		assertRejectedWith(new RecordExpenseCommandFixture().withAmountCents(0).build(),
 				ErrorCode.AMOUNT_NOT_POSITIVE);
 		assertRejectedWith(new RecordExpenseCommandFixture().withParticipants(ALICE, ALICE).build(),
 				ErrorCode.NO_PARTICIPANTS);
 	}
-
 
 	@Test
 	void returnsTheGroupsExpensesAfterTheMemberCheck() {
@@ -140,7 +143,7 @@ class ExpenseServiceTest {
 	}
 
 	@Test
-	void nonMemberGetsNoExpenses() {
+	void listForANonMemberIsRejectedAndNothingIsRead() {
 		// given
 		doThrow(new DomainException(ErrorCode.NOT_A_MEMBER, "no")).when(groups).requireMember(group, ALICE);
 
