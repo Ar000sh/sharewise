@@ -20,12 +20,12 @@ class BalancesImpl implements Balances {
 
 	private static final String UNKNOWN_NAME = "Unknown";
 
-	private final BalanceStore store;
+	private final GroupLedgerRepository ledgers;
 	private final GroupMembership membership;
 	private final UserDirectory users;
 
-	BalancesImpl(BalanceStore store, GroupMembership membership, UserDirectory users) {
-		this.store = store;
+	BalancesImpl(GroupLedgerRepository ledgers, GroupMembership membership, UserDirectory users) {
+		this.ledgers = ledgers;
 		this.membership = membership;
 		this.users = users;
 	}
@@ -33,7 +33,7 @@ class BalancesImpl implements Balances {
 	@Override
 	@Transactional(readOnly = true)
 	public List<MemberBalance> of(GroupId group) {
-		Map<MemberId, Long> stored = store.balancesOf(group);
+		Map<MemberId, Long> stored = ledgers.findById(group.value()).map(GroupLedger::balances).orElse(Map.of());
 		return membership.members(group).stream()
 				.map(member -> new MemberBalance(member, displayName(member), stored.getOrDefault(member, 0L)))
 				.sorted(Comparator.comparing(MemberBalance::displayName, String.CASE_INSENSITIVE_ORDER)
