@@ -9,11 +9,10 @@ import java.lang.annotation.Target;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
 /**
- * Full application on a real Postgres (Testcontainers) with the dev profile, so the seeded users exist, a
+ * Full application on a real Postgres (Testcontainers) , a
  * {@link MutableClock} and recorded application events. All integration tests share this one context.
  */
 @Documented
@@ -21,7 +20,6 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 @Target(ElementType.TYPE)
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("dev")
 @RecordApplicationEvents
 @Import({ TestcontainersConfiguration.class, TestClockConfig.class })
 public @interface ModuleIntegrationTest {

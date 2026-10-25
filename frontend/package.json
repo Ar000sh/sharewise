@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "e2e": "playwright test",
     "typecheck": "next typegen && tsc --noEmit",
     "gen:api": "openapi-typescript ../docs/api/openapi.yaml -o src/api/schema.d.ts"
   },
@@ -17,6 +18,7 @@
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/turbopack": "^4",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",

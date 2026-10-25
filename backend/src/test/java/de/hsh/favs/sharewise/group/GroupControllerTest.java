@@ -39,14 +39,17 @@ class GroupControllerTest {
 
 	GroupRequests groups;
 
-	UserFixture alice = UserFixture.alice();
+	UserFixture alice;
 
-	UserFixture bob = UserFixture.bob();
+	UserFixture bob;
 
-	UserFixture carol = UserFixture.carol();
+	UserFixture carol;
 
 	@BeforeEach
-	void setUp() {
+	void setUp() throws Exception {
+		alice = UserFixture.signUp(mvc, json, "Alice");
+		bob = UserFixture.signUp(mvc, json, "Bob");
+		carol = UserFixture.signUp(mvc, json, "Carol");
 		groups = new GroupRequests(mvc, json);
 	}
 
@@ -73,7 +76,7 @@ class GroupControllerTest {
 	@ValueSource(strings = { "", "   ", "{not json" })
 	void postWithBlankNameOrBrokenJsonIs400(String name) throws Exception {
 		// "{not json" is sent as the raw body, the others as the name
-		var request = post("/groups").header("X-User-Id", alice.idString()).contentType(APPLICATION_JSON);
+		var request = post("/groups").header("Authorization", alice.bearer()).contentType(APPLICATION_JSON);
 		request = name.startsWith("{") ? request.content(name) : request.content("{\"name\":\"" + name + "\"}");
 
 		mvc.perform(request).andExpect(status().isBadRequest())
@@ -83,7 +86,7 @@ class GroupControllerTest {
 
 	@Test
 	void postWithMissingNameOrNameOver100CharactersIs400() throws Exception {
-		mvc.perform(post("/groups").header("X-User-Id", alice.idString()).contentType(APPLICATION_JSON).content("{}"))
+		mvc.perform(post("/groups").header("Authorization", alice.bearer()).contentType(APPLICATION_JSON).content("{}"))
 				.andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("BAD_REQUEST"));
 		groups.create(alice, "x".repeat(101)).andExpect(status().isBadRequest());
 		groups.create(alice, "x".repeat(100)).andExpect(status().isCreated());
@@ -131,7 +134,7 @@ class GroupControllerTest {
 
 	@Test
 	void getDetailWithAMalformedIdIs400() throws Exception {
-		mvc.perform(get("/groups/not-a-uuid").header("X-User-Id", alice.idString()))
+		mvc.perform(get("/groups/not-a-uuid").header("Authorization", alice.bearer()))
 				.andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("BAD_REQUEST"));
 	}
 

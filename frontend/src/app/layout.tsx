@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
-import { UserSwitcher } from "@/components/UserSwitcher";
+import { AuthBar } from "@/components/AuthBar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,7 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <Link href="/" className="font-semibold">
             ShareWise
           </Link>
-          <UserSwitcher />
+          <AuthBar />
         </header>
         <div className="flex-1 px-4 py-6">{children}</div>
       </body>

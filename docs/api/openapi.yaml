@@ -3,7 +3,7 @@ info:
   title: ShareWise API
   version: 0.1.0-ex4
   description: >
-    Backend contract for the Ex4 slice (create group, invite and join, record an
+    Backend contract for the Ex4 slice (sign up and sign in, create group, invite and join, record an
     equal-split expense, see balances). Paths are the backend's. The browser calls
     them under /api on Next.js, which forwards /api/x to BACKEND_URL/x.
     Money is an integer in cents (EUR). Ids are UUIDs.
@@ -11,14 +11,69 @@ info:
 servers:
   - url: http://localhost:8080
 security:
-  - devUser: []
+  - bearerAuth: []
 tags:
+  - name: auth
   - name: account
   - name: group
   - name: expense
   - name: settlement
 
 paths:
+  /auth/register:
+    post:
+      tags: [auth]
+      operationId: register
+      summary: Sign up with email, display name and password. Returns a session token, so the caller is signed in.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegisterRequest" }
+            example: { email: alice@example.com, displayName: Alice, password: "correct horse" }
+      responses:
+        "201":
+          description: Account created and signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthResult" }
+              example: { token: "k3Xq9v2mT8aLw0pZr7YdNc4HbJf1UeS5k3Xq9v2mT8a", userId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409":
+          description: The email is already registered
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example: { type: "about:blank", title: Conflict, status: 409, code: EMAIL_TAKEN, detail: "This email is already registered" }
+
+  /auth/login:
+    post:
+      tags: [auth]
+      operationId: login
+      summary: Sign in with email and password. Returns a session token.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+            example: { email: alice@example.com, password: "correct horse" }
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthResult" }
+              example: { token: "k3Xq9v2mT8aLw0pZr7YdNc4HbJf1UeS5k3Xq9v2mT8a", userId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401":
+          description: Unknown email or wrong password (the same answer for both)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example: { type: "about:blank", title: Unauthorized, status: 401, code: INVALID_CREDENTIALS, detail: "Wrong email or password" }
+
   /me:
     get:
       tags: [account]
@@ -32,26 +87,6 @@ paths:
               schema: { $ref: "#/components/schemas/User" }
               example: { userId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice }
         "401": { $ref: "#/components/responses/Unauthenticated" }
-
-  /users:
-    get:
-      tags: [account]
-      operationId: listUsers
-      summary: Seeded dev users (dev profile only, powers the user switcher)
-      security: []
-      responses:
-        "200":
-          description: All dev users
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: "#/components/schemas/User" }
-              example:
-                - { userId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice }
-                - { userId: "aaaaaaaa-0000-0000-0000-000000000002", displayName: Bob }
-                - { userId: "aaaaaaaa-0000-0000-0000-000000000003", displayName: Carol }
-                - { userId: "aaaaaaaa-0000-0000-0000-000000000004", displayName: David }
 
   /groups:
     get:
@@ -257,11 +292,10 @@ paths:
 
 components:
   securitySchemes:
-    devUser:
-      type: apiKey
-      in: header
-      name: X-User-Id
-      description: Stub identity (dev profile only). Replaced by a JWT when Keycloak arrives.
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Session token from /auth/login or /auth/register. The browser never sees it; Next.js keeps it in an httpOnly cookie and forwards it.
 
   parameters:
     GroupId:
@@ -278,11 +312,11 @@ components:
           schema: { $ref: "#/components/schemas/Problem" }
           example: { type: "about:blank", title: Bad Request, status: 400, code: BAD_REQUEST, detail: "name must not be blank" }
     Unauthenticated:
-      description: No or unknown X-User-Id
+      description: No, invalid or unknown session token
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
-          example: { type: "about:blank", title: Unauthorized, status: 401, code: UNAUTHENTICATED, detail: "Missing or unknown X-User-Id" }
+          example: { type: "about:blank", title: Unauthorized, status: 401, code: UNAUTHENTICATED, detail: "Missing or invalid session" }
     NotAMember:
       description: The caller is not a member of the group
       content:
@@ -323,6 +357,29 @@ components:
           example: { type: "about:blank", title: Unprocessable Entity, status: 422, code: PAYER_NOT_IN_GROUP, detail: "The payer is not a member of this group" }
 
   schemas:
+    RegisterRequest:
+      type: object
+      required: [email, displayName, password]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        displayName: { type: string, minLength: 1, maxLength: 100 }
+        password: { type: string, minLength: 8, maxLength: 72 }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string }
+        password: { type: string }
+
+    AuthResult:
+      type: object
+      required: [token, userId, displayName]
+      properties:
+        token: { type: string }
+        userId: { type: string, format: uuid }
+        displayName: { type: string }
+
     Problem:
       type: object
       required: [status, code]
@@ -346,6 +403,8 @@ components:
             - NO_PARTICIPANTS
             - GROUP_NOT_OPEN
             - SPLIT_NOT_SUPPORTED
+            - EMAIL_TAKEN
+            - INVALID_CREDENTIALS
         detail: { type: string }
 
     User:

@@ -3,17 +3,25 @@ package de.hsh.favs.sharewise.account;
 import de.hsh.favs.sharewise.account.api.UserInfo;
 import de.hsh.favs.sharewise.shared.MemberId;
 import de.hsh.favs.sharewise.shared.UserId;
+import java.util.Map;
 import java.util.UUID;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Test data for a user. Defaults to Alice, the first user seeded by {@code db/migration-dev/V190}; {@link #bob()},
- * {@link #carol()} and {@link #david()} are the other seeded users. Override anything with {@code withX}.
+ * Test data for a user. Defaults to Alice; {@link #bob()}, {@link #carol()} and {@link #david()} are the others. These
+ * have fixed ids and only exist in memory, which is enough for unit tests. Integration tests call
+ * {@link #signUp(MockMvc, JsonMapper, String)} to get a real account with a session token. Override anything with
+ * {@code withX}.
  */
 public class UserFixture {
 
 	private UUID id = seededId(1);
 
 	private String displayName = "Alice";
+
+	private String token;
 
 	public static UserFixture alice() {
 		return new UserFixture();
@@ -34,6 +42,27 @@ public class UserFixture {
 	/** A well-formed id that is not in the users table. */
 	public static UUID unknownId() {
 		return seededId(255);
+	}
+
+	/** Signs a new user up through {@code POST /auth/register} (unique email) and returns it with id and token. */
+	public static UserFixture signUp(MockMvc mvc, JsonMapper json, String displayName) throws Exception {
+		String body = json.writeValueAsString(Map.of("email", displayName.toLowerCase() + "-" + UUID.randomUUID() + "@example.com",
+				"displayName", displayName, "password", "secret-pass"));
+		var created = json.readTree(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+			.post("/auth/register").contentType(MediaType.APPLICATION_JSON).content(body)).andReturn().getResponse()
+			.getContentAsString());
+		return new UserFixture().withId(UUID.fromString(created.get("userId").asString())).withDisplayName(displayName)
+			.withToken(created.get("token").asString());
+	}
+
+	public UserFixture withToken(String token) {
+		this.token = token;
+		return this;
+	}
+
+	/** Value of the Authorization header. */
+	public String bearer() {
+		return "Bearer " + token;
 	}
 
 	public UserFixture withId(UUID id) {

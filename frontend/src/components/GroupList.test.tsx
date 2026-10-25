@@ -38,11 +38,11 @@ describe("GroupList", () => {
   });
 
   it("showsErrorMessageWhenLoadingFails", async () => {
-    apiMock.mockRejectedValue(new ApiError(401, "UNAUTHENTICATED", "Missing or unknown X-User-Id"));
+    apiMock.mockRejectedValue(new ApiError(401, "UNAUTHENTICATED", "Missing or invalid session"));
 
     render(<GroupList />);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/pick a user/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/please sign in/i);
   });
 });
 

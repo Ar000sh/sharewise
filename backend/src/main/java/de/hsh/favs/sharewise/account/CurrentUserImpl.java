@@ -26,7 +26,7 @@ class CurrentUserImpl implements CurrentUser {
 		if (attributes != null && attributes.getAttribute(ATTRIBUTE, RequestAttributes.SCOPE_REQUEST) instanceof UserInfo info) {
 			return info;
 		}
-		throw new DomainException(ErrorCode.UNAUTHENTICATED, "Missing or unknown X-User-Id");
+		throw new DomainException(ErrorCode.UNAUTHENTICATED, "Missing or invalid session");
 	}
 
 }

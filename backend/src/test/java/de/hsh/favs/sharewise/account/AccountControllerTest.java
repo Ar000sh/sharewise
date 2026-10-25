@@ -1,6 +1,5 @@
 package de.hsh.favs.sharewise.account;
 
-import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -12,51 +11,54 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.json.JsonMapper;
 
-/** API contract of /me and /users through the whole stack, with the users seeded by the dev migration. */
+/** API contract of /me through the whole stack, with a user who really signed up. */
 @ModuleIntegrationTest
 class AccountControllerTest {
 
 	@Autowired
 	MockMvc mvc;
 
+	@Autowired
+	JsonMapper json;
+
 	@Test
-	void meReturnsTheCallerForAKnownHeader() throws Exception {
+	void meReturnsTheSignedInUser() throws Exception {
 		// given
-		UserFixture bob = UserFixture.bob();
+		UserFixture bob = UserFixture.signUp(mvc, json, "Bob");
 
 		// when / then
-		mvc.perform(get("/me").header("X-User-Id", bob.idString())).andExpect(status().isOk())
+		mvc.perform(get("/me").header("Authorization", bob.bearer())).andExpect(status().isOk())
 				.andExpect(jsonPath("$.userId").value(bob.idString()))
 				.andExpect(jsonPath("$.displayName").value("Bob"));
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = { "not-a-uuid", "aaaaaaaa-0000-0000-0000-000000000255" })
-	void meWithMalformedOrUnknownHeaderIs401(String header) throws Exception {
-		mvc.perform(get("/me").header("X-User-Id", header)).andExpect(status().isUnauthorized())
+	@ValueSource(strings = { "Bearer not-a-token", "Bearer ", "Basic abc", "aaaaaaaa-0000-0000-0000-000000000001" })
+	void meWithAnInvalidAuthorizationHeaderIs401(String header) throws Exception {
+		mvc.perform(get("/me").header("Authorization", header)).andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
 	}
 
 	@Test
-	void meWithoutHeaderIs401ProblemJson() throws Exception {
+	void meWithoutCredentialsIs401ProblemJson() throws Exception {
 		mvc.perform(get("/me")).andExpect(status().isUnauthorized())
 				.andExpect(content().contentTypeCompatibleWith("application/problem+json"))
 				.andExpect(jsonPath("$.code").value("UNAUTHENTICATED")).andExpect(jsonPath("$.status").value(401));
 	}
 
 	@Test
-	void usersListsTheFourSeededUsersWithoutHeader() throws Exception {
-		mvc.perform(get("/users")).andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(4)))
-				.andExpect(jsonPath("$[0].userId").value(UserFixture.alice().idString()))
-				.andExpect(jsonPath("$[0].displayName").value("Alice"))
-				.andExpect(jsonPath("$[1].displayName").value("Bob"))
-				.andExpect(jsonPath("$[2].displayName").value("Carol"))
-				.andExpect(jsonPath("$[3].displayName").value("David"));
+	void theOldStubHeaderProvesNothing() throws Exception {
+		// given
+		UserFixture carol = UserFixture.signUp(mvc, json, "Carol");
+
+		// when / then
+		mvc.perform(get("/me").header("X-User-Id", carol.idString())).andExpect(status().isUnauthorized());
 	}
 
 	@Test
-	void actuatorNeedsNoHeader() throws Exception {
+	void actuatorNeedsNoCredentials() throws Exception {
 		mvc.perform(get("/actuator/health")).andExpect(status().isOk());
 	}
 

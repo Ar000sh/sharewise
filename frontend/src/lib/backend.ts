@@ -1,4 +1,4 @@
-import { USER_COOKIE } from "@/lib/user-cookie";
+import { SESSION_COOKIE } from "@/lib/user-cookie";
 
 function readCookie(req: Request, name: string): string | undefined {
   const header = req.headers.get("cookie");
@@ -29,8 +29,8 @@ export async function proxyToBackend(req: Request, backendPath: string): Promise
   const headers = new Headers();
   const contentType = req.headers.get("content-type");
   if (contentType) headers.set("content-type", contentType);
-  const userId = readCookie(req, USER_COOKIE);
-  if (userId) headers.set("x-user-id", userId);
+  const session = readCookie(req, SESSION_COOKIE);
+  if (session) headers.set("authorization", `Bearer ${session}`);
 
   try {
     const hasBody = req.method !== "GET" && req.method !== "HEAD";
