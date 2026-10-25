@@ -16,6 +16,12 @@ class User {
 	@Column(name = "display_name", nullable = false)
 	private String displayName;
 
+	/** Lower-case. Null for the seeded dev users, who cannot sign in. */
+	private String email;
+
+	@Column(name = "password_hash")
+	private String passwordHash;
+
 	protected User() {
 	}
 
@@ -24,12 +30,23 @@ class User {
 		this.displayName = displayName;
 	}
 
+	static User signUp(String email, String displayName, String passwordHash) {
+		User user = new User(UUID.randomUUID(), displayName);
+		user.email = email;
+		user.passwordHash = passwordHash;
+		return user;
+	}
+
 	UUID id() {
 		return id;
 	}
 
 	String displayName() {
 		return displayName;
+	}
+
+	String passwordHash() {
+		return passwordHash;
 	}
 
 }

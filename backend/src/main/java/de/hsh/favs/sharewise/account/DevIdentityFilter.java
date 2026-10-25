@@ -22,6 +22,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 @Component
 @Profile("dev")
+@org.springframework.core.annotation.Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE + 20)
 class DevIdentityFilter extends OncePerRequestFilter {
 
 	static final String HEADER = "X-User-Id";
@@ -35,7 +36,9 @@ class DevIdentityFilter extends OncePerRequestFilter {
 	@Override
 	protected boolean shouldNotFilter(HttpServletRequest request) {
 		String path = request.getRequestURI();
-		return path.startsWith("/actuator") || path.equals("/users");
+		// Bearer requests were already handled (or refused) by SessionIdentityFilter.
+		return path.startsWith("/actuator") || path.startsWith("/auth/") || path.equals("/users")
+				|| request.getHeader("Authorization") != null;
 	}
 
 	@Override
