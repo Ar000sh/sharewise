@@ -5,14 +5,15 @@ import de.hsh.favs.sharewise.account.api.UserInfo;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.settlement.api.Balances;
 import de.hsh.favs.sharewise.settlement.api.MemberBalance;
-import de.hsh.favs.sharewise.settlement.domain.GroupLedger;
 import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
+import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository.MemberTotal;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.MemberId;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +36,8 @@ class BalancesImpl implements Balances {
 	@Override
 	@Transactional(readOnly = true)
 	public List<MemberBalance> of(GroupId group) {
-		Map<MemberId, Long> stored = ledgers.findById(group.value()).map(GroupLedger::projectBalances).orElse(Map.of());
+		Map<MemberId, Long> stored = ledgers.totals(group.value()).stream()
+				.collect(Collectors.toMap(total -> new MemberId(total.getMemberId()), MemberTotal::getCents));
 		return membership.members(group).stream()
 				.map(member -> new MemberBalance(member, displayName(member), stored.getOrDefault(member, 0L)))
 				.sorted(Comparator.comparing(MemberBalance::displayName, String.CASE_INSENSITIVE_ORDER)

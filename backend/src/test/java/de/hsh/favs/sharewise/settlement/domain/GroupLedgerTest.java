@@ -56,19 +56,6 @@ class GroupLedgerTest {
 	}
 
 	@Test
-	void aRepeatedExpenseAddsNoEntries() {
-		// given
-		var expense = new ExpenseRecordedFixture().build();
-		ledger.appendExpenseEntry(expense, AT);
-
-		// when
-		ledger.appendExpenseEntry(expense, AT);
-
-		// then
-		assertThat(ledger.entries()).hasSize(3);
-	}
-
-	@Test
 	void payerWhoIsAlsoParticipantNetsCorrectly() {
 		// given
 		var expense = new ExpenseRecordedFixture()
@@ -107,22 +94,6 @@ class GroupLedgerTest {
 
 		// then
 		assertThat(ledger.projectBalances().values().stream().mapToLong(Long::longValue).sum()).isZero();
-	}
-
-	@Test
-	void applyingTheSameExpenseTwiceCountsItOnce() {
-		// given
-		var expense = new ExpenseRecordedFixture().build();
-
-		// when
-		var first = ledger.appendExpenseEntry(expense, AT);
-		var second = ledger.appendExpenseEntry(expense, AT);
-
-		// then
-		assertThat(first).isTrue();
-		assertThat(second).isFalse();
-		assertThat(ledger.projectBalances()).containsOnly(Map.entry(ALICE, 9000L), Map.entry(BOB, -4500L),
-				Map.entry(CAROL, -4500L));
 	}
 
 }

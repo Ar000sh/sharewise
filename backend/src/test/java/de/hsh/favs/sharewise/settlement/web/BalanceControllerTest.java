@@ -46,7 +46,7 @@ class BalanceControllerTest {
 	CurrentUser currentUser;
 
 	@Autowired
-	GroupLedgerService applyExpense;
+	GroupLedgerService ledgerService;
 
 	private final UserId alice = new UserId(ALICE.value());
 	private final UserId bob = new UserId(BOB.value());
@@ -64,7 +64,7 @@ class BalanceControllerTest {
 	@Test
 	void returnsEveryMemberAsContractShapedJson() throws Exception {
 		// given
-		applyExpense.apply(new ExpenseRecordedFixture().withGroup(group).withTotal(9000)
+		ledgerService.apply(new ExpenseRecordedFixture().withGroup(group).withTotal(9000)
 				.withShares(new Share(BOB, 9000)).build());
 
 		// when / then

@@ -8,15 +8,15 @@ import org.springframework.stereotype.Component;
 @Component
 class ExpenseRecordedListener {
 
-	private final GroupLedgerService applyExpense;
+	private final GroupLedgerService ledgerService;
 
-	ExpenseRecordedListener(GroupLedgerService applyExpense) {
-		this.applyExpense = applyExpense;
+	ExpenseRecordedListener(GroupLedgerService ledgerService) {
+		this.ledgerService = ledgerService;
 	}
 
 	@ApplicationModuleListener
 	void on(ExpenseRecorded event) {
-		applyExpense.apply(event);
+		ledgerService.apply(event);
 	}
 
 }

@@ -30,7 +30,8 @@ public class GroupLedgerService {
 		var group = expense.groupId().value();
 		ledgers.createIfAbsent(group);
 		var ledger = ledgers.findForUpdate(group).orElseThrow();
-		if (ledger.appendExpenseEntry(expense, clock.instant())) {
+		if (!ledgers.isBooked(group, expense.expenseId())) {
+			ledger.appendExpenseEntry(expense, clock.instant());
 			ledgers.save(ledger);
 		}
 	}

@@ -32,7 +32,7 @@ class BalancesImplTest {
 	Balances balances;
 
 	@Autowired
-	GroupLedgerService applyExpense;
+	GroupLedgerService ledgerService;
 
 	@Autowired
 	GroupMembership membership;
@@ -65,7 +65,7 @@ class BalancesImplTest {
 	@Test
 	void mergesStoredBalancesWithMemberNames() {
 		// given
-		applyExpense.apply(new ExpenseRecordedFixture().withGroup(group).build());
+		ledgerService.apply(new ExpenseRecordedFixture().withGroup(group).build());
 
 		// when
 		var result = balances.of(group);
@@ -78,8 +78,8 @@ class BalancesImplTest {
 	@Test
 	void sumOfReturnedBalancesIsZero() {
 		// given
-		applyExpense.apply(new ExpenseRecordedFixture().withGroup(group).build());
-		applyExpense.apply(new ExpenseRecordedFixture().withGroup(group).withPayer(BOB).withTotal(3001)
+		ledgerService.apply(new ExpenseRecordedFixture().withGroup(group).build());
+		ledgerService.apply(new ExpenseRecordedFixture().withGroup(group).withPayer(BOB).withTotal(3001)
 				.withShares(new Share(ALICE, 1001), new Share(BOB, 1000), new Share(CAROL, 1000)).build());
 
 		// when
@@ -87,6 +87,20 @@ class BalancesImplTest {
 
 		// then
 		assertThat(result.stream().mapToLong(MemberBalance::balanceCents).sum()).isZero();
+	}
+
+	@Test
+	void aRepeatedExpenseCountsOnce() {
+		// given
+		var expense = new ExpenseRecordedFixture().withGroup(group).build();
+		ledgerService.apply(expense);
+		ledgerService.apply(expense);
+
+		// when
+		var result = balances.of(group);
+
+		// then
+		assertThat(result).extracting(MemberBalance::balanceCents).containsExactly(9000L, -4500L, -4500L);
 	}
 
 	private void nameUser(MemberId member, String name) {

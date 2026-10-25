@@ -7,7 +7,6 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.time.Instant;
@@ -20,7 +19,8 @@ import java.util.UUID;
 /**
  * Aggregate root: the append-only ledger of one group. Every recorded expense books entries (the payer
  * credited what they paid, every share holder debited their share, R14); a member's balance is the sum of
- * their entries. The ledger also guards that an expense is booked only once.
+ * their entries. Booking an expense twice is
+ * prevented by the service ({@code isBooked}) and, as a last line of defence, by a unique constraint.
  */
 @Entity
 @Table(name = "settlement_ledger")
@@ -30,8 +30,7 @@ public class GroupLedger {
 	@Column(name = "group_id")
 	private UUID groupId;
 
-	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-	@JoinColumn(name = "group_id", nullable = false)
+	@OneToMany(mappedBy = "ledger", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<LedgerEntry> entries = new ArrayList<>();
 
 	protected GroupLedger() {
@@ -41,21 +40,17 @@ public class GroupLedger {
 		this.groupId = group.value();
 	}
 
-	/** Books the expense. Returns false, and books nothing, when this expense was booked before. */
-	public boolean appendExpenseEntry(ExpenseRecorded expense, Instant occurredAt) {
-		if (entries.stream().anyMatch(entry -> entry.referenceId().equals(expense.expenseId()))) {
-			return false;
-		}
-		entries.add(new LedgerEntry(expense.payerId(), expense.totalCents(), LedgerEntryType.EXPENSE_PAID,
+	/** Books the expense: the payer is credited the total, every share holder debited their share (R14). */
+	public void appendExpenseEntry(ExpenseRecorded expense, Instant occurredAt) {
+		entries.add(new LedgerEntry(this, expense.payerId(), expense.totalCents(), LedgerEntryType.EXPENSE_PAID,
 				expense.expenseId(), occurredAt));
 		for (var share : expense.shares()) {
-			entries.add(new LedgerEntry(share.memberId(), -share.shareCents(), LedgerEntryType.EXPENSE_OWED,
+			entries.add(new LedgerEntry(this, share.memberId(), -share.shareCents(), LedgerEntryType.EXPENSE_OWED,
 					expense.expenseId(), occurredAt));
 		}
-		return true;
 	}
 
-	/** Only members that appear in an entry; the sum is always 0. */
+	/** Only members that appear in an entry; the sum is always 0. Loads every entry, see {@code GroupLedgerRepository#totals}. */
 	public Map<MemberId, Long> projectBalances() {
 		Map<MemberId, Long> balances = new HashMap<>();
 		for (var entry : entries) {

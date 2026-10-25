@@ -41,7 +41,7 @@ class ExpenseRecordedListenerTest {
 	Balances balances;
 
 	@Autowired
-	GroupLedgerService applyExpense;
+	GroupLedgerService ledgerService;
 
 	@Test
 	void publishedExpenseUpdatesBalances(Scenario scenario) {
@@ -65,8 +65,8 @@ class ExpenseRecordedListenerTest {
 		var event = new ExpenseRecordedFixture().withGroup(group).build();
 
 		// when
-		applyExpense.apply(event);
-		applyExpense.apply(event);
+		ledgerService.apply(event);
+		ledgerService.apply(event);
 
 		// then
 		assertThat(balances.of(group)).extracting(MemberBalance::balanceCents)

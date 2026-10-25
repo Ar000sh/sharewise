@@ -60,14 +60,15 @@ class GroupLedgerServiceTest {
 		var group = new GroupId(UUID.randomUUID());
 		var ledger = new GroupLedger(group);
 		var expense = new ExpenseRecordedFixture().withGroup(group).build();
-		ledger.appendExpenseEntry(expense, NOW);
 		when(ledgers.findForUpdate(group.value())).thenReturn(Optional.of(ledger));
+		when(ledgers.isBooked(group.value(), expense.expenseId())).thenReturn(true);
 
 		// when
 		service.apply(expense);
 
 		// then
 		verify(ledgers, never()).save(ledger);
+		assertThat(ledger.entries()).isEmpty();
 	}
 
 }

@@ -2,6 +2,7 @@ package de.hsh.favs.sharewise.settlement.persistence;
 
 import de.hsh.favs.sharewise.settlement.domain.GroupLedger;
 import jakarta.persistence.LockModeType;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,5 +23,22 @@ public interface GroupLedgerRepository extends JpaRepository<GroupLedger, UUID> 
 	@Query(value = "INSERT INTO settlement_ledger (group_id) VALUES (:groupId) ON CONFLICT DO NOTHING",
 			nativeQuery = true)
 	void createIfAbsent(@Param("groupId") UUID groupId);
+
+	/** Whether this expense already has entries; asked after the lock is taken. */
+	@Query("select count(e) > 0 from LedgerEntry e where e.ledger.groupId = :groupId and e.referenceId = :referenceId")
+	boolean isBooked(@Param("groupId") UUID groupId, @Param("referenceId") UUID referenceId);
+
+	/** The balance of every member that has entries, summed by the database instead of loading all entries. */
+	@Query("select e.memberId as memberId, sum(e.deltaCents) as cents from LedgerEntry e "
+			+ "where e.ledger.groupId = :groupId group by e.memberId")
+	List<MemberTotal> totals(@Param("groupId") UUID groupId);
+
+	interface MemberTotal {
+
+		UUID getMemberId();
+
+		Long getCents();
+
+	}
 
 }
