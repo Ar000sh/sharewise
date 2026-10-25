@@ -1,7 +1,9 @@
 import { ApiError } from "@/lib/api";
 
 const MESSAGES: Record<string, string> = {
-  UNAUTHENTICATED: "You are not signed in. Please pick a user in the header.",
+  UNAUTHENTICATED: "You are not signed in. Please sign in.",
+  INVALID_CREDENTIALS: "Wrong email or password.",
+  EMAIL_TAKEN: "This email is already registered. Try signing in.",
   NOT_A_MEMBER: "You are not a member of this group.",
   GROUP_NOT_FOUND: "This group does not exist.",
   INVITATION_NOT_FOUND: "This invitation link is not valid.",

@@ -42,7 +42,7 @@ describe("GroupList", () => {
 
     render(<GroupList />);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/pick a user/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/please sign in/i);
   });
 });
 

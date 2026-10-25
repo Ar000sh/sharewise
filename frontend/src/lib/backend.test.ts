@@ -74,3 +74,19 @@ describe("proxyToBackend", () => {
     expect(await res.json()).toMatchObject({ status: 502, code: "BACKEND_UNREACHABLE" });
   });
 });
+
+describe("proxyToBackend session", () => {
+  it("sendsTheSessionCookieAsBearerToken", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
+
+    await proxyToBackend(
+      new Request("http://localhost:3000/api/me", { headers: { cookie: "sw_session=abc123" } }),
+      "/me",
+    );
+
+    const headers = fetchMock.mock.calls[0][1]?.headers as Headers;
+    expect(headers.get("authorization")).toBe("Bearer abc123");
+    expect(headers.get("x-user-id")).toBeNull();
+    fetchMock.mockRestore();
+  });
+});
