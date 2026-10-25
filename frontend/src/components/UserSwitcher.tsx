@@ -27,7 +27,11 @@ export function UserSwitcher() {
       .then((list) => {
         const saved = readUserCookie();
         const initial = list.find((u) => u.userId === saved)?.userId ?? list[0]?.userId ?? "";
-        if (initial && initial !== saved) writeUserCookie(initial);
+        if (initial && initial !== saved) {
+          writeUserCookie(initial);
+          // Requests the page already made went out without the cookie (401): load again with it.
+          window.location.reload();
+        }
         setUsers(list);
         setSelected(initial);
       })
