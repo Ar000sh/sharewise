@@ -35,7 +35,7 @@ class BalancesImpl implements Balances {
 	@Override
 	@Transactional(readOnly = true)
 	public List<MemberBalance> of(GroupId group) {
-		Map<MemberId, Long> stored = ledgers.findById(group.value()).map(GroupLedger::balances).orElse(Map.of());
+		Map<MemberId, Long> stored = ledgers.findById(group.value()).map(GroupLedger::projectBalances).orElse(Map.of());
 		return membership.members(group).stream()
 				.map(member -> new MemberBalance(member, displayName(member), stored.getOrDefault(member, 0L)))
 				.sorted(Comparator.comparing(MemberBalance::displayName, String.CASE_INSENSITIVE_ORDER)

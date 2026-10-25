@@ -2,6 +2,9 @@ package de.hsh.favs.sharewise.settlement.application;
 
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
+import java.time.Clock;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -9,9 +12,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class ApplyExpenseToBalances {
 
 	private final GroupLedgerRepository ledgers;
+	private final Clock clock;
 
-	ApplyExpenseToBalances(GroupLedgerRepository ledgers) {
+	/** Uses the application's {@code Clock} bean when there is one (tests replace it), else the system clock. */
+	@Autowired
+	ApplyExpenseToBalances(GroupLedgerRepository ledgers, ObjectProvider<Clock> clock) {
+		this(ledgers, clock.getIfAvailable(Clock::systemUTC));
+	}
+
+	ApplyExpenseToBalances(GroupLedgerRepository ledgers, Clock clock) {
 		this.ledgers = ledgers;
+		this.clock = clock;
 	}
 
 	@Transactional
@@ -19,7 +30,7 @@ public class ApplyExpenseToBalances {
 		var group = expense.groupId().value();
 		ledgers.createIfAbsent(group);
 		var ledger = ledgers.findForUpdate(group).orElseThrow();
-		if (ledger.apply(expense)) {
+		if (ledger.appendExpenseEntry(expense, clock.instant())) {
 			ledgers.save(ledger);
 		}
 	}

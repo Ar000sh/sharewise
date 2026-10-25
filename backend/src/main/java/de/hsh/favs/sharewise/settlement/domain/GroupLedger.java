@@ -3,23 +3,24 @@ package de.hsh.favs.sharewise.settlement.domain;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.MemberId;
-import jakarta.persistence.CollectionTable;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 /**
- * Aggregate root: the running balance of every member of one group. It owns the rule (R14) and the guard
- * against counting an expense twice.
+ * Aggregate root: the append-only ledger of one group. Every recorded expense books entries (the payer
+ * credited what they paid, every share holder debited their share, R14); a member's balance is the sum of
+ * their entries. The ledger also guards that an expense is booked only once.
  */
 @Entity
 @Table(name = "settlement_ledger")
@@ -29,16 +30,9 @@ public class GroupLedger {
 	@Column(name = "group_id")
 	private UUID groupId;
 
-	@ElementCollection
-	@CollectionTable(name = "settlement_balance", joinColumns = @JoinColumn(name = "group_id"))
-	@MapKeyColumn(name = "member_id")
-	@Column(name = "balance_cents", nullable = false)
-	private Map<UUID, Long> balances = new HashMap<>();
-
-	@ElementCollection
-	@CollectionTable(name = "settlement_processed_expense", joinColumns = @JoinColumn(name = "group_id"))
-	@Column(name = "expense_id", nullable = false)
-	private Set<UUID> processedExpenses = new HashSet<>();
+	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+	@JoinColumn(name = "group_id", nullable = false)
+	private List<LedgerEntry> entries = new ArrayList<>();
 
 	protected GroupLedger() {
 	}
@@ -47,23 +41,31 @@ public class GroupLedger {
 		this.groupId = group.value();
 	}
 
-	/** R14: the payer is credited the total, every share holder is debited their share. Returns false for a repeat. */
-	public boolean apply(ExpenseRecorded expense) {
-		if (!processedExpenses.add(expense.expenseId())) {
+	/** Books the expense. Returns false, and books nothing, when this expense was booked before. */
+	public boolean appendExpenseEntry(ExpenseRecorded expense, Instant occurredAt) {
+		if (entries.stream().anyMatch(entry -> entry.referenceId().equals(expense.expenseId()))) {
 			return false;
 		}
-		balances.merge(expense.payerId().value(), expense.totalCents(), Long::sum);
+		entries.add(new LedgerEntry(expense.payerId(), expense.totalCents(), LedgerEntryType.EXPENSE_PAID,
+				expense.expenseId(), occurredAt));
 		for (var share : expense.shares()) {
-			balances.merge(share.memberId().value(), -share.shareCents(), Long::sum);
+			entries.add(new LedgerEntry(share.memberId(), -share.shareCents(), LedgerEntryType.EXPENSE_OWED,
+					expense.expenseId(), occurredAt));
 		}
 		return true;
 	}
 
-	/** Only members that appear in an expense; the sum is always 0. */
-	public Map<MemberId, Long> balances() {
-		Map<MemberId, Long> snapshot = new HashMap<>();
-		balances.forEach((member, cents) -> snapshot.put(new MemberId(member), cents));
-		return snapshot;
+	/** Only members that appear in an entry; the sum is always 0. */
+	public Map<MemberId, Long> projectBalances() {
+		Map<MemberId, Long> balances = new HashMap<>();
+		for (var entry : entries) {
+			balances.merge(entry.member(), entry.deltaCents(), Long::sum);
+		}
+		return balances;
+	}
+
+	public List<LedgerEntry> entries() {
+		return List.copyOf(entries);
 	}
 
 }
