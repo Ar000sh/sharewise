@@ -33,18 +33,22 @@ class GroupMembershipImplTest {
 	@Autowired
 	JsonMapper json;
 
-	UserFixture alice = UserFixture.alice();
+	UserFixture alice;
 
-	UserFixture bob = UserFixture.bob();
+	UserFixture bob;
 
-	UserFixture carol = UserFixture.carol();
+	UserFixture carol;
 
-	UserFixture david = UserFixture.david();
+	UserFixture david;
 
 	GroupId trip;
 
 	@BeforeEach
 	void setUp() throws Exception {
+		alice = UserFixture.signUp(mvc, json, "Alice");
+		bob = UserFixture.signUp(mvc, json, "Bob");
+		carol = UserFixture.signUp(mvc, json, "Carol");
+		david = UserFixture.signUp(mvc, json, "David");
 		trip = new GroupId(new GroupRequests(mvc, json).groupWith(alice, "Trip", bob, carol));
 	}
 
@@ -59,9 +63,10 @@ class GroupMembershipImplTest {
 	}
 
 	@Test
-	void membersAreListedInJoiningOrderAndTheGroupIsOpen() {
+	void allMembersAreListedAndTheGroupIsOpen() {
 		assertThat(membership.exists(trip)).isTrue();
-		assertThat(membership.members(trip)).containsExactly(alice.memberId(), bob.memberId(), carol.memberId());
+		// the test clock is frozen, so everyone joined at the same instant and the order is not asserted
+		assertThat(membership.members(trip)).containsExactlyInAnyOrder(alice.memberId(), bob.memberId(), carol.memberId());
 		assertThat(membership.status(trip)).isEqualTo(GroupStatus.OPEN);
 	}
 

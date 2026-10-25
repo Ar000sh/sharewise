@@ -1,6 +1,0 @@
-# Running the app by hand with real sign-up and sign-in: no seeded users, no X-User-Id header.
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/sharewise
-    username: sharewise
-    password: sharewise

@@ -15,7 +15,7 @@ import tools.jackson.databind.json.JsonMapper;
 /** The group HTTP calls as a given user, so controller tests set up state in one line. */
 class GroupRequests {
 
-	private static final String USER_HEADER = "X-User-Id";
+	private static final String USER_HEADER = "Authorization";
 
 	private final MockMvc mvc;
 
@@ -27,7 +27,7 @@ class GroupRequests {
 	}
 
 	ResultActions create(UserFixture caller, String name) throws Exception {
-		return mvc.perform(post("/groups").header(USER_HEADER, caller.idString()).contentType(APPLICATION_JSON)
+		return mvc.perform(post("/groups").header(USER_HEADER, caller.bearer()).contentType(APPLICATION_JSON)
 				.content(json.writeValueAsString(Map.of("name", name))));
 	}
 
@@ -47,15 +47,15 @@ class GroupRequests {
 	}
 
 	ResultActions list(UserFixture caller) throws Exception {
-		return mvc.perform(get("/groups").header(USER_HEADER, caller.idString()));
+		return mvc.perform(get("/groups").header(USER_HEADER, caller.bearer()));
 	}
 
 	ResultActions detail(UUID group, UserFixture caller) throws Exception {
-		return mvc.perform(get("/groups/" + group).header(USER_HEADER, caller.idString()));
+		return mvc.perform(get("/groups/" + group).header(USER_HEADER, caller.bearer()));
 	}
 
 	ResultActions createInvitation(UUID group, UserFixture caller) throws Exception {
-		return mvc.perform(post("/groups/" + group + "/invitations").header(USER_HEADER, caller.idString()));
+		return mvc.perform(post("/groups/" + group + "/invitations").header(USER_HEADER, caller.bearer()));
 	}
 
 	/** Creates an invitation (expects 201) and returns its token. */
@@ -65,7 +65,7 @@ class GroupRequests {
 	}
 
 	ResultActions accept(String token, UserFixture caller) throws Exception {
-		return mvc.perform(post("/invitations/" + token + "/accept").header(USER_HEADER, caller.idString()));
+		return mvc.perform(post("/invitations/" + token + "/accept").header(USER_HEADER, caller.bearer()));
 	}
 
 	String body(ResultActions result) throws Exception {

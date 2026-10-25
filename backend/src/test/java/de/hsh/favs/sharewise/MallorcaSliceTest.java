@@ -13,34 +13,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.UUID;
+import de.hsh.favs.sharewise.account.UserFixture;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The Ex4 slice with every real bean and no stubs: create a group, invite, accept, record equal-split expenses,
- * read balances. Balances arrive through the {@code ExpenseRecorded} event, so they are awaited.
+ * The Ex4 slice with every real bean and no stubs: sign up, create a group, invite, accept, record equal-split
+ * expenses, read balances. Balances arrive through the {@code ExpenseRecorded} event, so they are awaited.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("dev")
 @Import(TestcontainersConfiguration.class)
 class MallorcaSliceTest {
-
-	private static final String ALICE = "aaaaaaaa-0000-0000-0000-000000000001";
-
-	private static final String BOB = "aaaaaaaa-0000-0000-0000-000000000002";
-
-	private static final String CAROL = "aaaaaaaa-0000-0000-0000-000000000003";
-
-	private static final String DAVID = "aaaaaaaa-0000-0000-0000-000000000004";
 
 	@Autowired
 	MockMvc mvc;
@@ -48,33 +40,46 @@ class MallorcaSliceTest {
 	@Autowired
 	JsonMapper json;
 
+	/** User ids of four freshly signed-up users, and the session token of each. */
+	String alice, bob, carol, david;
+
+	final Map<String, String> tokens = new LinkedHashMap<>();
+
+	@BeforeEach
+	void signUpFourFriends() throws Exception {
+		alice = signUp("Alice");
+		bob = signUp("Bob");
+		carol = signUp("Carol");
+		david = signUp("David");
+	}
+
 	@Test
 	void mallorcaBalancesAfterHotelAndDinner() throws Exception {
 		// given Alice's group with Bob, Carol and David as members
-		UUID group = groupWith(ALICE, BOB, CAROL, DAVID);
-		List<String> everyone = List.of(ALICE, BOB, CAROL, DAVID);
+		UUID group = groupWith(alice, bob, carol, david);
+		List<String> everyone = List.of(alice, bob, carol, david);
 
 		// when Alice pays the hotel and Bob the dinner, both split between all four
-		recordExpense(group, ALICE, "Hotel", 90000, ALICE, everyone).andExpect(status().isCreated());
-		recordExpense(group, BOB, "Dinner", 18000, BOB, everyone).andExpect(status().isCreated());
+		recordExpense(group, alice, "Hotel", 90000, alice, everyone).andExpect(status().isCreated());
+		recordExpense(group, bob, "Dinner", 18000, bob, everyone).andExpect(status().isCreated());
 
 		// then the balances settle to the documented Mallorca figures and add up to zero
-		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(balances(group, ALICE))
-			.containsExactlyInAnyOrderEntriesOf(Map.of(ALICE, 63000L, BOB, -9000L, CAROL, -27000L, DAVID, -27000L)));
-		assertThat(balances(group, ALICE).values().stream().mapToLong(Long::longValue).sum()).isZero();
+		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(balances(group, alice))
+			.containsExactlyInAnyOrderEntriesOf(Map.of(alice, 63000L, bob, -9000L, carol, -27000L, david, -27000L)));
+		assertThat(balances(group, alice).values().stream().mapToLong(Long::longValue).sum()).isZero();
 	}
 
 	@Test
 	void responsesCarryExactlyTheFieldsOfTheContract() throws Exception {
 		// given a group with one invited member and one expense
-		UUID group = groupWith(ALICE, BOB);
+		UUID group = groupWith(alice, bob);
 
 		// when the caller reads the endpoints
-		JsonNode created = read(post("/groups").header("X-User-Id", ALICE).contentType(APPLICATION_JSON)
+		JsonNode created = read(post("/groups").header("Authorization", auth(alice)).contentType(APPLICATION_JSON)
 			.content("{\"name\":\"Shape\"}"));
-		JsonNode detail = read(get("/groups/" + group).header("X-User-Id", ALICE));
-		JsonNode expense = read(recordExpense(group, ALICE, "Taxi", 1000, ALICE, List.of(ALICE, BOB)));
-		JsonNode invitation = read(post("/groups/" + group + "/invitations").header("X-User-Id", ALICE));
+		JsonNode detail = read(get("/groups/" + group).header("Authorization", auth(alice)));
+		JsonNode expense = read(recordExpense(group, alice, "Taxi", 1000, alice, List.of(alice, bob)));
+		JsonNode invitation = read(post("/groups/" + group + "/invitations").header("Authorization", auth(alice)));
 
 		// then the field names are the ones in docs/api/openapi.yaml
 		assertThat(fields(created)).containsExactly("id", "memberCount", "name", "status");
@@ -84,7 +89,7 @@ class MallorcaSliceTest {
 		assertThat(fields(expense.get("shares").get(0))).containsExactly("memberId", "shareCents");
 		assertThat(fields(invitation)).containsExactly("expiresAt", "token");
 		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
-			JsonNode balances = read(get("/groups/" + group + "/balances").header("X-User-Id", ALICE));
+			JsonNode balances = read(get("/groups/" + group + "/balances").header("Authorization", auth(alice)));
 			assertThat(fields(balances.get(0))).containsExactly("balanceCents", "displayName", "memberId");
 		});
 	}
@@ -92,68 +97,78 @@ class MallorcaSliceTest {
 	@Test
 	void lateJoinerIsListedAtZeroAndDoesNotShareEarlierExpenses() throws Exception {
 		// given an expense between Alice and Bob before Carol joins
-		UUID group = groupWith(ALICE, BOB);
-		recordExpense(group, ALICE, "Hotel", 10000, ALICE, List.of(ALICE, BOB)).andExpect(status().isCreated());
+		UUID group = groupWith(alice, bob);
+		recordExpense(group, alice, "Hotel", 10000, alice, List.of(alice, bob)).andExpect(status().isCreated());
 
 		// when Carol joins afterwards
-		join(group, ALICE, CAROL);
+		join(group, alice, carol);
 
 		// then she is listed with balance 0 and the sum is still 0
-		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(balances(group, CAROL))
-			.containsExactlyInAnyOrderEntriesOf(Map.of(ALICE, 5000L, BOB, -5000L, CAROL, 0L)));
+		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(balances(group, carol))
+			.containsExactlyInAnyOrderEntriesOf(Map.of(alice, 5000L, bob, -5000L, carol, 0L)));
 	}
 
 	@Test
 	void remainderCentsGoToTheFirstParticipantsAndTheSumStaysZero() throws Exception {
 		// given three members and an amount that does not divide by three
-		UUID group = groupWith(ALICE, BOB, CAROL);
+		UUID group = groupWith(alice, bob, carol);
 
 		// when Alice pays 100.00 split three ways
-		recordExpense(group, ALICE, "Tapas", 10000, ALICE, List.of(ALICE, BOB, CAROL)).andExpect(status().isCreated());
+		recordExpense(group, alice, "Tapas", 10000, alice, List.of(alice, bob, carol)).andExpect(status().isCreated());
 
 		// then the first participant carries the extra cent
-		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(balances(group, ALICE))
-			.containsExactlyInAnyOrderEntriesOf(Map.of(ALICE, 6666L, BOB, -3333L, CAROL, -3333L)));
+		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(balances(group, alice))
+			.containsExactlyInAnyOrderEntriesOf(Map.of(alice, 6666L, bob, -3333L, carol, -3333L)));
 	}
 
 	@Test
 	void outsidersAndStrangersAreRefusedAndNothingIsBooked() throws Exception {
 		// given a group of Alice and Bob; Carol is no member
-		UUID group = groupWith(ALICE, BOB);
+		UUID group = groupWith(alice, bob);
 
 		// then a non-member can neither read nor write
-		mvc.perform(get("/groups/" + group + "/balances").header("X-User-Id", CAROL)).andExpect(status().isForbidden());
-		mvc.perform(get("/groups/" + group + "/expenses").header("X-User-Id", CAROL)).andExpect(status().isForbidden());
-		recordExpense(group, CAROL, "Sneaky", 100, CAROL, List.of(CAROL)).andExpect(status().isForbidden());
+		mvc.perform(get("/groups/" + group + "/balances").header("Authorization", auth(carol))).andExpect(status().isForbidden());
+		mvc.perform(get("/groups/" + group + "/expenses").header("Authorization", auth(carol))).andExpect(status().isForbidden());
+		recordExpense(group, carol, "Sneaky", 100, carol, List.of(carol)).andExpect(status().isForbidden());
 		// and a member cannot name an outsider as payer or participant (422)
-		recordExpense(group, ALICE, "Wrong payer", 100, CAROL, List.of(ALICE)).andExpect(status().isUnprocessableEntity());
-		recordExpense(group, ALICE, "Wrong share", 100, ALICE, List.of(ALICE, CAROL))
+		recordExpense(group, alice, "Wrong payer", 100, carol, List.of(alice)).andExpect(status().isUnprocessableEntity());
+		recordExpense(group, alice, "Wrong share", 100, alice, List.of(alice, carol))
 			.andExpect(status().isUnprocessableEntity());
 		// and an unknown user is not authenticated
-		mvc.perform(get("/groups/" + group).header("X-User-Id", UUID.randomUUID().toString()))
+		mvc.perform(get("/groups/" + group).header("Authorization", "Bearer unknown"))
 			.andExpect(status().isUnauthorized());
 
 		// then no refused call left a booking behind: one valid expense afterwards is the only thing booked
-		recordExpense(group, ALICE, "Valid", 200, ALICE, List.of(ALICE, BOB)).andExpect(status().isCreated());
-		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(balances(group, ALICE))
-			.containsExactlyInAnyOrderEntriesOf(Map.of(ALICE, 100L, BOB, -100L)));
-		assertThat(read(get("/groups/" + group + "/expenses").header("X-User-Id", ALICE))).hasSize(1);
+		recordExpense(group, alice, "Valid", 200, alice, List.of(alice, bob)).andExpect(status().isCreated());
+		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(balances(group, alice))
+			.containsExactlyInAnyOrderEntriesOf(Map.of(alice, 100L, bob, -100L)));
+		assertThat(read(get("/groups/" + group + "/expenses").header("Authorization", auth(alice)))).hasSize(1);
 	}
 
 	@Test
 	void joiningTwiceIsAConflict() throws Exception {
-		UUID group = groupWith(ALICE, BOB);
-		String token = invite(group, ALICE);
+		UUID group = groupWith(alice, bob);
+		String token = invite(group, alice);
 
-		mvc.perform(post("/invitations/" + token + "/accept").header("X-User-Id", BOB)).andExpect(status().isConflict());
-		mvc.perform(post("/invitations/" + "x".repeat(43) + "/accept").header("X-User-Id", CAROL))
+		mvc.perform(post("/invitations/" + token + "/accept").header("Authorization", auth(bob))).andExpect(status().isConflict());
+		mvc.perform(post("/invitations/" + "x".repeat(43) + "/accept").header("Authorization", auth(carol)))
 			.andExpect(status().isNotFound());
 	}
 
 	// --- helpers ---------------------------------------------------------------------------------------------
 
+	private String signUp(String name) throws Exception {
+		UserFixture user = UserFixture.signUp(mvc, json, name);
+		tokens.put(user.idString(), user.bearer());
+		return user.idString();
+	}
+
+	private String auth(String userId) {
+		return tokens.get(userId);
+	}
+
 	private UUID groupWith(String admin, String... joiners) throws Exception {
-		JsonNode group = read(post("/groups").header("X-User-Id", admin).contentType(APPLICATION_JSON)
+		JsonNode group = read(post("/groups").header("Authorization", auth(admin)).contentType(APPLICATION_JSON)
 			.content("{\"name\":\"Mallorca 2027\"}"));
 		UUID id = UUID.fromString(group.get("id").asString());
 		for (String joiner : joiners) {
@@ -165,12 +180,12 @@ class MallorcaSliceTest {
 	}
 
 	private void join(UUID group, String inviter, String joiner) throws Exception {
-		mvc.perform(post("/invitations/" + invite(group, inviter) + "/accept").header("X-User-Id", joiner))
+		mvc.perform(post("/invitations/" + invite(group, inviter) + "/accept").header("Authorization", auth(joiner)))
 			.andExpect(status().isOk());
 	}
 
 	private String invite(UUID group, String caller) throws Exception {
-		return read(post("/groups/" + group + "/invitations").header("X-User-Id", caller)).get("token").asString();
+		return read(post("/groups/" + group + "/invitations").header("Authorization", auth(caller))).get("token").asString();
 	}
 
 	private ResultActions recordExpense(UUID group, String caller, String title, long cents, String payer,
@@ -182,13 +197,13 @@ class MallorcaSliceTest {
 		body.put("payerId", payer);
 		body.put("participantIds", participants);
 		body.put("split", "EQUAL");
-		return mvc.perform(post("/groups/" + group + "/expenses").header("X-User-Id", caller)
+		return mvc.perform(post("/groups/" + group + "/expenses").header("Authorization", auth(caller))
 			.contentType(APPLICATION_JSON).content(json.writeValueAsString(body)));
 	}
 
 	private Map<String, Long> balances(UUID group, String caller) throws Exception {
 		Map<String, Long> result = new LinkedHashMap<>();
-		for (JsonNode b : read(get("/groups/" + group + "/balances").header("X-User-Id", caller))) {
+		for (JsonNode b : read(get("/groups/" + group + "/balances").header("Authorization", auth(caller)))) {
 			result.put(b.get("memberId").asString(), b.get("balanceCents").asLong());
 		}
 		return result;

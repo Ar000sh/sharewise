@@ -1,6 +1,11 @@
 spring:
   application:
     name: sharewise
+  datasource:
+    # Local Postgres from docker-compose.yml. Tests replace it with a Testcontainers database.
+    url: jdbc:postgresql://localhost:5432/sharewise
+    username: sharewise
+    password: sharewise
   jpa:
     hibernate:
       ddl-auto: validate

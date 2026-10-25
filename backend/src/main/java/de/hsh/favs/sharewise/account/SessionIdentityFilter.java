@@ -11,15 +11,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Resolves {@code Authorization: Bearer <token>} into the caller, in every profile. A bad token is refused here. A
- * request without an Authorization header passes with no caller bound: under the dev profile
- * {@link DevIdentityFilter} may still bind one from X-User-Id, otherwise {@code CurrentUser.get()} answers 401.
+ * Resolves {@code Authorization: Bearer <token>} into the caller. A bad token is refused here. A request without an
+ * Authorization header passes with no caller bound, so {@code CurrentUser.get()} answers 401 on every protected endpoint.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)
@@ -29,17 +26,14 @@ class SessionIdentityFilter extends OncePerRequestFilter {
 
 	private final AuthService auth;
 
-	private final boolean devProfile;
-
-	SessionIdentityFilter(AuthService auth, Environment environment) {
+	SessionIdentityFilter(AuthService auth) {
 		this.auth = auth;
-		this.devProfile = environment.acceptsProfiles(Profiles.of("dev"));
 	}
 
 	@Override
 	protected boolean shouldNotFilter(HttpServletRequest request) {
 		String path = request.getRequestURI();
-		return path.startsWith("/actuator") || path.startsWith("/auth/") || (devProfile && path.equals("/users"));
+		return path.startsWith("/actuator") || path.startsWith("/auth/");
 	}
 
 	@Override

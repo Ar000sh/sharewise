@@ -37,12 +37,14 @@ class InvitationControllerTest {
 
 	GroupRequests groups;
 
-	UserFixture alice = UserFixture.alice();
+	UserFixture alice;
 
-	UserFixture bob = UserFixture.bob();
+	UserFixture bob;
 
 	@BeforeEach
-	void setUp() {
+	void setUp() throws Exception {
+		alice = UserFixture.signUp(mvc, json, "Alice");
+		bob = UserFixture.signUp(mvc, json, "Bob");
 		clock.reset();
 		groups = new GroupRequests(mvc, json);
 	}

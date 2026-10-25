@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import de.hsh.favs.sharewise.account.api.UserInfo;
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,16 +38,6 @@ class UserDirectoryImplTest {
 
 		// when / then
 		assertThat(directory.find(unknown.userId())).isEmpty();
-	}
-
-	@Test
-	void allReturnsEveryUserSortedByNameFromTheRepository() {
-		// given
-		when(users.findAllByOrderByDisplayNameAsc())
-				.thenReturn(List.of(UserFixture.alice().build(), UserFixture.bob().build()));
-
-		// when / then
-		assertThat(directory.all()).containsExactly(UserFixture.alice().info(), UserFixture.bob().info());
 	}
 
 }
