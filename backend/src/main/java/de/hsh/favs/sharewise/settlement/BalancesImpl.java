@@ -1,0 +1,48 @@
+package de.hsh.favs.sharewise.settlement;
+
+import de.hsh.favs.sharewise.account.api.UserDirectory;
+import de.hsh.favs.sharewise.account.api.UserInfo;
+import de.hsh.favs.sharewise.group.api.GroupMembership;
+import de.hsh.favs.sharewise.settlement.api.Balances;
+import de.hsh.favs.sharewise.settlement.api.MemberBalance;
+import de.hsh.favs.sharewise.shared.GroupId;
+import de.hsh.favs.sharewise.shared.MemberId;
+import de.hsh.favs.sharewise.shared.UserId;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/** Merges stored balances with the current member list (D15); names are looked up, never stored (D14). */
+@Service
+class BalancesImpl implements Balances {
+
+	private static final String UNKNOWN_NAME = "Unknown";
+
+	private final BalanceStore store;
+	private final GroupMembership membership;
+	private final UserDirectory users;
+
+	BalancesImpl(BalanceStore store, GroupMembership membership, UserDirectory users) {
+		this.store = store;
+		this.membership = membership;
+		this.users = users;
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<MemberBalance> of(GroupId group) {
+		Map<MemberId, Long> stored = store.balancesOf(group);
+		return membership.members(group).stream()
+				.map(member -> new MemberBalance(member, displayName(member), stored.getOrDefault(member, 0L)))
+				.sorted(Comparator.comparing(MemberBalance::displayName, String.CASE_INSENSITIVE_ORDER)
+						.thenComparing(balance -> balance.memberId().value()))
+				.toList();
+	}
+
+	private String displayName(MemberId member) {
+		return users.find(new UserId(member.value())).map(UserInfo::displayName).orElse(UNKNOWN_NAME);
+	}
+
+}

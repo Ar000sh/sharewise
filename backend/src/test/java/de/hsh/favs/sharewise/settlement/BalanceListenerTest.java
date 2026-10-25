@@ -20,7 +20,7 @@ import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.Scenario;
 
 @ApplicationModuleTest
-@Import({ TestcontainersConfiguration.class, SettlementTestBeans.class })
+@Import({ TestcontainersConfiguration.class, SettlementFakes.class })
 class BalanceListenerTest {
 
 	@Autowired
