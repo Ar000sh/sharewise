@@ -20,11 +20,11 @@ import org.springframework.test.web.servlet.ResultActions;
 class ExpenseControllerTest {
 
 	@Autowired MockMvc mvc;
-	@Autowired FakeGroupMembership groups;
-	@Autowired FakeCurrentUser currentUser;
+	@Autowired StubGroupMembership groups;
+	@Autowired StubCurrentUser currentUser;
 
 	UUID group;
-	String alice = FakeCurrentUser.ALICE.id().value().toString();
+	String alice = StubCurrentUser.ALICE.id().value().toString();
 	String bob = UUID.randomUUID().toString();
 	String carol = UUID.randomUUID().toString();
 

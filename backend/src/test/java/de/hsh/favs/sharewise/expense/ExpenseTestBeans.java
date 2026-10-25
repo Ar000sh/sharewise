@@ -15,14 +15,14 @@ class ExpenseTestBeans {
 
 	@Bean
 	@ConditionalOnMissingBean(GroupMembership.class)
-	FakeGroupMembership fallbackGroupMembership() {
-		return new FakeGroupMembership();
+	StubGroupMembership fallbackGroupMembership() {
+		return new StubGroupMembership();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean(CurrentUser.class)
-	FakeCurrentUser fallbackCurrentUser() {
-		return new FakeCurrentUser();
+	StubCurrentUser fallbackCurrentUser() {
+		return new StubCurrentUser();
 	}
 
 }

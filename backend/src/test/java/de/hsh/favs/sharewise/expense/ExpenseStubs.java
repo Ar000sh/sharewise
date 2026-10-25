@@ -9,18 +9,18 @@ import org.springframework.context.annotation.Primary;
  * Account and Group implementations once those are merged.
  */
 @TestConfiguration(proxyBeanMethods = false)
-public class ExpenseFakes {
+public class ExpenseStubs {
 
 	@Bean
 	@Primary
-	FakeGroupMembership primaryGroupMembership() {
-		return new FakeGroupMembership();
+	StubGroupMembership primaryGroupMembership() {
+		return new StubGroupMembership();
 	}
 
 	@Bean
 	@Primary
-	FakeCurrentUser primaryCurrentUser() {
-		return new FakeCurrentUser();
+	StubCurrentUser primaryCurrentUser() {
+		return new StubCurrentUser();
 	}
 
 }

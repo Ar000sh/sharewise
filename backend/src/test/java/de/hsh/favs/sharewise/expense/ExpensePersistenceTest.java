@@ -24,7 +24,7 @@ class ExpensePersistenceTest {
 
 	@Autowired RecordExpenseUseCase recordExpense;
 	@Autowired ListExpensesQuery listExpenses;
-	@Autowired FakeGroupMembership groups;
+	@Autowired StubGroupMembership groups;
 	@Autowired ApplicationEvents events;
 
 	@Test

@@ -6,7 +6,7 @@ import de.hsh.favs.sharewise.shared.UserId;
 import java.util.UUID;
 
 /** Caller is Alice unless a test switches it. */
-public class FakeCurrentUser implements CurrentUser {
+public class StubCurrentUser implements CurrentUser {
 
 	public static final UserInfo ALICE = new UserInfo(
 			new UserId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001")), "Alice");
