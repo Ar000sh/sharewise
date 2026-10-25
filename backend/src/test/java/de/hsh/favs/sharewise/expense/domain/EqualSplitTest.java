@@ -22,45 +22,57 @@ class EqualSplitTest {
 
 	@Test
 	void splitsOneHundredEuroAmongFourEvenly() {
+		// when
 		var shares = EqualSplit.split(Money.eur(10_000), members(4));
 
+		// then
 		assertThat(cents(shares)).containsExactly(2_500L, 2_500L, 2_500L, 2_500L);
 	}
 
 	@Test
 	void remainderCentsGoToFirstParticipants() {
+		// when
 		var shares = EqualSplit.split(Money.eur(1_000), members(3));
 
+		// then
 		assertThat(cents(shares)).containsExactly(334L, 333L, 333L);
 	}
 
 	@Test
 	void oneCentAmongThreeGivesFirstTheCent() {
+		// when
 		var shares = EqualSplit.split(Money.eur(1), members(3));
 
+		// then
 		assertThat(cents(shares)).containsExactly(1L, 0L, 0L);
 	}
 
 	@Test
 	void sharesKeepTheOrderOfParticipants() {
+		// given
 		var people = members(3);
 
+		// when
 		var shares = EqualSplit.split(Money.eur(100), people);
 
+		// then
 		assertThat(shares.stream().map(Share::memberId).toList()).containsExactlyElementsOf(people);
 	}
 
 	@Test
-	void sharesAlwaysSumToTotal() {
+	void sharesAlwaysSumToTotalAndDifferByAtMostOneCent() {
+		// given
 		var random = new Random(42);
 		for (int i = 0; i < 1_000; i++) {
 			long total = 1 + random.nextLong(1_000_000_000L);
 			int n = 1 + random.nextInt(50);
 
-			var shares = EqualSplit.split(Money.eur(total), members(n));
+			// when
+			var cents = cents(EqualSplit.split(Money.eur(total), members(n)));
 
-			assertThat(cents(shares).stream().mapToLong(Long::longValue).sum()).isEqualTo(total);
-			assertThat(Math.abs(cents(shares).get(0) - cents(shares).get(n - 1))).isLessThanOrEqualTo(1);
+			// then
+			assertThat(cents.stream().mapToLong(Long::longValue).sum()).isEqualTo(total);
+			assertThat(cents.get(0) - cents.get(n - 1)).isBetween(0L, 1L);
 		}
 	}
 
