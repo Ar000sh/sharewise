@@ -21,9 +21,9 @@ class CurrentUserImpl implements CurrentUser {
 
 	@Override
 	public UserInfo get() {
-		Object caller = RequestContextHolder.currentRequestAttributes().getAttribute(ATTRIBUTE,
-				RequestAttributes.SCOPE_REQUEST);
-		if (caller instanceof UserInfo info) {
+		// getRequestAttributes() is null outside a request thread (e.g. an event listener).
+		RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+		if (attributes != null && attributes.getAttribute(ATTRIBUTE, RequestAttributes.SCOPE_REQUEST) instanceof UserInfo info) {
 			return info;
 		}
 		throw new DomainException(ErrorCode.UNAUTHENTICATED, "Missing or unknown X-User-Id");

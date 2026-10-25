@@ -27,7 +27,7 @@ class GroupMembershipImpl implements GroupMembership {
 
 	@Override
 	public boolean isMember(GroupId group, MemberId member) {
-		return groups.findById(group.value()).map(g -> g.hasMember(member.value())).orElse(false);
+		return groups.existsMember(group.value(), member.value());
 	}
 
 	@Override

@@ -11,6 +11,10 @@ import org.springframework.data.repository.query.Param;
 
 interface GroupRepository extends JpaRepository<Group, UUID> {
 
+	/** Answered by the database, so callers outside a transaction never touch lazy state. */
+	@Query("select count(m) > 0 from Group g join g.members m where g.id = :groupId and m.memberId = :memberId")
+	boolean existsMember(@Param("groupId") UUID groupId, @Param("memberId") UUID memberId);
+
 	@Query("select g.id from Group g join g.invitations i where i.token = :token")
 	Optional<UUID> findIdByInvitationToken(@Param("token") String token);
 
