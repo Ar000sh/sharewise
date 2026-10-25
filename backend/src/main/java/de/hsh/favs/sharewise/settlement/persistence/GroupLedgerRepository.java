@@ -1,5 +1,6 @@
-package de.hsh.favs.sharewise.settlement;
+package de.hsh.favs.sharewise.settlement.persistence;
 
+import de.hsh.favs.sharewise.settlement.domain.GroupLedger;
 import jakarta.persistence.LockModeType;
 import java.util.Optional;
 import java.util.UUID;
@@ -9,7 +10,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-interface GroupLedgerRepository extends JpaRepository<GroupLedger, UUID> {
+public interface GroupLedgerRepository extends JpaRepository<GroupLedger, UUID> {
 
 	/** Locked, so two events for the same group are applied one after the other. */
 	@Lock(LockModeType.PESSIMISTIC_WRITE)

@@ -1,4 +1,4 @@
-package de.hsh.favs.sharewise.settlement;
+package de.hsh.favs.sharewise.settlement.web;
 
 import de.hsh.favs.sharewise.account.api.CurrentUser;
 import de.hsh.favs.sharewise.group.api.GroupMembership;

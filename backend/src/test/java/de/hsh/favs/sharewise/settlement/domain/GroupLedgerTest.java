@@ -1,4 +1,4 @@
-package de.hsh.favs.sharewise.settlement;
+package de.hsh.favs.sharewise.settlement.domain;
 
 import static de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture.ALICE;
 import static de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture.BOB;
@@ -6,6 +6,8 @@ import static de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture.CAROL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded.Share;
+import de.hsh.favs.sharewise.settlement.domain.GroupLedger;
+import de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.MemberId;
 import java.util.ArrayList;

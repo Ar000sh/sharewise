@@ -1,4 +1,4 @@
-package de.hsh.favs.sharewise.settlement;
+package de.hsh.favs.sharewise.settlement.web;
 
 import static de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture.ALICE;
 import static de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture.BOB;
@@ -16,6 +16,9 @@ import de.hsh.favs.sharewise.expense.api.ExpenseRecorded.Share;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
+import de.hsh.favs.sharewise.settlement.ModuleIntegrationTest;
+import de.hsh.favs.sharewise.settlement.application.ApplyExpenseToBalances;
+import de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.util.List;

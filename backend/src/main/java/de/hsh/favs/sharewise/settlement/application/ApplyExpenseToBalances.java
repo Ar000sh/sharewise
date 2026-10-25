@@ -1,11 +1,12 @@
-package de.hsh.favs.sharewise.settlement;
+package de.hsh.favs.sharewise.settlement.application;
 
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-class ApplyExpenseToBalances {
+public class ApplyExpenseToBalances {
 
 	private final GroupLedgerRepository ledgers;
 
@@ -14,7 +15,7 @@ class ApplyExpenseToBalances {
 	}
 
 	@Transactional
-	void apply(ExpenseRecorded expense) {
+	public void apply(ExpenseRecorded expense) {
 		var group = expense.groupId().value();
 		ledgers.createIfAbsent(group);
 		var ledger = ledgers.findForUpdate(group).orElseThrow();

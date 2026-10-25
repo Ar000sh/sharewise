@@ -1,4 +1,4 @@
-package de.hsh.favs.sharewise.settlement;
+package de.hsh.favs.sharewise.settlement.domain;
 
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import de.hsh.favs.sharewise.shared.GroupId;
@@ -23,7 +23,7 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "settlement_ledger")
-class GroupLedger {
+public class GroupLedger {
 
 	@Id
 	@Column(name = "group_id")
@@ -43,12 +43,12 @@ class GroupLedger {
 	protected GroupLedger() {
 	}
 
-	GroupLedger(GroupId group) {
+	public GroupLedger(GroupId group) {
 		this.groupId = group.value();
 	}
 
 	/** R14: the payer is credited the total, every share holder is debited their share. Returns false for a repeat. */
-	boolean apply(ExpenseRecorded expense) {
+	public boolean apply(ExpenseRecorded expense) {
 		if (!processedExpenses.add(expense.expenseId())) {
 			return false;
 		}
@@ -60,7 +60,7 @@ class GroupLedger {
 	}
 
 	/** Only members that appear in an expense; the sum is always 0. */
-	Map<MemberId, Long> balances() {
+	public Map<MemberId, Long> balances() {
 		Map<MemberId, Long> snapshot = new HashMap<>();
 		balances.forEach((member, cents) -> snapshot.put(new MemberId(member), cents));
 		return snapshot;

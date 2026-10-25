@@ -1,4 +1,4 @@
-package de.hsh.favs.sharewise.settlement;
+package de.hsh.favs.sharewise.settlement.application;
 
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import org.springframework.modulith.events.ApplicationModuleListener;

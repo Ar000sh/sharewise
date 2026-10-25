@@ -1,10 +1,13 @@
-package de.hsh.favs.sharewise.settlement;
+package de.hsh.favs.sharewise.settlement.application;
 
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import de.hsh.favs.sharewise.settlement.domain.GroupLedger;
+import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
+import de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture;
 import de.hsh.favs.sharewise.shared.GroupId;
 import java.util.Optional;
 import java.util.UUID;
