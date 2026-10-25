@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { api } from "@/lib/api";
 import { messageFor } from "@/lib/errors";
 
@@ -18,6 +18,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
+  // "" on the server and while hydrating, then the real query string, so the first render matches the server's.
+  const next = useSyncExternalStore(
+    () => () => {},
+    () => window.location.search,
+    () => "",
+  );
   const register = mode === "register";
 
   async function submit(e: React.FormEvent) {
@@ -37,8 +43,6 @@ export function AuthForm({ mode }: { mode: Mode }) {
       setBusy(false);
     }
   }
-
-  const next = typeof window === "undefined" ? "" : window.location.search;
 
   return (
     <form onSubmit={submit} className="mx-auto flex max-w-sm flex-col gap-4">

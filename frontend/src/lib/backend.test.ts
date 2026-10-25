@@ -2,8 +2,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { proxyToBackend } from "@/lib/backend";
 
-const USER = "aaaaaaaa-0000-0000-0000-000000000001";
-
 afterEach(() => {
   vi.restoreAllMocks();
   delete process.env.BACKEND_URL;
@@ -38,22 +36,6 @@ describe("proxyToBackend", () => {
     expect(init?.body).toBe('{"name":"Mallorca 2027"}');
   });
 
-  it("addsUserIdHeaderFromCookie", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(new Response("[]", { status: 200 }));
-
-    await proxyToBackend(
-      new Request("http://localhost:3000/api/groups", {
-        headers: { cookie: `other=1; sw_user_id=${USER}` },
-      }),
-      "/groups",
-    );
-
-    const headers = new Headers(fetchMock.mock.calls[0][1]?.headers);
-    expect(headers.get("x-user-id")).toBe(USER);
-  });
-
   it("defaultsBackendUrlToLocalhost8080", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
@@ -80,7 +62,7 @@ describe("proxyToBackend session", () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
 
     await proxyToBackend(
-      new Request("http://localhost:3000/api/me", { headers: { cookie: "sw_session=abc123" } }),
+      new Request("http://localhost:3000/api/me", { headers: { cookie: "sw_user_id=old; sw_session=abc123" } }),
       "/me",
     );
 

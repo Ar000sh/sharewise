@@ -21,7 +21,7 @@ export function AuthBar() {
       .then(setUser)
       .catch((err) => {
         if (err instanceof ApiError && err.status === 401) {
-          window.location.replace(`/login?next=${encodeURIComponent(pathname)}`); // eslint-disable-line @next/next/no-location-assign-relative-destination
+          window.location.replace(`/login?next=${encodeURIComponent(pathname)}`);
         }
       });
   }, [pathname, isPublic]);

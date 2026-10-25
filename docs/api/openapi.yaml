@@ -3,7 +3,7 @@ info:
   title: ShareWise API
   version: 0.1.0-ex4
   description: >
-    Backend contract for the Ex4 slice (create group, invite and join, record an
+    Backend contract for the Ex4 slice (sign up and sign in, create group, invite and join, record an
     equal-split expense, see balances). Paths are the backend's. The browser calls
     them under /api on Next.js, which forwards /api/x to BACKEND_URL/x.
     Money is an integer in cents (EUR). Ids are UUIDs.
@@ -12,7 +12,6 @@ servers:
   - url: http://localhost:8080
 security:
   - bearerAuth: []
-  - devUser: []
 tags:
   - name: auth
   - name: account
@@ -88,26 +87,6 @@ paths:
               schema: { $ref: "#/components/schemas/User" }
               example: { userId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice }
         "401": { $ref: "#/components/responses/Unauthenticated" }
-
-  /users:
-    get:
-      tags: [account]
-      operationId: listUsers
-      summary: Seeded dev users (dev profile only, powers the user switcher)
-      security: []
-      responses:
-        "200":
-          description: All dev users
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: "#/components/schemas/User" }
-              example:
-                - { userId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice }
-                - { userId: "aaaaaaaa-0000-0000-0000-000000000002", displayName: Bob }
-                - { userId: "aaaaaaaa-0000-0000-0000-000000000003", displayName: Carol }
-                - { userId: "aaaaaaaa-0000-0000-0000-000000000004", displayName: David }
 
   /groups:
     get:
@@ -317,11 +296,6 @@ components:
       type: http
       scheme: bearer
       description: Session token from /auth/login or /auth/register. The browser never sees it; Next.js keeps it in an httpOnly cookie and forwards it.
-    devUser:
-      type: apiKey
-      in: header
-      name: X-User-Id
-      description: Stub identity (dev profile only). Replaced by a JWT when Keycloak arrives.
 
   parameters:
     GroupId:
@@ -338,11 +312,11 @@ components:
           schema: { $ref: "#/components/schemas/Problem" }
           example: { type: "about:blank", title: Bad Request, status: 400, code: BAD_REQUEST, detail: "name must not be blank" }
     Unauthenticated:
-      description: No or unknown X-User-Id
+      description: No, invalid or unknown session token
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
-          example: { type: "about:blank", title: Unauthorized, status: 401, code: UNAUTHENTICATED, detail: "Missing or unknown X-User-Id" }
+          example: { type: "about:blank", title: Unauthorized, status: 401, code: UNAUTHENTICATED, detail: "Missing or invalid session" }
     NotAMember:
       description: The caller is not a member of the group
       content:

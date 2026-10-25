@@ -55,7 +55,7 @@ describe("BalancesTab", () => {
   });
 
   it("unauthenticatedPromptsToPickUser", async () => {
-    apiMock.mockRejectedValue(new ApiError(401, "UNAUTHENTICATED", "Missing or unknown X-User-Id"));
+    apiMock.mockRejectedValue(new ApiError(401, "UNAUTHENTICATED", "Missing or invalid session"));
 
     render(<BalancesTab groupId="g1" refreshKey={0} />);
 

@@ -38,7 +38,7 @@ describe("GroupList", () => {
   });
 
   it("showsErrorMessageWhenLoadingFails", async () => {
-    apiMock.mockRejectedValue(new ApiError(401, "UNAUTHENTICATED", "Missing or unknown X-User-Id"));
+    apiMock.mockRejectedValue(new ApiError(401, "UNAUTHENTICATED", "Missing or invalid session"));
 
     render(<GroupList />);
 

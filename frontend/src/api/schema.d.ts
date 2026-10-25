@@ -55,23 +55,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/users": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Seeded dev users (dev profile only, powers the user switcher) */
-        get: operations["listUsers"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/groups": {
         parameters: {
             query?: never;
@@ -315,7 +298,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description No or unknown X-User-Id */
+        /** @description No, invalid or unknown session token */
         Unauthenticated: {
             headers: {
                 [name: string]: unknown;
@@ -327,7 +310,7 @@ export interface components {
                  *       "title": "Unauthorized",
                  *       "status": 401,
                  *       "code": "UNAUTHENTICATED",
-                 *       "detail": "Missing or unknown X-User-Id"
+                 *       "detail": "Missing or invalid session"
                  *     }
                  */
                 "application/problem+json": components["schemas"]["Problem"];
@@ -589,46 +572,6 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthenticated"];
-        };
-    };
-    listUsers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description All dev users */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example [
-                     *       {
-                     *         "userId": "aaaaaaaa-0000-0000-0000-000000000001",
-                     *         "displayName": "Alice"
-                     *       },
-                     *       {
-                     *         "userId": "aaaaaaaa-0000-0000-0000-000000000002",
-                     *         "displayName": "Bob"
-                     *       },
-                     *       {
-                     *         "userId": "aaaaaaaa-0000-0000-0000-000000000003",
-                     *         "displayName": "Carol"
-                     *       },
-                     *       {
-                     *         "userId": "aaaaaaaa-0000-0000-0000-000000000004",
-                     *         "displayName": "David"
-                     *       }
-                     *     ]
-                     */
-                    "application/json": components["schemas"]["User"][];
-                };
-            };
         };
     };
     listGroups: {
