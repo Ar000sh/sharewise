@@ -1,8 +1,8 @@
-package de.hsh.favs.sharewise.expense.adapter.web;
+package de.hsh.favs.sharewise.expense.web;
 
 import de.hsh.favs.sharewise.account.api.CurrentUser;
-import de.hsh.favs.sharewise.expense.application.RecordExpenseCommand;
 import de.hsh.favs.sharewise.expense.application.ExpenseService;
+import de.hsh.favs.sharewise.expense.application.RecordExpenseCommand;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.MemberId;
 import jakarta.validation.Valid;

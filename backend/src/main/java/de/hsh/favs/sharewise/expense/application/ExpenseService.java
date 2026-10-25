@@ -1,8 +1,8 @@
 package de.hsh.favs.sharewise.expense.application;
 
-import de.hsh.favs.sharewise.expense.adapter.persistence.ExpenseRepository;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import de.hsh.favs.sharewise.expense.domain.Expense;
+import de.hsh.favs.sharewise.expense.persistence.ExpenseRepository;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.group.api.GroupStatus;
 import de.hsh.favs.sharewise.shared.DomainException;

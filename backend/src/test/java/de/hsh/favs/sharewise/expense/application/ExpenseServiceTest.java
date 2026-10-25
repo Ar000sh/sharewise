@@ -2,7 +2,7 @@ package de.hsh.favs.sharewise.expense.application;
 
 import java.util.List;
 import de.hsh.favs.sharewise.expense.domain.ExpenseFixture;
-import de.hsh.favs.sharewise.expense.adapter.persistence.ExpenseRepository;
+import de.hsh.favs.sharewise.expense.persistence.ExpenseRepository;
 import static de.hsh.favs.sharewise.expense.domain.ExpenseFixture.ALICE;
 import static de.hsh.favs.sharewise.expense.domain.ExpenseFixture.BOB;
 import static de.hsh.favs.sharewise.expense.domain.ExpenseFixture.CAROL;

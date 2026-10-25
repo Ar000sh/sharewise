@@ -1,4 +1,4 @@
-package de.hsh.favs.sharewise.expense.adapter.web;
+package de.hsh.favs.sharewise.expense.web;
 
 import de.hsh.favs.sharewise.expense.application.SplitType;
 import jakarta.validation.constraints.NotBlank;
