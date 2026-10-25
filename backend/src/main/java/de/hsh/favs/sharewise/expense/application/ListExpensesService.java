@@ -12,9 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 class ListExpensesService implements ListExpensesQuery {
 
 	private final GroupMembership groups;
-	private final ExpenseRepositoryPort repository;
+	private final ExpenseRepository repository;
 
-	ListExpensesService(GroupMembership groups, ExpenseRepositoryPort repository) {
+	ListExpensesService(GroupMembership groups, ExpenseRepository repository) {
 		this.groups = groups;
 		this.repository = repository;
 	}
@@ -23,7 +23,7 @@ class ListExpensesService implements ListExpensesQuery {
 	@Transactional(readOnly = true)
 	public List<Expense> list(GroupId groupId, MemberId caller) {
 		groups.requireMember(groupId, caller);
-		return repository.findByGroup(groupId);
+		return repository.findByGroupIdOrderByDateDescCreatedAtDesc(groupId.value());
 	}
 
 }

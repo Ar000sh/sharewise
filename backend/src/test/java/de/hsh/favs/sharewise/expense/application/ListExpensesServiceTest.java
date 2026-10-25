@@ -24,7 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ListExpensesServiceTest {
 
 	@Mock GroupMembership groups;
-	@Mock ExpenseRepositoryPort repository;
+	@Mock ExpenseRepository repository;
 
 	GroupId group = new GroupId(UUID.randomUUID());
 
@@ -32,7 +32,7 @@ class ListExpensesServiceTest {
 	void returnsTheGroupsExpensesAfterTheMemberCheck() {
 		// given
 		List<Expense> stored = List.of(new ExpenseFixture().build());
-		when(repository.findByGroup(group)).thenReturn(stored);
+		when(repository.findByGroupIdOrderByDateDescCreatedAtDesc(group.value())).thenReturn(stored);
 
 		// when
 		var result = new ListExpensesService(groups, repository).list(group, ALICE);

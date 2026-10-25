@@ -15,10 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 class RecordExpenseService implements RecordExpenseUseCase {
 
 	private final GroupMembership groups;
-	private final ExpenseRepositoryPort repository;
+	private final ExpenseRepository repository;
 	private final ApplicationEventPublisher events;
 
-	RecordExpenseService(GroupMembership groups, ExpenseRepositoryPort repository, ApplicationEventPublisher events) {
+	RecordExpenseService(GroupMembership groups, ExpenseRepository repository, ApplicationEventPublisher events) {
 		this.groups = groups;
 		this.repository = repository;
 		this.events = events;

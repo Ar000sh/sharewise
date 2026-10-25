@@ -5,34 +5,66 @@ import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.MemberId;
 import de.hsh.favs.sharewise.shared.Money;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OrderColumn;
+import jakarta.persistence.Table;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
-/** A recorded expense with its equal shares. Immutable once created. */
-public final class Expense {
+/** A recorded expense with its equal shares. Aggregate root; immutable once created. */
+@Entity
+@Table(name = "expense")
+public class Expense {
 
-	private final UUID id;
-	private final GroupId groupId;
-	private final String title;
-	private final Money amount;
-	private final LocalDate date;
-	private final MemberId payerId;
-	private final List<Share> shares;
-	private final Instant createdAt;
+	@Id
+	private UUID id;
 
-	private Expense(UUID id, GroupId groupId, String title, Money amount, LocalDate date, MemberId payerId,
-			List<Share> shares, Instant createdAt) {
-		this.id = id;
-		this.groupId = groupId;
+	@Column(name = "group_id", nullable = false)
+	private UUID groupId;
+
+	@Column(nullable = false)
+	private String title;
+
+	@Column(name = "amount_cents", nullable = false)
+	private long amountCents;
+
+	@Column(name = "expense_date", nullable = false)
+	private LocalDate date;
+
+	@Column(name = "payer_id", nullable = false)
+	private UUID payerId;
+
+	@Column(name = "created_at", nullable = false)
+	private Instant createdAt;
+
+	// Always loaded with the expense: callers read them after the service transaction has ended.
+	@ElementCollection(fetch = FetchType.EAGER)
+	@CollectionTable(name = "expense_share", joinColumns = @JoinColumn(name = "expense_id"))
+	@OrderColumn(name = "position")
+	private List<Share> shares;
+
+	protected Expense() {
+	}
+
+	private Expense(GroupId groupId, String title, Money amount, LocalDate date, MemberId payer,
+			List<Share> shares) {
+		this.id = UUID.randomUUID();
+		this.groupId = groupId.value();
 		this.title = title;
-		this.amount = amount;
+		this.amountCents = amount.cents();
 		this.date = date;
-		this.payerId = payerId;
+		this.payerId = payer.value();
 		this.shares = shares;
-		this.createdAt = createdAt;
+		this.createdAt = Instant.now();
 	}
 
 	public static Expense record(GroupId groupId, String title, Money amount, LocalDate date, MemberId payer,
@@ -46,30 +78,21 @@ public final class Expense {
 		if (new HashSet<>(participants).size() != participants.size()) {
 			throw new DomainException(ErrorCode.NO_PARTICIPANTS, "Participants must be distinct");
 		}
-		return new Expense(UUID.randomUUID(), groupId, title, amount, date, payer,
-				EqualSplit.split(amount, participants), Instant.now());
-	}
-
-	/** Rebuilds a stored expense without re-validating. */
-	public static Expense restore(UUID id, GroupId groupId, String title, Money amount, LocalDate date,
-			MemberId payer, List<Share> shares, Instant createdAt) {
-		return new Expense(id, groupId, title, amount, date, payer, List.copyOf(shares), createdAt);
+		return new Expense(groupId, title, amount, date, payer, EqualSplit.split(amount, participants));
 	}
 
 	public UUID id() { return id; }
 
-	public GroupId groupId() { return groupId; }
+	public GroupId groupId() { return new GroupId(groupId); }
 
 	public String title() { return title; }
 
-	public Money amount() { return amount; }
+	public Money amount() { return Money.eur(amountCents); }
 
 	public LocalDate date() { return date; }
 
-	public MemberId payerId() { return payerId; }
+	public MemberId payerId() { return new MemberId(payerId); }
 
-	public List<Share> shares() { return shares; }
-
-	public Instant createdAt() { return createdAt; }
+	public List<Share> shares() { return List.copyOf(shares); }
 
 }

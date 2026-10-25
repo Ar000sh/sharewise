@@ -35,7 +35,7 @@ import org.springframework.context.ApplicationEventPublisher;
 class RecordExpenseServiceTest {
 
 	@Mock GroupMembership groups;
-	@Mock ExpenseRepositoryPort repository;
+	@Mock ExpenseRepository repository;
 	@Mock ApplicationEventPublisher events;
 
 	RecordExpenseService service;
