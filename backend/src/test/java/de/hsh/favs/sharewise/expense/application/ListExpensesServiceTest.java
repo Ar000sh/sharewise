@@ -1,5 +1,6 @@
 package de.hsh.favs.sharewise.expense.application;
 
+import de.hsh.favs.sharewise.expense.adapter.persistence.ExpenseRepository;
 import static de.hsh.favs.sharewise.expense.domain.ExpenseFixture.ALICE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

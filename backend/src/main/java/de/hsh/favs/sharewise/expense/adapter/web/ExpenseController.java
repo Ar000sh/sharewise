@@ -1,7 +1,7 @@
 package de.hsh.favs.sharewise.expense.adapter.web;
 
 import de.hsh.favs.sharewise.account.api.CurrentUser;
-import de.hsh.favs.sharewise.expense.application.ListExpensesQuery;
+import de.hsh.favs.sharewise.expense.application.ListExpensesUseCase;
 import de.hsh.favs.sharewise.expense.application.RecordExpenseCommand;
 import de.hsh.favs.sharewise.expense.application.RecordExpenseUseCase;
 import de.hsh.favs.sharewise.shared.GroupId;
@@ -23,10 +23,10 @@ import org.springframework.web.bind.annotation.RestController;
 class ExpenseController {
 
 	private final RecordExpenseUseCase recordExpense;
-	private final ListExpensesQuery listExpenses;
+	private final ListExpensesUseCase listExpenses;
 	private final CurrentUser currentUser;
 
-	ExpenseController(RecordExpenseUseCase recordExpense, ListExpensesQuery listExpenses, CurrentUser currentUser) {
+	ExpenseController(RecordExpenseUseCase recordExpense, ListExpensesUseCase listExpenses, CurrentUser currentUser) {
 		this.recordExpense = recordExpense;
 		this.listExpenses = listExpenses;
 		this.currentUser = currentUser;

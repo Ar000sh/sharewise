@@ -6,7 +6,7 @@ import de.hsh.favs.sharewise.shared.MemberId;
 import java.util.List;
 
 /** Port in: the expenses of a group, newest first (by date, then creation time). */
-public interface ListExpensesQuery {
+public interface ListExpensesUseCase {
 
 	List<Expense> list(GroupId groupId, MemberId caller);
 

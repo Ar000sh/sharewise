@@ -1,5 +1,6 @@
 package de.hsh.favs.sharewise.expense.application;
 
+import de.hsh.favs.sharewise.expense.adapter.persistence.ExpenseRepository;
 import de.hsh.favs.sharewise.expense.domain.Expense;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.shared.GroupId;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-class ListExpensesService implements ListExpensesQuery {
+class ListExpensesService implements ListExpensesUseCase {
 
 	private final GroupMembership groups;
 	private final ExpenseRepository repository;

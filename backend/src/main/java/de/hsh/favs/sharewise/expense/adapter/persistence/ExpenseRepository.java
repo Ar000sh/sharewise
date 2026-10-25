@@ -1,12 +1,12 @@
-package de.hsh.favs.sharewise.expense.application;
+package de.hsh.favs.sharewise.expense.adapter.persistence;
 
 import de.hsh.favs.sharewise.expense.domain.Expense;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-/** The only repository of the module: Expense is the aggregate root. */
-interface ExpenseRepository extends JpaRepository<Expense, UUID> {
+/** Driven adapter: the only repository of the module, because Expense is the aggregate root. */
+public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
 
 	/** Newest first: by date, then creation time. */
 	List<Expense> findByGroupIdOrderByDateDescCreatedAtDesc(UUID groupId);
