@@ -11,6 +11,9 @@ import org.springframework.data.repository.query.Param;
 
 interface GroupRepository extends JpaRepository<Group, UUID> {
 
+	@Query("select g.id from Group g join g.invitations i where i.token = :token")
+	Optional<UUID> findIdByInvitationToken(@Param("token") String token);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select g from Group g where g.id = :id")
 	Optional<Group> findByIdForUpdate(@Param("id") UUID id);

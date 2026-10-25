@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+/** Part of the Group aggregate: only reachable and changed through {@link Group}. */
 @Entity
 @Table(name = "invitations")
 class Invitation {
@@ -17,9 +18,6 @@ class Invitation {
 
 	@Id
 	private UUID id;
-
-	@Column(name = "group_id", nullable = false)
-	private UUID groupId;
 
 	@Column(nullable = false)
 	private String token;
@@ -36,10 +34,9 @@ class Invitation {
 	protected Invitation() {
 	}
 
-	static Invitation issue(UUID groupId, String token, UUID createdBy, Instant now) {
+	static Invitation issue(String token, UUID createdBy, Instant now) {
 		Invitation i = new Invitation();
 		i.id = UUID.randomUUID();
-		i.groupId = groupId;
 		i.token = token;
 		i.createdBy = createdBy;
 		i.createdAt = now;
@@ -49,10 +46,6 @@ class Invitation {
 
 	boolean isExpiredAt(Instant now) {
 		return now.isAfter(expiresAt);
-	}
-
-	UUID groupId() {
-		return groupId;
 	}
 
 	String token() {
