@@ -22,18 +22,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ApplyExpenseToBalancesTest {
+class GroupLedgerServiceTest {
 
 	private static final Instant NOW = Instant.parse("2026-10-25T10:00:00Z");
 
 	@Mock
 	GroupLedgerRepository ledgers;
 
-	ApplyExpenseToBalances service;
+	GroupLedgerService service;
 
 	@BeforeEach
 	void service() {
-		service = new ApplyExpenseToBalances(ledgers, Clock.fixed(NOW, ZoneOffset.UTC));
+		service = new GroupLedgerService(ledgers, Clock.fixed(NOW, ZoneOffset.UTC));
 	}
 
 	@Test

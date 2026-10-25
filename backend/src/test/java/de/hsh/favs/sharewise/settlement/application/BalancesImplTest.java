@@ -32,7 +32,7 @@ class BalancesImplTest {
 	Balances balances;
 
 	@Autowired
-	ApplyExpenseToBalances applyExpense;
+	GroupLedgerService applyExpense;
 
 	@Autowired
 	GroupMembership membership;

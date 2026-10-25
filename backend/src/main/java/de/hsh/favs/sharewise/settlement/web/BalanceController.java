@@ -13,13 +13,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** Driving adapter for {@code GET /groups/{groupId}/balances}. */
 @RestController
-class BalancesController {
+class BalanceController {
 
 	private final Balances balances;
 	private final GroupMembership membership;
 	private final CurrentUser currentUser;
 
-	BalancesController(Balances balances, GroupMembership membership, CurrentUser currentUser) {
+	BalanceController(Balances balances, GroupMembership membership, CurrentUser currentUser) {
 		this.balances = balances;
 		this.membership = membership;
 		this.currentUser = currentUser;

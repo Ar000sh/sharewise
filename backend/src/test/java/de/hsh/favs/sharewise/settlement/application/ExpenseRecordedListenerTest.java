@@ -26,7 +26,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 /** The event flow: a published ExpenseRecorded changes the balances, asynchronously after commit. */
 @ApplicationModuleTest
 @Import(TestcontainersConfiguration.class)
-class BalanceListenerTest {
+class ExpenseRecordedListenerTest {
 
 	@MockitoBean
 	GroupMembership membership;
@@ -41,7 +41,7 @@ class BalanceListenerTest {
 	Balances balances;
 
 	@Autowired
-	ApplyExpenseToBalances applyExpense;
+	GroupLedgerService applyExpense;
 
 	@Test
 	void publishedExpenseUpdatesBalances(Scenario scenario) {
@@ -52,7 +52,7 @@ class BalanceListenerTest {
 
 		// when / then
 		scenario.publish(event)
-				.andWaitForStateChange(() -> balances.of(group), BalanceListenerTest::hasNonZeroBalance)
+				.andWaitForStateChange(() -> balances.of(group), ExpenseRecordedListenerTest::hasNonZeroBalance)
 				.andVerify(list -> assertThat(list).extracting(MemberBalance::balanceCents)
 						.containsExactlyInAnyOrder(9000L, -4500L, -4500L));
 	}

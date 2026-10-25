@@ -17,7 +17,7 @@ import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.settlement.ModuleIntegrationTest;
-import de.hsh.favs.sharewise.settlement.application.ApplyExpenseToBalances;
+import de.hsh.favs.sharewise.settlement.application.GroupLedgerService;
 import de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.UserId;
@@ -31,7 +31,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /** The HTTP contract of {@code GET /groups/{groupId}/balances}. */
 @ModuleIntegrationTest
-class BalancesControllerTest {
+class BalanceControllerTest {
 
 	@Autowired
 	MockMvc mvc;
@@ -46,7 +46,7 @@ class BalancesControllerTest {
 	CurrentUser currentUser;
 
 	@Autowired
-	ApplyExpenseToBalances applyExpense;
+	GroupLedgerService applyExpense;
 
 	private final UserId alice = new UserId(ALICE.value());
 	private final UserId bob = new UserId(BOB.value());

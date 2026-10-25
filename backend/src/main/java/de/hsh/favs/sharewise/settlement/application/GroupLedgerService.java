@@ -9,18 +9,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class ApplyExpenseToBalances {
+public class GroupLedgerService {
 
 	private final GroupLedgerRepository ledgers;
 	private final Clock clock;
 
 	/** Uses the application's {@code Clock} bean when there is one (tests replace it), else the system clock. */
 	@Autowired
-	ApplyExpenseToBalances(GroupLedgerRepository ledgers, ObjectProvider<Clock> clock) {
+	GroupLedgerService(GroupLedgerRepository ledgers, ObjectProvider<Clock> clock) {
 		this(ledgers, clock.getIfAvailable(Clock::systemUTC));
 	}
 
-	ApplyExpenseToBalances(GroupLedgerRepository ledgers, Clock clock) {
+	GroupLedgerService(GroupLedgerRepository ledgers, Clock clock) {
 		this.ledgers = ledgers;
 		this.clock = clock;
 	}

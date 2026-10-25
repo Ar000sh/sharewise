@@ -8,9 +8,9 @@ import org.springframework.stereotype.Component;
 @Component
 class ExpenseRecordedListener {
 
-	private final ApplyExpenseToBalances applyExpense;
+	private final GroupLedgerService applyExpense;
 
-	ExpenseRecordedListener(ApplyExpenseToBalances applyExpense) {
+	ExpenseRecordedListener(GroupLedgerService applyExpense) {
 		this.applyExpense = applyExpense;
 	}
 
