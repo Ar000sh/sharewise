@@ -1,9 +1,8 @@
 package de.hsh.favs.sharewise.expense.adapter.web;
 
 import de.hsh.favs.sharewise.account.api.CurrentUser;
-import de.hsh.favs.sharewise.expense.application.ListExpensesUseCase;
 import de.hsh.favs.sharewise.expense.application.RecordExpenseCommand;
-import de.hsh.favs.sharewise.expense.application.RecordExpenseUseCase;
+import de.hsh.favs.sharewise.expense.application.ExpenseService;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.MemberId;
 import jakarta.validation.Valid;
@@ -22,13 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/groups/{groupId}/expenses")
 class ExpenseController {
 
-	private final RecordExpenseUseCase recordExpense;
-	private final ListExpensesUseCase listExpenses;
+	private final ExpenseService expenses;
 	private final CurrentUser currentUser;
 
-	ExpenseController(RecordExpenseUseCase recordExpense, ListExpensesUseCase listExpenses, CurrentUser currentUser) {
-		this.recordExpense = recordExpense;
-		this.listExpenses = listExpenses;
+	ExpenseController(ExpenseService expenses, CurrentUser currentUser) {
+		this.expenses = expenses;
 		this.currentUser = currentUser;
 	}
 
@@ -38,12 +35,12 @@ class ExpenseController {
 		var command = new RecordExpenseCommand(new GroupId(groupId), caller(), request.title(),
 				request.amountCents(), request.date(), new MemberId(request.payerId()),
 				request.participantIds().stream().map(MemberId::new).toList(), request.split());
-		return ExpenseResponse.from(recordExpense.record(command));
+		return ExpenseResponse.from(expenses.record(command));
 	}
 
 	@GetMapping
 	List<ExpenseResponse> list(@PathVariable UUID groupId) {
-		return listExpenses.list(new GroupId(groupId), caller()).stream().map(ExpenseResponse::from).toList();
+		return expenses.list(new GroupId(groupId), caller()).stream().map(ExpenseResponse::from).toList();
 	}
 
 	private MemberId caller() {

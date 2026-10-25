@@ -7,25 +7,28 @@ import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.group.api.GroupStatus;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
+import de.hsh.favs.sharewise.shared.GroupId;
+import de.hsh.favs.sharewise.shared.MemberId;
 import de.hsh.favs.sharewise.shared.Money;
+import java.util.List;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Records and lists the expenses of a group. Group data (membership, status) comes from the group module's API. */
 @Service
-class RecordExpenseService implements RecordExpenseUseCase {
+public class ExpenseService {
 
 	private final GroupMembership groups;
 	private final ExpenseRepository repository;
 	private final ApplicationEventPublisher events;
 
-	RecordExpenseService(GroupMembership groups, ExpenseRepository repository, ApplicationEventPublisher events) {
+	ExpenseService(GroupMembership groups, ExpenseRepository repository, ApplicationEventPublisher events) {
 		this.groups = groups;
 		this.repository = repository;
 		this.events = events;
 	}
 
-	@Override
 	@Transactional
 	public Expense record(RecordExpenseCommand command) {
 		var group = command.groupId();
@@ -53,6 +56,13 @@ class RecordExpenseService implements RecordExpenseUseCase {
 				expense.shares().stream()
 						.map(s -> new ExpenseRecorded.Share(s.memberId(), s.amount().cents())).toList()));
 		return expense;
+	}
+
+	/** Newest first: by date, then creation time. */
+	@Transactional(readOnly = true)
+	public List<Expense> list(GroupId groupId, MemberId caller) {
+		groups.requireMember(groupId, caller);
+		return repository.findByGroupIdOrderByDateDescCreatedAtDesc(groupId.value());
 	}
 
 }

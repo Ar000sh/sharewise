@@ -21,8 +21,7 @@ import org.springframework.test.context.event.ApplicationEvents;
 @ExpenseIntegrationTest
 class RecordAndListExpensesIntegrationTest {
 
-	@Autowired RecordExpenseUseCase recordExpense;
-	@Autowired ListExpensesUseCase listExpenses;
+	@Autowired ExpenseService expenses;
 	@Autowired StubGroupMembership groups;
 	@Autowired ApplicationEvents events;
 
@@ -35,10 +34,10 @@ class RecordAndListExpensesIntegrationTest {
 				.withParticipants(CAROL, ALICE, BOB).build();
 
 		// when
-		Expense recorded = recordExpense.record(command);
+		Expense recorded = expenses.record(command);
 
 		// then
-		Expense stored = listExpenses.list(group, ALICE).get(0);
+		Expense stored = expenses.list(group, ALICE).get(0);
 		assertThat(stored.id()).isEqualTo(recorded.id());
 		assertThat(stored.payerId()).isEqualTo(CAROL);
 		assertThat(stored.shares()).extracting(Share::memberId).containsExactly(CAROL, ALICE, BOB);
