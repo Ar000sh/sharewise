@@ -19,7 +19,7 @@ class GroupMembershipTest {
 	MemberId member = new MemberId(UUID.randomUUID());
 	MemberId stranger = new MemberId(UUID.randomUUID());
 
-	GroupMembership fake = new GroupMembership() {
+	GroupMembership inMemory = new GroupMembership() {
 		Map<GroupId, List<MemberId>> groups = Map.of(known, List.of(member));
 
 		public boolean exists(GroupId g) { return groups.containsKey(g); }
@@ -30,11 +30,11 @@ class GroupMembershipTest {
 
 	@Test
 	void requireMemberRejectsUnknownGroupAndNonMember() {
-		assertThatThrownBy(() -> fake.requireMember(new GroupId(UUID.randomUUID()), member))
+		assertThatThrownBy(() -> inMemory.requireMember(new GroupId(UUID.randomUUID()), member))
 				.isInstanceOfSatisfying(DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.GROUP_NOT_FOUND));
-		assertThatThrownBy(() -> fake.requireMember(known, stranger))
+		assertThatThrownBy(() -> inMemory.requireMember(known, stranger))
 				.isInstanceOfSatisfying(DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
-		assertThatCode(() -> fake.requireMember(known, member)).doesNotThrowAnyException();
+		assertThatCode(() -> inMemory.requireMember(known, member)).doesNotThrowAnyException();
 	}
 
 }
