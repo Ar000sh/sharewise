@@ -126,6 +126,7 @@ Method names on services are the operation names (`recordExpense`, `acceptInvita
 - **Event** ("an expense was recorded"): the publishing module's `application` service publishes the event with `ApplicationEventPublisher` inside its transaction; the consuming module reacts in a `<Event>Listener` annotated `@ApplicationModuleListener` (asynchronous, after commit, kept in the event publication registry). Consumers are idempotent (a repeated event changes nothing).
 - Events carry **ids and value objects, never names or entities**. Display names are looked up at read time through the `UserProfiles` port.
 - Balances are therefore eventually consistent with expenses; the frontend and tests are written for that (document 02 and 04).
+- How events are delivered today, why a scheduled redelivery was skipped on purpose, and what to keep in mind for the move to a message broker: `docs/2026-10-27-event-delivery-and-messaging.md`.
 
 ## 6. Persistence and database
 
