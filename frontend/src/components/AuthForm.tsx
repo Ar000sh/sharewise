@@ -7,9 +7,17 @@ import { messageFor } from "@/lib/errors";
 
 type Mode = "login" | "register";
 
-/** Only same-site paths: "/join/abc" yes, "//evil.example" and "https://..." no. */
+const SITE = "http://same-site.invalid";
+
+/**
+ * Only same-site paths: "/join/abc" yes, "//evil.example", "https://..." and "/\evil.example" no. Browsers read a
+ * backslash like a slash and ignore tabs and newlines inside a URL, so those are refused, and the result must still
+ * be on our own origin once the URL is parsed the way a browser does it.
+ */
 export function safeNext(next: string | null): string {
-  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return "/";
+  if (/[\\\u0000-\u001f\u007f]/.test(next)) return "/";
+  return new URL(next, SITE).origin === SITE ? next : "/";
 }
 
 export function AuthForm({ mode }: { mode: Mode }) {

@@ -37,6 +37,7 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
   );
   const [excluded, setExcluded] = useState<string[]>([]);
   const [error, setError] = useState<string>();
+  const [busy, setBusy] = useState(false);
 
   const participants = members.filter((m) => !excluded.includes(m.userId));
   const cents = eurosToCents(amount);
@@ -48,9 +49,11 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
     if (!title.trim()) return setError("Please enter a title.");
     if (cents === null) return setError("Please enter a valid amount, e.g. 19,99.");
     if (participants.length === 0) return setError("Select at least one participant.");
+    setBusy(true);
     try {
       await api(`/groups/${groupId}/expenses`, {
         method: "POST",
@@ -70,6 +73,8 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
       onRecorded();
     } catch (err) {
       setError(messageFor(err));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -128,7 +133,7 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
         </ul>
       )}
       {error && <p role="alert" className="text-red-700">{error}</p>}
-      <button type="submit" className="rounded bg-black px-3 py-2 text-white">
+      <button type="submit" disabled={busy} className="rounded bg-black px-3 py-2 text-white disabled:opacity-50">
         Add expense
       </button>
     </form>

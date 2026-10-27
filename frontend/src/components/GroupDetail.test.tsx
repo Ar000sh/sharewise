@@ -1,89 +1,73 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, api } from "@/lib/api";
-import { InviteButton } from "@/components/InviteButton";
-import { JoinGroup } from "@/components/JoinGroup";
-import { MemberList } from "@/components/MemberList";
+import { api } from "@/lib/api";
+import { GroupDetail } from "@/components/GroupDetail";
+import { CurrentUserProvider } from "@/lib/currentUser";
 
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<typeof import("@/lib/api")>()), api: vi.fn() }));
-const push = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 const apiMock = vi.mocked(api);
 afterEach(() => vi.resetAllMocks());
 
-describe("MemberList", () => {
-  it("showsMembersWithRoles", () => {
-    render(
-      <MemberList
-        currentUserId="u2"
-        members={[
-          { userId: "u1", displayName: "Alice", role: "ADMIN" },
-          { userId: "u2", displayName: "Bob", role: "MEMBER" },
-        ]}
-      />,
-    );
+const group = {
+  id: "g1",
+  name: "Mallorca 2027",
+  status: "OPEN",
+  memberCount: 3,
+  members: [
+    { userId: "u1", displayName: "Alice", role: "ADMIN" },
+    { userId: "u2", displayName: "Bob", role: "MEMBER" },
+    { userId: "u3", displayName: "Carol", role: "MEMBER" },
+  ],
+};
 
-    const items = screen.getAllByRole("listitem");
-    expect(items[0]).toHaveTextContent("Alice");
-    expect(items[0]).toHaveTextContent("Admin");
-    expect(items[1]).toHaveTextContent("Bob");
-    expect(items[1]).toHaveTextContent("(you)");
-    expect(items[1]).not.toHaveTextContent("Admin");
+/** Answers the calls the page makes. `me` may be a promise so a test decides when "who am I" arrives. */
+function serve(me: Promise<unknown> | unknown) {
+  apiMock.mockImplementation(async (path: string) => {
+    if (path === "/me") return me;
+    if (path === "/groups/g1") return group;
+    if (path === "/groups/g1/expenses") return [];
+    if (path === "/groups/g1/balances") return [];
+    throw new Error(`unexpected call ${path}`);
   });
-});
+}
 
-describe("InviteButton", () => {
-  it("inviteButtonShowsCopyableLink", async () => {
-    apiMock.mockResolvedValue({ token: "k3Xq9v2mT8aLw0pZ", expiresAt: "2027-06-08T10:00:00Z" });
+function renderPage() {
+  render(
+    <CurrentUserProvider>
+      <GroupDetail groupId="g1" />
+    </CurrentUserProvider>,
+  );
+}
 
-    render(<InviteButton groupId="g1" />);
-    await userEvent.click(screen.getByRole("button", { name: /invite/i }));
+describe("GroupDetail", () => {
+  it("offersTheExpenseFormOnlyOnceItKnowsWhoIsAskingSoThePayerDefaultIsRight", async () => {
+    // given the group arrives before "who am I"
+    let answerMe: (user: unknown) => void = () => {};
+    serve(new Promise((resolve) => (answerMe = resolve)));
 
-    const field = await screen.findByLabelText(/invite link/i);
-    expect(field).toHaveValue(`${window.location.origin}/join/k3Xq9v2mT8aLw0pZ`);
-    expect(apiMock).toHaveBeenCalledWith("/groups/g1/invitations", { method: "POST" });
-  });
+    // when
+    renderPage()
+    expect(await screen.findByRole("heading", { name: "Mallorca 2027" })).toBeInTheDocument();
 
-  it("showsErrorWhenInviteFails", async () => {
-    apiMock.mockRejectedValue(new ApiError(403, "NOT_A_MEMBER"));
-
-    render(<InviteButton groupId="g1" />);
-    await userEvent.click(screen.getByRole("button", { name: /invite/i }));
-
-    expect(await screen.findByRole("alert")).toHaveTextContent("You are not a member of this group.");
-  });
-});
-
-describe("JoinGroup", () => {
-  it("joinPageAcceptsTokenAndRedirects", async () => {
-    apiMock.mockResolvedValue({ id: "g1", name: "Mallorca", status: "OPEN", memberCount: 2 });
-
-    render(<JoinGroup token="tok" />);
-    await userEvent.click(screen.getByRole("button", { name: /join/i }));
-
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/groups/g1"));
-    expect(apiMock).toHaveBeenCalledWith("/invitations/tok/accept", { method: "POST" });
+    // then there is no form yet, so the payer cannot silently default to the first member
+    expect(screen.queryByRole("button", { name: /add expense/i })).not.toBeInTheDocument();
+    answerMe({ userId: "u2", displayName: "Bob" });
+    expect(await screen.findByLabelText(/paid by/i)).toHaveValue("u2");
   });
 
-  it("joinPageShowsExpiredMessageOn410", async () => {
-    apiMock.mockRejectedValue(new ApiError(410, "INVITATION_EXPIRED", "This invitation has expired"));
+  it("tellsTheUserThatBalancesFollowAfterAnExpenseWasRecorded", async () => {
+    // given
+    serve({ userId: "u2", displayName: "Bob" });
+    renderPage();
+    await userEvent.type(await screen.findByLabelText(/title/i), "Dinner");
+    await userEvent.type(screen.getByLabelText(/amount/i), "180");
 
-    render(<JoinGroup token="tok" />);
-    await userEvent.click(screen.getByRole("button", { name: /join/i }));
+    // when
+    await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/expired/i);
-    expect(push).not.toHaveBeenCalled();
-  });
-
-  it("joinPageShowsAlreadyMemberOn409", async () => {
-    apiMock.mockRejectedValue(new ApiError(409, "ALREADY_MEMBER", "You are already a member"));
-
-    render(<JoinGroup token="tok" />);
-    await userEvent.click(screen.getByRole("button", { name: /join/i }));
-
-    expect(await screen.findByRole("alert")).toHaveTextContent(/already a member/i);
-    expect(screen.getByRole("link", { name: /your groups/i })).toHaveAttribute("href", "/");
+    // then
+    expect(await screen.findByRole("status")).toHaveTextContent(/expense saved.*balances/i);
   });
 });

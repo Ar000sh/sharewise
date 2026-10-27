@@ -72,7 +72,21 @@ describe("safeNext", () => {
     ["//evil.example", "/"],
     ["https://evil.example", "/"],
     [null, "/"],
-  ])("%s -> %s", (input, expected) => {
+    // Browsers read a backslash like a slash and ignore tabs and newlines inside a URL, so each of
+    // these would leave the site after sign-in. The query string is decoded before it reaches safeNext.
+    ["/\\evil.example", "/"],
+    ["/\t/evil.example", "/"],
+    ["/\n/evil.example", "/"],
+    ["/\r/evil.example", "/"],
+    ["\\\\evil.example", "/"],
+    ["javascript:alert(1)", "/"],
+    ["", "/"],
+  ])("%j -> %j", (input, expected) => {
     expect(safeNext(input)).toBe(expected);
+  });
+
+  it("keepsPathsWithQueryAndEncodedCharacters", () => {
+    expect(safeNext("/groups/abc?tab=Balances")).toBe("/groups/abc?tab=Balances");
+    expect(safeNext("/join/a%5Cb")).toBe("/join/a%5Cb");
   });
 });

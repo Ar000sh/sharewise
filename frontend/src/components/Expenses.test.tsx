@@ -56,6 +56,25 @@ describe("ExpenseForm", () => {
     expect(postedBody()).toMatchObject({ totalAmount: centsToAmount(cents), splitStrategy: "EQUAL" });
   });
 
+  it("aSecondClickWhileTheExpenseIsBeingSentDoesNotRecordItTwice", async () => {
+    // given a request that is still in flight
+    let finish: (value: unknown) => void = () => {};
+    apiMock.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    renderForm();
+    await fill("Groceries", "12");
+    const button = screen.getByRole("button", { name: /add expense/i });
+
+    // when the button is clicked twice
+    await userEvent.click(button);
+    await userEvent.click(button);
+
+    // then only one request went out and the button is disabled meanwhile
+    expect(apiMock).toHaveBeenCalledTimes(1);
+    expect(button).toBeDisabled();
+    finish({});
+    await vi.waitFor(() => expect(button).toBeEnabled());
+  });
+
   it("submitPostsExpenseAndRefreshesList", async () => {
     apiMock.mockResolvedValue({});
     const onRecorded = renderForm();
