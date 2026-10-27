@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eurosToCents, formatEuro } from "@/lib/money";
+import { amountToCents, centsToAmount, eurosToCents, formatEuro } from "@/lib/money";
 
 describe("eurosToCents", () => {
   it.each([
@@ -36,5 +36,23 @@ describe("formatEuro", () => {
 
   it("formatsZero", () => {
     expect(formatEuro(0)).toBe("0,00 €");
+  });
+});
+
+describe("API amounts", () => {
+  it.each([
+    ["900.00", 90000],
+    ["-90.00", -9000],
+    ["0.00", 0],
+    ["0.07", 7],
+    ["-0.07", -7],
+    ["1234.56", 123456],
+  ])("amountToCents(%s) is %i and back", (amount, cents) => {
+    expect(amountToCents(amount)).toBe(cents);
+    expect(centsToAmount(cents)).toBe(amount === "-0.00" ? "0.00" : amount);
+  });
+
+  it.each(["900", "900.0", "900,00", "1e3", "", "abc"])("amountToCents rejects %j", (amount) => {
+    expect(() => amountToCents(amount)).toThrow();
   });
 });

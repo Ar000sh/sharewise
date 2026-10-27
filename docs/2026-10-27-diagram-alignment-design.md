@@ -1,6 +1,6 @@
 # Design: conventions and alignment with the domain diagram
 
-**Date:** 27.10.26 · **Status:** draft for review (nothing in the product code has changed yet) · **Rules:** `docs/conventions/`
+**Date:** 27.10.26 · **Status:** implemented on branch `refactor/diagram-alignment` (27.10.26); what differs from the diagram is in `docs/diagram-deltas.md` · **Rules:** `docs/conventions/`
 
 ## 1. Why
 The Ex4 build was done by four parallel sessions. It works (124 backend tests, 73 frontend tests, 2 browser tests), but it has four dialects: `expense` and `settlement` have `domain/application/persistence/web`, `group` and `account` are flat; `Member` / `MemberId` / `UserId` name the same person; the diagram shown to the professor says `Membership`, `GroupRole`, `ExpenseShare`, `SplitStrategy`, `paidBy`, `totalAmount`, while the code says `Member`, `Role`, `Share`, `SplitType`, `payerId`, `amountCents`. We need one set of rules, enforced by tests, and the code brought in line with the diagram before Ex5 piles features on top.
@@ -28,11 +28,10 @@ The Ex4 build was done by four parallel sessions. It works (124 backend tests, 7
 | R7 | Sessions (`auth_session`, bearer token) are application/infrastructure, not part of the `Account` aggregate; the diagram gets a note. | my call |
 | R8 | The work is done **in one sequence by one session** (no parallel tracks): a rename touches every layer, and four editors would recreate today's problem. Each step ends green and committed on branch `refactor/diagram-alignment`. | my call |
 
-### Decisions I need from you
-- **D-A. How does `Expense.record(...)` learn who is in the group?** The diagram passes a `GroupMembershipView` (a local copy updated from group events). Today `expense` asks the `GroupMembership` port synchronously.
-  - *My recommendation:* the **domain signature matches the diagram** (`record(GroupMembershipView view, ...)`), and the view is **built from the port** now (one query). Later (Ex5/P3) the view can come from a local copy fed by events without touching the domain. This avoids a race (someone joins, immediately records an expense, the event has not arrived yet → false "not a member") in the demo.
-  - *Alternative:* implement the event-fed local copy now. It is exactly what the diagram says, but costs a table, listeners and the race above.
-- **D-B. Invitations.** The diagram has `inviteMember(Email, …)` and `Invitation.email`; Ex4 uses link tokens without email. *Recommendation:* keep link invitations; `Invitation` gets `id: InvitationId`, `status`, optional `email`, plus the `token` (diagram delta below). Email invitations stay Ex5.
+### Decided by you on 27.10
+- **D-A (Expense learns the group through a view): my recommendation.** `Expense.record(GroupMembershipView view, ...)` has the diagram's signature and the rules R2/R3/R5/R6 live in the aggregate. The view is a snapshot (`isOpen`, `activeMembers`, `admins`) that the `GroupMembership` port builds with one fresh query when the expense is recorded. An event-fed local copy can replace the source later without touching the domain.
+- **D-B (Invitations): identified by email, token kept.** `Invitation` gets `id: InvitationId`, `email: Email`, `status: InvitationStatus` and keeps the `token` link secret. Delivery: either an email provider, or (preferred, no provider needed) an **in-app notification inbox** where the invited person, signed in with that email, sees pending invitations and accepts or declines. Both are **follow-up features after this refactor** (they change behaviour: `GET /invitations` for the caller's pending invitations, accept by `InvitationId`, only the invited email may accept). In this refactor the fields exist and the email is optional, so today's link invitations keep working unchanged.
+- Sending real email later = a port `InvitationNotifier` in `group.api` with an in-app implementation first and an SMTP implementation behind the same port.
 
 ## 4. Rename map (old → new)
 | Area | Old | New |

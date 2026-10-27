@@ -1,8 +1,9 @@
 package de.hsh.favs.sharewise.settlement.domain;
 
 /**
- * Why a ledger entry exists (domain model: LedgerEntryType). Ex4 books only the two expense types; the
- * reversal, payment and waiver types arrive with corrections, removals and settlement payments in Ex5.
+ * Why a ledger entry exists (domain model: LedgerEntryType). Ex4 books only the two
+ * expense types; the reversal, payment and waiver types arrive with corrections, removals
+ * and settlement payments in Ex5.
  */
 public enum LedgerEntryType {
 

@@ -2,57 +2,64 @@ package de.hsh.favs.sharewise.expense.application;
 
 import static de.hsh.favs.sharewise.expense.domain.ExpenseFixture.ALICE;
 import static de.hsh.favs.sharewise.expense.domain.ExpenseFixture.BOB;
+import static de.hsh.favs.sharewise.expense.domain.ExpenseFixture.CAROL;
+import static de.hsh.favs.sharewise.expense.domain.ExpenseFixture.DAVID;
 
+import de.hsh.favs.sharewise.expense.domain.ExpenseFixture;
+import de.hsh.favs.sharewise.expense.domain.ExpenseTitle;
+import de.hsh.favs.sharewise.expense.domain.SplitStrategy;
 import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
+import de.hsh.favs.sharewise.shared.Money;
+import de.hsh.favs.sharewise.shared.UserId;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
-/** Test data for a {@link RecordExpenseCommand}. By default: Alice records a 10.00 EUR dinner she paid, split with Bob. */
+/**
+ * Test data for a {@link RecordExpenseCommand}. By default: Alice records the 900.00 EUR
+ * hotel she paid, split equally between Alice, Bob, Carol and David.
+ */
 public class RecordExpenseCommandFixture {
 
-	private GroupId groupId = new GroupId(UUID.fromString("bbbbbbbb-0000-0000-0000-000000000001"));
-	private MemberId caller = ALICE;
-	private String title = "Dinner";
-	private long amountCents = 1_000;
-	private LocalDate date = LocalDate.of(2027, 6, 2);
-	private MemberId payer = ALICE;
-	private List<MemberId> participants = List.of(ALICE, BOB);
-	private SplitType split = SplitType.EQUAL;
+	private GroupId groupId = ExpenseFixture.GROUP;
 
-	public RecordExpenseCommandFixture withGroupId(GroupId groupId) {
-		this.groupId = groupId;
-		return this;
-	}
+	private UserId caller = ALICE;
 
-	public RecordExpenseCommandFixture withCaller(MemberId caller) {
+	private Money totalAmount = Money.eur("900.00");
+
+	private UserId paidBy = ALICE;
+
+	private List<UserId> participants = List.of(ALICE, BOB, CAROL, DAVID);
+
+	private SplitStrategy splitStrategy = SplitStrategy.EQUAL;
+
+	public RecordExpenseCommandFixture withCaller(UserId caller) {
 		this.caller = caller;
 		return this;
 	}
 
-	public RecordExpenseCommandFixture withAmountCents(long amountCents) {
-		this.amountCents = amountCents;
+	public RecordExpenseCommandFixture withTotalAmount(String totalAmount) {
+		this.totalAmount = Money.eur(totalAmount);
 		return this;
 	}
 
-	public RecordExpenseCommandFixture withPayer(MemberId payer) {
-		this.payer = payer;
+	public RecordExpenseCommandFixture withPaidBy(UserId paidBy) {
+		this.paidBy = paidBy;
 		return this;
 	}
 
-	public RecordExpenseCommandFixture withParticipants(MemberId... participants) {
+	public RecordExpenseCommandFixture withParticipants(UserId... participants) {
 		this.participants = List.of(participants);
 		return this;
 	}
 
-	public RecordExpenseCommandFixture withSplit(SplitType split) {
-		this.split = split;
+	public RecordExpenseCommandFixture withSplitStrategy(SplitStrategy splitStrategy) {
+		this.splitStrategy = splitStrategy;
 		return this;
 	}
 
 	public RecordExpenseCommand build() {
-		return new RecordExpenseCommand(groupId, caller, title, amountCents, date, payer, participants, split);
+		return new RecordExpenseCommand(groupId, caller, new ExpenseTitle("Hotel"), totalAmount,
+				LocalDate.parse("2027-06-01"), paidBy, participants, splitStrategy);
 	}
 
 }

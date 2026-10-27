@@ -10,8 +10,10 @@ class ModularityTests {
 
 	@Test
 	void detectsTheFourContextsAndSharedTypes() {
-		List<String> names = ApplicationModules.of(SharewiseApplication.class).stream()
-				.map(m -> m.getIdentifier().toString()).toList();
+		List<String> names = ApplicationModules.of(SharewiseApplication.class)
+			.stream()
+			.map(m -> m.getIdentifier().toString())
+			.toList();
 
 		assertThat(names).containsExactlyInAnyOrder("account", "group", "expense", "settlement", "shared");
 	}

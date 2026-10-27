@@ -1,31 +1,58 @@
 package de.hsh.favs.sharewise.expense.domain;
 
+import de.hsh.favs.sharewise.MutableClock;
+import de.hsh.favs.sharewise.account.domain.AccountFixture;
+import de.hsh.favs.sharewise.expense.api.ExpenseShare;
+import de.hsh.favs.sharewise.group.api.GroupMembershipView;
 import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
 import de.hsh.favs.sharewise.shared.Money;
+import de.hsh.favs.sharewise.shared.UserId;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
- * Test data for an {@link Expense}. By default: "Dinner", 10.00 EUR on 2027-06-02, paid by Alice and split between
- * Alice and Bob. Built through {@link Expense#record}, so the result is always valid.
+ * Test data for an {@link Expense}. By default: "Hotel", 900.00 EUR paid and recorded by
+ * Alice, split equally between Alice, Bob, Carol and David in an open group of those four
+ * with Alice as admin. Override what the test is about.
  */
 public class ExpenseFixture {
 
-	public static final MemberId ALICE = new MemberId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001"));
-	public static final MemberId BOB = new MemberId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000002"));
-	public static final MemberId CAROL = new MemberId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000003"));
+	public static final UserId ALICE = AccountFixture.alice().userId();
 
-	private GroupId groupId = new GroupId(UUID.fromString("bbbbbbbb-0000-0000-0000-000000000001"));
-	private String title = "Dinner";
-	private long amountCents = 1_000;
-	private LocalDate date = LocalDate.of(2027, 6, 2);
-	private MemberId payer = ALICE;
-	private List<MemberId> participants = List.of(ALICE, BOB);
+	public static final UserId BOB = AccountFixture.bob().userId();
 
-	public ExpenseFixture withGroupId(GroupId groupId) {
-		this.groupId = groupId;
+	public static final UserId CAROL = AccountFixture.carol().userId();
+
+	public static final UserId DAVID = AccountFixture.david().userId();
+
+	public static final GroupId GROUP = new GroupId(UUID.fromString("bbbbbbbb-0000-0000-0000-000000000001"));
+
+	private boolean open = true;
+
+	private Set<UserId> members = Set.of(ALICE, BOB, CAROL, DAVID);
+
+	private String title = "Hotel";
+
+	private Money totalAmount = Money.eur("900.00");
+
+	private UserId paidBy = ALICE;
+
+	private UserId recordedBy = ALICE;
+
+	private List<UserId> participants = List.of(ALICE, BOB, CAROL, DAVID);
+
+	private Instant now = MutableClock.START;
+
+	public ExpenseFixture withClosedGroup() {
+		this.open = false;
+		return this;
+	}
+
+	public ExpenseFixture withGroupMembers(UserId... members) {
+		this.members = Set.of(members);
 		return this;
 	}
 
@@ -34,28 +61,45 @@ public class ExpenseFixture {
 		return this;
 	}
 
-	public ExpenseFixture withAmountCents(long amountCents) {
-		this.amountCents = amountCents;
+	public ExpenseFixture withTotalAmount(String totalAmount) {
+		this.totalAmount = Money.eur(totalAmount);
 		return this;
 	}
 
-	public ExpenseFixture withDate(LocalDate date) {
-		this.date = date;
+	public ExpenseFixture withPaidBy(UserId paidBy) {
+		this.paidBy = paidBy;
 		return this;
 	}
 
-	public ExpenseFixture withPayer(MemberId payer) {
-		this.payer = payer;
+	public ExpenseFixture withRecordedBy(UserId recordedBy) {
+		this.recordedBy = recordedBy;
 		return this;
 	}
 
-	public ExpenseFixture withParticipants(MemberId... participants) {
+	public ExpenseFixture withParticipants(UserId... participants) {
 		this.participants = List.of(participants);
 		return this;
 	}
 
+	public GroupMembershipView groupView() {
+		return new GroupMembershipView(GROUP, open, members, Set.of(ALICE));
+	}
+
+	/**
+	 * The shares as the application calculates them, so the fixture builds through the
+	 * real rules.
+	 */
+	public List<ExpenseShare> shares() {
+		return EqualSplit.split(totalAmount, participants);
+	}
+
+	public Expense.Recorded record() {
+		return Expense.record(groupView(), new ExpenseTitle(title), paidBy, recordedBy, totalAmount,
+				LocalDate.parse("2027-06-01"), shares(), SplitStrategy.EQUAL, now);
+	}
+
 	public Expense build() {
-		return Expense.record(groupId, title, Money.eur(amountCents), date, payer, participants);
+		return record().expense();
 	}
 
 }

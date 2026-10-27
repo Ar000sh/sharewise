@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
-import { formatEuro } from "@/lib/money";
+import { amountToCents, formatEuro } from "@/lib/money";
 import { useApi } from "@/lib/useApi";
 
 type Balance = components["schemas"]["Balance"];
@@ -26,7 +26,7 @@ export function BalancesTab({ groupId, refreshKey }: { groupId: string; refreshK
     if (refreshKey > 0) void reload();
   }, [refreshKey, reload]);
 
-  const sum = balances?.reduce((total, b) => total + b.balanceCents, 0) ?? 0;
+  const sum = balances?.reduce((total, b) => total + amountToCents(b.netBalance), 0) ?? 0;
   const stale = sum !== 0;
 
   useEffect(() => {
@@ -46,16 +46,17 @@ export function BalancesTab({ groupId, refreshKey }: { groupId: string; refreshK
     <div className="flex flex-col gap-3">
       <ErrorBanner error={error} />
       <ul className="divide-y rounded border">
-        {balances.map((b) => (
-          <li key={b.memberId} className="flex justify-between gap-2 px-3 py-2">
-            <span>{b.displayName}</span>
-            <span
-              className={`font-medium ${b.balanceCents > 0 ? "text-green-700" : b.balanceCents < 0 ? "text-red-700" : ""}`}
-            >
-              {signed(b.balanceCents)}
-            </span>
-          </li>
-        ))}
+        {balances.map((b) => {
+          const cents = amountToCents(b.netBalance);
+          return (
+            <li key={b.userId} className="flex justify-between gap-2 px-3 py-2">
+              <span>{b.displayName}</span>
+              <span className={`font-medium ${cents > 0 ? "text-green-700" : cents < 0 ? "text-red-700" : ""}`}>
+                {signed(cents)}
+              </span>
+            </li>
+          );
+        })}
       </ul>
       <p className="text-sm text-gray-600">
         Sum: {formatEuro(sum)}

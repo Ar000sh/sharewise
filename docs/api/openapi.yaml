@@ -6,7 +6,7 @@ info:
     Backend contract for the Ex4 slice (sign up and sign in, create group, invite and join, record an
     equal-split expense, see balances). Paths are the backend's. The browser calls
     them under /api on Next.js, which forwards /api/x to BACKEND_URL/x.
-    Money is an integer in cents (EUR). Ids are UUIDs.
+    Money is a decimal string with two decimals (EUR), for example "900.00", never a JSON number. Ids are UUIDs.
     Change this file first, in its own commit, before any code that depends on it.
 servers:
   - url: http://localhost:8080
@@ -143,8 +143,8 @@ paths:
                 status: OPEN
                 memberCount: 2
                 members:
-                  - { memberId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice, role: ADMIN }
-                  - { memberId: "aaaaaaaa-0000-0000-0000-000000000002", displayName: Bob, role: MEMBER }
+                  - { userId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice, role: ADMIN }
+                  - { userId: "aaaaaaaa-0000-0000-0000-000000000002", displayName: Bob, role: MEMBER }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/NotAMember" }
@@ -209,14 +209,17 @@ paths:
               example:
                 - id: "cccccccc-0000-0000-0000-000000000002"
                   title: Dinner
-                  amountCents: 18000
+                  totalAmount: "180.00"
                   date: "2027-06-02"
-                  payerId: "aaaaaaaa-0000-0000-0000-000000000002"
+                  paidBy: "aaaaaaaa-0000-0000-0000-000000000002"
+                  recordedBy: "aaaaaaaa-0000-0000-0000-000000000002"
+                  splitStrategy: EQUAL
+                  status: ACTIVE
                   shares:
-                    - { memberId: "aaaaaaaa-0000-0000-0000-000000000001", shareCents: 4500 }
-                    - { memberId: "aaaaaaaa-0000-0000-0000-000000000002", shareCents: 4500 }
-                    - { memberId: "aaaaaaaa-0000-0000-0000-000000000003", shareCents: 4500 }
-                    - { memberId: "aaaaaaaa-0000-0000-0000-000000000004", shareCents: 4500 }
+                    - { participantId: "aaaaaaaa-0000-0000-0000-000000000001", owedShare: "45.00" }
+                    - { participantId: "aaaaaaaa-0000-0000-0000-000000000002", owedShare: "45.00" }
+                    - { participantId: "aaaaaaaa-0000-0000-0000-000000000003", owedShare: "45.00" }
+                    - { participantId: "aaaaaaaa-0000-0000-0000-000000000004", owedShare: "45.00" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/NotAMember" }
@@ -224,23 +227,23 @@ paths:
     post:
       tags: [expense]
       operationId: recordExpense
-      summary: Record an expense. Only split EQUAL is supported in Ex4.
+      summary: Record an expense. Only splitStrategy EQUAL is supported in Ex4.
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/ExpenseRequest" }
+            schema: { $ref: "#/components/schemas/RecordExpenseRequest" }
             example:
               title: Hotel
-              amountCents: 90000
+              totalAmount: "900.00"
               date: "2027-06-01"
-              payerId: "aaaaaaaa-0000-0000-0000-000000000001"
+              paidBy: "aaaaaaaa-0000-0000-0000-000000000001"
               participantIds:
                 - "aaaaaaaa-0000-0000-0000-000000000001"
                 - "aaaaaaaa-0000-0000-0000-000000000002"
                 - "aaaaaaaa-0000-0000-0000-000000000003"
                 - "aaaaaaaa-0000-0000-0000-000000000004"
-              split: EQUAL
+              splitStrategy: EQUAL
       responses:
         "201":
           description: Recorded
@@ -250,14 +253,17 @@ paths:
               example:
                 id: "cccccccc-0000-0000-0000-000000000001"
                 title: Hotel
-                amountCents: 90000
+                totalAmount: "900.00"
                 date: "2027-06-01"
-                payerId: "aaaaaaaa-0000-0000-0000-000000000001"
+                paidBy: "aaaaaaaa-0000-0000-0000-000000000001"
+                recordedBy: "aaaaaaaa-0000-0000-0000-000000000001"
+                splitStrategy: EQUAL
+                status: ACTIVE
                 shares:
-                  - { memberId: "aaaaaaaa-0000-0000-0000-000000000001", shareCents: 22500 }
-                  - { memberId: "aaaaaaaa-0000-0000-0000-000000000002", shareCents: 22500 }
-                  - { memberId: "aaaaaaaa-0000-0000-0000-000000000003", shareCents: 22500 }
-                  - { memberId: "aaaaaaaa-0000-0000-0000-000000000004", shareCents: 22500 }
+                  - { participantId: "aaaaaaaa-0000-0000-0000-000000000001", owedShare: "225.00" }
+                  - { participantId: "aaaaaaaa-0000-0000-0000-000000000002", owedShare: "225.00" }
+                  - { participantId: "aaaaaaaa-0000-0000-0000-000000000003", owedShare: "225.00" }
+                  - { participantId: "aaaaaaaa-0000-0000-0000-000000000004", owedShare: "225.00" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/NotAMember" }
@@ -281,10 +287,10 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/Balance" }
               example:
-                - { memberId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice, balanceCents: 63000 }
-                - { memberId: "aaaaaaaa-0000-0000-0000-000000000002", displayName: Bob, balanceCents: -9000 }
-                - { memberId: "aaaaaaaa-0000-0000-0000-000000000003", displayName: Carol, balanceCents: -27000 }
-                - { memberId: "aaaaaaaa-0000-0000-0000-000000000004", displayName: David, balanceCents: -27000 }
+                - { userId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice, netBalance: "630.00" }
+                - { userId: "aaaaaaaa-0000-0000-0000-000000000002", displayName: Bob, netBalance: "-90.00" }
+                - { userId: "aaaaaaaa-0000-0000-0000-000000000003", displayName: Carol, netBalance: "-270.00" }
+                - { userId: "aaaaaaaa-0000-0000-0000-000000000004", displayName: David, netBalance: "-270.00" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/NotAMember" }
@@ -431,9 +437,9 @@ components:
 
     Member:
       type: object
-      required: [memberId, displayName, role]
+      required: [userId, displayName, role]
       properties:
-        memberId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
         displayName: { type: string }
         role: { type: string, enum: [ADMIN, MEMBER] }
 
@@ -454,47 +460,66 @@ components:
         token: { type: string }
         expiresAt: { type: string, format: date-time }
 
-    ExpenseRequest:
+    Amount:
+      type: string
+      pattern: '^-?\d+\.\d{2}$'
+      description: Money as a decimal string with exactly two decimals (EUR), e.g. "900.00".
+      example: "900.00"
+
+    SplitStrategy:
+      type: string
+      enum: [EQUAL, EXACT, PERCENTAGE]
+      description: Only EQUAL is accepted in Ex4. The others answer 422 SPLIT_NOT_SUPPORTED.
+
+    ExpenseStatus:
+      type: string
+      enum: [ACTIVE, CORRECTED, REMOVED]
+
+    RecordExpenseRequest:
       type: object
-      required: [title, amountCents, date, payerId, participantIds, split]
+      required: [title, totalAmount, date, paidBy, participantIds, splitStrategy]
       properties:
         title: { type: string, minLength: 1, maxLength: 200 }
-        amountCents: { type: integer, format: int64, description: "Must be > 0 (AMOUNT_NOT_POSITIVE otherwise)" }
+        totalAmount:
+          allOf: [{ $ref: "#/components/schemas/Amount" }]
+          description: Must be greater than zero (AMOUNT_NOT_POSITIVE otherwise).
         date: { type: string, format: date }
-        payerId: { type: string, format: uuid }
+        paidBy: { type: string, format: uuid }
         participantIds:
           type: array
           items: { type: string, format: uuid }
           description: Distinct member ids, at least one. Order decides who gets the remainder cents.
-        split:
-          type: string
-          enum: [EQUAL, EXACT, PERCENTAGE]
-          description: Only EQUAL is accepted in Ex4. The others answer 422 SPLIT_NOT_SUPPORTED.
+        splitStrategy: { $ref: "#/components/schemas/SplitStrategy" }
 
-    Share:
+    ExpenseShare:
       type: object
-      required: [memberId, shareCents]
+      required: [participantId, owedShare]
       properties:
-        memberId: { type: string, format: uuid }
-        shareCents: { type: integer, format: int64 }
+        participantId: { type: string, format: uuid }
+        owedShare: { $ref: "#/components/schemas/Amount" }
 
     Expense:
       type: object
-      required: [id, title, amountCents, date, payerId, shares]
+      required: [id, title, totalAmount, date, paidBy, recordedBy, splitStrategy, status, shares]
       properties:
         id: { type: string, format: uuid }
         title: { type: string }
-        amountCents: { type: integer, format: int64 }
+        totalAmount: { $ref: "#/components/schemas/Amount" }
         date: { type: string, format: date }
-        payerId: { type: string, format: uuid }
+        paidBy: { type: string, format: uuid }
+        recordedBy: { type: string, format: uuid }
+        splitStrategy: { $ref: "#/components/schemas/SplitStrategy" }
+        status: { $ref: "#/components/schemas/ExpenseStatus" }
         shares:
           type: array
-          items: { $ref: "#/components/schemas/Share" }
+          items: { $ref: "#/components/schemas/ExpenseShare" }
 
     Balance:
       type: object
-      required: [memberId, displayName, balanceCents]
+      required: [userId, displayName, netBalance]
       properties:
-        memberId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
         displayName: { type: string }
-        balanceCents: { type: integer, format: int64, description: "+ is owed, - owes" }
+        netBalance:
+          allOf: [{ $ref: "#/components/schemas/Amount" }]
+          description: "+ is owed, - owes"

@@ -13,10 +13,10 @@ afterEach(() => {
 });
 
 const balances = [
-  { memberId: "u1", displayName: "Alice", balanceCents: 63000 },
-  { memberId: "u2", displayName: "Bob", balanceCents: -9000 },
-  { memberId: "u3", displayName: "Carol", balanceCents: -27000 },
-  { memberId: "u4", displayName: "David", balanceCents: -27000 },
+  { userId: "u1", displayName: "Alice", netBalance: "630.00" },
+  { userId: "u2", displayName: "Bob", netBalance: "-90.00" },
+  { userId: "u3", displayName: "Carol", netBalance: "-270.00" },
+  { userId: "u4", displayName: "David", netBalance: "-270.00" },
 ];
 
 describe("BalancesTab", () => {
@@ -34,8 +34,8 @@ describe("BalancesTab", () => {
 
   it("zeroBalanceMembersAreListed", async () => {
     apiMock.mockResolvedValue([
-      { memberId: "u1", displayName: "Alice", balanceCents: 0 },
-      { memberId: "u2", displayName: "Bob", balanceCents: 0 },
+      { userId: "u1", displayName: "Alice", netBalance: "0.00" },
+      { userId: "u2", displayName: "Bob", netBalance: "0.00" },
     ]);
 
     render(<BalancesTab groupId="g1" refreshKey={0} />);
@@ -78,12 +78,12 @@ describe("BalancesTab", () => {
     it("refetchesShortlyUntilTheSumIsZero", async () => {
       apiMock
         .mockResolvedValueOnce([
-          { memberId: "u1", displayName: "Alice", balanceCents: 500 },
-          { memberId: "u2", displayName: "Bob", balanceCents: 0 },
+          { userId: "u1", displayName: "Alice", netBalance: "5.00" },
+          { userId: "u2", displayName: "Bob", netBalance: "0.00" },
         ])
         .mockResolvedValue([
-          { memberId: "u1", displayName: "Alice", balanceCents: 500 },
-          { memberId: "u2", displayName: "Bob", balanceCents: -500 },
+          { userId: "u1", displayName: "Alice", netBalance: "5.00" },
+          { userId: "u2", displayName: "Bob", netBalance: "-5.00" },
         ]);
 
       render(<BalancesTab groupId="g1" refreshKey={0} />);

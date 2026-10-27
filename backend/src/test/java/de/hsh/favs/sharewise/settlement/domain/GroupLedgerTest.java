@@ -1,99 +1,112 @@
 package de.hsh.favs.sharewise.settlement.domain;
 
-import static de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture.ALICE;
-import static de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture.BOB;
-import static de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture.CAROL;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 
-import de.hsh.favs.sharewise.expense.api.ExpenseRecorded.Share;
+import de.hsh.favs.sharewise.MutableClock;
+import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture;
-import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
-import java.time.Instant;
-import java.util.ArrayList;
+import de.hsh.favs.sharewise.settlement.api.MemberBalance;
+import de.hsh.favs.sharewise.shared.Money;
+import de.hsh.favs.sharewise.shared.UserId;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
+/**
+ * The rules of the GroupLedger aggregate: what an expense books, and what a balance is.
+ * No Spring, no database.
+ */
 class GroupLedgerTest {
 
-	private static final Instant AT = Instant.parse("2026-10-25T10:00:00Z");
+	UserId alice = AccountFixture.alice().userId();
 
-	private final GroupLedger ledger = new GroupLedger(new GroupId(UUID.randomUUID()));
+	UserId bob = AccountFixture.bob().userId();
 
-	@Test
-	void payerIsCreditedTotalAndParticipantsDebitedShares() {
-		// given
-		var expense = new ExpenseRecordedFixture().build();
+	UserId carol = AccountFixture.carol().userId();
 
-		// when
-		ledger.appendExpenseEntry(expense, AT);
+	UserId david = AccountFixture.david().userId();
 
-		// then
-		assertThat(ledger.projectBalances()).containsOnly(Map.entry(ALICE, 9000L), Map.entry(BOB, -4500L),
-				Map.entry(CAROL, -4500L));
+	GroupLedger ledger = new GroupLedger(ExpenseRecordedFixture.GROUP);
+
+	private Money balanceOf(UserId user) {
+		return ledger.projectBalances()
+			.stream()
+			.filter(balance -> balance.userId().equals(user))
+			.map(MemberBalance::netBalance)
+			.findFirst()
+			.orElseThrow();
 	}
 
 	@Test
-	void anExpenseBooksOneEntryForThePayerAndOneForEveryShare() {
-		// given
-		var expense = new ExpenseRecordedFixture().build();
-
-		// when
-		ledger.appendExpenseEntry(expense, AT);
+	void anExpenseCreditsThePayerTheTotalAndDebitsEveryParticipantTheirShare() {
+		// when alice pays 900.00 for all four
+		ledger.appendExpenseEntry(new ExpenseRecordedFixture().build(), MutableClock.START);
 
 		// then
-		assertThat(ledger.entries()).extracting(LedgerEntry::referenceId).containsOnly(expense.expenseId());
-		assertThat(ledger.entries()).extracting(LedgerEntry::occurredAt).containsOnly(AT);
-		assertThat(ledger.entries())
-				.extracting(LedgerEntry::type, LedgerEntry::member, LedgerEntry::deltaCents)
-				.containsExactlyInAnyOrder(tuple(LedgerEntryType.EXPENSE_PAID, ALICE, 9000L),
-						tuple(LedgerEntryType.EXPENSE_OWED, BOB, -4500L),
-						tuple(LedgerEntryType.EXPENSE_OWED, CAROL, -4500L));
+		assertThat(ledger.entries()).hasSize(5);
+		assertThat(ledger.entries()).filteredOn(e -> e.type() == LedgerEntryType.EXPENSE_PAID)
+			.singleElement()
+			.satisfies(e -> {
+				assertThat(e.userId()).isEqualTo(alice);
+				assertThat(e.deltaAmount()).isEqualTo(Money.eur("900.00"));
+				assertThat(e.occurredAt()).isEqualTo(MutableClock.START);
+			});
+		assertThat(ledger.entries()).filteredOn(e -> e.type() == LedgerEntryType.EXPENSE_OWED)
+			.extracting(LedgerEntry::deltaAmount)
+			.containsOnly(Money.eur("-225.00"));
 	}
 
 	@Test
-	void payerWhoIsAlsoParticipantNetsCorrectly() {
-		// given
-		var expense = new ExpenseRecordedFixture()
-				.withShares(new Share(ALICE, 3000), new Share(BOB, 3000), new Share(CAROL, 3000)).build();
-
-		// when
-		ledger.appendExpenseEntry(expense, AT);
+	void theMallorcaExampleGivesTheDocumentedBalances() {
+		// given the hotel (900.00 by alice) and the dinner (180.00 by bob), both split
+		// four ways
+		ledger.appendExpenseEntry(new ExpenseRecordedFixture().build(), MutableClock.START);
+		ledger.appendExpenseEntry(new ExpenseRecordedFixture().paidBy(bob).withTotalAmount("180.00").build(),
+				MutableClock.START);
 
 		// then
-		assertThat(ledger.projectBalances()).containsOnly(Map.entry(ALICE, 6000L), Map.entry(BOB, -3000L),
-				Map.entry(CAROL, -3000L));
+		assertThat(balanceOf(alice)).isEqualTo(Money.eur("630.00"));
+		assertThat(balanceOf(bob)).isEqualTo(Money.eur("-90.00"));
+		assertThat(balanceOf(carol)).isEqualTo(Money.eur("-270.00"));
+		assertThat(balanceOf(david)).isEqualTo(Money.eur("-270.00"));
 	}
 
 	@Test
-	void balancesSumToZeroAfterManyExpenses() {
-		// given
-		var members = List.of(ALICE, BOB, CAROL);
-		var random = new Random(42);
+	void thePayerWhoTakesNoPartIsOwedTheWholeTotal() {
+		// when alice pays 90.00 for bob and carol only
+		ledger.appendExpenseEntry(
+				new ExpenseRecordedFixture().withTotalAmount("90.00").splitBetween(bob, carol).build(),
+				MutableClock.START);
 
-		// when
+		// then
+		assertThat(balanceOf(alice)).isEqualTo(Money.eur("90.00"));
+		assertThat(balanceOf(bob)).isEqualTo(Money.eur("-45.00"));
+	}
+
+	@Test
+	void theBalancesOfAGroupAlwaysAddUpToZeroWhateverTheExpenses() {
+		// given 200 random expenses between a random number of people, with amounts that
+		// divide badly
+		Random random = new Random(42);
+		List<UserId> people = IntStream.range(0, 7).mapToObj(i -> new UserId(UUID.randomUUID())).toList();
 		for (int i = 0; i < 200; i++) {
-			var shares = new ArrayList<Share>();
-			long total = 0;
-			for (MemberId member : members) {
-				if (random.nextBoolean()) {
-					long cents = 1 + random.nextInt(10_000);
-					shares.add(new Share(member, cents));
-					total += cents;
-				}
-			}
-			if (!shares.isEmpty()) {
-				ledger.appendExpenseEntry(new ExpenseRecordedFixture().withPayer(members.get(random.nextInt(3)))
-						.withTotal(total).withShares(shares.toArray(Share[]::new)).build(), AT);
-			}
+			int count = 1 + random.nextInt(people.size());
+			UserId[] participants = people.subList(0, count).toArray(new UserId[0]);
+			String amount = (1 + random.nextInt(50_000)) / 100 + "." + String.format("%02d", random.nextInt(100));
+			ledger.appendExpenseEntry(new ExpenseRecordedFixture().paidBy(people.get(random.nextInt(people.size())))
+				.withTotalAmount(amount.equals("0.00") ? "0.01" : amount)
+				.splitBetween(participants)
+				.build(), MutableClock.START);
 		}
 
 		// then
-		assertThat(ledger.projectBalances().values().stream().mapToLong(Long::longValue).sum()).isZero();
+		Money sum = ledger.projectBalances()
+			.stream()
+			.map(MemberBalance::netBalance)
+			.reduce(Money.zero(java.util.Currency.getInstance("EUR")), Money::plus);
+		assertThat(sum).isEqualTo(Money.eur("0.00"));
 	}
 
 }

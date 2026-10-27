@@ -1,156 +1,151 @@
 package de.hsh.favs.sharewise.expense.application;
 
-import java.util.List;
-import de.hsh.favs.sharewise.expense.domain.ExpenseFixture;
-import de.hsh.favs.sharewise.expense.persistence.ExpenseRepository;
 import static de.hsh.favs.sharewise.expense.domain.ExpenseFixture.ALICE;
 import static de.hsh.favs.sharewise.expense.domain.ExpenseFixture.BOB;
 import static de.hsh.favs.sharewise.expense.domain.ExpenseFixture.CAROL;
+import static de.hsh.favs.sharewise.expense.domain.ExpenseFixture.GROUP;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import de.hsh.favs.sharewise.MutableClock;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.expense.api.ExpenseShare;
 import de.hsh.favs.sharewise.expense.domain.Expense;
+import de.hsh.favs.sharewise.expense.domain.ExpenseFixture;
+import de.hsh.favs.sharewise.expense.domain.SplitStrategy;
+import de.hsh.favs.sharewise.expense.persistence.ExpenseRepository;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
-import de.hsh.favs.sharewise.group.api.GroupStatus;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
-import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
-import java.util.UUID;
+import de.hsh.favs.sharewise.shared.Money;
+import java.time.Clock;
+import java.time.ZoneOffset;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
+/**
+ * Orchestration only: what is asked, saved and published, and that a refused call leaves
+ * nothing behind.
+ */
 @ExtendWith(MockitoExtension.class)
 class ExpenseServiceTest {
 
-	@Mock GroupMembership groups;
-	@Mock ExpenseRepository repository;
-	@Mock ApplicationEventPublisher events;
+	@Mock
+	GroupMembership groups;
+
+	@Mock
+	ExpenseRepository expenses;
+
+	@Mock
+	ApplicationEventPublisher events;
 
 	ExpenseService service;
 
-	MemberId outsider = new MemberId(UUID.randomUUID());
-	GroupId group = new RecordExpenseCommandFixture().build().groupId();
-
 	@BeforeEach
 	void setUp() {
-		service = new ExpenseService(groups, repository, events);
-		lenient().when(groups.status(group)).thenReturn(GroupStatus.OPEN);
-		for (MemberId member : new MemberId[] { ALICE, BOB, CAROL }) {
-			lenient().when(groups.isMember(group, member)).thenReturn(true);
-		}
+		service = new ExpenseService(groups, expenses, events, Clock.fixed(MutableClock.START, ZoneOffset.UTC));
 	}
 
-	void assertRejectedWith(RecordExpenseCommand command, ErrorCode code) {
-		assertThatThrownBy(() -> service.record(command)).isInstanceOfSatisfying(DomainException.class,
-				e -> assertThat(e.code()).isEqualTo(code));
-		verifyNoInteractions(repository, events);
+	private void groupIsOpenWithTheFourFriends() {
+		when(groups.view(GROUP)).thenReturn(new ExpenseFixture().groupView());
 	}
 
 	@Test
-	void savesTheExpenseThenPublishesExpenseRecordedWithTheShares() {
+	void recordingChecksTheCallerThenAsksForTheGroupSavesAndPublishesExpenseRecorded() {
 		// given
-		var command = new RecordExpenseCommandFixture().withPayer(BOB).withAmountCents(1_000)
-				.withParticipants(ALICE, BOB, CAROL).build();
+		groupIsOpenWithTheFourFriends();
 
 		// when
-		Expense expense = service.record(command);
+		Expense expense = service.recordExpense(new RecordExpenseCommandFixture().build());
 
 		// then
-		InOrder order = inOrder(groups, repository, events);
-		order.verify(groups).requireMember(group, ALICE);
-		order.verify(repository).save(expense);
-		var event = ArgumentCaptor.forClass(ExpenseRecorded.class);
-		order.verify(events).publishEvent(event.capture());
-		assertThat(event.getValue()).isEqualTo(new ExpenseRecorded(expense.id(), group, BOB, 1_000,
-				List.of(new ExpenseRecorded.Share(ALICE, 334), new ExpenseRecorded.Share(BOB, 333),
-						new ExpenseRecorded.Share(CAROL, 333))));
+		var order = inOrder(groups, expenses, events);
+		order.verify(groups).requireMember(GROUP, ALICE);
+		order.verify(groups).view(GROUP);
+		order.verify(expenses).save(expense);
+		ArgumentCaptor<ExpenseRecorded> published = ArgumentCaptor.forClass(ExpenseRecorded.class);
+		order.verify(events).publishEvent(published.capture());
+		assertThat(published.getValue().paidBy()).isEqualTo(ALICE);
+		assertThat(published.getValue().totalAmount()).isEqualTo(Money.eur("900.00"));
+		assertThat(published.getValue().shares()).extracting(ExpenseShare::owedShare).containsOnly(Money.eur("225.00"));
 	}
 
 	@Test
-	void callerWhoIsNotAMemberIsRejectedAndNothingHappens() {
+	void aCallerWhoIsNotInTheGroupIsRefusedBeforeAnythingElse() {
 		// given
-		doThrow(new DomainException(ErrorCode.NOT_A_MEMBER, "no")).when(groups).requireMember(group, outsider);
+		doThrow(new DomainException(ErrorCode.NOT_A_MEMBER, "no")).when(groups).requireMember(GROUP, CAROL);
 
 		// when / then
-		assertRejectedWith(new RecordExpenseCommandFixture().withCaller(outsider).build(), ErrorCode.NOT_A_MEMBER);
+		assertThatThrownBy(() -> service.recordExpense(new RecordExpenseCommandFixture().withCaller(CAROL).build()))
+			.isInstanceOf(DomainException.class);
+		verify(groups, never()).view(any());
+		verifyNoInteractions(expenses, events);
+	}
+
+	@ParameterizedTest
+	@EnumSource(value = SplitStrategy.class, names = { "EXACT", "PERCENTAGE" })
+	void aSplitStrategyOtherThanEqualIsRefusedAndNothingIsSaved(SplitStrategy strategy) {
+		assertThatThrownBy(
+				() -> service.recordExpense(new RecordExpenseCommandFixture().withSplitStrategy(strategy).build()))
+			.isInstanceOfSatisfying(DomainException.class,
+					e -> assertThat(e.code()).isEqualTo(ErrorCode.SPLIT_NOT_SUPPORTED));
+		verifyNoInteractions(expenses, events);
 	}
 
 	@Test
-	void groupThatIsNotOpenIsCheckedBeforePayerAndParticipants() {
+	void aRuleOfTheAggregateRefusesTheExpenseAndNothingIsSavedOrPublished() {
+		// given a group where carol is no member
+		when(groups.view(GROUP)).thenReturn(new ExpenseFixture().withGroupMembers(ALICE, BOB).groupView());
+
+		// when / then
+		assertThatThrownBy(
+				() -> service.recordExpense(new RecordExpenseCommandFixture().withParticipants(ALICE, CAROL).build()))
+			.isInstanceOfSatisfying(DomainException.class,
+					e -> assertThat(e.code()).isEqualTo(ErrorCode.PARTICIPANT_NOT_IN_GROUP));
+		verifyNoInteractions(expenses, events);
+	}
+
+	@Test
+	void anExpenseForAClosedGroupIsRefused() {
 		// given
-		when(groups.status(group)).thenReturn(GroupStatus.CLOSED_FOR_SETTLEMENT);
+		when(groups.view(GROUP)).thenReturn(new ExpenseFixture().withClosedGroup().groupView());
 
 		// when / then
-		assertRejectedWith(new RecordExpenseCommandFixture().withPayer(outsider).build(), ErrorCode.GROUP_NOT_OPEN);
+		assertThatThrownBy(() -> service.recordExpense(new RecordExpenseCommandFixture().build()))
+			.isInstanceOfSatisfying(DomainException.class,
+					e -> assertThat(e.code()).isEqualTo(ErrorCode.GROUP_NOT_OPEN));
+		verifyNoInteractions(expenses, events);
 	}
 
 	@Test
-	void payerOutsideTheGroupIsRejected() {
-		// when / then
-		assertRejectedWith(new RecordExpenseCommandFixture().withPayer(outsider).build(),
-				ErrorCode.PAYER_NOT_IN_GROUP);
-	}
-
-	@Test
-	void participantOutsideTheGroupIsRejected() {
-		// when / then
-		assertRejectedWith(new RecordExpenseCommandFixture().withParticipants(ALICE, outsider).build(),
-				ErrorCode.PARTICIPANT_NOT_IN_GROUP);
-	}
-
-	@Test
-	void splitOtherThanEqualIsRejected() {
-		// when / then
-		assertRejectedWith(new RecordExpenseCommandFixture().withSplit(SplitType.PERCENTAGE).build(),
-				ErrorCode.SPLIT_NOT_SUPPORTED);
-	}
-
-	@Test
-	void domainRulesAreAppliedAfterTheMembershipChecks() {
-		// when / then
-		assertRejectedWith(new RecordExpenseCommandFixture().withAmountCents(0).build(),
-				ErrorCode.AMOUNT_NOT_POSITIVE);
-		assertRejectedWith(new RecordExpenseCommandFixture().withParticipants(ALICE, ALICE).build(),
-				ErrorCode.NO_PARTICIPANTS);
-	}
-
-	@Test
-	void returnsTheGroupsExpensesAfterTheMemberCheck() {
+	void listingChecksMembershipFirstThenAsksTheRepositoryNewestFirst() {
 		// given
-		List<Expense> stored = List.of(new ExpenseFixture().build());
-		when(repository.findByGroupIdOrderByDateDescCreatedAtDesc(group.value())).thenReturn(stored);
+		Expense hotel = new ExpenseFixture().build();
+		when(expenses.findByGroupIdOrderByDateDescCreatedAtDesc(GROUP.value())).thenReturn(List.of(hotel));
 
 		// when
-		var result = service.list(group, ALICE);
+		var listed = service.listExpenses(GROUP, BOB);
 
 		// then
-		assertThat(result).isEqualTo(stored);
-	}
-
-	@Test
-	void listForANonMemberIsRejectedAndNothingIsRead() {
-		// given
-		doThrow(new DomainException(ErrorCode.NOT_A_MEMBER, "no")).when(groups).requireMember(group, ALICE);
-
-		// when / then
-		assertThatThrownBy(() -> service.list(group, ALICE))
-				.isInstanceOf(DomainException.class);
-		verifyNoInteractions(repository);
+		var order = inOrder(groups, expenses);
+		order.verify(groups).requireMember(GROUP, BOB);
+		order.verify(expenses).findByGroupIdOrderByDateDescCreatedAtDesc(GROUP.value());
+		assertThat(listed).containsExactly(hotel);
 	}
 
 }

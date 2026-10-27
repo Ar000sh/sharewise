@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { components } from "@/api/schema";
 import { api } from "@/lib/api";
 import { messageFor } from "@/lib/errors";
-import { eurosToCents, formatEuro } from "@/lib/money";
+import { centsToAmount, eurosToCents, formatEuro } from "@/lib/money";
 
 type Member = components["schemas"]["Member"];
 
@@ -32,18 +32,18 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(today);
-  const [payerId, setPayerId] = useState(
-    members.find((m) => m.memberId === currentUserId)?.memberId ?? members[0]?.memberId ?? "",
+  const [paidBy, setPaidBy] = useState(
+    members.find((m) => m.userId === currentUserId)?.userId ?? members[0]?.userId ?? "",
   );
   const [excluded, setExcluded] = useState<string[]>([]);
   const [error, setError] = useState<string>();
 
-  const participants = members.filter((m) => !excluded.includes(m.memberId));
+  const participants = members.filter((m) => !excluded.includes(m.userId));
   const cents = eurosToCents(amount);
   const shares = cents !== null && participants.length > 0 ? equalShares(cents, participants.length) : [];
 
-  function toggle(memberId: string) {
-    setExcluded((ex) => (ex.includes(memberId) ? ex.filter((id) => id !== memberId) : [...ex, memberId]));
+  function toggle(userId: string) {
+    setExcluded((ex) => (ex.includes(userId) ? ex.filter((id) => id !== userId) : [...ex, userId]));
   }
 
   async function submit(e: React.FormEvent) {
@@ -57,11 +57,11 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           title: title.trim(),
-          amountCents: cents,
+          totalAmount: centsToAmount(cents),
           date,
-          payerId,
-          participantIds: participants.map((m) => m.memberId),
-          split: "EQUAL",
+          paidBy,
+          participantIds: participants.map((m) => m.userId),
+          splitStrategy: "EQUAL",
         }),
       });
       setTitle("");
@@ -96,9 +96,9 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
       </div>
       <label className="flex flex-col gap-1">
         Paid by
-        <select className="rounded border px-2 py-2" value={payerId} onChange={(e) => setPayerId(e.target.value)}>
+        <select className="rounded border px-2 py-2" value={paidBy} onChange={(e) => setPaidBy(e.target.value)}>
           {members.map((m) => (
-            <option key={m.memberId} value={m.memberId}>
+            <option key={m.userId} value={m.userId}>
               {m.displayName}
             </option>
           ))}
@@ -107,11 +107,11 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
       <fieldset className="flex flex-col gap-1">
         <legend>Split equally between</legend>
         {members.map((m) => (
-          <label key={m.memberId} className="flex items-center gap-2">
+          <label key={m.userId} className="flex items-center gap-2">
             <input
               type="checkbox"
-              checked={!excluded.includes(m.memberId)}
-              onChange={() => toggle(m.memberId)}
+              checked={!excluded.includes(m.userId)}
+              onChange={() => toggle(m.userId)}
             />
             {m.displayName}
           </label>
@@ -120,7 +120,7 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
       {shares.length > 0 && (
         <ul aria-label="Shares" className="text-sm text-gray-700">
           {participants.map((m, i) => (
-            <li key={m.memberId} className="flex justify-between">
+            <li key={m.userId} className="flex justify-between">
               <span>{m.displayName}</span>
               <span>{formatEuro(shares[i])}</span>
             </li>

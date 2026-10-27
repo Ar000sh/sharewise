@@ -39,7 +39,7 @@ cookie is per browser.
 ## Tests
 
 ```sh
-cd backend  && ./mvnw verify                                             # 124 tests, needs Docker
+cd backend  && ./mvnw verify                                             # 183 tests, needs Docker
 cd frontend && npm run lint && npm run typecheck && npm test && npm run build
 npx @redocly/cli lint docs/api/openapi.yaml                              # the API contract
 ```

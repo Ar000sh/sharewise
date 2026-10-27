@@ -1,6 +1,7 @@
 package de.hsh.favs.sharewise.settlement.domain;
 
-import de.hsh.favs.sharewise.shared.MemberId;
+import de.hsh.favs.sharewise.shared.Money;
+import de.hsh.favs.sharewise.shared.UserId;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -10,16 +11,18 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Currency;
 import java.util.UUID;
 
 /**
- * One booking in a group's ledger (domain model: LedgerEntry). Entries are never changed; a correction adds
- * reversing entries. Part of the {@link GroupLedger} aggregate: only the root creates them, there is no
- * repository.
+ * One booking in a group's ledger. Entries are never changed; a correction adds reversing
+ * entries. Part of the {@link GroupLedger} aggregate: only the root creates them, there
+ * is no repository for them.
  */
 @Entity
-@Table(name = "settlement_ledger_entry")
+@Table(name = "settlement_ledger_entries")
 public class LedgerEntry {
 
 	@Id
@@ -29,12 +32,17 @@ public class LedgerEntry {
 	@JoinColumn(name = "group_id", nullable = false)
 	private GroupLedger ledger;
 
-	@Column(name = "member_id", nullable = false)
-	private UUID memberId;
+	@Column(name = "user_id", nullable = false)
+	private UUID userId;
 
-	/** Positive for a credit (the member is owed), negative for a debit (the member owes). */
-	@Column(name = "delta_cents", nullable = false)
-	private long deltaCents;
+	/**
+	 * Positive for a credit (the person is owed), negative for a debit (the person owes).
+	 */
+	@Column(name = "delta_amount", nullable = false, precision = 19, scale = 2)
+	private BigDecimal deltaAmount;
+
+	@Column(nullable = false, length = 3)
+	private String currency;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "entry_type", nullable = false)
@@ -50,22 +58,28 @@ public class LedgerEntry {
 	protected LedgerEntry() {
 	}
 
-	LedgerEntry(GroupLedger ledger, MemberId member, long deltaCents, LedgerEntryType type, UUID referenceId, Instant occurredAt) {
+	LedgerEntry(GroupLedger ledger, UserId userId, Money deltaAmount, LedgerEntryType type, UUID referenceId,
+			Instant occurredAt) {
 		this.id = UUID.randomUUID();
 		this.ledger = ledger;
-		this.memberId = member.value();
-		this.deltaCents = deltaCents;
+		this.userId = userId.value();
+		this.deltaAmount = deltaAmount.amount();
+		this.currency = deltaAmount.currency().getCurrencyCode();
 		this.type = type;
 		this.referenceId = referenceId;
 		this.occurredAt = occurredAt;
 	}
 
-	public MemberId member() {
-		return new MemberId(memberId);
+	public EntryId entryId() {
+		return new EntryId(id);
 	}
 
-	public long deltaCents() {
-		return deltaCents;
+	public UserId userId() {
+		return new UserId(userId);
+	}
+
+	public Money deltaAmount() {
+		return new Money(deltaAmount, Currency.getInstance(currency));
 	}
 
 	public LedgerEntryType type() {

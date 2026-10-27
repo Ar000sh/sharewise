@@ -32,26 +32,26 @@ class ProblemExceptionHandlerTest {
 	@Test
 	void mapsDomainExceptionToProblemJson() throws Exception {
 		mvc.perform(get("/boom"))
-				.andExpect(status().isForbidden())
-				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
-				.andExpect(jsonPath("$.status").value(403))
-				.andExpect(jsonPath("$.code").value("NOT_A_MEMBER"))
-				.andExpect(jsonPath("$.detail").value("not yours"));
+			.andExpect(status().isForbidden())
+			.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+			.andExpect(jsonPath("$.status").value(403))
+			.andExpect(jsonPath("$.code").value("NOT_A_MEMBER"))
+			.andExpect(jsonPath("$.detail").value("not yours"));
 	}
 
 	@Test
 	void malformedUuidReturns400BadRequest() throws Exception {
 		mvc.perform(get("/things/not-a-uuid"))
-				.andExpect(status().isBadRequest())
-				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+			.andExpect(status().isBadRequest())
+			.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
 	}
 
 	@Test
 	void unreadableJsonBodyReturns400BadRequest() throws Exception {
 		mvc.perform(post("/things").contentType(MediaType.APPLICATION_JSON).content("{not json"))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
 	}
 
 	@RestController
