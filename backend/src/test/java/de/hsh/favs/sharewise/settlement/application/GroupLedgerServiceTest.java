@@ -1,73 +1,76 @@
 package de.hsh.favs.sharewise.settlement.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import de.hsh.favs.sharewise.MutableClock;
+import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture;
 import de.hsh.favs.sharewise.settlement.domain.GroupLedger;
 import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
-import de.hsh.favs.sharewise.shared.GroupId;
 import java.time.Clock;
-import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Optional;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * Orchestration only: the ledger is created if absent, locked, and an expense is booked
+ * once.
+ */
 @ExtendWith(MockitoExtension.class)
 class GroupLedgerServiceTest {
-
-	private static final Instant NOW = Instant.parse("2026-10-25T10:00:00Z");
 
 	@Mock
 	GroupLedgerRepository ledgers;
 
 	GroupLedgerService service;
 
+	ExpenseRecorded event = new ExpenseRecordedFixture().build();
+
+	GroupLedger ledger = new GroupLedger(event.groupId());
+
 	@BeforeEach
-	void service() {
-		service = new GroupLedgerService(ledgers, Clock.fixed(NOW, ZoneOffset.UTC));
+	void setUp() {
+		service = new GroupLedgerService(ledgers, Clock.fixed(MutableClock.START, ZoneOffset.UTC));
+		when(ledgers.findForUpdate(event.groupId().value())).thenReturn(Optional.of(ledger));
 	}
 
 	@Test
-	void createsTheLedgerBeforeLockingAndSavesIt() {
+	void anExpenseIsBookedAfterCreatingAndLockingTheLedger() {
 		// given
-		var group = new GroupId(UUID.randomUUID());
-		var ledger = new GroupLedger(group);
-		when(ledgers.findForUpdate(group.value())).thenReturn(Optional.of(ledger));
+		when(ledgers.isBooked(event.groupId().value(), event.expenseId().value())).thenReturn(false);
 
 		// when
-		service.apply(new ExpenseRecordedFixture().withGroup(group).build());
+		service.bookExpense(event);
 
 		// then
 		var order = inOrder(ledgers);
-		order.verify(ledgers).createIfAbsent(group.value());
-		order.verify(ledgers).findForUpdate(group.value());
+		order.verify(ledgers).createIfAbsent(event.groupId().value());
+		order.verify(ledgers).findForUpdate(event.groupId().value());
+		order.verify(ledgers).isBooked(event.groupId().value(), event.expenseId().value());
 		order.verify(ledgers).save(ledger);
-		assertThat(ledger.entries()).isNotEmpty().allSatisfy(entry -> assertThat(entry.occurredAt()).isEqualTo(NOW));
+		assertThat(ledger.entries()).hasSize(5);
+		assertThat(ledger.entries()).allSatisfy(e -> assertThat(e.occurredAt()).isEqualTo(MutableClock.START));
 	}
 
 	@Test
-	void aRepeatedExpenseSavesNothing() {
-		// given
-		var group = new GroupId(UUID.randomUUID());
-		var ledger = new GroupLedger(group);
-		var expense = new ExpenseRecordedFixture().withGroup(group).build();
-		when(ledgers.findForUpdate(group.value())).thenReturn(Optional.of(ledger));
-		when(ledgers.isBooked(group.value(), expense.expenseId())).thenReturn(true);
+	void anExpenseThatIsAlreadyBookedIsNotBookedAgain() {
+		// given the event is delivered a second time
+		when(ledgers.isBooked(event.groupId().value(), event.expenseId().value())).thenReturn(true);
 
 		// when
-		service.apply(expense);
+		service.bookExpense(event);
 
 		// then
-		verify(ledgers, never()).save(ledger);
+		verify(ledgers, never()).save(any());
 		assertThat(ledger.entries()).isEmpty();
 	}
 

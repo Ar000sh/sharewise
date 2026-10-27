@@ -1,179 +1,227 @@
 package de.hsh.favs.sharewise.expense.web;
 
-import de.hsh.favs.sharewise.shared.UserId;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import de.hsh.favs.sharewise.expense.ExpenseIntegrationTest;
-import de.hsh.favs.sharewise.expense.StubCurrentUser;
-import de.hsh.favs.sharewise.expense.StubGroupMembership;
-import de.hsh.favs.sharewise.group.api.GroupStatus;
-import de.hsh.favs.sharewise.shared.GroupId;
+import de.hsh.favs.sharewise.ModuleIntegrationTest;
+import de.hsh.favs.sharewise.MutableClock;
+import de.hsh.favs.sharewise.account.domain.AccountFixture;
+import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.group.web.GroupRequests;
+import java.time.Duration;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.json.JsonMapper;
 
-/**
- * The HTTP contract only: status codes, JSON shape and problem+json codes. The business
- * rules are covered by ExpenseServiceTest and ExpenseTest.
- */
-@ExpenseIntegrationTest
+/** API contract of the expense endpoints with real accounts and real groups. */
+@ModuleIntegrationTest
 class ExpenseControllerTest {
 
 	@Autowired
 	MockMvc mvc;
 
 	@Autowired
-	StubGroupMembership groups;
+	JsonMapper json;
 
 	@Autowired
-	StubCurrentUser currentUser;
+	ApplicationEvents events;
+
+	@Autowired
+	MutableClock clock;
+
+	AccountFixture alice;
+
+	AccountFixture bob;
+
+	AccountFixture carol;
+
+	AccountFixture outsider;
 
 	UUID group;
 
-	UUID alice = StubCurrentUser.ALICE.userId().value();
-
-	UUID bob = UUID.randomUUID();
-
-	UUID carol = UUID.randomUUID();
+	ExpenseRequests expenses;
 
 	@BeforeEach
-	void setUp() {
-		groups.reset();
-		currentUser.reset();
-		group = UUID.randomUUID();
-		groups.group(new GroupId(group), GroupStatus.OPEN, member(alice), member(bob), member(carol));
-	}
-
-	static UserId member(UUID id) {
-		return new UserId(id);
-	}
-
-	ExpenseRequests request() {
-		return new ExpenseRequests(mvc).inGroup(group);
+	void setUp() throws Exception {
+		alice = AccountFixture.signUp(mvc, json, "Alice");
+		bob = AccountFixture.signUp(mvc, json, "Bob");
+		carol = AccountFixture.signUp(mvc, json, "Carol");
+		outsider = AccountFixture.signUp(mvc, json, "Outsider");
+		group = new GroupRequests(mvc, json).groupWith(alice, "Mallorca 2027", bob, carol);
+		expenses = new ExpenseRequests(mvc, json).inGroup(group);
 	}
 
 	@Test
-	void postReturns201AndTheContractShape() throws Exception {
+	void postRecordsTheExpenseAnswers201WithTheContractShapeAndPublishesTheEvent() throws Exception {
 		// when
-		var response = request().withAmountCents(1_000).paidBy(alice).splitBetween(alice, bob, carol).record();
-
-		// then
-		response.andExpect(status().isCreated())
-			.andExpect(jsonPath("$.id").isNotEmpty())
+		expenses.withTitle("Hotel")
+			.withTotalAmount("100.00")
+			.paidBy(alice)
+			.splitBetween(alice, bob, carol)
+			.record(bob)
+			.andExpect(status().isCreated())
+			.andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
+			.andExpect(jsonPath("$.id").isString())
 			.andExpect(jsonPath("$.title").value("Hotel"))
-			.andExpect(jsonPath("$.amountCents").value(1_000))
+			.andExpect(jsonPath("$.totalAmount").value("100.00"))
 			.andExpect(jsonPath("$.date").value("2027-06-01"))
-			.andExpect(jsonPath("$.payerId").value(alice.toString()))
-			.andExpect(jsonPath("$.shares.length()").value(3))
-			.andExpect(jsonPath("$.shares[0].memberId").value(alice.toString()))
-			.andExpect(jsonPath("$.shares[0].shareCents").value(334))
-			.andExpect(jsonPath("$.shares[1].memberId").value(bob.toString()))
-			.andExpect(jsonPath("$.shares[1].shareCents").value(333))
-			.andExpect(jsonPath("$.shares[2].shareCents").value(333));
-	}
-
-	@Test
-	void splitPercentageIs422SplitNotSupported() throws Exception {
-		// when
-		var response = request().splitBetween(alice).withSplit("PERCENTAGE").record();
+			.andExpect(jsonPath("$.paidBy").value(alice.idString()))
+			.andExpect(jsonPath("$.recordedBy").value(bob.idString()))
+			.andExpect(jsonPath("$.splitStrategy").value("EQUAL"))
+			.andExpect(jsonPath("$.status").value("ACTIVE"))
+			.andExpect(jsonPath("$.shares[0].participantId").value(alice.idString()))
+			.andExpect(jsonPath("$.shares[0].owedShare").value("33.34"))
+			.andExpect(jsonPath("$.shares[1].owedShare").value("33.33"))
+			.andExpect(jsonPath("$.shares[2].owedShare").value("33.33"));
 
 		// then
-		response.andExpect(status().isUnprocessableEntity()).andExpect(jsonPath("$.code").value("SPLIT_NOT_SUPPORTED"));
+		assertThat(events.stream(ExpenseRecorded.class).filter(e -> e.groupId().value().equals(group))).singleElement()
+			.satisfies(e -> assertThat(e.paidBy()).isEqualTo(alice.userId()));
 	}
 
 	@Test
-	void unknownSplitValueIs400() throws Exception {
-		request().splitBetween(alice)
-			.withSplit("WEIRD")
-			.record()
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
-	}
-
-	@Test
-	void blankTitleIs400() throws Exception {
-		request().withTitle("")
-			.splitBetween(alice)
-			.record()
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
-	}
-
-	@Test
-	void listIsNewestFirstByDateThenCreationTimeWithShares() throws Exception {
-		// given
-		request().withTitle("Old")
+	void getListsTheExpensesNewestFirstByDateThenByCreation() throws Exception {
+		// given three expenses; the clock moves so creation times differ
+		expenses.withTitle("Older")
 			.onDate("2027-06-01")
+			.paidBy(alice)
 			.splitBetween(alice, bob)
-			.record()
+			.record(alice)
 			.andExpect(status().isCreated());
-		request().withTitle("Newest")
+		clock.advance(Duration.ofSeconds(1));
+		expenses.withTitle("Newer")
 			.onDate("2027-06-03")
 			.paidBy(bob)
-			.withAmountCents(200)
 			.splitBetween(alice, bob)
-			.record()
+			.record(alice)
 			.andExpect(status().isCreated());
-		request().withTitle("SameDayLater")
+		clock.advance(Duration.ofSeconds(1));
+		expenses.withTitle("Same day, later")
 			.onDate("2027-06-01")
-			.splitBetween(alice)
-			.record()
+			.paidBy(bob)
+			.splitBetween(alice, bob)
+			.record(alice)
 			.andExpect(status().isCreated());
-
-		// when
-		var response = request().list();
-
-		// then
-		response.andExpect(status().isOk())
-			.andExpect(jsonPath("$.length()").value(3))
-			.andExpect(jsonPath("$[0].title").value("Newest"))
-			.andExpect(jsonPath("$[0].shares.length()").value(2))
-			.andExpect(jsonPath("$[0].shares[0].shareCents").value(100))
-			.andExpect(jsonPath("$[1].title").value("SameDayLater"))
-			.andExpect(jsonPath("$[2].title").value("Old"));
-	}
-
-	@Test
-	void invalidUuidIs400() throws Exception {
-		request().inGroup("not-a-uuid")
-			.splitBetween(alice)
-			.record()
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
-		request().paidBy("nope")
-			.splitBetween(alice)
-			.record()
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
-		request().inGroup("not-a-uuid")
-			.list()
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
-	}
-
-	@Test
-	void callerNotMemberIs403() throws Exception {
-		// given
-		groups.group(new GroupId(group), GroupStatus.OPEN, member(bob), member(carol));
 
 		// when / then
-		request().paidBy(bob)
-			.splitBetween(bob)
-			.record()
-			.andExpect(status().isForbidden())
-			.andExpect(jsonPath("$.code").value("NOT_A_MEMBER"));
-		request().list().andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("NOT_A_MEMBER"));
+		expenses.list(carol)
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].title").value("Newer"))
+			.andExpect(jsonPath("$[1].title").value("Same day, later"))
+			.andExpect(jsonPath("$[2].title").value("Older"))
+			.andExpect(jsonPath("$[0].shares.length()").value(2));
 	}
 
 	@Test
-	void unknownGroupIs404() throws Exception {
-		request().inGroup(UUID.randomUUID())
-			.list()
+	void aCallerWhoIsNotInTheGroupGets403OnBothEndpoints() throws Exception {
+		expenses.paidBy(outsider)
+			.splitBetween(outsider)
+			.record(outsider)
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.code").value("NOT_A_MEMBER"));
+		expenses.list(outsider).andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("NOT_A_MEMBER"));
+	}
+
+	@Test
+	void anUnknownGroupIs404() throws Exception {
+		new ExpenseRequests(mvc, json).paidBy(alice)
+			.splitBetween(alice)
+			.record(alice)
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("GROUP_NOT_FOUND"));
+	}
+
+	@Test
+	void aPayerOrParticipantOutsideTheGroupIs422WithTheMatchingCode() throws Exception {
+		expenses.paidBy(outsider)
+			.splitBetween(alice)
+			.record(alice)
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+			.andExpect(jsonPath("$.code").value("PAYER_NOT_IN_GROUP"));
+		expenses.paidBy(alice)
+			.splitBetween(alice, outsider)
+			.record(alice)
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.code").value("PARTICIPANT_NOT_IN_GROUP"));
+	}
+
+	@Test
+	void noParticipantsAndAnAmountOfZeroAre422() throws Exception {
+		expenses.paidBy(alice)
+			.record(alice)
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.code").value("NO_PARTICIPANTS"));
+		expenses.paidBy(alice)
+			.splitBetween(alice, bob)
+			.withTotalAmount("0.00")
+			.record(alice)
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.code").value("AMOUNT_NOT_POSITIVE"));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "EXACT", "PERCENTAGE" })
+	void aSplitStrategyOtherThanEqualIs422(String strategy) throws Exception {
+		expenses.paidBy(alice)
+			.splitBetween(alice, bob)
+			.withSplitStrategy(strategy)
+			.record(alice)
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.code").value("SPLIT_NOT_SUPPORTED"));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "1,5", "1.005", "abc", "" })
+	void anAmountThatIsNotAPlainDecimalWithTwoDecimalsIs400(String amount) throws Exception {
+		expenses.paidBy(alice)
+			.splitBetween(alice, bob)
+			.withTotalAmount(amount)
+			.record(alice)
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+	}
+
+	@Test
+	void aBlankOrTooLongTitleAMalformedIdOrAnUnknownStrategyIs400() throws Exception {
+		expenses.paidBy(alice)
+			.splitBetween(alice, bob)
+			.withTitle("  ")
+			.record(alice)
+			.andExpect(status().isBadRequest());
+		expenses.paidBy(alice)
+			.splitBetween(alice, bob)
+			.withTitle("x".repeat(201))
+			.record(alice)
+			.andExpect(status().isBadRequest());
+		expenses.paidBy(alice)
+			.splitBetween(alice, bob)
+			.withSplitStrategy("HALF")
+			.record(alice)
+			.andExpect(status().isBadRequest());
+		mvc.perform(get("/groups/not-a-uuid/expenses").header("Authorization", alice.bearer()))
+			.andExpect(status().isBadRequest());
+		mvc.perform(post("/groups/" + group + "/expenses").header("Authorization", alice.bearer())
+			.contentType(APPLICATION_JSON)
+			.content("{not json")).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void bothEndpointsNeedASignedInUser() throws Exception {
+		mvc.perform(get("/groups/" + group + "/expenses")).andExpect(status().isUnauthorized());
+		mvc.perform(post("/groups/" + group + "/expenses").contentType(APPLICATION_JSON).content("{}"))
+			.andExpect(status().isUnauthorized());
 	}
 
 }

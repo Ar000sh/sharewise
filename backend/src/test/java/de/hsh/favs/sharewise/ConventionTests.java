@@ -26,7 +26,7 @@ class ConventionTests {
 	private static final String ROOT = "de.hsh.favs.sharewise";
 
 	/** Modules that already follow the conventions. */
-	private static final Set<String> CHECKED = Set.of("account", "group");
+	private static final Set<String> CHECKED = Set.of("account", "group", "expense", "settlement");
 
 	private static final JavaClasses MAIN = new ClassFileImporter()
 		.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)

@@ -1,10 +1,12 @@
 package de.hsh.favs.sharewise.expense.web;
 
-import de.hsh.favs.sharewise.shared.UserId;
 import de.hsh.favs.sharewise.account.api.CurrentUser;
 import de.hsh.favs.sharewise.expense.application.ExpenseService;
 import de.hsh.favs.sharewise.expense.application.RecordExpenseCommand;
+import de.hsh.favs.sharewise.expense.domain.ExpenseTitle;
 import de.hsh.favs.sharewise.shared.GroupId;
+import de.hsh.favs.sharewise.shared.Money;
+import de.hsh.favs.sharewise.shared.UserId;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+/** Record and list the expenses of a group. */
 @RestController
 @RequestMapping("/groups/{groupId}/expenses")
 class ExpenseController {
@@ -32,16 +35,16 @@ class ExpenseController {
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	ExpenseResponse record(@PathVariable UUID groupId, @Valid @RequestBody ExpenseRequest request) {
-		var command = new RecordExpenseCommand(new GroupId(groupId), caller(), request.title(), request.amountCents(),
-				request.date(), new UserId(request.payerId()),
-				request.participantIds().stream().map(UserId::new).toList(), request.split());
-		return ExpenseResponse.from(expenses.record(command));
+	ExpenseResponse recordExpense(@PathVariable UUID groupId, @Valid @RequestBody RecordExpenseRequest request) {
+		var command = new RecordExpenseCommand(new GroupId(groupId), caller(), new ExpenseTitle(request.title()),
+				Money.eur(request.totalAmount()), request.date(), new UserId(request.paidBy()),
+				request.participantIds().stream().map(UserId::new).toList(), request.splitStrategy());
+		return ExpenseResponse.of(expenses.recordExpense(command));
 	}
 
 	@GetMapping
-	List<ExpenseResponse> list(@PathVariable UUID groupId) {
-		return expenses.list(new GroupId(groupId), caller()).stream().map(ExpenseResponse::from).toList();
+	List<ExpenseResponse> listExpenses(@PathVariable UUID groupId) {
+		return expenses.listExpenses(new GroupId(groupId), caller()).stream().map(ExpenseResponse::of).toList();
 	}
 
 	private UserId caller() {

@@ -4,82 +4,96 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
+import de.hsh.favs.sharewise.account.domain.AccountFixture;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
- * HTTP set-up for the expense endpoints. Defaults: "Hotel", 10.00 EUR on 2027-06-01,
- * EQUAL, paid by the first participant.
+ * HTTP calls for the expense endpoints. Defaults: "Hotel", 10.00 EUR on 2027-06-01,
+ * EQUAL, paid by the first participant. A field set to {@code null} is left out of the
+ * body.
  */
-class ExpenseRequests {
+public class ExpenseRequests {
 
 	private final MockMvc mvc;
 
-	private Object groupId = UUID.randomUUID();
+	private final JsonMapper json;
+
+	private UUID groupId = UUID.randomUUID();
 
 	private String title = "Hotel";
 
-	private long amountCents = 1_000;
+	private String totalAmount = "10.00";
 
 	private String date = "2027-06-01";
 
-	private String payer;
+	private String paidBy;
 
 	private List<String> participants = List.of();
 
-	private String split = "EQUAL";
+	private String splitStrategy = "EQUAL";
 
-	ExpenseRequests(MockMvc mvc) {
+	public ExpenseRequests(MockMvc mvc, JsonMapper json) {
 		this.mvc = mvc;
+		this.json = json;
 	}
 
-	ExpenseRequests inGroup(Object groupId) {
+	public ExpenseRequests inGroup(UUID groupId) {
 		this.groupId = groupId;
 		return this;
 	}
 
-	ExpenseRequests withTitle(String title) {
+	public ExpenseRequests withTitle(String title) {
 		this.title = title;
 		return this;
 	}
 
-	ExpenseRequests withAmountCents(long amountCents) {
-		this.amountCents = amountCents;
+	public ExpenseRequests withTotalAmount(String totalAmount) {
+		this.totalAmount = totalAmount;
 		return this;
 	}
 
-	ExpenseRequests onDate(String date) {
+	public ExpenseRequests onDate(String date) {
 		this.date = date;
 		return this;
 	}
 
-	ExpenseRequests paidBy(Object payer) {
-		this.payer = payer.toString();
+	public ExpenseRequests paidBy(AccountFixture payer) {
+		this.paidBy = payer.idString();
 		return this;
 	}
 
-	ExpenseRequests splitBetween(Object... participants) {
-		this.participants = java.util.Arrays.stream(participants).map(Object::toString).toList();
+	public ExpenseRequests splitBetween(AccountFixture... people) {
+		this.participants = Arrays.stream(people).map(AccountFixture::idString).toList();
 		return this;
 	}
 
-	ExpenseRequests withSplit(String split) {
-		this.split = split;
+	public ExpenseRequests withSplitStrategy(String splitStrategy) {
+		this.splitStrategy = splitStrategy;
 		return this;
 	}
 
-	ResultActions record() throws Exception {
-		String payerId = payer != null ? payer : participants.get(0);
-		String body = """
-				{"title":"%s","amountCents":%d,"date":"%s","payerId":"%s","participantIds":["%s"],"split":"%s"}"""
-			.formatted(title, amountCents, date, payerId, String.join("\",\"", participants), split);
-		return mvc.perform(post("/groups/{id}/expenses", groupId).contentType(APPLICATION_JSON).content(body));
+	public ResultActions record(AccountFixture caller) throws Exception {
+		Map<String, Object> body = new LinkedHashMap<>();
+		body.put("title", title);
+		body.put("totalAmount", totalAmount);
+		body.put("date", date);
+		body.put("paidBy", paidBy != null ? paidBy : participants.get(0));
+		body.put("participantIds", participants);
+		body.put("splitStrategy", splitStrategy);
+		return mvc.perform(post("/groups/{id}/expenses", groupId).header("Authorization", caller.bearer())
+			.contentType(APPLICATION_JSON)
+			.content(json.writeValueAsString(body)));
 	}
 
-	ResultActions list() throws Exception {
-		return mvc.perform(get("/groups/{id}/expenses", groupId));
+	public ResultActions list(AccountFixture caller) throws Exception {
+		return mvc.perform(get("/groups/{id}/expenses", groupId).header("Authorization", caller.bearer()));
 	}
 
 }

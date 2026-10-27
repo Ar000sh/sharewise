@@ -1,13 +1,13 @@
 package de.hsh.favs.sharewise.settlement.application;
 
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.settlement.domain.GroupLedger;
 import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
 import java.time.Clock;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Use cases of the ledger aggregate: book what the other contexts announce. */
 @Service
 public class GroupLedgerService {
 
@@ -15,26 +15,22 @@ public class GroupLedgerService {
 
 	private final Clock clock;
 
-	/**
-	 * Uses the application's {@code Clock} bean when there is one (tests replace it),
-	 * else the system clock.
-	 */
-	@Autowired
-	GroupLedgerService(GroupLedgerRepository ledgers, ObjectProvider<Clock> clock) {
-		this(ledgers, clock.getIfAvailable(Clock::systemUTC));
-	}
-
 	GroupLedgerService(GroupLedgerRepository ledgers, Clock clock) {
 		this.ledgers = ledgers;
 		this.clock = clock;
 	}
 
+	/**
+	 * Books an expense in its group's ledger, creating the ledger on the first event.
+	 * Applying the same event twice books it once: the event may be delivered more than
+	 * once.
+	 */
 	@Transactional
-	public void apply(ExpenseRecorded expense) {
+	public void bookExpense(ExpenseRecorded expense) {
 		var group = expense.groupId().value();
 		ledgers.createIfAbsent(group);
-		var ledger = ledgers.findForUpdate(group).orElseThrow();
-		if (!ledgers.isBooked(group, expense.expenseId())) {
+		GroupLedger ledger = ledgers.findForUpdate(group).orElseThrow();
+		if (!ledgers.isBooked(group, expense.expenseId().value())) {
 			ledger.appendExpenseEntry(expense, clock.instant());
 			ledgers.save(ledger);
 		}

@@ -1,79 +1,75 @@
 package de.hsh.favs.sharewise.expense.domain;
 
-import de.hsh.favs.sharewise.shared.UserId;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import de.hsh.favs.sharewise.expense.api.ExpenseShare;
+import de.hsh.favs.sharewise.shared.DomainException;
+import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.Money;
+import de.hsh.favs.sharewise.shared.UserId;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class EqualSplitTest {
 
-	static List<UserId> members(int n) {
-		return IntStream.range(0, n).mapToObj(i -> new UserId(UUID.randomUUID())).toList();
-	}
-
-	static List<Long> cents(List<Share> shares) {
-		return shares.stream().map(s -> s.amount().cents()).toList();
+	private static List<UserId> people(int count) {
+		return IntStream.range(0, count).mapToObj(i -> new UserId(UUID.randomUUID())).toList();
 	}
 
 	@Test
-	void splitsOneHundredEuroAmongFourEvenly() {
-		// when
-		var shares = EqualSplit.split(Money.eur(10_000), members(4));
-
-		// then
-		assertThat(cents(shares)).containsExactly(2_500L, 2_500L, 2_500L, 2_500L);
-	}
-
-	@Test
-	void remainderCentsGoToFirstParticipants() {
-		// when
-		var shares = EqualSplit.split(Money.eur(1_000), members(3));
-
-		// then
-		assertThat(cents(shares)).containsExactly(334L, 333L, 333L);
-	}
-
-	@Test
-	void oneCentAmongThreeGivesFirstTheCent() {
-		// when
-		var shares = EqualSplit.split(Money.eur(1), members(3));
-
-		// then
-		assertThat(cents(shares)).containsExactly(1L, 0L, 0L);
-	}
-
-	@Test
-	void sharesKeepTheOrderOfParticipants() {
+	void anEvenAmountIsDividedEqually() {
 		// given
-		var people = members(3);
+		List<UserId> four = people(4);
 
 		// when
-		var shares = EqualSplit.split(Money.eur(100), people);
+		List<ExpenseShare> shares = EqualSplit.split(Money.eur("900.00"), four);
 
 		// then
-		assertThat(shares.stream().map(Share::memberId).toList()).containsExactlyElementsOf(people);
+		assertThat(shares).extracting(ExpenseShare::owedShare).containsOnly(Money.eur("225.00"));
+		assertThat(shares).extracting(ExpenseShare::participantId).containsExactlyElementsOf(four);
 	}
 
 	@Test
-	void sharesAlwaysSumToTotalAndDifferByAtMostOneCent() {
-		// given
-		var random = new Random(42);
-		for (int i = 0; i < 1_000; i++) {
-			long total = 1 + random.nextLong(1_000_000_000L);
-			int n = 1 + random.nextInt(50);
+	void theLeftoverCentsGoOneEachToTheFirstParticipantsInTheOrderGiven() {
+		// when 100.00 is split three ways
+		List<ExpenseShare> shares = EqualSplit.split(Money.eur("100.00"), people(3));
 
-			// when
-			var cents = cents(EqualSplit.split(Money.eur(total), members(n)));
+		// then
+		assertThat(shares).extracting(ExpenseShare::owedShare)
+			.containsExactly(Money.eur("33.34"), Money.eur("33.33"), Money.eur("33.33"));
+	}
 
-			// then
-			assertThat(cents.stream().mapToLong(Long::longValue).sum()).isEqualTo(total);
-			assertThat(cents.get(0) - cents.get(n - 1)).isBetween(0L, 1L);
-		}
+	@ParameterizedTest
+	@ValueSource(ints = { 1, 2, 3, 7, 13, 99 })
+	void theSharesAlwaysAddUpToTheTotalExactly(int count) {
+		// given an amount that divides badly
+		Money total = Money.eur("1000.01");
+
+		// when
+		Money sum = EqualSplit.split(total, people(count))
+			.stream()
+			.map(ExpenseShare::owedShare)
+			.reduce(Money.zero(total.currency()), Money::plus);
+
+		// then
+		assertThat(sum).isEqualTo(total);
+	}
+
+	@Test
+	void noParticipantsGivesNoShares() {
+		assertThat(EqualSplit.split(Money.eur("10.00"), List.of())).isEmpty();
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "0.00", "-5.00" })
+	void aTotalThatIsNotPositiveIsRefused(String amount) {
+		assertThatThrownBy(() -> EqualSplit.split(Money.eur(amount), people(2))).isInstanceOfSatisfying(
+				DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.AMOUNT_NOT_POSITIVE));
 	}
 
 }

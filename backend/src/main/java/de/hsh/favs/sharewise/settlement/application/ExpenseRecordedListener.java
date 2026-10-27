@@ -4,19 +4,22 @@ import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
-/** Driving adapter: turns the event into a call on the application service. */
+/**
+ * Turns the expense context's event into a call on the ledger service. Asynchronous,
+ * after the commit.
+ */
 @Component
 class ExpenseRecordedListener {
 
-	private final GroupLedgerService ledgerService;
+	private final GroupLedgerService ledgers;
 
-	ExpenseRecordedListener(GroupLedgerService ledgerService) {
-		this.ledgerService = ledgerService;
+	ExpenseRecordedListener(GroupLedgerService ledgers) {
+		this.ledgers = ledgers;
 	}
 
 	@ApplicationModuleListener
 	void on(ExpenseRecorded event) {
-		ledgerService.apply(event);
+		ledgers.bookExpense(event);
 	}
 
 }

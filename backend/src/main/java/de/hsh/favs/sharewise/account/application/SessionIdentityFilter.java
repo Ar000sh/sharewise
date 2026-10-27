@@ -15,9 +15,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Resolves {@code Authorization: Bearer <token>} into the caller. A bad token is refused
- * here. A request without an Authorization header passes with no caller bound, so
- * {@code CurrentUser.get()} answers 401 on every protected endpoint.
+ * Resolves {@code Authorization: Bearer <token>} into the caller and answers 401 for a
+ * missing, malformed or unknown token, before any controller runs. Only {@code /auth/**}
+ * (sign-up, sign-in) and {@code /actuator/**} are open.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)
@@ -41,11 +41,7 @@ class SessionIdentityFilter extends OncePerRequestFilter {
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 			throws ServletException, IOException {
 		String header = request.getHeader("Authorization");
-		if (header == null) {
-			chain.doFilter(request, response);
-			return;
-		}
-		Optional<UserProfile> caller = header.startsWith(BEARER)
+		Optional<UserProfile> caller = header != null && header.startsWith(BEARER)
 				? accounts.resolveSession(header.substring(BEARER.length()).trim()) : Optional.empty();
 		if (caller.isEmpty()) {
 			unauthenticated(response);

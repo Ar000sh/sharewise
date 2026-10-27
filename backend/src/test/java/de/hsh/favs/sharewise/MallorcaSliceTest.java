@@ -88,12 +88,13 @@ class MallorcaSliceTest {
 		assertThat(fields(created)).containsExactly("id", "memberCount", "name", "status");
 		assertThat(fields(detail)).containsExactly("id", "memberCount", "members", "name", "status");
 		assertThat(fields(detail.get("members").get(0))).containsExactly("displayName", "role", "userId");
-		assertThat(fields(expense)).containsExactly("amountCents", "date", "id", "payerId", "shares", "title");
-		assertThat(fields(expense.get("shares").get(0))).containsExactly("memberId", "shareCents");
+		assertThat(fields(expense)).containsExactly("date", "id", "paidBy", "recordedBy", "shares", "splitStrategy",
+				"status", "title", "totalAmount");
+		assertThat(fields(expense.get("shares").get(0))).containsExactly("owedShare", "participantId");
 		assertThat(fields(invitation)).containsExactly("expiresAt", "token");
 		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
 			JsonNode balances = read(get("/groups/" + group + "/balances").header("Authorization", auth(alice)));
-			assertThat(fields(balances.get(0))).containsExactly("balanceCents", "displayName", "memberId");
+			assertThat(fields(balances.get(0))).containsExactly("displayName", "netBalance", "userId");
 		});
 	}
 
@@ -206,11 +207,11 @@ class MallorcaSliceTest {
 			List<String> participants) throws Exception {
 		Map<String, Object> body = new LinkedHashMap<>();
 		body.put("title", title);
-		body.put("amountCents", cents);
+		body.put("totalAmount", java.math.BigDecimal.valueOf(cents, 2).toPlainString());
 		body.put("date", "2027-06-01");
-		body.put("payerId", payer);
+		body.put("paidBy", payer);
 		body.put("participantIds", participants);
-		body.put("split", "EQUAL");
+		body.put("splitStrategy", "EQUAL");
 		return mvc.perform(post("/groups/" + group + "/expenses").header("Authorization", auth(caller))
 			.contentType(APPLICATION_JSON)
 			.content(json.writeValueAsString(body)));
@@ -219,7 +220,8 @@ class MallorcaSliceTest {
 	private Map<String, Long> balances(UUID group, String caller) throws Exception {
 		Map<String, Long> result = new LinkedHashMap<>();
 		for (JsonNode b : read(get("/groups/" + group + "/balances").header("Authorization", auth(caller)))) {
-			result.put(b.get("memberId").asString(), b.get("balanceCents").asLong());
+			result.put(b.get("userId").asString(),
+					new java.math.BigDecimal(b.get("netBalance").asString()).movePointRight(2).longValueExact());
 		}
 		return result;
 	}
