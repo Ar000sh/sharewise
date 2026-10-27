@@ -121,10 +121,10 @@ class GroupControllerTest {
 		groups.detail(id, bob)
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.memberCount").value(2))
-			.andExpect(jsonPath("$.members[0].displayName").value("Alice"))
-			.andExpect(jsonPath("$.members[0].role").value("ADMIN"))
-			.andExpect(jsonPath("$.members[1].displayName").value("Bob"))
-			.andExpect(jsonPath("$.members[1].role").value("MEMBER"));
+			.andExpect(jsonPath("$.members[?(@.memberId=='" + alice.idString() + "')].displayName").value("Alice"))
+			.andExpect(jsonPath("$.members[?(@.memberId=='" + alice.idString() + "')].role").value("ADMIN"))
+			.andExpect(jsonPath("$.members[?(@.memberId=='" + bob.idString() + "')].displayName").value("Bob"))
+			.andExpect(jsonPath("$.members[?(@.memberId=='" + bob.idString() + "')].role").value("MEMBER"));
 	}
 
 	@Test
