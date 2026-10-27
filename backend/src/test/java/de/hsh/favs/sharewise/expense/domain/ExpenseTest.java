@@ -17,8 +17,10 @@ class ExpenseTest {
 	@Test
 	void recordsExpenseWithEqualSharesInParticipantOrder() {
 		// given / when
-		Expense expense = new ExpenseFixture().withAmountCents(90_001).withPayer(BOB)
-				.withParticipants(ALICE, BOB).build();
+		Expense expense = new ExpenseFixture().withAmountCents(90_001)
+			.withPayer(BOB)
+			.withParticipants(ALICE, BOB)
+			.build();
 
 		// then
 		assertThat(expense.id()).isNotNull();

@@ -55,24 +55,27 @@ class InvitationControllerTest {
 		UUID group = groups.createGroup(alice, "Mallorca 2027");
 
 		// when / then
-		groups.createInvitation(group, alice).andExpect(status().isCreated())
-				.andExpect(content().contentTypeCompatibleWith("application/json"))
-				.andExpect(jsonPath("$.token").isString())
-				.andExpect(jsonPath("$.expiresAt").value("2027-06-08T10:00:00Z"));
+		groups.createInvitation(group, alice)
+			.andExpect(status().isCreated())
+			.andExpect(content().contentTypeCompatibleWith("application/json"))
+			.andExpect(jsonPath("$.token").isString())
+			.andExpect(jsonPath("$.expiresAt").value("2027-06-08T10:00:00Z"));
 	}
 
 	@Test
 	void postAsNonMemberIs403() throws Exception {
 		UUID group = groups.createGroup(alice, "Closed circle");
 
-		groups.createInvitation(group, bob).andExpect(status().isForbidden())
-				.andExpect(jsonPath("$.code").value("NOT_A_MEMBER"));
+		groups.createInvitation(group, bob)
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.code").value("NOT_A_MEMBER"));
 	}
 
 	@Test
 	void postForAnUnknownGroupIs404() throws Exception {
-		groups.createInvitation(UUID.randomUUID(), alice).andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("GROUP_NOT_FOUND"));
+		groups.createInvitation(UUID.randomUUID(), alice)
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value("GROUP_NOT_FOUND"));
 	}
 
 	@Test
@@ -82,13 +85,16 @@ class InvitationControllerTest {
 		String token = groups.invite(group, alice);
 
 		// when
-		groups.accept(token, bob).andExpect(status().isOk()).andExpect(jsonPath("$.id").value(group.toString()))
-				.andExpect(jsonPath("$.status").value("OPEN")).andExpect(jsonPath("$.memberCount").value(2));
+		groups.accept(token, bob)
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.id").value(group.toString()))
+			.andExpect(jsonPath("$.status").value("OPEN"))
+			.andExpect(jsonPath("$.memberCount").value(2));
 
 		// then
 		GroupId id = new GroupId(group);
 		assertThat(events.stream(MemberJoined.class).filter(e -> e.groupId().equals(id)))
-				.contains(new MemberJoined(id, bob.memberId(), Role.MEMBER));
+			.contains(new MemberJoined(id, bob.memberId(), Role.MEMBER));
 		groups.detail(group, bob).andExpect(status().isOk());
 	}
 
@@ -99,11 +105,13 @@ class InvitationControllerTest {
 		groups.accept(token, bob).andExpect(status().isOk());
 
 		// when / then
-		groups.accept(token, bob).andExpect(status().isConflict())
-				.andExpect(content().contentTypeCompatibleWith("application/problem+json"))
-				.andExpect(jsonPath("$.code").value("ALREADY_MEMBER"));
-		groups.accept(token, alice).andExpect(status().isConflict())
-				.andExpect(jsonPath("$.code").value("ALREADY_MEMBER"));
+		groups.accept(token, bob)
+			.andExpect(status().isConflict())
+			.andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+			.andExpect(jsonPath("$.code").value("ALREADY_MEMBER"));
+		groups.accept(token, alice)
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("ALREADY_MEMBER"));
 	}
 
 	@Test
@@ -114,16 +122,18 @@ class InvitationControllerTest {
 		clock.advance(Duration.ofDays(7).plusSeconds(1));
 
 		// when / then
-		groups.accept(token, bob).andExpect(status().isGone())
-				.andExpect(content().contentTypeCompatibleWith("application/problem+json"))
-				.andExpect(jsonPath("$.code").value("INVITATION_EXPIRED"));
+		groups.accept(token, bob)
+			.andExpect(status().isGone())
+			.andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+			.andExpect(jsonPath("$.code").value("INVITATION_EXPIRED"));
 		groups.detail(group, alice).andExpect(jsonPath("$.memberCount").value(1));
 	}
 
 	@Test
 	void acceptWithAnUnknownTokenIs404() throws Exception {
-		groups.accept("does-not-exist-token-123456", bob).andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("INVITATION_NOT_FOUND"));
+		groups.accept("does-not-exist-token-123456", bob)
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value("INVITATION_NOT_FOUND"));
 	}
 
 	@Test

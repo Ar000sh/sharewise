@@ -15,8 +15,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Resolves {@code Authorization: Bearer <token>} into the caller. A bad token is refused here. A request without an
- * Authorization header passes with no caller bound, so {@code CurrentUser.get()} answers 401 on every protected endpoint.
+ * Resolves {@code Authorization: Bearer <token>} into the caller. A bad token is refused
+ * here. A request without an Authorization header passes with no caller bound, so
+ * {@code CurrentUser.get()} answers 401 on every protected endpoint.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)
@@ -41,7 +42,8 @@ class SessionIdentityFilter extends OncePerRequestFilter {
 			throws ServletException, IOException {
 		String header = request.getHeader("Authorization");
 		if (header == null) {
-			// No credentials: nothing is bound, so CurrentUser.get() answers 401 on every protected endpoint.
+			// No credentials: nothing is bound, so CurrentUser.get() answers 401 on every
+			// protected endpoint.
 			chain.doFilter(request, response);
 			return;
 		}
@@ -59,8 +61,9 @@ class SessionIdentityFilter extends OncePerRequestFilter {
 		response.setStatus(ErrorCode.UNAUTHENTICATED.status());
 		response.setContentType("application/problem+json");
 		response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-		response.getWriter().write("{\"type\":\"about:blank\",\"title\":\"Unauthorized\",\"status\":401,"
-				+ "\"code\":\"UNAUTHENTICATED\",\"detail\":\"Missing or invalid session\"}");
+		response.getWriter()
+			.write("{\"type\":\"about:blank\",\"title\":\"Unauthorized\",\"status\":401,"
+					+ "\"code\":\"UNAUTHENTICATED\",\"detail\":\"Missing or invalid session\"}");
 	}
 
 }

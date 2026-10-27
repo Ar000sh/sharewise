@@ -109,11 +109,11 @@ class GroupServiceTest {
 		// given
 		UUID groupId = UUID.randomUUID();
 		doThrow(new DomainException(ErrorCode.NOT_A_MEMBER, "no")).when(membership)
-				.requireMember(new GroupId(groupId), bob.memberId());
+			.requireMember(new GroupId(groupId), bob.memberId());
 
 		// when / then
-		assertThatThrownBy(() -> service.detail(groupId, bob.userId())).isInstanceOfSatisfying(
-				DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
+		assertThatThrownBy(() -> service.detail(groupId, bob.userId())).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
 		verifyNoInteractions(groups);
 	}
 
@@ -123,7 +123,8 @@ class GroupServiceTest {
 		when(groups.save(any(Group.class))).thenThrow(new IllegalStateException("db down"));
 
 		// when / then
-		assertThatThrownBy(() -> service.create("Mallorca 2027", alice.info())).isInstanceOf(IllegalStateException.class);
+		assertThatThrownBy(() -> service.create("Mallorca 2027", alice.info()))
+			.isInstanceOf(IllegalStateException.class);
 		verify(events, never()).publishEvent(any(Object.class));
 	}
 

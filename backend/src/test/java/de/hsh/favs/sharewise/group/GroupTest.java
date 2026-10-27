@@ -13,7 +13,10 @@ import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-/** The rules of the Group aggregate: creation, inviting and joining. No Spring, no database. */
+/**
+ * The rules of the Group aggregate: creation, inviting and joining. No Spring, no
+ * database.
+ */
 class GroupTest {
 
 	static final Instant NOW = MutableClock.START;
@@ -108,8 +111,8 @@ class GroupTest {
 
 		// when / then: one millisecond after the 7 days
 		assertThatThrownBy(() -> group.acceptInvitation("abc", bob, NOW.plus(Duration.ofDays(7)).plusMillis(1)))
-				.isInstanceOfSatisfying(DomainException.class,
-						e -> assertThat(e.code()).isEqualTo(ErrorCode.INVITATION_EXPIRED));
+			.isInstanceOfSatisfying(DomainException.class,
+					e -> assertThat(e.code()).isEqualTo(ErrorCode.INVITATION_EXPIRED));
 		assertThat(group.memberCount()).isEqualTo(1);
 	}
 
@@ -143,8 +146,8 @@ class GroupTest {
 
 		// when / then
 		assertThatThrownBy(() -> group.acceptInvitation("abc", alice, NOW.plus(Duration.ofDays(8))))
-				.isInstanceOfSatisfying(DomainException.class,
-						e -> assertThat(e.code()).isEqualTo(ErrorCode.INVITATION_EXPIRED));
+			.isInstanceOfSatisfying(DomainException.class,
+					e -> assertThat(e.code()).isEqualTo(ErrorCode.INVITATION_EXPIRED));
 	}
 
 }

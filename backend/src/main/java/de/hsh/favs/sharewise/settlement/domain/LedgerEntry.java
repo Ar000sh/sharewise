@@ -14,9 +14,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * One booking in a group's ledger (domain model: LedgerEntry). Entries are never changed; a correction adds
- * reversing entries. Part of the {@link GroupLedger} aggregate: only the root creates them, there is no
- * repository.
+ * One booking in a group's ledger (domain model: LedgerEntry). Entries are never changed;
+ * a correction adds reversing entries. Part of the {@link GroupLedger} aggregate: only
+ * the root creates them, there is no repository.
  */
 @Entity
 @Table(name = "settlement_ledger_entry")
@@ -32,7 +32,9 @@ public class LedgerEntry {
 	@Column(name = "member_id", nullable = false)
 	private UUID memberId;
 
-	/** Positive for a credit (the member is owed), negative for a debit (the member owes). */
+	/**
+	 * Positive for a credit (the member is owed), negative for a debit (the member owes).
+	 */
 	@Column(name = "delta_cents", nullable = false)
 	private long deltaCents;
 
@@ -50,7 +52,8 @@ public class LedgerEntry {
 	protected LedgerEntry() {
 	}
 
-	LedgerEntry(GroupLedger ledger, MemberId member, long deltaCents, LedgerEntryType type, UUID referenceId, Instant occurredAt) {
+	LedgerEntry(GroupLedger ledger, MemberId member, long deltaCents, LedgerEntryType type, UUID referenceId,
+			Instant occurredAt) {
 		this.id = UUID.randomUUID();
 		this.ledger = ledger;
 		this.memberId = member.value();

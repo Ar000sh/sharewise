@@ -75,8 +75,8 @@ class InvitationServiceTest {
 		when(groups.findById(unknown)).thenReturn(Optional.empty());
 
 		// when / then
-		assertThatThrownBy(() -> service.create(unknown, alice.userId())).isInstanceOfSatisfying(
-				DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.GROUP_NOT_FOUND));
+		assertThatThrownBy(() -> service.create(unknown, alice.userId())).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.GROUP_NOT_FOUND));
 	}
 
 	@Test
@@ -85,8 +85,8 @@ class InvitationServiceTest {
 		when(groups.findById(group.id())).thenReturn(Optional.of(group));
 
 		// when / then
-		assertThatThrownBy(() -> service.create(group.id(), bob.userId())).isInstanceOfSatisfying(
-				DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
+		assertThatThrownBy(() -> service.create(group.id(), bob.userId())).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
 	}
 
 	@Test

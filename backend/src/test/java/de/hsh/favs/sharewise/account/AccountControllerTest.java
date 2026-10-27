@@ -29,23 +29,27 @@ class AccountControllerTest {
 		UserFixture bob = UserFixture.signUp(mvc, json, "Bob");
 
 		// when / then
-		mvc.perform(get("/me").header("Authorization", bob.bearer())).andExpect(status().isOk())
-				.andExpect(jsonPath("$.userId").value(bob.idString()))
-				.andExpect(jsonPath("$.displayName").value("Bob"));
+		mvc.perform(get("/me").header("Authorization", bob.bearer()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.userId").value(bob.idString()))
+			.andExpect(jsonPath("$.displayName").value("Bob"));
 	}
 
 	@ParameterizedTest
 	@ValueSource(strings = { "Bearer not-a-token", "Bearer ", "Basic abc", "aaaaaaaa-0000-0000-0000-000000000001" })
 	void meWithAnInvalidAuthorizationHeaderIs401(String header) throws Exception {
-		mvc.perform(get("/me").header("Authorization", header)).andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
+		mvc.perform(get("/me").header("Authorization", header))
+			.andExpect(status().isUnauthorized())
+			.andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
 	}
 
 	@Test
 	void meWithoutCredentialsIs401ProblemJson() throws Exception {
-		mvc.perform(get("/me")).andExpect(status().isUnauthorized())
-				.andExpect(content().contentTypeCompatibleWith("application/problem+json"))
-				.andExpect(jsonPath("$.code").value("UNAUTHENTICATED")).andExpect(jsonPath("$.status").value(401));
+		mvc.perform(get("/me"))
+			.andExpect(status().isUnauthorized())
+			.andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+			.andExpect(jsonPath("$.code").value("UNAUTHENTICATED"))
+			.andExpect(jsonPath("$.status").value(401));
 	}
 
 	@Test

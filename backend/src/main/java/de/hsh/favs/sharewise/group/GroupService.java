@@ -70,8 +70,9 @@ class GroupService {
 	@Transactional(readOnly = true)
 	GroupView detail(UUID groupId, UserId caller) {
 		membership.requireMember(new GroupId(groupId), new MemberId(caller.value()));
-		return groups.findById(groupId).map(GroupView::of)
-				.orElseThrow(() -> new DomainException(ErrorCode.GROUP_NOT_FOUND, "Group not found"));
+		return groups.findById(groupId)
+			.map(GroupView::of)
+			.orElseThrow(() -> new DomainException(ErrorCode.GROUP_NOT_FOUND, "Group not found"));
 	}
 
 }

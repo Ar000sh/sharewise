@@ -82,12 +82,14 @@ class Group {
 	}
 
 	/**
-	 * Joins the user as MEMBER through one of this group's invitations. The invitation must exist and be
-	 * unexpired, and the user must not be a member yet.
+	 * Joins the user as MEMBER through one of this group's invitations. The invitation
+	 * must exist and be unexpired, and the user must not be a member yet.
 	 */
 	void acceptInvitation(String token, UUID user, Instant now) {
-		Invitation invitation = invitations.stream().filter(i -> i.token().equals(token)).findFirst()
-				.orElseThrow(() -> new DomainException(ErrorCode.INVITATION_NOT_FOUND, "Invitation not found"));
+		Invitation invitation = invitations.stream()
+			.filter(i -> i.token().equals(token))
+			.findFirst()
+			.orElseThrow(() -> new DomainException(ErrorCode.INVITATION_NOT_FOUND, "Invitation not found"));
 		if (invitation.isExpiredAt(now)) {
 			throw new DomainException(ErrorCode.INVITATION_EXPIRED, "This invitation has expired");
 		}

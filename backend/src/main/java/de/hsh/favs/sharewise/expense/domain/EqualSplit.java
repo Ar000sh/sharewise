@@ -5,7 +5,10 @@ import de.hsh.favs.sharewise.shared.Money;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Equal split (R4): total / n, remainder cents one each to the first participants in the given order. */
+/**
+ * Equal split (R4): total / n, remainder cents one each to the first participants in the
+ * given order.
+ */
 public final class EqualSplit {
 
 	private EqualSplit() {

@@ -18,8 +18,9 @@ public interface GroupMembership {
 	GroupStatus status(GroupId group);
 
 	/**
-	 * The caller check every group-scoped endpoint uses (spec D16): an unknown group is 404, a non-member
-	 * caller is 403. It lives here so fakes and the real implementation behave the same.
+	 * The caller check every group-scoped endpoint uses (spec D16): an unknown group is
+	 * 404, a non-member caller is 403. It lives here so fakes and the real implementation
+	 * behave the same.
 	 */
 	default void requireMember(GroupId group, MemberId member) {
 		if (!exists(group)) {

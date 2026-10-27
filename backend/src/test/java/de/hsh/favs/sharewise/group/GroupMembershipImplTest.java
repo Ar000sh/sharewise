@@ -18,8 +18,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The GroupMembership bean the expense and settlement modules call, against the real database and, like those
- * modules, from outside any transaction. A mocked repository could not catch a lazy-loading failure here.
+ * The GroupMembership bean the expense and settlement modules call, against the real
+ * database and, like those modules, from outside any transaction. A mocked repository
+ * could not catch a lazy-loading failure here.
  */
 @ModuleIntegrationTest
 class GroupMembershipImplTest {
@@ -55,18 +56,20 @@ class GroupMembershipImplTest {
 	@Test
 	void requireMemberAcceptsMembersAndRejectsStrangersAndUnknownGroups() {
 		assertThatCode(() -> membership.requireMember(trip, carol.memberId())).doesNotThrowAnyException();
-		assertThatThrownBy(() -> membership.requireMember(trip, david.memberId())).isInstanceOfSatisfying(
-				DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
+		assertThatThrownBy(() -> membership.requireMember(trip, david.memberId()))
+			.isInstanceOfSatisfying(DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
 		assertThatThrownBy(() -> membership.requireMember(new GroupId(UUID.randomUUID()), alice.memberId()))
-				.isInstanceOfSatisfying(DomainException.class,
-						e -> assertThat(e.code()).isEqualTo(ErrorCode.GROUP_NOT_FOUND));
+			.isInstanceOfSatisfying(DomainException.class,
+					e -> assertThat(e.code()).isEqualTo(ErrorCode.GROUP_NOT_FOUND));
 	}
 
 	@Test
 	void allMembersAreListedAndTheGroupIsOpen() {
 		assertThat(membership.exists(trip)).isTrue();
-		// the test clock is frozen, so everyone joined at the same instant and the order is not asserted
-		assertThat(membership.members(trip)).containsExactlyInAnyOrder(alice.memberId(), bob.memberId(), carol.memberId());
+		// the test clock is frozen, so everyone joined at the same instant and the order
+		// is not asserted
+		assertThat(membership.members(trip)).containsExactlyInAnyOrder(alice.memberId(), bob.memberId(),
+				carol.memberId());
 		assertThat(membership.status(trip)).isEqualTo(GroupStatus.OPEN);
 	}
 

@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 class ExpenseController {
 
 	private final ExpenseService expenses;
+
 	private final CurrentUser currentUser;
 
 	ExpenseController(ExpenseService expenses, CurrentUser currentUser) {
@@ -32,8 +33,8 @@ class ExpenseController {
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
 	ExpenseResponse record(@PathVariable UUID groupId, @Valid @RequestBody ExpenseRequest request) {
-		var command = new RecordExpenseCommand(new GroupId(groupId), caller(), request.title(),
-				request.amountCents(), request.date(), new MemberId(request.payerId()),
+		var command = new RecordExpenseCommand(new GroupId(groupId), caller(), request.title(), request.amountCents(),
+				request.date(), new MemberId(request.payerId()),
 				request.participantIds().stream().map(MemberId::new).toList(), request.split());
 		return ExpenseResponse.from(expenses.record(command));
 	}

@@ -8,10 +8,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Hand-written stand-in for the real GroupMembership. Keeps the default requireMember. */
+/**
+ * Hand-written stand-in for the real GroupMembership. Keeps the default requireMember.
+ */
 public class StubGroupMembership implements GroupMembership {
 
 	private final Map<GroupId, List<MemberId>> members = new HashMap<>();
+
 	private final Map<GroupId, GroupStatus> status = new HashMap<>();
 
 	public void group(GroupId group, GroupStatus groupStatus, MemberId... memberIds) {

@@ -15,8 +15,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
- * Full application on a real Postgres (Testcontainers). The beans of the other modules are mocks, because this
- * track cannot use their code. All integration tests of the module share this one context.
+ * Full application on a real Postgres (Testcontainers). The beans of the other modules
+ * are mocks, because this track cannot use their code. All integration tests of the
+ * module share this one context.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

@@ -15,12 +15,17 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Records and lists the expenses of a group. Group data (membership, status) comes from the group module's API. */
+/**
+ * Records and lists the expenses of a group. Group data (membership, status) comes from
+ * the group module's API.
+ */
 @Service
 public class ExpenseService {
 
 	private final GroupMembership groups;
+
 	private final ExpenseRepository repository;
+
 	private final ApplicationEventPublisher events;
 
 	ExpenseService(GroupMembership groups, ExpenseRepository repository, ApplicationEventPublisher events) {
@@ -53,8 +58,10 @@ public class ExpenseService {
 				command.payerId(), command.participantIds());
 		repository.save(expense);
 		events.publishEvent(new ExpenseRecorded(expense.id(), group, expense.payerId(), expense.amount().cents(),
-				expense.shares().stream()
-						.map(s -> new ExpenseRecorded.Share(s.memberId(), s.amount().cents())).toList()));
+				expense.shares()
+					.stream()
+					.map(s -> new ExpenseRecorded.Share(s.memberId(), s.amount().cents()))
+					.toList()));
 		return expense;
 	}
 

@@ -17,14 +17,19 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Merges stored balances with the current member list (D15); names are looked up, never stored (D14). */
+/**
+ * Merges stored balances with the current member list (D15); names are looked up, never
+ * stored (D14).
+ */
 @Service
 class BalancesImpl implements Balances {
 
 	private static final String UNKNOWN_NAME = "Unknown";
 
 	private final GroupLedgerRepository ledgers;
+
 	private final GroupMembership membership;
+
 	private final UserDirectory users;
 
 	BalancesImpl(GroupLedgerRepository ledgers, GroupMembership membership, UserDirectory users) {
@@ -36,13 +41,15 @@ class BalancesImpl implements Balances {
 	@Override
 	@Transactional(readOnly = true)
 	public List<MemberBalance> of(GroupId group) {
-		Map<MemberId, Long> stored = ledgers.totals(group.value()).stream()
-				.collect(Collectors.toMap(total -> new MemberId(total.getMemberId()), MemberTotal::getCents));
-		return membership.members(group).stream()
-				.map(member -> new MemberBalance(member, displayName(member), stored.getOrDefault(member, 0L)))
-				.sorted(Comparator.comparing(MemberBalance::displayName, String.CASE_INSENSITIVE_ORDER)
-						.thenComparing(balance -> balance.memberId().value()))
-				.toList();
+		Map<MemberId, Long> stored = ledgers.totals(group.value())
+			.stream()
+			.collect(Collectors.toMap(total -> new MemberId(total.getMemberId()), MemberTotal::getCents));
+		return membership.members(group)
+			.stream()
+			.map(member -> new MemberBalance(member, displayName(member), stored.getOrDefault(member, 0L)))
+			.sorted(Comparator.comparing(MemberBalance::displayName, String.CASE_INSENSITIVE_ORDER)
+				.thenComparing(balance -> balance.memberId().value()))
+			.toList();
 	}
 
 	private String displayName(MemberId member) {

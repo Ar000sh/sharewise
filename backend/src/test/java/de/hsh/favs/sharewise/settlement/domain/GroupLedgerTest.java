@@ -48,18 +48,18 @@ class GroupLedgerTest {
 		// then
 		assertThat(ledger.entries()).extracting(LedgerEntry::referenceId).containsOnly(expense.expenseId());
 		assertThat(ledger.entries()).extracting(LedgerEntry::occurredAt).containsOnly(AT);
-		assertThat(ledger.entries())
-				.extracting(LedgerEntry::type, LedgerEntry::member, LedgerEntry::deltaCents)
-				.containsExactlyInAnyOrder(tuple(LedgerEntryType.EXPENSE_PAID, ALICE, 9000L),
-						tuple(LedgerEntryType.EXPENSE_OWED, BOB, -4500L),
-						tuple(LedgerEntryType.EXPENSE_OWED, CAROL, -4500L));
+		assertThat(ledger.entries()).extracting(LedgerEntry::type, LedgerEntry::member, LedgerEntry::deltaCents)
+			.containsExactlyInAnyOrder(tuple(LedgerEntryType.EXPENSE_PAID, ALICE, 9000L),
+					tuple(LedgerEntryType.EXPENSE_OWED, BOB, -4500L),
+					tuple(LedgerEntryType.EXPENSE_OWED, CAROL, -4500L));
 	}
 
 	@Test
 	void payerWhoIsAlsoParticipantNetsCorrectly() {
 		// given
 		var expense = new ExpenseRecordedFixture()
-				.withShares(new Share(ALICE, 3000), new Share(BOB, 3000), new Share(CAROL, 3000)).build();
+			.withShares(new Share(ALICE, 3000), new Share(BOB, 3000), new Share(CAROL, 3000))
+			.build();
 
 		// when
 		ledger.appendExpenseEntry(expense, AT);
@@ -88,7 +88,9 @@ class GroupLedgerTest {
 			}
 			if (!shares.isEmpty()) {
 				ledger.appendExpenseEntry(new ExpenseRecordedFixture().withPayer(members.get(random.nextInt(3)))
-						.withTotal(total).withShares(shares.toArray(Share[]::new)).build(), AT);
+					.withTotal(total)
+					.withShares(shares.toArray(Share[]::new))
+					.build(), AT);
 			}
 		}
 

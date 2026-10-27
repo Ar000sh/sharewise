@@ -7,5 +7,4 @@ public interface UserDirectory {
 
 	Optional<UserInfo> find(UserId id);
 
-
 }

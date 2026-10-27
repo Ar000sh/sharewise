@@ -24,7 +24,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-/** Called like another module would: from outside a transaction, against the real database. */
+/**
+ * Called like another module would: from outside a transaction, against the real
+ * database.
+ */
 @ModuleIntegrationTest
 class BalancesImplTest {
 
@@ -79,8 +82,11 @@ class BalancesImplTest {
 	void sumOfReturnedBalancesIsZero() {
 		// given
 		ledgerService.apply(new ExpenseRecordedFixture().withGroup(group).build());
-		ledgerService.apply(new ExpenseRecordedFixture().withGroup(group).withPayer(BOB).withTotal(3001)
-				.withShares(new Share(ALICE, 1001), new Share(BOB, 1000), new Share(CAROL, 1000)).build());
+		ledgerService.apply(new ExpenseRecordedFixture().withGroup(group)
+			.withPayer(BOB)
+			.withTotal(3001)
+			.withShares(new Share(ALICE, 1001), new Share(BOB, 1000), new Share(CAROL, 1000))
+			.build());
 
 		// when
 		var result = balances.of(group);

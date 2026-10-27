@@ -17,10 +17,11 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Aggregate root: the append-only ledger of one group. Every recorded expense books entries (the payer
- * credited what they paid, every share holder debited their share, R14); a member's balance is the sum of
- * their entries. Booking an expense twice is
- * prevented by the service ({@code isBooked}) and, as a last line of defence, by a unique constraint.
+ * Aggregate root: the append-only ledger of one group. Every recorded expense books
+ * entries (the payer credited what they paid, every share holder debited their share,
+ * R14); a member's balance is the sum of their entries. Booking an expense twice is
+ * prevented by the service ({@code isBooked}) and, as a last line of defence, by a unique
+ * constraint.
  */
 @Entity
 @Table(name = "settlement_ledger")
@@ -40,7 +41,10 @@ public class GroupLedger {
 		this.groupId = group.value();
 	}
 
-	/** Books the expense: the payer is credited the total, every share holder debited their share (R14). */
+	/**
+	 * Books the expense: the payer is credited the total, every share holder debited
+	 * their share (R14).
+	 */
 	public void appendExpenseEntry(ExpenseRecorded expense, Instant occurredAt) {
 		entries.add(new LedgerEntry(this, expense.payerId(), expense.totalCents(), LedgerEntryType.EXPENSE_PAID,
 				expense.expenseId(), occurredAt));
@@ -50,7 +54,10 @@ public class GroupLedger {
 		}
 	}
 
-	/** Only members that appear in an entry; the sum is always 0. Loads every entry, see {@code GroupLedgerRepository#totals}. */
+	/**
+	 * Only members that appear in an entry; the sum is always 0. Loads every entry, see
+	 * {@code GroupLedgerRepository#totals}.
+	 */
 	public Map<MemberId, Long> projectBalances() {
 		Map<MemberId, Long> balances = new HashMap<>();
 		for (var entry : entries) {

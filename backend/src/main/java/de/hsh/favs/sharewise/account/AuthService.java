@@ -18,7 +18,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Sign up, sign in and resolving a bearer token to its user. Passwords are BCrypt hashes. */
+/**
+ * Sign up, sign in and resolving a bearer token to its user. Passwords are BCrypt hashes.
+ */
 @Service
 class AuthService {
 
@@ -57,16 +59,18 @@ class AuthService {
 
 	@Transactional
 	SignedIn login(String email, String password) {
-		User user = users.findByEmail(normalize(email)).filter(u -> u.passwordHash() != null)
-				.filter(u -> passwords.matches(password, u.passwordHash()))
-				.orElseThrow(() -> new DomainException(ErrorCode.INVALID_CREDENTIALS, "Wrong email or password"));
+		User user = users.findByEmail(normalize(email))
+			.filter(u -> u.passwordHash() != null)
+			.filter(u -> passwords.matches(password, u.passwordHash()))
+			.orElseThrow(() -> new DomainException(ErrorCode.INVALID_CREDENTIALS, "Wrong email or password"));
 		return startSession(user);
 	}
 
 	@Transactional(readOnly = true)
 	Optional<UserInfo> resolve(String token) {
-		return sessions.findById(hash(token)).flatMap(s -> users.findById(s.userId()))
-				.map(u -> new UserInfo(new UserId(u.id()), u.displayName()));
+		return sessions.findById(hash(token))
+			.flatMap(s -> users.findById(s.userId()))
+			.map(u -> new UserInfo(new UserId(u.id()), u.displayName()));
 	}
 
 	private SignedIn startSession(User user) {
@@ -88,7 +92,7 @@ class AuthService {
 	private static String hash(String token) {
 		try {
 			return HexFormat.of()
-					.formatHex(MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8)));
+				.formatHex(MessageDigest.getInstance("SHA-256").digest(token.getBytes(StandardCharsets.UTF_8)));
 		}
 		catch (NoSuchAlgorithmException e) {
 			throw new IllegalStateException(e);

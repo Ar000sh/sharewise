@@ -68,8 +68,10 @@ class GroupController {
 	GroupDetailResponse detail(@PathVariable UUID groupId) {
 		UserId caller = currentUser.get().id();
 		GroupService.GroupView g = groups.detail(groupId, caller);
-		List<MemberResponse> members = g.members().stream()
-				.map(m -> new MemberResponse(m.memberId(), displayName(m.memberId()), m.role())).toList();
+		List<MemberResponse> members = g.members()
+			.stream()
+			.map(m -> new MemberResponse(m.memberId(), displayName(m.memberId()), m.role()))
+			.toList();
 		return new GroupDetailResponse(g.id(), g.name(), g.status(), g.memberCount(), members);
 	}
 

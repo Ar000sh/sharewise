@@ -27,8 +27,9 @@ class GroupRequests {
 	}
 
 	ResultActions create(UserFixture caller, String name) throws Exception {
-		return mvc.perform(post("/groups").header(USER_HEADER, caller.bearer()).contentType(APPLICATION_JSON)
-				.content(json.writeValueAsString(Map.of("name", name))));
+		return mvc.perform(post("/groups").header(USER_HEADER, caller.bearer())
+			.contentType(APPLICATION_JSON)
+			.content(json.writeValueAsString(Map.of("name", name))));
 	}
 
 	/** Creates a group (expects 201) and returns its id. */
@@ -37,7 +38,10 @@ class GroupRequests {
 		return UUID.fromString(json.readTree(body).get("id").asString());
 	}
 
-	/** A group created by {@code admin} that each of {@code joiners} joined through an invitation. */
+	/**
+	 * A group created by {@code admin} that each of {@code joiners} joined through an
+	 * invitation.
+	 */
 	UUID groupWith(UserFixture admin, String name, UserFixture... joiners) throws Exception {
 		UUID group = createGroup(admin, name);
 		for (UserFixture joiner : joiners) {

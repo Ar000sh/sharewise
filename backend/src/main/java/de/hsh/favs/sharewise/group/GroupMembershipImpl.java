@@ -42,7 +42,7 @@ class GroupMembershipImpl implements GroupMembership {
 
 	private Group load(GroupId group) {
 		return groups.findById(group.value())
-				.orElseThrow(() -> new DomainException(ErrorCode.GROUP_NOT_FOUND, "Group not found"));
+			.orElseThrow(() -> new DomainException(ErrorCode.GROUP_NOT_FOUND, "Group not found"));
 	}
 
 }

@@ -11,13 +11,19 @@ import java.util.UUID;
 public class ExpenseRecordedFixture {
 
 	public static final MemberId ALICE = new MemberId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001"));
+
 	public static final MemberId BOB = new MemberId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000002"));
+
 	public static final MemberId CAROL = new MemberId(UUID.fromString("aaaaaaaa-0000-0000-0000-000000000003"));
 
 	private UUID expenseId = UUID.randomUUID();
+
 	private GroupId group = new GroupId(UUID.randomUUID());
+
 	private MemberId payer = ALICE;
+
 	private long total = 9000;
+
 	private List<Share> shares = List.of(new Share(BOB, 4500), new Share(CAROL, 4500));
 
 	public ExpenseRecordedFixture withExpenseId(UUID expenseId) {

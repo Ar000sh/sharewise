@@ -16,7 +16,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Application service: loads the Group aggregate, lets it enforce the rules, publishes the event. */
+/**
+ * Application service: loads the Group aggregate, lets it enforce the rules, publishes
+ * the event.
+ */
 @Service
 class InvitationService {
 
@@ -40,17 +43,18 @@ class InvitationService {
 	@Transactional
 	Invitation create(UUID groupId, UserId caller) {
 		Group group = groups.findById(groupId)
-				.orElseThrow(() -> new DomainException(ErrorCode.GROUP_NOT_FOUND, "Group not found"));
+			.orElseThrow(() -> new DomainException(ErrorCode.GROUP_NOT_FOUND, "Group not found"));
 		return group.invite(caller.value(), newToken(), clock.instant());
 	}
 
 	@Transactional
 	GroupView accept(String token, UserId caller) {
 		UUID groupId = groups.findIdByInvitationToken(token)
-				.orElseThrow(() -> new DomainException(ErrorCode.INVITATION_NOT_FOUND, "Invitation not found"));
-		// Lock the group row so two concurrent accepts by the same user cannot both pass the check.
+			.orElseThrow(() -> new DomainException(ErrorCode.INVITATION_NOT_FOUND, "Invitation not found"));
+		// Lock the group row so two concurrent accepts by the same user cannot both pass
+		// the check.
 		Group group = groups.findByIdForUpdate(groupId)
-				.orElseThrow(() -> new DomainException(ErrorCode.GROUP_NOT_FOUND, "Group not found"));
+			.orElseThrow(() -> new DomainException(ErrorCode.GROUP_NOT_FOUND, "Group not found"));
 		group.acceptInvitation(token, caller.value(), clock.instant());
 		groups.saveAndFlush(group);
 		events.publishEvent(new MemberJoined(new GroupId(group.id()), new MemberId(caller.value()), Role.MEMBER));

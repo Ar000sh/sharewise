@@ -14,8 +14,10 @@ record ExpenseResponse(UUID id, String title, long amountCents, LocalDate date, 
 	static ExpenseResponse from(Expense expense) {
 		return new ExpenseResponse(expense.id(), expense.title(), expense.amount().cents(), expense.date(),
 				expense.payerId().value(),
-				expense.shares().stream()
-						.map(s -> new ShareResponse(s.memberId().value(), s.amount().cents())).toList());
+				expense.shares()
+					.stream()
+					.map(s -> new ShareResponse(s.memberId().value(), s.amount().cents()))
+					.toList());
 	}
 
 }

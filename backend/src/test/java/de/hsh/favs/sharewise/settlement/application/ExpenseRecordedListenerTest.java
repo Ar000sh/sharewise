@@ -23,7 +23,10 @@ import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.Scenario;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-/** The event flow: a published ExpenseRecorded changes the balances, asynchronously after commit. */
+/**
+ * The event flow: a published ExpenseRecorded changes the balances, asynchronously after
+ * commit.
+ */
 @ApplicationModuleTest
 @Import(TestcontainersConfiguration.class)
 class ExpenseRecordedListenerTest {
@@ -52,9 +55,9 @@ class ExpenseRecordedListenerTest {
 
 		// when / then
 		scenario.publish(event)
-				.andWaitForStateChange(() -> balances.of(group), ExpenseRecordedListenerTest::hasNonZeroBalance)
-				.andVerify(list -> assertThat(list).extracting(MemberBalance::balanceCents)
-						.containsExactlyInAnyOrder(9000L, -4500L, -4500L));
+			.andWaitForStateChange(() -> balances.of(group), ExpenseRecordedListenerTest::hasNonZeroBalance)
+			.andVerify(list -> assertThat(list).extracting(MemberBalance::balanceCents)
+				.containsExactlyInAnyOrder(9000L, -4500L, -4500L));
 	}
 
 	@Test
@@ -70,7 +73,7 @@ class ExpenseRecordedListenerTest {
 
 		// then
 		assertThat(balances.of(group)).extracting(MemberBalance::balanceCents)
-				.containsExactlyInAnyOrder(9000L, -4500L, -4500L);
+			.containsExactlyInAnyOrder(9000L, -4500L, -4500L);
 	}
 
 	private static boolean hasNonZeroBalance(List<MemberBalance> list) {

@@ -9,16 +9,26 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-/** Test data for a {@link RecordExpenseCommand}. By default: Alice records a 10.00 EUR dinner she paid, split with Bob. */
+/**
+ * Test data for a {@link RecordExpenseCommand}. By default: Alice records a 10.00 EUR
+ * dinner she paid, split with Bob.
+ */
 public class RecordExpenseCommandFixture {
 
 	private GroupId groupId = new GroupId(UUID.fromString("bbbbbbbb-0000-0000-0000-000000000001"));
+
 	private MemberId caller = ALICE;
+
 	private String title = "Dinner";
+
 	private long amountCents = 1_000;
+
 	private LocalDate date = LocalDate.of(2027, 6, 2);
+
 	private MemberId payer = ALICE;
+
 	private List<MemberId> participants = List.of(ALICE, BOB);
+
 	private SplitType split = SplitType.EQUAL;
 
 	public RecordExpenseCommandFixture withGroupId(GroupId groupId) {

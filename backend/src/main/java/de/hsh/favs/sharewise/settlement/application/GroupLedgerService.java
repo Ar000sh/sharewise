@@ -12,9 +12,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class GroupLedgerService {
 
 	private final GroupLedgerRepository ledgers;
+
 	private final Clock clock;
 
-	/** Uses the application's {@code Clock} bean when there is one (tests replace it), else the system clock. */
+	/**
+	 * Uses the application's {@code Clock} bean when there is one (tests replace it),
+	 * else the system clock.
+	 */
 	@Autowired
 	GroupLedgerService(GroupLedgerRepository ledgers, ObjectProvider<Clock> clock) {
 		this(ledgers, clock.getIfAvailable(Clock::systemUTC));

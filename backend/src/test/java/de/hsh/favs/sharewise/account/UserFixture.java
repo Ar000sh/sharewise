@@ -10,10 +10,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Test data for a user. Defaults to Alice; {@link #bob()}, {@link #carol()} and {@link #david()} are the others. These
- * have fixed ids and only exist in memory, which is enough for unit tests. Integration tests call
- * {@link #signUp(MockMvc, JsonMapper, String)} to get a real account with a session token. Override anything with
- * {@code withX}.
+ * Test data for a user. Defaults to Alice; {@link #bob()}, {@link #carol()} and
+ * {@link #david()} are the others. These have fixed ids and only exist in memory, which
+ * is enough for unit tests. Integration tests call
+ * {@link #signUp(MockMvc, JsonMapper, String)} to get a real account with a session
+ * token. Override anything with {@code withX}.
  */
 public class UserFixture {
 
@@ -44,14 +45,20 @@ public class UserFixture {
 		return seededId(255);
 	}
 
-	/** Signs a new user up through {@code POST /auth/register} (unique email) and returns it with id and token. */
+	/**
+	 * Signs a new user up through {@code POST /auth/register} (unique email) and returns
+	 * it with id and token.
+	 */
 	public static UserFixture signUp(MockMvc mvc, JsonMapper json, String displayName) throws Exception {
-		String body = json.writeValueAsString(Map.of("email", displayName.toLowerCase() + "-" + UUID.randomUUID() + "@example.com",
-				"displayName", displayName, "password", "secret-pass"));
-		var created = json.readTree(mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-			.post("/auth/register").contentType(MediaType.APPLICATION_JSON).content(body)).andReturn().getResponse()
-			.getContentAsString());
-		return new UserFixture().withId(UUID.fromString(created.get("userId").asString())).withDisplayName(displayName)
+		String body = json
+			.writeValueAsString(Map.of("email", displayName.toLowerCase() + "-" + UUID.randomUUID() + "@example.com",
+					"displayName", displayName, "password", "secret-pass"));
+		var created = json.readTree(
+				mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/auth/register")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(body)).andReturn().getResponse().getContentAsString());
+		return new UserFixture().withId(UUID.fromString(created.get("userId").asString()))
+			.withDisplayName(displayName)
 			.withToken(created.get("token").asString());
 	}
 

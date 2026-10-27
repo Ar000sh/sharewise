@@ -8,11 +8,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-record ExpenseRequest(
-		@NotBlank @Size(max = 200) String title,
-		@NotNull Long amountCents,
-		@NotNull LocalDate date,
-		@NotNull UUID payerId,
-		@NotNull List<@NotNull UUID> participantIds,
-		@NotNull SplitType split) {
+record ExpenseRequest(@NotBlank @Size(max = 200) String title, @NotNull Long amountCents, @NotNull LocalDate date,
+		@NotNull UUID payerId, @NotNull List<@NotNull UUID> participantIds, @NotNull SplitType split) {
 }

@@ -37,13 +37,14 @@ class AuthControllerTest {
 
 		// when
 		ResultActions registered = register(email, "Dana", "secret-pass").andExpect(status().isCreated())
-				.andExpect(jsonPath("$.displayName").value("Dana"));
+			.andExpect(jsonPath("$.displayName").value("Dana"));
 		String token = field(registered, "token");
 
 		// then the token is a bearer token for /me
-		mvc.perform(get("/me").header("Authorization", "Bearer " + token)).andExpect(status().isOk())
-				.andExpect(jsonPath("$.userId").value(field(registered, "userId")))
-				.andExpect(jsonPath("$.displayName").value("Dana"));
+		mvc.perform(get("/me").header("Authorization", "Bearer " + token))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.userId").value(field(registered, "userId")))
+			.andExpect(jsonPath("$.displayName").value("Dana"));
 	}
 
 	@Test
@@ -55,8 +56,8 @@ class AuthControllerTest {
 		// then
 		String hash = jdbc.queryForObject("select password_hash from users where email = ?", String.class, email);
 		assertThat(hash).isNotEqualTo("secret-pass").startsWith("$2");
-		Integer rawTokens = jdbc.queryForObject("select count(*) from auth_session where token_hash = ?",
-				Integer.class, token);
+		Integer rawTokens = jdbc.queryForObject("select count(*) from auth_session where token_hash = ?", Integer.class,
+				token);
 		assertThat(rawTokens).isZero();
 	}
 
@@ -68,7 +69,7 @@ class AuthControllerTest {
 
 		// when / then
 		String token = field(login(email.toUpperCase(), "secret-pass").andExpect(status().isOk())
-				.andExpect(jsonPath("$.displayName").value("Finn")), "token");
+			.andExpect(jsonPath("$.displayName").value("Finn")), "token");
 		mvc.perform(get("/me").header("Authorization", "Bearer " + token)).andExpect(status().isOk());
 	}
 
@@ -80,9 +81,9 @@ class AuthControllerTest {
 
 		// then
 		login(email, "wrong-pass").andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+			.andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
 		login(uniqueEmail(), "secret-pass").andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+			.andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
 	}
 
 	@Test
@@ -93,7 +94,7 @@ class AuthControllerTest {
 
 		// when / then
 		register(email.toUpperCase(), "Hana 2", "other-pass1").andExpect(status().isConflict())
-				.andExpect(jsonPath("$.code").value("EMAIL_TAKEN"));
+			.andExpect(jsonPath("$.code").value("EMAIL_TAKEN"));
 	}
 
 	@Test
@@ -101,13 +102,14 @@ class AuthControllerTest {
 		register("not-an-email", "Ida", "secret-pass").andExpect(status().isBadRequest());
 		register(uniqueEmail(), "", "secret-pass").andExpect(status().isBadRequest());
 		register(uniqueEmail(), "Ida", "short").andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
 	}
 
 	@Test
 	void unknownOrMalformedBearerTokenIs401() throws Exception {
-		mvc.perform(get("/me").header("Authorization", "Bearer nope")).andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
+		mvc.perform(get("/me").header("Authorization", "Bearer nope"))
+			.andExpect(status().isUnauthorized())
+			.andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
 		mvc.perform(get("/groups").header("Authorization", "Basic abc")).andExpect(status().isUnauthorized());
 	}
 

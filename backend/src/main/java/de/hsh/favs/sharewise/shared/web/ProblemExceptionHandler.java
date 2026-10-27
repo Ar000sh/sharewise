@@ -12,7 +12,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-/** Maps exceptions to RFC 7807 problem+json with the stable "code" property of the API contract. */
+/**
+ * Maps exceptions to RFC 7807 problem+json with the stable "code" property of the API
+ * contract.
+ */
 @RestControllerAdvice
 public class ProblemExceptionHandler {
 

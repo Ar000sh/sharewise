@@ -4,7 +4,10 @@ import de.hsh.favs.sharewise.account.UserFixture;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Test data for an {@link Invitation}. By default: token "token-1", issued by Alice at {@link MutableClock#START}. */
+/**
+ * Test data for an {@link Invitation}. By default: token "token-1", issued by Alice at
+ * {@link MutableClock#START}.
+ */
 class InvitationFixture {
 
 	private String token = "token-1";

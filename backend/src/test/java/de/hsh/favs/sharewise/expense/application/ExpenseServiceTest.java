@@ -37,13 +37,19 @@ import org.springframework.context.ApplicationEventPublisher;
 @ExtendWith(MockitoExtension.class)
 class ExpenseServiceTest {
 
-	@Mock GroupMembership groups;
-	@Mock ExpenseRepository repository;
-	@Mock ApplicationEventPublisher events;
+	@Mock
+	GroupMembership groups;
+
+	@Mock
+	ExpenseRepository repository;
+
+	@Mock
+	ApplicationEventPublisher events;
 
 	ExpenseService service;
 
 	MemberId outsider = new MemberId(UUID.randomUUID());
+
 	GroupId group = new RecordExpenseCommandFixture().build().groupId();
 
 	@BeforeEach
@@ -64,8 +70,10 @@ class ExpenseServiceTest {
 	@Test
 	void savesTheExpenseThenPublishesExpenseRecordedWithTheShares() {
 		// given
-		var command = new RecordExpenseCommandFixture().withPayer(BOB).withAmountCents(1_000)
-				.withParticipants(ALICE, BOB, CAROL).build();
+		var command = new RecordExpenseCommandFixture().withPayer(BOB)
+			.withAmountCents(1_000)
+			.withParticipants(ALICE, BOB, CAROL)
+			.build();
 
 		// when
 		Expense expense = service.record(command);
@@ -76,9 +84,9 @@ class ExpenseServiceTest {
 		order.verify(repository).save(expense);
 		var event = ArgumentCaptor.forClass(ExpenseRecorded.class);
 		order.verify(events).publishEvent(event.capture());
-		assertThat(event.getValue()).isEqualTo(new ExpenseRecorded(expense.id(), group, BOB, 1_000,
-				List.of(new ExpenseRecorded.Share(ALICE, 334), new ExpenseRecorded.Share(BOB, 333),
-						new ExpenseRecorded.Share(CAROL, 333))));
+		assertThat(event.getValue()).isEqualTo(
+				new ExpenseRecorded(expense.id(), group, BOB, 1_000, List.of(new ExpenseRecorded.Share(ALICE, 334),
+						new ExpenseRecorded.Share(BOB, 333), new ExpenseRecorded.Share(CAROL, 333))));
 	}
 
 	@Test
@@ -102,8 +110,7 @@ class ExpenseServiceTest {
 	@Test
 	void payerOutsideTheGroupIsRejected() {
 		// when / then
-		assertRejectedWith(new RecordExpenseCommandFixture().withPayer(outsider).build(),
-				ErrorCode.PAYER_NOT_IN_GROUP);
+		assertRejectedWith(new RecordExpenseCommandFixture().withPayer(outsider).build(), ErrorCode.PAYER_NOT_IN_GROUP);
 	}
 
 	@Test
@@ -123,8 +130,7 @@ class ExpenseServiceTest {
 	@Test
 	void domainRulesAreAppliedAfterTheMembershipChecks() {
 		// when / then
-		assertRejectedWith(new RecordExpenseCommandFixture().withAmountCents(0).build(),
-				ErrorCode.AMOUNT_NOT_POSITIVE);
+		assertRejectedWith(new RecordExpenseCommandFixture().withAmountCents(0).build(), ErrorCode.AMOUNT_NOT_POSITIVE);
 		assertRejectedWith(new RecordExpenseCommandFixture().withParticipants(ALICE, ALICE).build(),
 				ErrorCode.NO_PARTICIPANTS);
 	}
@@ -148,8 +154,7 @@ class ExpenseServiceTest {
 		doThrow(new DomainException(ErrorCode.NOT_A_MEMBER, "no")).when(groups).requireMember(group, ALICE);
 
 		// when / then
-		assertThatThrownBy(() -> service.list(group, ALICE))
-				.isInstanceOf(DomainException.class);
+		assertThatThrownBy(() -> service.list(group, ALICE)).isInstanceOf(DomainException.class);
 		verifyNoInteractions(repository);
 	}
 

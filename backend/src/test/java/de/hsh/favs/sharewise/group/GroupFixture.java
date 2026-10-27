@@ -8,8 +8,9 @@ import java.util.UUID;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /**
- * Test data for a {@link Group}. By default: "Mallorca 2027", created by Alice at {@link MutableClock#START}, no
- * other members. Members are added through the aggregate's own invitation flow, so the built group is always valid.
+ * Test data for a {@link Group}. By default: "Mallorca 2027", created by Alice at
+ * {@link MutableClock#START}, no other members. Members are added through the aggregate's
+ * own invitation flow, so the built group is always valid.
  */
 class GroupFixture {
 

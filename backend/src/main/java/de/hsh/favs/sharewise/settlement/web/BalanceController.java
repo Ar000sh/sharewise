@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 class BalanceController {
 
 	private final Balances balances;
+
 	private final GroupMembership membership;
+
 	private final CurrentUser currentUser;
 
 	BalanceController(Balances balances, GroupMembership membership, CurrentUser currentUser) {
@@ -32,9 +34,10 @@ class BalanceController {
 	List<BalanceResponse> balances(@PathVariable UUID groupId) {
 		var group = new GroupId(groupId);
 		membership.requireMember(group, new MemberId(currentUser.get().id().value()));
-		return balances.of(group).stream()
-				.map(b -> new BalanceResponse(b.memberId().value(), b.displayName(), b.balanceCents()))
-				.toList();
+		return balances.of(group)
+			.stream()
+			.map(b -> new BalanceResponse(b.memberId().value(), b.displayName(), b.balanceCents()))
+			.toList();
 	}
 
 }

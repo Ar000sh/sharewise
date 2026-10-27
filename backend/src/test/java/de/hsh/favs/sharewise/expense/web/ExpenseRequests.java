@@ -9,16 +9,26 @@ import java.util.UUID;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
-/** HTTP set-up for the expense endpoints. Defaults: "Hotel", 10.00 EUR on 2027-06-01, EQUAL, paid by the first participant. */
+/**
+ * HTTP set-up for the expense endpoints. Defaults: "Hotel", 10.00 EUR on 2027-06-01,
+ * EQUAL, paid by the first participant.
+ */
 class ExpenseRequests {
 
 	private final MockMvc mvc;
+
 	private Object groupId = UUID.randomUUID();
+
 	private String title = "Hotel";
+
 	private long amountCents = 1_000;
+
 	private String date = "2027-06-01";
+
 	private String payer;
+
 	private List<String> participants = List.of();
+
 	private String split = "EQUAL";
 
 	ExpenseRequests(MockMvc mvc) {
@@ -64,7 +74,7 @@ class ExpenseRequests {
 		String payerId = payer != null ? payer : participants.get(0);
 		String body = """
 				{"title":"%s","amountCents":%d,"date":"%s","payerId":"%s","participantIds":["%s"],"split":"%s"}"""
-				.formatted(title, amountCents, date, payerId, String.join("\",\"", participants), split);
+			.formatted(title, amountCents, date, payerId, String.join("\",\"", participants), split);
 		return mvc.perform(post("/groups/{id}/expenses", groupId).contentType(APPLICATION_JSON).content(body));
 	}
 

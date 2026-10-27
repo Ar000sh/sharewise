@@ -56,20 +56,23 @@ class GroupControllerTest {
 	@Test
 	void postCreatesTheGroupWithTheCallerAsAdminAndPublishesBothEvents() throws Exception {
 		// when
-		String body = groups.body(groups.create(alice, "Mallorca 2027").andExpect(status().isCreated())
-				.andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
-				.andExpect(jsonPath("$.name").value("Mallorca 2027")).andExpect(jsonPath("$.status").value("OPEN"))
-				.andExpect(jsonPath("$.memberCount").value(1)));
+		String body = groups.body(groups.create(alice, "Mallorca 2027")
+			.andExpect(status().isCreated())
+			.andExpect(content().contentTypeCompatibleWith(APPLICATION_JSON))
+			.andExpect(jsonPath("$.name").value("Mallorca 2027"))
+			.andExpect(jsonPath("$.status").value("OPEN"))
+			.andExpect(jsonPath("$.memberCount").value(1)));
 
 		// then
 		GroupId id = new GroupId(UUID.fromString(json.readTree(body).get("id").asString()));
 		assertThat(events.stream(GroupCreated.class).filter(e -> e.groupId().equals(id)))
-				.containsExactly(new GroupCreated(id, alice.userId()));
+			.containsExactly(new GroupCreated(id, alice.userId()));
 		assertThat(events.stream(MemberJoined.class).filter(e -> e.groupId().equals(id)))
-				.containsExactly(new MemberJoined(id, alice.memberId(), Role.ADMIN));
-		groups.detail(id.value(), alice).andExpect(jsonPath("$.members[0].memberId").value(alice.idString()))
-				.andExpect(jsonPath("$.members[0].displayName").value("Alice"))
-				.andExpect(jsonPath("$.members[0].role").value("ADMIN"));
+			.containsExactly(new MemberJoined(id, alice.memberId(), Role.ADMIN));
+		groups.detail(id.value(), alice)
+			.andExpect(jsonPath("$.members[0].memberId").value(alice.idString()))
+			.andExpect(jsonPath("$.members[0].displayName").value("Alice"))
+			.andExpect(jsonPath("$.members[0].role").value("ADMIN"));
 	}
 
 	@ParameterizedTest
@@ -79,15 +82,17 @@ class GroupControllerTest {
 		var request = post("/groups").header("Authorization", alice.bearer()).contentType(APPLICATION_JSON);
 		request = name.startsWith("{") ? request.content(name) : request.content("{\"name\":\"" + name + "\"}");
 
-		mvc.perform(request).andExpect(status().isBadRequest())
-				.andExpect(content().contentTypeCompatibleWith("application/problem+json"))
-				.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+		mvc.perform(request)
+			.andExpect(status().isBadRequest())
+			.andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
 	}
 
 	@Test
 	void postWithMissingNameOrNameOver100CharactersIs400() throws Exception {
 		mvc.perform(post("/groups").header("Authorization", alice.bearer()).contentType(APPLICATION_JSON).content("{}"))
-				.andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
 		groups.create(alice, "x".repeat(101)).andExpect(status().isBadRequest());
 		groups.create(alice, "x".repeat(100)).andExpect(status().isCreated());
 	}
@@ -101,9 +106,10 @@ class GroupControllerTest {
 		groups.createGroup(carol, foreign);
 
 		// when / then
-		groups.list(bob).andExpect(status().isOk())
-				.andExpect(jsonPath("$[?(@.name=='" + joined + "')].memberCount").value(2))
-				.andExpect(jsonPath("$[?(@.name=='" + foreign + "')]", hasSize(0)));
+		groups.list(bob)
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[?(@.name=='" + joined + "')].memberCount").value(2))
+			.andExpect(jsonPath("$[?(@.name=='" + foreign + "')]", hasSize(0)));
 	}
 
 	@Test
@@ -112,11 +118,13 @@ class GroupControllerTest {
 		UUID id = groups.groupWith(alice, "Trip", bob);
 
 		// when / then
-		groups.detail(id, bob).andExpect(status().isOk()).andExpect(jsonPath("$.memberCount").value(2))
-				.andExpect(jsonPath("$.members[0].displayName").value("Alice"))
-				.andExpect(jsonPath("$.members[0].role").value("ADMIN"))
-				.andExpect(jsonPath("$.members[1].displayName").value("Bob"))
-				.andExpect(jsonPath("$.members[1].role").value("MEMBER"));
+		groups.detail(id, bob)
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.memberCount").value(2))
+			.andExpect(jsonPath("$.members[0].displayName").value("Alice"))
+			.andExpect(jsonPath("$.members[0].role").value("ADMIN"))
+			.andExpect(jsonPath("$.members[1].displayName").value("Bob"))
+			.andExpect(jsonPath("$.members[1].role").value("MEMBER"));
 	}
 
 	@Test
@@ -128,22 +136,25 @@ class GroupControllerTest {
 
 	@Test
 	void getDetailOfAnUnknownGroupIs404() throws Exception {
-		groups.detail(UUID.randomUUID(), alice).andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.code").value("GROUP_NOT_FOUND"));
+		groups.detail(UUID.randomUUID(), alice)
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value("GROUP_NOT_FOUND"));
 	}
 
 	@Test
 	void getDetailWithAMalformedIdIs400() throws Exception {
 		mvc.perform(get("/groups/not-a-uuid").header("Authorization", alice.bearer()))
-				.andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
 	}
 
 	@Test
 	void everyGroupEndpointNeedsAKnownUser() throws Exception {
-		mvc.perform(get("/groups")).andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
+		mvc.perform(get("/groups"))
+			.andExpect(status().isUnauthorized())
+			.andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
 		mvc.perform(post("/groups").contentType(APPLICATION_JSON).content("{\"name\":\"x\"}"))
-				.andExpect(status().isUnauthorized());
+			.andExpect(status().isUnauthorized());
 		mvc.perform(get("/groups/" + UUID.randomUUID())).andExpect(status().isUnauthorized());
 	}
 

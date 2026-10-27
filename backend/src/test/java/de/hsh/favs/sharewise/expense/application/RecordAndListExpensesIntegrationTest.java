@@ -17,21 +17,31 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.event.ApplicationEvents;
 
-/** Called from outside a transaction, like the controller does: proves the database and event wiring. */
+/**
+ * Called from outside a transaction, like the controller does: proves the database and
+ * event wiring.
+ */
 @ExpenseIntegrationTest
 class RecordAndListExpensesIntegrationTest {
 
-	@Autowired ExpenseService expenses;
-	@Autowired StubGroupMembership groups;
-	@Autowired ApplicationEvents events;
+	@Autowired
+	ExpenseService expenses;
+
+	@Autowired
+	StubGroupMembership groups;
+
+	@Autowired
+	ApplicationEvents events;
 
 	@Test
 	void recordedExpenseIsStoredWithSharesInGivenOrderAndPublishedOnce() {
 		// given
 		var group = new GroupId(UUID.randomUUID());
 		groups.group(group, GroupStatus.OPEN, ALICE, BOB, CAROL);
-		var command = new RecordExpenseCommandFixture().withGroupId(group).withPayer(CAROL)
-				.withParticipants(CAROL, ALICE, BOB).build();
+		var command = new RecordExpenseCommandFixture().withGroupId(group)
+			.withPayer(CAROL)
+			.withParticipants(CAROL, ALICE, BOB)
+			.build();
 
 		// when
 		Expense recorded = expenses.record(command);
@@ -42,8 +52,7 @@ class RecordAndListExpensesIntegrationTest {
 		assertThat(stored.payerId()).isEqualTo(CAROL);
 		assertThat(stored.shares()).extracting(Share::memberId).containsExactly(CAROL, ALICE, BOB);
 		assertThat(stored.shares()).extracting(s -> s.amount().cents()).containsExactly(334L, 333L, 333L);
-		assertThat(events.stream(ExpenseRecorded.class).filter(e -> e.expenseId().equals(recorded.id())))
-				.hasSize(1);
+		assertThat(events.stream(ExpenseRecorded.class).filter(e -> e.expenseId().equals(recorded.id()))).hasSize(1);
 	}
 
 }

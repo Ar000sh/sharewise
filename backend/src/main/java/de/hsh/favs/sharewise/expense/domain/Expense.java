@@ -46,7 +46,8 @@ public class Expense {
 	@Column(name = "created_at", nullable = false)
 	private Instant createdAt;
 
-	// Always loaded with the expense: callers read them after the service transaction has ended.
+	// Always loaded with the expense: callers read them after the service transaction has
+	// ended.
 	@ElementCollection(fetch = FetchType.EAGER)
 	@CollectionTable(name = "expense_share", joinColumns = @JoinColumn(name = "expense_id"))
 	@OrderColumn(name = "position")
@@ -55,8 +56,7 @@ public class Expense {
 	protected Expense() {
 	}
 
-	private Expense(GroupId groupId, String title, Money amount, LocalDate date, MemberId payer,
-			List<Share> shares) {
+	private Expense(GroupId groupId, String title, Money amount, LocalDate date, MemberId payer, List<Share> shares) {
 		this.id = UUID.randomUUID();
 		this.groupId = groupId.value();
 		this.title = title;
@@ -81,18 +81,32 @@ public class Expense {
 		return new Expense(groupId, title, amount, date, payer, EqualSplit.split(amount, participants));
 	}
 
-	public UUID id() { return id; }
+	public UUID id() {
+		return id;
+	}
 
-	public GroupId groupId() { return new GroupId(groupId); }
+	public GroupId groupId() {
+		return new GroupId(groupId);
+	}
 
-	public String title() { return title; }
+	public String title() {
+		return title;
+	}
 
-	public Money amount() { return Money.eur(amountCents); }
+	public Money amount() {
+		return Money.eur(amountCents);
+	}
 
-	public LocalDate date() { return date; }
+	public LocalDate date() {
+		return date;
+	}
 
-	public MemberId payerId() { return new MemberId(payerId); }
+	public MemberId payerId() {
+		return new MemberId(payerId);
+	}
 
-	public List<Share> shares() { return List.copyOf(shares); }
+	public List<Share> shares() {
+		return List.copyOf(shares);
+	}
 
 }

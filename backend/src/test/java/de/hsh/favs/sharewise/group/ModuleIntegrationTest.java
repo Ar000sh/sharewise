@@ -12,8 +12,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
 /**
- * Full application on a real Postgres (Testcontainers) , a
- * {@link MutableClock} and recorded application events. All integration tests share this one context.
+ * Full application on a real Postgres (Testcontainers) , a {@link MutableClock} and
+ * recorded application events. All integration tests share this one context.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
