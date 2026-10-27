@@ -17,3 +17,20 @@ export function formatEuro(cents: number): string {
   const rest = String(abs % 100).padStart(2, "0");
   return `${cents < 0 ? "-" : ""}${euros},${rest} €`;
 }
+
+/**
+ * Converts an API amount (a decimal string with two decimals, e.g. "900.00" or "-90.00") to integer cents without
+ * floating point. Throws on anything else: the backend promises this format.
+ */
+export function amountToCents(amount: string): number {
+  const match = /^(-?)(\d+)\.(\d{2})$/.exec(amount);
+  if (!match) throw new Error(`Not an API amount: ${amount}`);
+  const cents = Number(match[2]) * 100 + Number(match[3]);
+  return match[1] === "-" ? -cents : cents;
+}
+
+/** Converts integer cents to an API amount: 90000 becomes "900.00", -9 becomes "-0.09". */
+export function centsToAmount(cents: number): string {
+  const abs = Math.abs(cents);
+  return `${cents < 0 ? "-" : ""}${Math.trunc(abs / 100)}.${String(abs % 100).padStart(2, "0")}`;
+}

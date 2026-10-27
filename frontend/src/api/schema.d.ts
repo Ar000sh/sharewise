@@ -142,7 +142,7 @@ export interface paths {
         /** Expenses of the group, newest first */
         get: operations["listExpenses"];
         put?: never;
-        /** Record an expense. Only split EQUAL is supported in Ex4. */
+        /** Record an expense. Only splitStrategy EQUAL is supported in Ex4. */
         post: operations["recordExpense"];
         delete?: never;
         options?: never;
@@ -218,7 +218,7 @@ export interface components {
         };
         Member: {
             /** Format: uuid */
-            memberId: string;
+            userId: string;
             displayName: string;
             /** @enum {string} */
             role: "ADMIN" | "MEMBER";
@@ -231,52 +231,56 @@ export interface components {
             /** Format: date-time */
             expiresAt: string;
         };
-        ExpenseRequest: {
+        /**
+         * @description Money as a decimal string with exactly two decimals (EUR), e.g. "900.00".
+         * @example 900.00
+         */
+        Amount: string;
+        /**
+         * @description Only EQUAL is accepted in Ex4. The others answer 422 SPLIT_NOT_SUPPORTED.
+         * @enum {string}
+         */
+        SplitStrategy: "EQUAL" | "EXACT" | "PERCENTAGE";
+        /** @enum {string} */
+        ExpenseStatus: "ACTIVE" | "CORRECTED" | "REMOVED";
+        RecordExpenseRequest: {
             title: string;
-            /**
-             * Format: int64
-             * @description Must be > 0 (AMOUNT_NOT_POSITIVE otherwise)
-             */
-            amountCents: number;
+            /** @description Must be greater than zero (AMOUNT_NOT_POSITIVE otherwise). */
+            totalAmount: components["schemas"]["Amount"];
             /** Format: date */
             date: string;
             /** Format: uuid */
-            payerId: string;
+            paidBy: string;
             /** @description Distinct member ids, at least one. Order decides who gets the remainder cents. */
             participantIds: string[];
-            /**
-             * @description Only EQUAL is accepted in Ex4. The others answer 422 SPLIT_NOT_SUPPORTED.
-             * @enum {string}
-             */
-            split: "EQUAL" | "EXACT" | "PERCENTAGE";
+            splitStrategy: components["schemas"]["SplitStrategy"];
         };
-        Share: {
+        ExpenseShare: {
             /** Format: uuid */
-            memberId: string;
-            /** Format: int64 */
-            shareCents: number;
+            participantId: string;
+            owedShare: components["schemas"]["Amount"];
         };
         Expense: {
             /** Format: uuid */
             id: string;
             title: string;
-            /** Format: int64 */
-            amountCents: number;
+            totalAmount: components["schemas"]["Amount"];
             /** Format: date */
             date: string;
             /** Format: uuid */
-            payerId: string;
-            shares: components["schemas"]["Share"][];
+            paidBy: string;
+            /** Format: uuid */
+            recordedBy: string;
+            splitStrategy: components["schemas"]["SplitStrategy"];
+            status: components["schemas"]["ExpenseStatus"];
+            shares: components["schemas"]["ExpenseShare"][];
         };
         Balance: {
             /** Format: uuid */
-            memberId: string;
+            userId: string;
             displayName: string;
-            /**
-             * Format: int64
-             * @description + is owed, - owes
-             */
-            balanceCents: number;
+            /** @description + is owed, - owes */
+            netBalance: components["schemas"]["Amount"];
         };
     };
     responses: {
@@ -669,12 +673,12 @@ export interface operations {
                      *       "memberCount": 2,
                      *       "members": [
                      *         {
-                     *           "memberId": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *           "userId": "aaaaaaaa-0000-0000-0000-000000000001",
                      *           "displayName": "Alice",
                      *           "role": "ADMIN"
                      *         },
                      *         {
-                     *           "memberId": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *           "userId": "aaaaaaaa-0000-0000-0000-000000000002",
                      *           "displayName": "Bob",
                      *           "role": "MEMBER"
                      *         }
@@ -778,25 +782,28 @@ export interface operations {
                      *       {
                      *         "id": "cccccccc-0000-0000-0000-000000000002",
                      *         "title": "Dinner",
-                     *         "amountCents": 18000,
+                     *         "totalAmount": "180.00",
                      *         "date": "2027-06-02",
-                     *         "payerId": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *         "paidBy": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *         "recordedBy": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *         "splitStrategy": "EQUAL",
+                     *         "status": "ACTIVE",
                      *         "shares": [
                      *           {
-                     *             "memberId": "aaaaaaaa-0000-0000-0000-000000000001",
-                     *             "shareCents": 4500
+                     *             "participantId": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *             "owedShare": "45.00"
                      *           },
                      *           {
-                     *             "memberId": "aaaaaaaa-0000-0000-0000-000000000002",
-                     *             "shareCents": 4500
+                     *             "participantId": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *             "owedShare": "45.00"
                      *           },
                      *           {
-                     *             "memberId": "aaaaaaaa-0000-0000-0000-000000000003",
-                     *             "shareCents": 4500
+                     *             "participantId": "aaaaaaaa-0000-0000-0000-000000000003",
+                     *             "owedShare": "45.00"
                      *           },
                      *           {
-                     *             "memberId": "aaaaaaaa-0000-0000-0000-000000000004",
-                     *             "shareCents": 4500
+                     *             "participantId": "aaaaaaaa-0000-0000-0000-000000000004",
+                     *             "owedShare": "45.00"
                      *           }
                      *         ]
                      *       }
@@ -825,19 +832,19 @@ export interface operations {
                 /**
                  * @example {
                  *       "title": "Hotel",
-                 *       "amountCents": 90000,
+                 *       "totalAmount": "900.00",
                  *       "date": "2027-06-01",
-                 *       "payerId": "aaaaaaaa-0000-0000-0000-000000000001",
+                 *       "paidBy": "aaaaaaaa-0000-0000-0000-000000000001",
                  *       "participantIds": [
                  *         "aaaaaaaa-0000-0000-0000-000000000001",
                  *         "aaaaaaaa-0000-0000-0000-000000000002",
                  *         "aaaaaaaa-0000-0000-0000-000000000003",
                  *         "aaaaaaaa-0000-0000-0000-000000000004"
                  *       ],
-                 *       "split": "EQUAL"
+                 *       "splitStrategy": "EQUAL"
                  *     }
                  */
-                "application/json": components["schemas"]["ExpenseRequest"];
+                "application/json": components["schemas"]["RecordExpenseRequest"];
             };
         };
         responses: {
@@ -851,25 +858,28 @@ export interface operations {
                      * @example {
                      *       "id": "cccccccc-0000-0000-0000-000000000001",
                      *       "title": "Hotel",
-                     *       "amountCents": 90000,
+                     *       "totalAmount": "900.00",
                      *       "date": "2027-06-01",
-                     *       "payerId": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *       "paidBy": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *       "recordedBy": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *       "splitStrategy": "EQUAL",
+                     *       "status": "ACTIVE",
                      *       "shares": [
                      *         {
-                     *           "memberId": "aaaaaaaa-0000-0000-0000-000000000001",
-                     *           "shareCents": 22500
+                     *           "participantId": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *           "owedShare": "225.00"
                      *         },
                      *         {
-                     *           "memberId": "aaaaaaaa-0000-0000-0000-000000000002",
-                     *           "shareCents": 22500
+                     *           "participantId": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *           "owedShare": "225.00"
                      *         },
                      *         {
-                     *           "memberId": "aaaaaaaa-0000-0000-0000-000000000003",
-                     *           "shareCents": 22500
+                     *           "participantId": "aaaaaaaa-0000-0000-0000-000000000003",
+                     *           "owedShare": "225.00"
                      *         },
                      *         {
-                     *           "memberId": "aaaaaaaa-0000-0000-0000-000000000004",
-                     *           "shareCents": 22500
+                     *           "participantId": "aaaaaaaa-0000-0000-0000-000000000004",
+                     *           "owedShare": "225.00"
                      *         }
                      *       ]
                      *     }
@@ -904,24 +914,24 @@ export interface operations {
                     /**
                      * @example [
                      *       {
-                     *         "memberId": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *         "userId": "aaaaaaaa-0000-0000-0000-000000000001",
                      *         "displayName": "Alice",
-                     *         "balanceCents": 63000
+                     *         "netBalance": "630.00"
                      *       },
                      *       {
-                     *         "memberId": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *         "userId": "aaaaaaaa-0000-0000-0000-000000000002",
                      *         "displayName": "Bob",
-                     *         "balanceCents": -9000
+                     *         "netBalance": "-90.00"
                      *       },
                      *       {
-                     *         "memberId": "aaaaaaaa-0000-0000-0000-000000000003",
+                     *         "userId": "aaaaaaaa-0000-0000-0000-000000000003",
                      *         "displayName": "Carol",
-                     *         "balanceCents": -27000
+                     *         "netBalance": "-270.00"
                      *       },
                      *       {
-                     *         "memberId": "aaaaaaaa-0000-0000-0000-000000000004",
+                     *         "userId": "aaaaaaaa-0000-0000-0000-000000000004",
                      *         "displayName": "David",
-                     *         "balanceCents": -27000
+                     *         "netBalance": "-270.00"
                      *       }
                      *     ]
                      */

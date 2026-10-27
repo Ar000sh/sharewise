@@ -1,3 +1,4 @@
+import { centsToAmount } from "@/lib/money";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -11,9 +12,9 @@ const apiMock = vi.mocked(api);
 afterEach(() => vi.resetAllMocks());
 
 const members = [
-  { memberId: "u1", displayName: "Alice", role: "ADMIN" as const },
-  { memberId: "u2", displayName: "Bob", role: "MEMBER" as const },
-  { memberId: "u3", displayName: "Carol", role: "MEMBER" as const },
+  { userId: "u1", displayName: "Alice", role: "ADMIN" as const },
+  { userId: "u2", displayName: "Bob", role: "MEMBER" as const },
+  { userId: "u3", displayName: "Carol", role: "MEMBER" as const },
 ];
 
 function renderForm(onRecorded = vi.fn()) {
@@ -52,7 +53,7 @@ describe("ExpenseForm", () => {
     await fill("Lunch", typed);
     await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
 
-    expect(postedBody()).toMatchObject({ amountCents: cents, split: "EQUAL" });
+    expect(postedBody()).toMatchObject({ totalAmount: centsToAmount(cents), splitStrategy: "EQUAL" });
   });
 
   it("submitPostsExpenseAndRefreshesList", async () => {
@@ -66,8 +67,8 @@ describe("ExpenseForm", () => {
     expect(apiMock.mock.calls[0][0]).toBe("/groups/g1/expenses");
     expect(postedBody()).toMatchObject({
       title: "Hotel",
-      amountCents: 90000,
-      payerId: "u2",
+      totalAmount: "900.00",
+      paidBy: "u2",
       participantIds: ["u1", "u2"],
       date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
     });
@@ -117,7 +118,17 @@ describe("ExpenseList", () => {
       <ExpenseList
         members={members}
         expenses={[
-          { id: "e1", title: "Dinner", amountCents: 18000, date: "2027-06-02", payerId: "u1", shares: [] },
+          {
+            id: "e1",
+            title: "Dinner",
+            totalAmount: "180.00",
+            date: "2027-06-02",
+            paidBy: "u1",
+            recordedBy: "u1",
+            splitStrategy: "EQUAL",
+            status: "ACTIVE",
+            shares: [],
+          },
         ]}
       />,
     );

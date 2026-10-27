@@ -19,8 +19,8 @@ describe("MemberList", () => {
       <MemberList
         currentUserId="u2"
         members={[
-          { memberId: "u1", displayName: "Alice", role: "ADMIN" },
-          { memberId: "u2", displayName: "Bob", role: "MEMBER" },
+          { userId: "u1", displayName: "Alice", role: "ADMIN" },
+          { userId: "u2", displayName: "Bob", role: "MEMBER" },
         ]}
       />,
     );

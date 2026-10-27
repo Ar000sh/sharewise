@@ -1,5 +1,5 @@
 import type { components } from "@/api/schema";
-import { formatEuro } from "@/lib/money";
+import { amountToCents, formatEuro } from "@/lib/money";
 
 type Expense = components["schemas"]["Expense"];
 type Member = components["schemas"]["Member"];
@@ -7,7 +7,7 @@ type Member = components["schemas"]["Member"];
 export function ExpenseList({ expenses, members }: { expenses: Expense[]; members: Member[] }) {
   if (expenses.length === 0) return <p>No expenses yet.</p>;
 
-  const nameOf = (id: string) => members.find((m) => m.memberId === id)?.displayName ?? "Former member";
+  const nameOf = (id: string) => members.find((m) => m.userId === id)?.displayName ?? "Former member";
 
   return (
     <ul className="divide-y rounded border">
@@ -16,10 +16,10 @@ export function ExpenseList({ expenses, members }: { expenses: Expense[]; member
           <div>
             <div className="font-medium">{e.title}</div>
             <div className="text-sm text-gray-600">
-              {nameOf(e.payerId)} paid · {e.date}
+              {nameOf(e.paidBy)} paid · {e.date}
             </div>
           </div>
-          <div className="whitespace-nowrap font-medium">{formatEuro(e.amountCents)}</div>
+          <div className="whitespace-nowrap font-medium">{formatEuro(amountToCents(e.totalAmount))}</div>
         </li>
       ))}
     </ul>
