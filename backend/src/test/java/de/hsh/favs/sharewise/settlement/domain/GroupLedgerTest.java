@@ -1,5 +1,6 @@
 package de.hsh.favs.sharewise.settlement.domain;
 
+import de.hsh.favs.sharewise.shared.UserId;
 import static de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture.ALICE;
 import static de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture.BOB;
 import static de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture.CAROL;
@@ -9,7 +10,6 @@ import static org.assertj.core.api.Assertions.tuple;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded.Share;
 import de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture;
 import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -79,7 +79,7 @@ class GroupLedgerTest {
 		for (int i = 0; i < 200; i++) {
 			var shares = new ArrayList<Share>();
 			long total = 0;
-			for (MemberId member : members) {
+			for (UserId member : members) {
 				if (random.nextBoolean()) {
 					long cents = 1 + random.nextInt(10_000);
 					shares.add(new Share(member, cents));

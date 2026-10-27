@@ -9,7 +9,6 @@ import de.hsh.favs.sharewise.group.api.Role;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Clock;
 import java.util.List;
@@ -58,7 +57,7 @@ class GroupService {
 		Group group = groups.save(Group.create(name, creator.id().value(), clock.instant()));
 		GroupId id = new GroupId(group.id());
 		events.publishEvent(new GroupCreated(id, creator.id()));
-		events.publishEvent(new MemberJoined(id, new MemberId(creator.id().value()), Role.ADMIN));
+		events.publishEvent(new MemberJoined(id, creator.id(), Role.ADMIN));
 		return GroupView.of(group);
 	}
 
@@ -69,7 +68,7 @@ class GroupService {
 
 	@Transactional(readOnly = true)
 	GroupView detail(UUID groupId, UserId caller) {
-		membership.requireMember(new GroupId(groupId), new MemberId(caller.value()));
+		membership.requireMember(new GroupId(groupId), caller);
 		return groups.findById(groupId)
 			.map(GroupView::of)
 			.orElseThrow(() -> new DomainException(ErrorCode.GROUP_NOT_FOUND, "Group not found"));

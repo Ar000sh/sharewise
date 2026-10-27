@@ -1,6 +1,6 @@
 package de.hsh.favs.sharewise.expense.domain;
 
-import de.hsh.favs.sharewise.shared.MemberId;
+import de.hsh.favs.sharewise.shared.UserId;
 import de.hsh.favs.sharewise.shared.Money;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
@@ -19,13 +19,13 @@ public class Share {
 	protected Share() {
 	}
 
-	public Share(MemberId memberId, Money amount) {
+	public Share(UserId memberId, Money amount) {
 		this.memberId = memberId.value();
 		this.shareCents = amount.cents();
 	}
 
-	public MemberId memberId() {
-		return new MemberId(memberId);
+	public UserId memberId() {
+		return new UserId(memberId);
 	}
 
 	public Money amount() {

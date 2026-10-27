@@ -1,10 +1,10 @@
 package de.hsh.favs.sharewise.expense.application;
 
+import de.hsh.favs.sharewise.shared.UserId;
 import static de.hsh.favs.sharewise.expense.domain.ExpenseFixture.ALICE;
 import static de.hsh.favs.sharewise.expense.domain.ExpenseFixture.BOB;
 
 import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -17,7 +17,7 @@ public class RecordExpenseCommandFixture {
 
 	private GroupId groupId = new GroupId(UUID.fromString("bbbbbbbb-0000-0000-0000-000000000001"));
 
-	private MemberId caller = ALICE;
+	private UserId caller = ALICE;
 
 	private String title = "Dinner";
 
@@ -25,9 +25,9 @@ public class RecordExpenseCommandFixture {
 
 	private LocalDate date = LocalDate.of(2027, 6, 2);
 
-	private MemberId payer = ALICE;
+	private UserId payer = ALICE;
 
-	private List<MemberId> participants = List.of(ALICE, BOB);
+	private List<UserId> participants = List.of(ALICE, BOB);
 
 	private SplitType split = SplitType.EQUAL;
 
@@ -36,7 +36,7 @@ public class RecordExpenseCommandFixture {
 		return this;
 	}
 
-	public RecordExpenseCommandFixture withCaller(MemberId caller) {
+	public RecordExpenseCommandFixture withCaller(UserId caller) {
 		this.caller = caller;
 		return this;
 	}
@@ -46,12 +46,12 @@ public class RecordExpenseCommandFixture {
 		return this;
 	}
 
-	public RecordExpenseCommandFixture withPayer(MemberId payer) {
+	public RecordExpenseCommandFixture withPayer(UserId payer) {
 		this.payer = payer;
 		return this;
 	}
 
-	public RecordExpenseCommandFixture withParticipants(MemberId... participants) {
+	public RecordExpenseCommandFixture withParticipants(UserId... participants) {
 		this.participants = List.of(participants);
 		return this;
 	}

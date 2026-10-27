@@ -1,8 +1,8 @@
 package de.hsh.favs.sharewise.settlement.domain;
 
+import de.hsh.favs.sharewise.shared.UserId;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -58,8 +58,8 @@ public class GroupLedger {
 	 * Only members that appear in an entry; the sum is always 0. Loads every entry, see
 	 * {@code GroupLedgerRepository#totals}.
 	 */
-	public Map<MemberId, Long> projectBalances() {
-		Map<MemberId, Long> balances = new HashMap<>();
+	public Map<UserId, Long> projectBalances() {
+		Map<UserId, Long> balances = new HashMap<>();
 		for (var entry : entries) {
 			balances.merge(entry.member(), entry.deltaCents(), Long::sum);
 		}

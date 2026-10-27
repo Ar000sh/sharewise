@@ -71,7 +71,7 @@ class GroupServiceTest {
 		GroupId id = new GroupId(view.id());
 		InOrder order = inOrder(events);
 		order.verify(events).publishEvent((Object) new GroupCreated(id, alice.userId()));
-		order.verify(events).publishEvent((Object) new MemberJoined(id, alice.memberId(), Role.ADMIN));
+		order.verify(events).publishEvent((Object) new MemberJoined(id, alice.userId(), Role.ADMIN));
 	}
 
 	@Test
@@ -100,7 +100,7 @@ class GroupServiceTest {
 		GroupView view = service.detail(mallorca.id(), alice.userId());
 
 		// then
-		verify(membership).requireMember(new GroupId(mallorca.id()), alice.memberId());
+		verify(membership).requireMember(new GroupId(mallorca.id()), alice.userId());
 		assertThat(view.id()).isEqualTo(mallorca.id());
 	}
 
@@ -109,7 +109,7 @@ class GroupServiceTest {
 		// given
 		UUID groupId = UUID.randomUUID();
 		doThrow(new DomainException(ErrorCode.NOT_A_MEMBER, "no")).when(membership)
-			.requireMember(new GroupId(groupId), bob.memberId());
+			.requireMember(new GroupId(groupId), bob.userId());
 
 		// when / then
 		assertThatThrownBy(() -> service.detail(groupId, bob.userId())).isInstanceOfSatisfying(DomainException.class,

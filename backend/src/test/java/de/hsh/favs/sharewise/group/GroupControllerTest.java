@@ -68,7 +68,7 @@ class GroupControllerTest {
 		assertThat(events.stream(GroupCreated.class).filter(e -> e.groupId().equals(id)))
 			.containsExactly(new GroupCreated(id, alice.userId()));
 		assertThat(events.stream(MemberJoined.class).filter(e -> e.groupId().equals(id)))
-			.containsExactly(new MemberJoined(id, alice.memberId(), Role.ADMIN));
+			.containsExactly(new MemberJoined(id, alice.userId(), Role.ADMIN));
 		groups.detail(id.value(), alice)
 			.andExpect(jsonPath("$.members[0].memberId").value(alice.idString()))
 			.andExpect(jsonPath("$.members[0].displayName").value("Alice"))

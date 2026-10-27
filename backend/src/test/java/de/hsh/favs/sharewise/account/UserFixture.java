@@ -1,7 +1,6 @@
 package de.hsh.favs.sharewise.account;
 
 import de.hsh.favs.sharewise.account.api.UserInfo;
-import de.hsh.favs.sharewise.shared.MemberId;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.util.Map;
 import java.util.UUID;
@@ -96,10 +95,6 @@ public class UserFixture {
 
 	public UserId userId() {
 		return new UserId(id);
-	}
-
-	public MemberId memberId() {
-		return new MemberId(id);
 	}
 
 	public UserInfo info() {

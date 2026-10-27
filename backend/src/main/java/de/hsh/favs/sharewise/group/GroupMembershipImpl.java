@@ -1,11 +1,11 @@
 package de.hsh.favs.sharewise.group;
 
+import de.hsh.favs.sharewise.shared.UserId;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.group.api.GroupStatus;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,13 +26,13 @@ class GroupMembershipImpl implements GroupMembership {
 	}
 
 	@Override
-	public boolean isMember(GroupId group, MemberId member) {
+	public boolean isMember(GroupId group, UserId member) {
 		return groups.existsMember(group.value(), member.value());
 	}
 
 	@Override
-	public List<MemberId> members(GroupId group) {
-		return load(group).members().stream().map(m -> new MemberId(m.memberId())).toList();
+	public List<UserId> members(GroupId group) {
+		return load(group).members().stream().map(m -> new UserId(m.memberId())).toList();
 	}
 
 	@Override

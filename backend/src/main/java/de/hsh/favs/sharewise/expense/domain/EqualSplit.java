@@ -1,6 +1,6 @@
 package de.hsh.favs.sharewise.expense.domain;
 
-import de.hsh.favs.sharewise.shared.MemberId;
+import de.hsh.favs.sharewise.shared.UserId;
 import de.hsh.favs.sharewise.shared.Money;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +14,7 @@ public final class EqualSplit {
 	private EqualSplit() {
 	}
 
-	public static List<Share> split(Money total, List<MemberId> participants) {
+	public static List<Share> split(Money total, List<UserId> participants) {
 		int n = participants.size();
 		long base = total.cents() / n;
 		long remainder = total.cents() % n;

@@ -15,7 +15,6 @@ import de.hsh.favs.sharewise.settlement.api.MemberBalance;
 import de.hsh.favs.sharewise.settlement.ModuleIntegrationTest;
 import de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture;
 import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.util.List;
 import java.util.Optional;
@@ -109,7 +108,7 @@ class BalancesImplTest {
 		assertThat(result).extracting(MemberBalance::balanceCents).containsExactly(9000L, -4500L, -4500L);
 	}
 
-	private void nameUser(MemberId member, String name) {
+	private void nameUser(UserId member, String name) {
 		var id = new UserId(member.value());
 		when(users.find(id)).thenReturn(Optional.of(new UserInfo(id, name)));
 	}

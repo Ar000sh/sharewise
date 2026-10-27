@@ -6,7 +6,6 @@ import de.hsh.favs.sharewise.group.api.Role;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.security.SecureRandom;
 import java.time.Clock;
@@ -57,7 +56,7 @@ class InvitationService {
 			.orElseThrow(() -> new DomainException(ErrorCode.GROUP_NOT_FOUND, "Group not found"));
 		group.acceptInvitation(token, caller.value(), clock.instant());
 		groups.saveAndFlush(group);
-		events.publishEvent(new MemberJoined(new GroupId(group.id()), new MemberId(caller.value()), Role.MEMBER));
+		events.publishEvent(new MemberJoined(new GroupId(group.id()), caller, Role.MEMBER));
 		return GroupView.of(group);
 	}
 

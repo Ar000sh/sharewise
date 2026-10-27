@@ -102,7 +102,7 @@ class InvitationServiceTest {
 		// then
 		assertThat(view.memberCount()).isEqualTo(2);
 		verify(groups).saveAndFlush(group);
-		verify(events).publishEvent((Object) new MemberJoined(new GroupId(group.id()), bob.memberId(), Role.MEMBER));
+		verify(events).publishEvent((Object) new MemberJoined(new GroupId(group.id()), bob.userId(), Role.MEMBER));
 	}
 
 	@Test

@@ -55,10 +55,10 @@ class GroupMembershipImplTest {
 
 	@Test
 	void requireMemberAcceptsMembersAndRejectsStrangersAndUnknownGroups() {
-		assertThatCode(() -> membership.requireMember(trip, carol.memberId())).doesNotThrowAnyException();
-		assertThatThrownBy(() -> membership.requireMember(trip, david.memberId()))
+		assertThatCode(() -> membership.requireMember(trip, carol.userId())).doesNotThrowAnyException();
+		assertThatThrownBy(() -> membership.requireMember(trip, david.userId()))
 			.isInstanceOfSatisfying(DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
-		assertThatThrownBy(() -> membership.requireMember(new GroupId(UUID.randomUUID()), alice.memberId()))
+		assertThatThrownBy(() -> membership.requireMember(new GroupId(UUID.randomUUID()), alice.userId()))
 			.isInstanceOfSatisfying(DomainException.class,
 					e -> assertThat(e.code()).isEqualTo(ErrorCode.GROUP_NOT_FOUND));
 	}
@@ -68,8 +68,7 @@ class GroupMembershipImplTest {
 		assertThat(membership.exists(trip)).isTrue();
 		// the test clock is frozen, so everyone joined at the same instant and the order
 		// is not asserted
-		assertThat(membership.members(trip)).containsExactlyInAnyOrder(alice.memberId(), bob.memberId(),
-				carol.memberId());
+		assertThat(membership.members(trip)).containsExactlyInAnyOrder(alice.userId(), bob.userId(), carol.userId());
 		assertThat(membership.status(trip)).isEqualTo(GroupStatus.OPEN);
 	}
 
@@ -78,7 +77,7 @@ class GroupMembershipImplTest {
 		GroupId unknown = new GroupId(UUID.randomUUID());
 
 		assertThat(membership.exists(unknown)).isFalse();
-		assertThat(membership.isMember(unknown, alice.memberId())).isFalse();
+		assertThat(membership.isMember(unknown, alice.userId())).isFalse();
 		assertThatThrownBy(() -> membership.members(unknown)).isInstanceOf(DomainException.class);
 		assertThatThrownBy(() -> membership.status(unknown)).isInstanceOf(DomainException.class);
 	}

@@ -1,9 +1,9 @@
 package de.hsh.favs.sharewise.expense.domain;
 
+import de.hsh.favs.sharewise.shared.UserId;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
 import de.hsh.favs.sharewise.shared.Money;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -56,7 +56,7 @@ public class Expense {
 	protected Expense() {
 	}
 
-	private Expense(GroupId groupId, String title, Money amount, LocalDate date, MemberId payer, List<Share> shares) {
+	private Expense(GroupId groupId, String title, Money amount, LocalDate date, UserId payer, List<Share> shares) {
 		this.id = UUID.randomUUID();
 		this.groupId = groupId.value();
 		this.title = title;
@@ -67,8 +67,8 @@ public class Expense {
 		this.createdAt = Instant.now();
 	}
 
-	public static Expense record(GroupId groupId, String title, Money amount, LocalDate date, MemberId payer,
-			List<MemberId> participants) {
+	public static Expense record(GroupId groupId, String title, Money amount, LocalDate date, UserId payer,
+			List<UserId> participants) {
 		if (!amount.isPositive()) {
 			throw new DomainException(ErrorCode.AMOUNT_NOT_POSITIVE, "Amount must be greater than zero");
 		}
@@ -101,8 +101,8 @@ public class Expense {
 		return date;
 	}
 
-	public MemberId payerId() {
-		return new MemberId(payerId);
+	public UserId payerId() {
+		return new UserId(payerId);
 	}
 
 	public List<Share> shares() {

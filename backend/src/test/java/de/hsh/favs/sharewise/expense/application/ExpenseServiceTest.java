@@ -1,5 +1,6 @@
 package de.hsh.favs.sharewise.expense.application;
 
+import de.hsh.favs.sharewise.shared.UserId;
 import java.util.List;
 import de.hsh.favs.sharewise.expense.domain.ExpenseFixture;
 import de.hsh.favs.sharewise.expense.persistence.ExpenseRepository;
@@ -23,7 +24,6 @@ import de.hsh.favs.sharewise.group.api.GroupStatus;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +48,7 @@ class ExpenseServiceTest {
 
 	ExpenseService service;
 
-	MemberId outsider = new MemberId(UUID.randomUUID());
+	UserId outsider = new UserId(UUID.randomUUID());
 
 	GroupId group = new RecordExpenseCommandFixture().build().groupId();
 
@@ -56,7 +56,7 @@ class ExpenseServiceTest {
 	void setUp() {
 		service = new ExpenseService(groups, repository, events);
 		lenient().when(groups.status(group)).thenReturn(GroupStatus.OPEN);
-		for (MemberId member : new MemberId[] { ALICE, BOB, CAROL }) {
+		for (UserId member : new UserId[] { ALICE, BOB, CAROL }) {
 			lenient().when(groups.isMember(group, member)).thenReturn(true);
 		}
 	}

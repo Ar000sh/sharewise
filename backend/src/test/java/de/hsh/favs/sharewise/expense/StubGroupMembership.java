@@ -1,9 +1,9 @@
 package de.hsh.favs.sharewise.expense;
 
+import de.hsh.favs.sharewise.shared.UserId;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.group.api.GroupStatus;
 import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,11 +13,11 @@ import java.util.Map;
  */
 public class StubGroupMembership implements GroupMembership {
 
-	private final Map<GroupId, List<MemberId>> members = new HashMap<>();
+	private final Map<GroupId, List<UserId>> members = new HashMap<>();
 
 	private final Map<GroupId, GroupStatus> status = new HashMap<>();
 
-	public void group(GroupId group, GroupStatus groupStatus, MemberId... memberIds) {
+	public void group(GroupId group, GroupStatus groupStatus, UserId... memberIds) {
 		members.put(group, List.of(memberIds));
 		status.put(group, groupStatus);
 	}
@@ -33,12 +33,12 @@ public class StubGroupMembership implements GroupMembership {
 	}
 
 	@Override
-	public boolean isMember(GroupId group, MemberId member) {
+	public boolean isMember(GroupId group, UserId member) {
 		return members.getOrDefault(group, List.of()).contains(member);
 	}
 
 	@Override
-	public List<MemberId> members(GroupId group) {
+	public List<UserId> members(GroupId group) {
 		return members.getOrDefault(group, List.of());
 	}
 

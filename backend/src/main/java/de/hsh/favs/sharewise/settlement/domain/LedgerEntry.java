@@ -1,6 +1,6 @@
 package de.hsh.favs.sharewise.settlement.domain;
 
-import de.hsh.favs.sharewise.shared.MemberId;
+import de.hsh.favs.sharewise.shared.UserId;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -52,7 +52,7 @@ public class LedgerEntry {
 	protected LedgerEntry() {
 	}
 
-	LedgerEntry(GroupLedger ledger, MemberId member, long deltaCents, LedgerEntryType type, UUID referenceId,
+	LedgerEntry(GroupLedger ledger, UserId member, long deltaCents, LedgerEntryType type, UUID referenceId,
 			Instant occurredAt) {
 		this.id = UUID.randomUUID();
 		this.ledger = ledger;
@@ -63,8 +63,8 @@ public class LedgerEntry {
 		this.occurredAt = occurredAt;
 	}
 
-	public MemberId member() {
-		return new MemberId(memberId);
+	public UserId member() {
+		return new UserId(memberId);
 	}
 
 	public long deltaCents() {

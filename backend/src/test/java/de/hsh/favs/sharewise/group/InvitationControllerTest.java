@@ -94,7 +94,7 @@ class InvitationControllerTest {
 		// then
 		GroupId id = new GroupId(group);
 		assertThat(events.stream(MemberJoined.class).filter(e -> e.groupId().equals(id)))
-			.contains(new MemberJoined(id, bob.memberId(), Role.MEMBER));
+			.contains(new MemberJoined(id, bob.userId(), Role.MEMBER));
 		groups.detail(group, bob).andExpect(status().isOk());
 	}
 

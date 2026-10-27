@@ -1,8 +1,8 @@
 package de.hsh.favs.sharewise.expense.domain;
 
+import de.hsh.favs.sharewise.shared.UserId;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import de.hsh.favs.sharewise.shared.MemberId;
 import de.hsh.favs.sharewise.shared.Money;
 import java.util.List;
 import java.util.Random;
@@ -12,8 +12,8 @@ import org.junit.jupiter.api.Test;
 
 class EqualSplitTest {
 
-	static List<MemberId> members(int n) {
-		return IntStream.range(0, n).mapToObj(i -> new MemberId(UUID.randomUUID())).toList();
+	static List<UserId> members(int n) {
+		return IntStream.range(0, n).mapToObj(i -> new UserId(UUID.randomUUID())).toList();
 	}
 
 	static List<Long> cents(List<Share> shares) {

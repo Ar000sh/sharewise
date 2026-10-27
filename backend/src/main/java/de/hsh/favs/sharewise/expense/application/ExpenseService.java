@@ -1,5 +1,6 @@
 package de.hsh.favs.sharewise.expense.application;
 
+import de.hsh.favs.sharewise.shared.UserId;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import de.hsh.favs.sharewise.expense.domain.Expense;
 import de.hsh.favs.sharewise.expense.persistence.ExpenseRepository;
@@ -8,7 +9,6 @@ import de.hsh.favs.sharewise.group.api.GroupStatus;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
 import de.hsh.favs.sharewise.shared.Money;
 import java.util.List;
 import org.springframework.context.ApplicationEventPublisher;
@@ -67,7 +67,7 @@ public class ExpenseService {
 
 	/** Newest first: by date, then creation time. */
 	@Transactional(readOnly = true)
-	public List<Expense> list(GroupId groupId, MemberId caller) {
+	public List<Expense> list(GroupId groupId, UserId caller) {
 		groups.requireMember(groupId, caller);
 		return repository.findByGroupIdOrderByDateDescCreatedAtDesc(groupId.value());
 	}

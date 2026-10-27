@@ -4,7 +4,6 @@ import de.hsh.favs.sharewise.account.api.CurrentUser;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.settlement.api.Balances;
 import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,7 +32,7 @@ class BalanceController {
 	@GetMapping("/groups/{groupId}/balances")
 	List<BalanceResponse> balances(@PathVariable UUID groupId) {
 		var group = new GroupId(groupId);
-		membership.requireMember(group, new MemberId(currentUser.get().id().value()));
+		membership.requireMember(group, currentUser.get().id());
 		return balances.of(group)
 			.stream()
 			.map(b -> new BalanceResponse(b.memberId().value(), b.displayName(), b.balanceCents()))

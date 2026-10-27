@@ -1,5 +1,6 @@
 package de.hsh.favs.sharewise.expense.web;
 
+import de.hsh.favs.sharewise.shared.UserId;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -8,7 +9,6 @@ import de.hsh.favs.sharewise.expense.StubCurrentUser;
 import de.hsh.favs.sharewise.expense.StubGroupMembership;
 import de.hsh.favs.sharewise.group.api.GroupStatus;
 import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,8 +47,8 @@ class ExpenseControllerTest {
 		groups.group(new GroupId(group), GroupStatus.OPEN, member(alice), member(bob), member(carol));
 	}
 
-	static MemberId member(UUID id) {
-		return new MemberId(id);
+	static UserId member(UUID id) {
+		return new UserId(id);
 	}
 
 	ExpenseRequests request() {

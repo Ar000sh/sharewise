@@ -8,7 +8,6 @@ import de.hsh.favs.sharewise.settlement.api.MemberBalance;
 import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
 import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository.MemberTotal;
 import de.hsh.favs.sharewise.shared.GroupId;
-import de.hsh.favs.sharewise.shared.MemberId;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.util.Comparator;
 import java.util.List;
@@ -41,9 +40,9 @@ class BalancesImpl implements Balances {
 	@Override
 	@Transactional(readOnly = true)
 	public List<MemberBalance> of(GroupId group) {
-		Map<MemberId, Long> stored = ledgers.totals(group.value())
+		Map<UserId, Long> stored = ledgers.totals(group.value())
 			.stream()
-			.collect(Collectors.toMap(total -> new MemberId(total.getMemberId()), MemberTotal::getCents));
+			.collect(Collectors.toMap(total -> new UserId(total.getMemberId()), MemberTotal::getCents));
 		return membership.members(group)
 			.stream()
 			.map(member -> new MemberBalance(member, displayName(member), stored.getOrDefault(member, 0L)))
@@ -52,7 +51,7 @@ class BalancesImpl implements Balances {
 			.toList();
 	}
 
-	private String displayName(MemberId member) {
+	private String displayName(UserId member) {
 		return users.find(new UserId(member.value())).map(UserInfo::displayName).orElse(UNKNOWN_NAME);
 	}
 
