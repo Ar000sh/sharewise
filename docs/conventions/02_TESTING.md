@@ -37,7 +37,7 @@ Where a rule lives decides where it is tested: a rule in an aggregate is tested 
 
 ## 4. Shared integration set-up
 
-`@ModuleIntegrationTest` is a composed annotation: `@SpringBootTest`, `@AutoConfigureMockMvc`, `@RecordApplicationEvents`, plus the imports of `TestcontainersConfiguration` (Postgres 17) and a clock configuration. Every integration test uses it, so they share **one** Spring context and **one** container.
+`@ModuleIntegrationTest` (root test package `de.hsh.favs.sharewise`, next to `MutableClock` and `TestClockConfig`) is a composed annotation: `@SpringBootTest`, `@AutoConfigureMockMvc`, `@RecordApplicationEvents`, plus the imports of `TestcontainersConfiguration` (Postgres 17) and a clock configuration. Every integration test uses it, so they share **one** Spring context and **one** container.
 
 - **Time:** inject `java.time.Clock`; tests replace it with a `@Primary` `MutableClock` (`reset()` in `@BeforeEach`, `advance(Duration)`). Never `Thread.sleep`.
 - **Eventual consistency:** balances arrive through an asynchronous event. Use Awaitility (`await().atMost(Duration.ofSeconds(10)).untilAsserted(...)`) and assert the final state. Never sleep, never retry by hand.

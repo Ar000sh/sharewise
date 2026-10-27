@@ -55,16 +55,18 @@ Value objects wrap every id and every concept the diagram draws as a value objec
 
 | Lives in | Types |
 |---|---|
-| `shared` (used by 2+ modules) | `UserId`, `GroupId`, `Money`, `Currency`, `Email` |
-| `group.domain` | `GroupName`, `InvitationId` |
-| `expense.domain` | `ExpenseId`, `ExpenseTitle`, `ExpenseShare` |
-| `settlement.domain` | `EntryId`, `SettlementPaymentId`, `DirectedDebt` |
-| `account.domain` | `DisplayName`, `PasswordHash`, `RawPassword`, `TokenId` |
+| `shared` (used by 2+ modules) | `UserId`, `GroupId`, `Money`, `Email` (`Currency` is `java.util.Currency`) |
+| `<module>.api` (appears in an event or a port) | `InvitationId`, `ExpenseId`, `ExpenseShare`, `SettlementPaymentId` |
+| `<module>.domain` (stays inside) | `GroupName`, `ExpenseTitle`, `EntryId`, `DirectedDebt`, `DisplayName`, `PasswordHash`, `RawPassword`, `TokenId` |
+
+**Rule:** a value object that appears in an event or in an `api` port lives in `api`, because `api` may not import its own module's `domain`. Everything else stays in `domain`.
 
 - Ids are records with one field `value` of type `UUID`: `record GroupId(UUID value)`.
 - **There is exactly one identity type for a person: `UserId`.** There is no `MemberId`. A person's role in a group is the `Membership` entity, which holds a `UserId`.
 - `Money` is `record Money(BigDecimal amount, Currency currency)`. The amount always has the currency's number of fraction digits (EUR: 2) and is rounded `HALF_EVEN` only where a rule says so (equal split: the remainder goes to the first participants, in order, so shares always add up exactly). The type offers `plus`, `minus`, `isPositive`, `isZero`, `negate`. Never `double`/`float`, never `new BigDecimal(double)`.
 - Value objects validate in their constructor and throw `DomainException` with a stable `ErrorCode`.
+- **Every event ends with `Instant occurredAt`** and carries ids and value objects only, never entities or names.
+- An `api` read model exposes shared value objects and plain text; a module's own domain value objects never leave it (`UserProfile.displayName` is a `String`, the account's `DisplayName` stays inside).
 
 ## 3. The vocabulary: names come from the diagram
 
@@ -128,7 +130,8 @@ Method names on services are the operation names (`recordExpense`, `acceptInvita
 ## 6. Persistence and database
 
 - One Flyway folder per module: `db/migration/<module>/V<n>__<what>.sql`. Version ranges: shared `V0xx`, account `V1xx`, group `V2xx`, expense `V3xx`, settlement `V4xx`. **Never edit a migration that is on `main`; add a new one.**
-- Tables `snake_case`, plural for collections (`groups`, `members`…) as already created; columns `snake_case`; ids `UUID`; money `NUMERIC(19,2)` named `<name>` (not `_cents`); instants `TIMESTAMPTZ` named `<what>_at`; enumerations stored as `VARCHAR` of the constant name.
+- Because every module numbers its own migrations, Flyway runs with `out-of-order: true` (`application.yml`). Without it a new `V104` is refused by any database that already has `V401`. Found when the first refactoring ran on a real database; fresh test databases hide it.
+- Tables `snake_case`, plural (`accounts`, `groups`, `memberships`, `expenses`, `expense_shares`, `settlement_ledgers`); columns `snake_case`; ids `UUID`; money `NUMERIC(19,2)` named `<name>` (not `_cents`); instants `TIMESTAMPTZ` named `<what>_at`; enumerations stored as `VARCHAR` of the constant name.
 - `spring.jpa.hibernate.ddl-auto=validate`: the schema comes from migrations only.
 - No foreign keys between modules. A column that references another module holds the id as a plain `UUID`.
 - Lazy collections are never read outside a transaction; ports that other modules call use queries (see document 02, pitfalls).

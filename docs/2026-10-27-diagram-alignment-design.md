@@ -1,6 +1,6 @@
 # Design: conventions and alignment with the domain diagram
 
-**Date:** 27.10.26 · **Status:** draft for review (nothing in the product code has changed yet) · **Rules:** `docs/conventions/`
+**Date:** 27.10.26 · **Status:** implemented on branch `refactor/diagram-alignment` (27.10.26); what differs from the diagram is in `docs/diagram-deltas.md` · **Rules:** `docs/conventions/`
 
 ## 1. Why
 The Ex4 build was done by four parallel sessions. It works (124 backend tests, 73 frontend tests, 2 browser tests), but it has four dialects: `expense` and `settlement` have `domain/application/persistence/web`, `group` and `account` are flat; `Member` / `MemberId` / `UserId` name the same person; the diagram shown to the professor says `Membership`, `GroupRole`, `ExpenseShare`, `SplitStrategy`, `paidBy`, `totalAmount`, while the code says `Member`, `Role`, `Share`, `SplitType`, `payerId`, `amountCents`. We need one set of rules, enforced by tests, and the code brought in line with the diagram before Ex5 piles features on top.

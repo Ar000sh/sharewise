@@ -2,7 +2,7 @@
 
 ## 1. Formatting (Java)
 
-- Format is **Spring Java Format** (tabs, 120 columns, `}` and `else`/`catch` on separate lines). It is enforced: `./mvnw spring-javaformat:apply` formats, `./mvnw validate` fails on unformatted files. Do not argue with the formatter and do not hand-format.
+- Format is **Spring Java Format** (tabs, code up to 120 columns, Javadoc and comments wrapped at 90 by the formatter, `}` and `else`/`catch` on separate lines). It is enforced: `./mvnw spring-javaformat:apply` formats, `./mvnw validate` fails on unformatted files. Do not argue with the formatter and do not hand-format.
 - Imports: no wildcards, no unused imports, static imports only in tests. The formatter orders them.
 - Constructor injection only, fields `private final`, no `@Autowired` on fields in production code (tests may use it).
 - `record` for events, commands, requests, responses, read models and value objects. No Lombok (it is not used; the dependency is removed).
