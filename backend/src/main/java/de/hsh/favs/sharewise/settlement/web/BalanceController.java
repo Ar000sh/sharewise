@@ -32,7 +32,7 @@ class BalanceController {
 	@GetMapping("/groups/{groupId}/balances")
 	List<BalanceResponse> balances(@PathVariable UUID groupId) {
 		var group = new GroupId(groupId);
-		membership.requireMember(group, currentUser.get().id());
+		membership.requireMember(group, currentUser.get().userId());
 		return balances.of(group)
 			.stream()
 			.map(b -> new BalanceResponse(b.memberId().value(), b.displayName(), b.balanceCents()))

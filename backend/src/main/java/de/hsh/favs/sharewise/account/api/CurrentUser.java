@@ -1,9 +1,13 @@
 package de.hsh.favs.sharewise.account.api;
 
-/** The caller of the current request. */
+/** The signed-in caller of the current HTTP request. */
 public interface CurrentUser {
 
-	/** Throws a DomainException with UNAUTHENTICATED when there is no known caller. */
-	UserInfo get();
+	/**
+	 * The caller's profile.
+	 * @throws de.hsh.favs.sharewise.shared.DomainException with UNAUTHENTICATED when
+	 * there is no valid session, which includes any call made outside an HTTP request
+	 */
+	UserProfile get();
 
 }

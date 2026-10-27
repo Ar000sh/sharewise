@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 
 import de.hsh.favs.sharewise.TestcontainersConfiguration;
 import de.hsh.favs.sharewise.account.api.CurrentUser;
-import de.hsh.favs.sharewise.account.api.UserDirectory;
+import de.hsh.favs.sharewise.account.api.UserProfiles;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.settlement.api.Balances;
 import de.hsh.favs.sharewise.settlement.api.MemberBalance;
@@ -35,7 +35,7 @@ class ExpenseRecordedListenerTest {
 	GroupMembership membership;
 
 	@MockitoBean
-	UserDirectory users;
+	UserProfiles users;
 
 	@MockitoBean
 	CurrentUser currentUser;

@@ -33,7 +33,7 @@ class ExpenseControllerTest {
 
 	UUID group;
 
-	UUID alice = StubCurrentUser.ALICE.id().value();
+	UUID alice = StubCurrentUser.ALICE.userId().value();
 
 	UUID bob = UUID.randomUUID();
 

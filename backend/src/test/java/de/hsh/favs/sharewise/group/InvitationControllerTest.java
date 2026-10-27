@@ -1,12 +1,14 @@
 package de.hsh.favs.sharewise.group;
 
+import de.hsh.favs.sharewise.ModuleIntegrationTest;
+import de.hsh.favs.sharewise.MutableClock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import de.hsh.favs.sharewise.account.UserFixture;
+import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
 import de.hsh.favs.sharewise.group.api.Role;
 import de.hsh.favs.sharewise.shared.GroupId;
@@ -37,14 +39,14 @@ class InvitationControllerTest {
 
 	GroupRequests groups;
 
-	UserFixture alice;
+	AccountFixture alice;
 
-	UserFixture bob;
+	AccountFixture bob;
 
 	@BeforeEach
 	void setUp() throws Exception {
-		alice = UserFixture.signUp(mvc, json, "Alice");
-		bob = UserFixture.signUp(mvc, json, "Bob");
+		alice = AccountFixture.signUp(mvc, json, "Alice");
+		bob = AccountFixture.signUp(mvc, json, "Bob");
 		clock.reset();
 		groups = new GroupRequests(mvc, json);
 	}

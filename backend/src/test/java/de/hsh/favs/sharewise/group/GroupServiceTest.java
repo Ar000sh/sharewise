@@ -1,5 +1,6 @@
 package de.hsh.favs.sharewise.group;
 
+import de.hsh.favs.sharewise.MutableClock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -10,7 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import de.hsh.favs.sharewise.account.UserFixture;
+import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import de.hsh.favs.sharewise.group.GroupService.GroupView;
 import de.hsh.favs.sharewise.group.api.GroupCreated;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
@@ -47,9 +48,9 @@ class GroupServiceTest {
 
 	GroupService service;
 
-	UserFixture alice = UserFixture.alice();
+	AccountFixture alice = AccountFixture.alice();
 
-	UserFixture bob = UserFixture.bob();
+	AccountFixture bob = AccountFixture.bob();
 
 	@BeforeEach
 	void setUp() {
@@ -62,7 +63,7 @@ class GroupServiceTest {
 		when(groups.save(any(Group.class))).thenAnswer(call -> call.getArgument(0));
 
 		// when
-		GroupView view = service.create("Mallorca 2027", alice.info());
+		GroupView view = service.create("Mallorca 2027", alice.profile());
 
 		// then
 		assertThat(view.name()).isEqualTo("Mallorca 2027");
@@ -123,7 +124,7 @@ class GroupServiceTest {
 		when(groups.save(any(Group.class))).thenThrow(new IllegalStateException("db down"));
 
 		// when / then
-		assertThatThrownBy(() -> service.create("Mallorca 2027", alice.info()))
+		assertThatThrownBy(() -> service.create("Mallorca 2027", alice.profile()))
 			.isInstanceOf(IllegalStateException.class);
 		verify(events, never()).publishEvent(any(Object.class));
 	}

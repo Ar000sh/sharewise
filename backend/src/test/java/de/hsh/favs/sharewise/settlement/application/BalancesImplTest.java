@@ -6,8 +6,8 @@ import static de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture.CAROL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import de.hsh.favs.sharewise.account.api.UserDirectory;
-import de.hsh.favs.sharewise.account.api.UserInfo;
+import de.hsh.favs.sharewise.account.api.UserProfiles;
+import de.hsh.favs.sharewise.account.api.UserProfile;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded.Share;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.settlement.api.Balances;
@@ -40,7 +40,7 @@ class BalancesImplTest {
 	GroupMembership membership;
 
 	@Autowired
-	UserDirectory users;
+	UserProfiles users;
 
 	private GroupId group;
 
@@ -110,7 +110,7 @@ class BalancesImplTest {
 
 	private void nameUser(UserId member, String name) {
 		var id = new UserId(member.value());
-		when(users.find(id)).thenReturn(Optional.of(new UserInfo(id, name)));
+		when(users.find(id)).thenReturn(Optional.of(new UserProfile(id, name, true)));
 	}
 
 }

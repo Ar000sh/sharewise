@@ -5,7 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import de.hsh.favs.sharewise.account.UserFixture;
+import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.test.web.servlet.MockMvc;
@@ -26,14 +26,14 @@ class GroupRequests {
 		this.json = json;
 	}
 
-	ResultActions create(UserFixture caller, String name) throws Exception {
+	ResultActions create(AccountFixture caller, String name) throws Exception {
 		return mvc.perform(post("/groups").header(USER_HEADER, caller.bearer())
 			.contentType(APPLICATION_JSON)
 			.content(json.writeValueAsString(Map.of("name", name))));
 	}
 
 	/** Creates a group (expects 201) and returns its id. */
-	UUID createGroup(UserFixture creator, String name) throws Exception {
+	UUID createGroup(AccountFixture creator, String name) throws Exception {
 		String body = body(create(creator, name).andExpect(status().isCreated()));
 		return UUID.fromString(json.readTree(body).get("id").asString());
 	}
@@ -42,33 +42,33 @@ class GroupRequests {
 	 * A group created by {@code admin} that each of {@code joiners} joined through an
 	 * invitation.
 	 */
-	UUID groupWith(UserFixture admin, String name, UserFixture... joiners) throws Exception {
+	UUID groupWith(AccountFixture admin, String name, AccountFixture... joiners) throws Exception {
 		UUID group = createGroup(admin, name);
-		for (UserFixture joiner : joiners) {
+		for (AccountFixture joiner : joiners) {
 			accept(invite(group, admin), joiner).andExpect(status().isOk());
 		}
 		return group;
 	}
 
-	ResultActions list(UserFixture caller) throws Exception {
+	ResultActions list(AccountFixture caller) throws Exception {
 		return mvc.perform(get("/groups").header(USER_HEADER, caller.bearer()));
 	}
 
-	ResultActions detail(UUID group, UserFixture caller) throws Exception {
+	ResultActions detail(UUID group, AccountFixture caller) throws Exception {
 		return mvc.perform(get("/groups/" + group).header(USER_HEADER, caller.bearer()));
 	}
 
-	ResultActions createInvitation(UUID group, UserFixture caller) throws Exception {
+	ResultActions createInvitation(UUID group, AccountFixture caller) throws Exception {
 		return mvc.perform(post("/groups/" + group + "/invitations").header(USER_HEADER, caller.bearer()));
 	}
 
 	/** Creates an invitation (expects 201) and returns its token. */
-	String invite(UUID group, UserFixture caller) throws Exception {
+	String invite(UUID group, AccountFixture caller) throws Exception {
 		String body = body(createInvitation(group, caller).andExpect(status().isCreated()));
 		return json.readTree(body).get("token").asString();
 	}
 
-	ResultActions accept(String token, UserFixture caller) throws Exception {
+	ResultActions accept(String token, AccountFixture caller) throws Exception {
 		return mvc.perform(post("/invitations/" + token + "/accept").header(USER_HEADER, caller.bearer()));
 	}
 

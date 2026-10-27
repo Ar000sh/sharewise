@@ -10,8 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import de.hsh.favs.sharewise.account.api.CurrentUser;
-import de.hsh.favs.sharewise.account.api.UserDirectory;
-import de.hsh.favs.sharewise.account.api.UserInfo;
+import de.hsh.favs.sharewise.account.api.UserProfiles;
+import de.hsh.favs.sharewise.account.api.UserProfile;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded.Share;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.shared.DomainException;
@@ -40,7 +40,7 @@ class BalanceControllerTest {
 	GroupMembership membership;
 
 	@Autowired
-	UserDirectory users;
+	UserProfiles users;
 
 	@Autowired
 	CurrentUser currentUser;
@@ -57,10 +57,10 @@ class BalanceControllerTest {
 	@BeforeEach
 	void aliceAsksForHerGroup() {
 		group = new GroupId(UUID.randomUUID());
-		when(currentUser.get()).thenReturn(new UserInfo(alice, "Alice"));
+		when(currentUser.get()).thenReturn(new UserProfile(alice, "Alice", true));
 		when(membership.members(group)).thenReturn(List.of(ALICE, BOB));
-		when(users.find(alice)).thenReturn(Optional.of(new UserInfo(alice, "Alice")));
-		when(users.find(bob)).thenReturn(Optional.of(new UserInfo(bob, "Bob")));
+		when(users.find(alice)).thenReturn(Optional.of(new UserProfile(alice, "Alice", true)));
+		when(users.find(bob)).thenReturn(Optional.of(new UserProfile(bob, "Bob", true)));
 	}
 
 	@Test

@@ -1,7 +1,7 @@
 package de.hsh.favs.sharewise.settlement.application;
 
-import de.hsh.favs.sharewise.account.api.UserDirectory;
-import de.hsh.favs.sharewise.account.api.UserInfo;
+import de.hsh.favs.sharewise.account.api.UserProfiles;
+import de.hsh.favs.sharewise.account.api.UserProfile;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.settlement.api.Balances;
 import de.hsh.favs.sharewise.settlement.api.MemberBalance;
@@ -29,9 +29,9 @@ class BalancesImpl implements Balances {
 
 	private final GroupMembership membership;
 
-	private final UserDirectory users;
+	private final UserProfiles users;
 
-	BalancesImpl(GroupLedgerRepository ledgers, GroupMembership membership, UserDirectory users) {
+	BalancesImpl(GroupLedgerRepository ledgers, GroupMembership membership, UserProfiles users) {
 		this.ledgers = ledgers;
 		this.membership = membership;
 		this.users = users;
@@ -52,7 +52,7 @@ class BalancesImpl implements Balances {
 	}
 
 	private String displayName(UserId member) {
-		return users.find(new UserId(member.value())).map(UserInfo::displayName).orElse(UNKNOWN_NAME);
+		return users.find(new UserId(member.value())).map(UserProfile::displayName).orElse(UNKNOWN_NAME);
 	}
 
 }

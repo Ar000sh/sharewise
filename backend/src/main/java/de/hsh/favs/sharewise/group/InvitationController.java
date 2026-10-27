@@ -28,13 +28,13 @@ class InvitationController {
 	@PostMapping("/groups/{groupId}/invitations")
 	@ResponseStatus(HttpStatus.CREATED)
 	InvitationResponse create(@PathVariable UUID groupId) {
-		Invitation i = invitations.create(groupId, currentUser.get().id());
+		Invitation i = invitations.create(groupId, currentUser.get().userId());
 		return new InvitationResponse(i.token(), i.expiresAt());
 	}
 
 	@PostMapping("/invitations/{token}/accept")
 	GroupResponse accept(@PathVariable String token) {
-		return GroupResponse.of(invitations.accept(token, currentUser.get().id()));
+		return GroupResponse.of(invitations.accept(token, currentUser.get().userId()));
 	}
 
 }

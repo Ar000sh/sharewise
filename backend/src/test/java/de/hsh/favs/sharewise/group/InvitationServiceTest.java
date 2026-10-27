@@ -1,5 +1,6 @@
 package de.hsh.favs.sharewise.group;
 
+import de.hsh.favs.sharewise.MutableClock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -7,7 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import de.hsh.favs.sharewise.account.UserFixture;
+import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import de.hsh.favs.sharewise.group.GroupService.GroupView;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
 import de.hsh.favs.sharewise.group.api.Role;
@@ -38,9 +39,9 @@ class InvitationServiceTest {
 
 	InvitationService service;
 
-	UserFixture alice = UserFixture.alice();
+	AccountFixture alice = AccountFixture.alice();
 
-	UserFixture bob = UserFixture.bob();
+	AccountFixture bob = AccountFixture.bob();
 
 	Group group = new GroupFixture().withCreator(alice.id()).build();
 

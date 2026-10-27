@@ -1,6 +1,7 @@
 package de.hsh.favs.sharewise.group;
 
-import de.hsh.favs.sharewise.account.UserFixture;
+import de.hsh.favs.sharewise.MutableClock;
+import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -12,7 +13,7 @@ class InvitationFixture {
 
 	private String token = "token-1";
 
-	private UUID createdBy = UserFixture.alice().id();
+	private UUID createdBy = AccountFixture.alice().id();
 
 	private Instant issuedAt = MutableClock.START;
 

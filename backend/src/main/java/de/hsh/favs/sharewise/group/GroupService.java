@@ -1,6 +1,6 @@
 package de.hsh.favs.sharewise.group;
 
-import de.hsh.favs.sharewise.account.api.UserInfo;
+import de.hsh.favs.sharewise.account.api.UserProfile;
 import de.hsh.favs.sharewise.group.api.GroupCreated;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.group.api.GroupStatus;
@@ -53,11 +53,11 @@ class GroupService {
 	}
 
 	@Transactional
-	GroupView create(String name, UserInfo creator) {
-		Group group = groups.save(Group.create(name, creator.id().value(), clock.instant()));
+	GroupView create(String name, UserProfile creator) {
+		Group group = groups.save(Group.create(name, creator.userId().value(), clock.instant()));
 		GroupId id = new GroupId(group.id());
-		events.publishEvent(new GroupCreated(id, creator.id()));
-		events.publishEvent(new MemberJoined(id, creator.id(), Role.ADMIN));
+		events.publishEvent(new GroupCreated(id, creator.userId()));
+		events.publishEvent(new MemberJoined(id, creator.userId(), Role.ADMIN));
 		return GroupView.of(group);
 	}
 

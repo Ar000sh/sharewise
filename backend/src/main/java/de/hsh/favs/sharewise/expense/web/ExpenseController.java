@@ -45,7 +45,7 @@ class ExpenseController {
 	}
 
 	private UserId caller() {
-		return currentUser.get().id();
+		return currentUser.get().userId();
 	}
 
 }

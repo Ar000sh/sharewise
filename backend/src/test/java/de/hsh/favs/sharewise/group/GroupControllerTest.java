@@ -1,5 +1,6 @@
 package de.hsh.favs.sharewise.group;
 
+import de.hsh.favs.sharewise.ModuleIntegrationTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -9,7 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import de.hsh.favs.sharewise.account.UserFixture;
+import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import de.hsh.favs.sharewise.group.api.GroupCreated;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
 import de.hsh.favs.sharewise.group.api.Role;
@@ -39,17 +40,17 @@ class GroupControllerTest {
 
 	GroupRequests groups;
 
-	UserFixture alice;
+	AccountFixture alice;
 
-	UserFixture bob;
+	AccountFixture bob;
 
-	UserFixture carol;
+	AccountFixture carol;
 
 	@BeforeEach
 	void setUp() throws Exception {
-		alice = UserFixture.signUp(mvc, json, "Alice");
-		bob = UserFixture.signUp(mvc, json, "Bob");
-		carol = UserFixture.signUp(mvc, json, "Carol");
+		alice = AccountFixture.signUp(mvc, json, "Alice");
+		bob = AccountFixture.signUp(mvc, json, "Bob");
+		carol = AccountFixture.signUp(mvc, json, "Carol");
 		groups = new GroupRequests(mvc, json);
 	}
 

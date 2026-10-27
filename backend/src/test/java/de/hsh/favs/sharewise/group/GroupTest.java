@@ -1,9 +1,10 @@
 package de.hsh.favs.sharewise.group;
 
+import de.hsh.favs.sharewise.MutableClock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import de.hsh.favs.sharewise.account.UserFixture;
+import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import de.hsh.favs.sharewise.group.api.GroupStatus;
 import de.hsh.favs.sharewise.group.api.Role;
 import de.hsh.favs.sharewise.shared.DomainException;
@@ -21,9 +22,9 @@ class GroupTest {
 
 	static final Instant NOW = MutableClock.START;
 
-	UUID alice = UserFixture.alice().id();
+	UUID alice = AccountFixture.alice().id();
 
-	UUID bob = UserFixture.bob().id();
+	UUID bob = AccountFixture.bob().id();
 
 	Group group = new GroupFixture().withCreator(alice).build();
 
@@ -79,7 +80,7 @@ class GroupTest {
 
 		// when
 		group.acceptInvitation("abc", bob, NOW);
-		group.acceptInvitation("abc", UserFixture.carol().id(), NOW);
+		group.acceptInvitation("abc", AccountFixture.carol().id(), NOW);
 
 		// then
 		assertThat(group.memberCount()).isEqualTo(3);

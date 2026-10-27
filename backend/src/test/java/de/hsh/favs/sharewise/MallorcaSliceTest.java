@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.UUID;
-import de.hsh.favs.sharewise.account.UserFixture;
+import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -170,7 +170,7 @@ class MallorcaSliceTest {
 	// ---------------------------------------------------------------------------------------------
 
 	private String signUp(String name) throws Exception {
-		UserFixture user = UserFixture.signUp(mvc, json, name);
+		AccountFixture user = AccountFixture.signUp(mvc, json, name);
 		tokens.put(user.idString(), user.bearer());
 		return user.idString();
 	}

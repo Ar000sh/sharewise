@@ -2,7 +2,7 @@ package de.hsh.favs.sharewise.settlement;
 
 import de.hsh.favs.sharewise.TestcontainersConfiguration;
 import de.hsh.favs.sharewise.account.api.CurrentUser;
-import de.hsh.favs.sharewise.account.api.UserDirectory;
+import de.hsh.favs.sharewise.account.api.UserProfiles;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -25,7 +25,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
-@MockitoBean(types = { GroupMembership.class, UserDirectory.class, CurrentUser.class })
+@MockitoBean(types = { GroupMembership.class, UserProfiles.class, CurrentUser.class })
 public @interface ModuleIntegrationTest {
 
 }

@@ -1,8 +1,8 @@
 package de.hsh.favs.sharewise.group;
 
 import de.hsh.favs.sharewise.account.api.CurrentUser;
-import de.hsh.favs.sharewise.account.api.UserDirectory;
-import de.hsh.favs.sharewise.account.api.UserInfo;
+import de.hsh.favs.sharewise.account.api.UserProfiles;
+import de.hsh.favs.sharewise.account.api.UserProfile;
 import de.hsh.favs.sharewise.group.api.GroupStatus;
 import de.hsh.favs.sharewise.group.api.Role;
 import de.hsh.favs.sharewise.shared.UserId;
@@ -26,9 +26,9 @@ class GroupController {
 
 	private final CurrentUser currentUser;
 
-	private final UserDirectory users;
+	private final UserProfiles users;
 
-	GroupController(GroupService groups, CurrentUser currentUser, UserDirectory users) {
+	GroupController(GroupService groups, CurrentUser currentUser, UserProfiles users) {
 		this.groups = groups;
 		this.currentUser = currentUser;
 		this.users = users;
@@ -55,18 +55,18 @@ class GroupController {
 	@PostMapping("/groups")
 	@ResponseStatus(HttpStatus.CREATED)
 	GroupResponse create(@Valid @RequestBody CreateGroupRequest request) {
-		UserInfo caller = currentUser.get();
+		UserProfile caller = currentUser.get();
 		return GroupResponse.of(groups.create(request.name().strip(), caller));
 	}
 
 	@GetMapping("/groups")
 	List<GroupResponse> list() {
-		return groups.listFor(currentUser.get().id()).stream().map(GroupResponse::of).toList();
+		return groups.listFor(currentUser.get().userId()).stream().map(GroupResponse::of).toList();
 	}
 
 	@GetMapping("/groups/{groupId}")
 	GroupDetailResponse detail(@PathVariable UUID groupId) {
-		UserId caller = currentUser.get().id();
+		UserId caller = currentUser.get().userId();
 		GroupService.GroupView g = groups.detail(groupId, caller);
 		List<MemberResponse> members = g.members()
 			.stream()
@@ -76,7 +76,7 @@ class GroupController {
 	}
 
 	private String displayName(UUID memberId) {
-		return users.find(new UserId(memberId)).map(UserInfo::displayName).orElse("Unknown user");
+		return users.find(new UserId(memberId)).map(UserProfile::displayName).orElse("Unknown user");
 	}
 
 }

@@ -1,6 +1,7 @@
 package de.hsh.favs.sharewise.group;
 
-import de.hsh.favs.sharewise.account.UserFixture;
+import de.hsh.favs.sharewise.MutableClock;
+import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +19,7 @@ class GroupFixture {
 
 	private String name = "Mallorca 2027";
 
-	private UUID creator = UserFixture.alice().id();
+	private UUID creator = AccountFixture.alice().id();
 
 	private Instant createdAt = MutableClock.START;
 

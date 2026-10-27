@@ -1,10 +1,11 @@
 package de.hsh.favs.sharewise.group;
 
+import de.hsh.favs.sharewise.ModuleIntegrationTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import de.hsh.favs.sharewise.account.UserFixture;
+import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.group.api.GroupStatus;
 import de.hsh.favs.sharewise.shared.DomainException;
@@ -34,22 +35,22 @@ class GroupMembershipImplTest {
 	@Autowired
 	JsonMapper json;
 
-	UserFixture alice;
+	AccountFixture alice;
 
-	UserFixture bob;
+	AccountFixture bob;
 
-	UserFixture carol;
+	AccountFixture carol;
 
-	UserFixture david;
+	AccountFixture david;
 
 	GroupId trip;
 
 	@BeforeEach
 	void setUp() throws Exception {
-		alice = UserFixture.signUp(mvc, json, "Alice");
-		bob = UserFixture.signUp(mvc, json, "Bob");
-		carol = UserFixture.signUp(mvc, json, "Carol");
-		david = UserFixture.signUp(mvc, json, "David");
+		alice = AccountFixture.signUp(mvc, json, "Alice");
+		bob = AccountFixture.signUp(mvc, json, "Bob");
+		carol = AccountFixture.signUp(mvc, json, "Carol");
+		david = AccountFixture.signUp(mvc, json, "David");
 		trip = new GroupId(new GroupRequests(mvc, json).groupWith(alice, "Trip", bob, carol));
 	}
 
