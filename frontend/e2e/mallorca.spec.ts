@@ -59,7 +59,8 @@ test("three friends sign up, share a group and see who owes what", async ({ brow
   await addExpense(alice, "Hotel", "900");
   await bob.reload();
   await expect(bob.getByLabel("Paid by")).toContainText("Carol");
-  await bob.getByLabel("Paid by").selectOption({ label: "Bob" });
+  // Nobody has to pick themselves: the form already says who is recording.
+  await expect(bob.getByLabel("Paid by").locator("option:checked")).toHaveText("Bob");
   await addExpense(bob, "Dinner", "180");
 
   // Balances come through an event, so they may need a moment: the assertions retry.

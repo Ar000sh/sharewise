@@ -23,7 +23,7 @@ describe("BalancesTab", () => {
   it("balancesShowSignedAmountsAndSumZero", async () => {
     apiMock.mockResolvedValue(balances);
 
-    render(<BalancesTab groupId="g1" refreshKey={0} />);
+    render(<BalancesTab groupId="g1" />);
 
     expect(await screen.findByText("+630,00 €")).toBeInTheDocument();
     expect(screen.getByText("-90,00 €")).toBeInTheDocument();
@@ -38,7 +38,7 @@ describe("BalancesTab", () => {
       { userId: "u2", displayName: "Bob", netBalance: "0.00" },
     ]);
 
-    render(<BalancesTab groupId="g1" refreshKey={0} />);
+    render(<BalancesTab groupId="g1" />);
 
     const rows = await screen.findAllByRole("listitem");
     expect(rows).toHaveLength(2);
@@ -49,7 +49,7 @@ describe("BalancesTab", () => {
   it("backendUnreachableShowsErrorBanner", async () => {
     apiMock.mockRejectedValue(new ApiError(502, "BACKEND_UNREACHABLE", "Backend is down"));
 
-    render(<BalancesTab groupId="g1" refreshKey={0} />);
+    render(<BalancesTab groupId="g1" />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/not reachable/i);
   });
@@ -57,41 +57,60 @@ describe("BalancesTab", () => {
   it("unauthenticatedPromptsToPickUser", async () => {
     apiMock.mockRejectedValue(new ApiError(401, "UNAUTHENTICATED", "Missing or invalid session"));
 
-    render(<BalancesTab groupId="g1" refreshKey={0} />);
+    render(<BalancesTab groupId="g1" />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/please sign in/i);
   });
 
-  it("refetchesWhenRefreshKeyChanges", async () => {
-    apiMock.mockResolvedValue(balances);
-
-    const { rerender } = render(<BalancesTab groupId="g1" refreshKey={0} />);
-    await screen.findByText("+630,00 €");
-    rerender(<BalancesTab groupId="g1" refreshKey={1} />);
-
-    await vi.waitFor(() => expect(apiMock).toHaveBeenCalledTimes(2));
-  });
-
-  describe("whenBalancesDoNotYetSumToZero", () => {
+  describe("afterAnExpenseWasJustRecorded", () => {
     beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }));
 
-    it("refetchesShortlyUntilTheSumIsZero", async () => {
-      apiMock
-        .mockResolvedValueOnce([
-          { userId: "u1", displayName: "Alice", netBalance: "5.00" },
-          { userId: "u2", displayName: "Bob", netBalance: "0.00" },
-        ])
-        .mockResolvedValue([
-          { userId: "u1", displayName: "Alice", netBalance: "5.00" },
-          { userId: "u2", displayName: "Bob", netBalance: "-5.00" },
-        ]);
+    const before = [
+      { userId: "u1", displayName: "Alice", netBalance: "0.00" },
+      { userId: "u2", displayName: "Bob", netBalance: "0.00" },
+    ];
+    const after = [
+      { userId: "u1", displayName: "Alice", netBalance: "90.00" },
+      { userId: "u2", displayName: "Bob", netBalance: "-90.00" },
+    ];
 
-      render(<BalancesTab groupId="g1" refreshKey={0} />);
-      await screen.findByText("+5,00 €");
-      await act(() => vi.advanceTimersByTimeAsync(1500));
+    it("looksAgainForAFewSecondsBecauseTheLedgerIsUpdatedAfterTheExpenseIsSaved", async () => {
+      // given the first answers still show the old balances
+      apiMock.mockResolvedValueOnce(before).mockResolvedValueOnce(before).mockResolvedValue(after);
 
-      expect(await screen.findByText("-5,00 €")).toBeInTheDocument();
-      expect(apiMock).toHaveBeenCalledTimes(2);
+      // when the tab opens right after an expense was recorded
+      render(<BalancesTab groupId="g1" lastRecordedAt={Date.now()} />);
+      expect(await screen.findByText(/updating/i)).toBeInTheDocument();
+      await act(() => vi.advanceTimersByTimeAsync(1200));
+
+      // then the new numbers appear without a manual reload, and the hint disappears when the window is over
+      expect(await screen.findByText("+90,00 €")).toBeInTheDocument();
+      await act(() => vi.advanceTimersByTimeAsync(4000));
+      expect(screen.queryByText(/updating/i)).not.toBeInTheDocument();
+    });
+
+    it("stopsLookingAfterTheBoundedWindow", async () => {
+      apiMock.mockResolvedValue(before);
+
+      render(<BalancesTab groupId="g1" lastRecordedAt={Date.now()} />);
+      await screen.findByText("Sum: 0,00 €", { exact: false });
+      await act(() => vi.advanceTimersByTimeAsync(10_000));
+      const calls = apiMock.mock.calls.length;
+      await act(() => vi.advanceTimersByTimeAsync(10_000));
+
+      expect(apiMock.mock.calls.length).toBe(calls);
+      expect(calls).toBeLessThanOrEqual(5);
+    });
+
+    it("doesNotLookAgainWhenNothingWasRecordedRecently", async () => {
+      apiMock.mockResolvedValue(before);
+
+      render(<BalancesTab groupId="g1" />);
+      await screen.findByText("Sum: 0,00 €", { exact: false });
+      await act(() => vi.advanceTimersByTimeAsync(10_000));
+
+      expect(apiMock).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText(/updating/i)).not.toBeInTheDocument();
     });
   });
 });

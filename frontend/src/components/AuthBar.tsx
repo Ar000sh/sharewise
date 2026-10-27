@@ -1,33 +1,15 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import type { components } from "@/api/schema";
-import { ApiError, api } from "@/lib/api";
+import { useCurrentUser } from "@/lib/currentUser";
 
-type User = components["schemas"]["User"];
-
-const PUBLIC_PATHS = ["/login", "/register"];
-
-/** Header part that shows who is signed in, and sends visitors without a session to the sign-in page. */
+/** Header part that shows who is signed in. Finding out (and sending visitors to sign in) is the provider's job. */
 export function AuthBar() {
-  const pathname = usePathname();
-  const [user, setUser] = useState<User>();
-  const isPublic = PUBLIC_PATHS.includes(pathname);
-
-  useEffect(() => {
-    if (isPublic) return;
-    api<User>("/me")
-      .then(setUser)
-      .catch((err) => {
-        if (err instanceof ApiError && err.status === 401) {
-          window.location.replace(`/login?next=${encodeURIComponent(pathname)}`);
-        }
-      });
-  }, [pathname, isPublic]);
+  const user = useCurrentUser();
 
   async function signOut() {
     await fetch("/api/auth/logout", { method: "POST" });
+    // A full page load on purpose: it drops all client state of the signed-out user.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.assign("/login");
   }
 

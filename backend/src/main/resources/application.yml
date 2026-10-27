@@ -6,6 +6,11 @@ spring:
     url: jdbc:postgresql://localhost:5432/sharewise
     username: sharewise
     password: sharewise
+  modulith:
+    events:
+      # An event whose listener failed or was cut off (for example by a restart) stays unfinished in
+      # event_publication. Without this it is never delivered again and its balance update is lost for good.
+      republish-outstanding-events-on-restart: true
   jpa:
     hibernate:
       ddl-auto: validate
