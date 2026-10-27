@@ -2,11 +2,13 @@ package de.hsh.favs.sharewise.expense;
 
 import de.hsh.favs.sharewise.shared.UserId;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
+import de.hsh.favs.sharewise.group.api.GroupMembershipView;
 import de.hsh.favs.sharewise.group.api.GroupStatus;
 import de.hsh.favs.sharewise.shared.GroupId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Hand-written stand-in for the real GroupMembership. Keeps the default requireMember.
@@ -45,6 +47,12 @@ public class StubGroupMembership implements GroupMembership {
 	@Override
 	public GroupStatus status(GroupId group) {
 		return status.get(group);
+	}
+
+	@Override
+	public GroupMembershipView view(GroupId group) {
+		return new GroupMembershipView(group, status.get(group) == GroupStatus.OPEN, Set.copyOf(members(group)),
+				Set.of());
 	}
 
 }

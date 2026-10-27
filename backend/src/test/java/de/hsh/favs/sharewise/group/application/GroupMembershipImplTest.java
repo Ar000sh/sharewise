@@ -1,6 +1,7 @@
-package de.hsh.favs.sharewise.group;
+package de.hsh.favs.sharewise.group.application;
 
 import de.hsh.favs.sharewise.ModuleIntegrationTest;
+import de.hsh.favs.sharewise.group.web.GroupRequests;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

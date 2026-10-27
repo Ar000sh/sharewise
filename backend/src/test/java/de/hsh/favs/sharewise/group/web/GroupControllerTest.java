@@ -1,4 +1,4 @@
-package de.hsh.favs.sharewise.group;
+package de.hsh.favs.sharewise.group.web;
 
 import de.hsh.favs.sharewise.ModuleIntegrationTest;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -13,7 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import de.hsh.favs.sharewise.group.api.GroupCreated;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
-import de.hsh.favs.sharewise.group.api.Role;
+import de.hsh.favs.sharewise.group.api.GroupRole;
 import de.hsh.favs.sharewise.shared.GroupId;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,12 +66,15 @@ class GroupControllerTest {
 
 		// then
 		GroupId id = new GroupId(UUID.fromString(json.readTree(body).get("id").asString()));
-		assertThat(events.stream(GroupCreated.class).filter(e -> e.groupId().equals(id)))
-			.containsExactly(new GroupCreated(id, alice.userId()));
-		assertThat(events.stream(MemberJoined.class).filter(e -> e.groupId().equals(id)))
-			.containsExactly(new MemberJoined(id, alice.userId(), Role.ADMIN));
+		assertThat(events.stream(GroupCreated.class).filter(e -> e.groupId().equals(id))).singleElement()
+			.satisfies(e -> assertThat(e.creator()).isEqualTo(alice.userId()));
+		assertThat(events.stream(MemberJoined.class).filter(e -> e.groupId().equals(id))).singleElement()
+			.satisfies(e -> {
+				assertThat(e.userId()).isEqualTo(alice.userId());
+				assertThat(e.role()).isEqualTo(GroupRole.ADMIN);
+			});
 		groups.detail(id.value(), alice)
-			.andExpect(jsonPath("$.members[0].memberId").value(alice.idString()))
+			.andExpect(jsonPath("$.members[0].userId").value(alice.idString()))
 			.andExpect(jsonPath("$.members[0].displayName").value("Alice"))
 			.andExpect(jsonPath("$.members[0].role").value("ADMIN"));
 	}
@@ -122,10 +125,10 @@ class GroupControllerTest {
 		groups.detail(id, bob)
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.memberCount").value(2))
-			.andExpect(jsonPath("$.members[?(@.memberId=='" + alice.idString() + "')].displayName").value("Alice"))
-			.andExpect(jsonPath("$.members[?(@.memberId=='" + alice.idString() + "')].role").value("ADMIN"))
-			.andExpect(jsonPath("$.members[?(@.memberId=='" + bob.idString() + "')].displayName").value("Bob"))
-			.andExpect(jsonPath("$.members[?(@.memberId=='" + bob.idString() + "')].role").value("MEMBER"));
+			.andExpect(jsonPath("$.members[?(@.userId=='" + alice.idString() + "')].displayName").value("Alice"))
+			.andExpect(jsonPath("$.members[?(@.userId=='" + alice.idString() + "')].role").value("ADMIN"))
+			.andExpect(jsonPath("$.members[?(@.userId=='" + bob.idString() + "')].displayName").value("Bob"))
+			.andExpect(jsonPath("$.members[?(@.userId=='" + bob.idString() + "')].role").value("MEMBER"));
 	}
 
 	@Test

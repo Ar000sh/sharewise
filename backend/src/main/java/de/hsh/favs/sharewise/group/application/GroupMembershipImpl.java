@@ -1,11 +1,15 @@
-package de.hsh.favs.sharewise.group;
+package de.hsh.favs.sharewise.group.application;
 
-import de.hsh.favs.sharewise.shared.UserId;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
+import de.hsh.favs.sharewise.group.api.GroupMembershipView;
 import de.hsh.favs.sharewise.group.api.GroupStatus;
+import de.hsh.favs.sharewise.group.domain.Group;
+import de.hsh.favs.sharewise.group.domain.Membership;
+import de.hsh.favs.sharewise.group.persistence.GroupRepository;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;
+import de.hsh.favs.sharewise.shared.UserId;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,18 +30,23 @@ class GroupMembershipImpl implements GroupMembership {
 	}
 
 	@Override
-	public boolean isMember(GroupId group, UserId member) {
-		return groups.existsMember(group.value(), member.value());
+	public boolean isMember(GroupId group, UserId user) {
+		return groups.existsActiveMember(group.value(), user.value());
 	}
 
 	@Override
 	public List<UserId> members(GroupId group) {
-		return load(group).members().stream().map(m -> new UserId(m.memberId())).toList();
+		return load(group).memberships().stream().filter(Membership::isActiveMember).map(Membership::userId).toList();
 	}
 
 	@Override
 	public GroupStatus status(GroupId group) {
 		return load(group).status();
+	}
+
+	@Override
+	public GroupMembershipView view(GroupId group) {
+		return load(group).membershipView();
 	}
 
 	private Group load(GroupId group) {

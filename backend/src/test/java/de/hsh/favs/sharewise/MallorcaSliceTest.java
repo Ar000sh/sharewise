@@ -87,7 +87,7 @@ class MallorcaSliceTest {
 		// then the field names are the ones in docs/api/openapi.yaml
 		assertThat(fields(created)).containsExactly("id", "memberCount", "name", "status");
 		assertThat(fields(detail)).containsExactly("id", "memberCount", "members", "name", "status");
-		assertThat(fields(detail.get("members").get(0))).containsExactly("displayName", "memberId", "role");
+		assertThat(fields(detail.get("members").get(0))).containsExactly("displayName", "role", "userId");
 		assertThat(fields(expense)).containsExactly("amountCents", "date", "id", "payerId", "shares", "title");
 		assertThat(fields(expense.get("shares").get(0))).containsExactly("memberId", "shareCents");
 		assertThat(fields(invitation)).containsExactly("expiresAt", "token");

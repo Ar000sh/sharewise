@@ -1,4 +1,4 @@
-package de.hsh.favs.sharewise.group;
+package de.hsh.favs.sharewise.group.web;
 
 import de.hsh.favs.sharewise.ModuleIntegrationTest;
 import de.hsh.favs.sharewise.MutableClock;
@@ -9,8 +9,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
+import de.hsh.favs.sharewise.group.api.MemberInvited;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
-import de.hsh.favs.sharewise.group.api.Role;
+import de.hsh.favs.sharewise.group.api.GroupRole;
 import de.hsh.favs.sharewise.shared.GroupId;
 import java.time.Duration;
 import java.util.UUID;
@@ -62,6 +63,11 @@ class InvitationControllerTest {
 			.andExpect(content().contentTypeCompatibleWith("application/json"))
 			.andExpect(jsonPath("$.token").isString())
 			.andExpect(jsonPath("$.expiresAt").value("2027-06-08T10:00:00Z"));
+		assertThat(events.stream(MemberInvited.class).filter(e -> e.groupId().value().equals(group))).singleElement()
+			.satisfies(e -> {
+				assertThat(e.invitedBy()).isEqualTo(alice.userId());
+				assertThat(e.email()).isNull();
+			});
 	}
 
 	@Test
@@ -95,8 +101,9 @@ class InvitationControllerTest {
 
 		// then
 		GroupId id = new GroupId(group);
-		assertThat(events.stream(MemberJoined.class).filter(e -> e.groupId().equals(id)))
-			.contains(new MemberJoined(id, bob.userId(), Role.MEMBER));
+		assertThat(events.stream(MemberJoined.class)
+			.filter(e -> e.groupId().equals(id) && e.userId().equals(bob.userId()))).singleElement()
+			.satisfies(e -> assertThat(e.role()).isEqualTo(GroupRole.MEMBER));
 		groups.detail(group, bob).andExpect(status().isOk());
 	}
 
