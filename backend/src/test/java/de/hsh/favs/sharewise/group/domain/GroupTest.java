@@ -195,20 +195,4 @@ class GroupTest {
 					e -> assertThat(e.code()).isEqualTo(ErrorCode.INVITATION_EXPIRED));
 	}
 
-	@Test
-	void theMembershipViewListsActiveMembersAndAdminsAndSaysWhetherTheGroupIsOpen() {
-		// given
-		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
-
-		// when
-		var view = trip.membershipView();
-
-		// then
-		assertThat(view.isOpen()).isTrue();
-		assertThat(view.activeMembers()).containsExactlyInAnyOrder(alice, bob);
-		assertThat(view.admins()).containsExactly(alice);
-		assertThat(view.isActiveMember(bob)).isTrue();
-		assertThat(view.isAdmin(bob)).isFalse();
-	}
-
 }

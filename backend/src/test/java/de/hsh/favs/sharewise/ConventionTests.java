@@ -13,6 +13,7 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
 /**
@@ -35,6 +36,20 @@ class ConventionTests {
 	@TestFactory
 	Stream<DynamicTest> everyCheckedModuleFollowsTheLayoutRules() {
 		return CHECKED.stream().map(m -> DynamicTest.dynamicTest(m, () -> check(m)));
+	}
+
+	/**
+	 * Expense knows groups only through their events and its own copy (see
+	 * docs/2026-10-28-membership-copy-decision.md), never through the group port.
+	 */
+	@Test
+	void expenseDoesNotCallTheGroupPort() {
+		noClasses().that()
+			.resideInAPackage(ROOT + ".expense..")
+			.should()
+			.dependOnClassesThat()
+			.haveFullyQualifiedName(ROOT + ".group.api.GroupMembership")
+			.check(MAIN);
 	}
 
 	private static void check(String module) {
