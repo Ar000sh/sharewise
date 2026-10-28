@@ -39,10 +39,6 @@ class GroupMembershipTest {
 		public GroupStatus status(GroupId g) {
 			return GroupStatus.OPEN;
 		}
-
-		public GroupMembershipView view(GroupId g) {
-			throw new UnsupportedOperationException("not needed by this test");
-		}
 	};
 
 	@Test

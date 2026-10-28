@@ -17,7 +17,7 @@ The code follows the diagram `work/ShareWise_Domain_Model.drawio` (study repo) f
 | 9 | `Group.createGroup` | `GroupCreated` | also returns `MemberJoined` for the creator | the creator is a member from the first moment |
 | 10 | `Account.login` | `boolean` | returns `AccountEvent`: `LoginSucceeded` or `LoginFailed` | a failed attempt is counted and must be saved, so it cannot throw |
 | 11 | Events | no time | every event ends with `occurredAt: Instant` | audit, ordering |
-| 12 | `GroupMembershipView` | local copy updated from group events | snapshot built by the `GroupMembership` port with one fresh query when an expense is recorded; same shape and same use as drawn | decision D-A: no race between "joined" and "first expense"; can become the event-fed copy later without touching the domain |
+| 12 | `GroupMembershipView` | local copy updated from group events | **no delta** since 28.10: lives in `expense.domain`, fed by `GroupCreated`/`MemberJoined` into two tables. Additions to draw: `asOf` per row (an older event never overwrites a newer one) and a short bounded wait for a member whose event is still on its way | see `2026-10-28-membership-copy-decision.md` (alternative, gains, costs) |
 | 13 | Account context | `Account`, tokens, `Hasher`, `EmailSender` | adds `AuthSession` (bearer-token session, only its SHA-256 is stored), `CurrentUser` (the caller of the HTTP request), `SessionIdentityFilter`; `UserProfile` is served by the port `UserProfiles` | sign-in needs a session; they are infrastructure, not part of the `Account` aggregate |
 | 14 | `ExpenseShare` | value object of Expense | lives in `expense.api` (events carry it); stored through an internal `StoredShare` | `api` may not import `domain` |
 
