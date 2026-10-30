@@ -7,6 +7,8 @@ name and password (stored as a BCrypt hash), and a session token in an httpOnly 
 - Java 21 (Maven is bundled as `./mvnw`)
 - Node.js 22+ and npm
 - Docker Desktop **running** (database, backend tests)
+- Once per clone, before the first commit: `git config core.hooksPath .githooks` (commit and push gates; see
+  `docs/devsetup/README.md`)
 
 ## Start everything
 
