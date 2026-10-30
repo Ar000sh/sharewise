@@ -27,7 +27,7 @@ Optional, personal, not committed: `.claude/settings.local.json`, e.g.
 | Git gates | `.githooks/pre-commit`, `pre-push` → `gate.mjs` | every commit / push, people and Claude | see the header of `gate.mjs` |
 | Skills (repo) | `.claude/skills/*` | on demand (`/name`) | `edge-case-probe`, `design-review`, `review-branch`, `contract-change`, `retro`*, `hand-in`* |
 | Skills (backend) | `backend/.claude/skills/*` | on demand (`/backend:name`) | `domain-operation` |
-| Agents | `.claude/agents/*` | dispatched by the skills | `conventions-reviewer` (Sonnet, read-only), `edge-case-attacker` (Opus, writes only gitignored probes), `design-reviewer` (Opus, read-only) |
+| Subagent prompts | `<skill>/*-prompt.md` | the skill dispatches a fresh `general-purpose` subagent with it | `edge-case-probe/attacker-prompt.md` (Opus, writes only gitignored probes), `design-review/reviewer-prompt.md` (Opus, read-only), `review-branch/reviewer-prompt.md` (Sonnet, read-only) |
 | Permissions | `.claude/settings.json` | always | routine commands allowed without a prompt; force push denied |
 
 \* manual only (`disable-model-invocation`): Claude never starts them on its own.

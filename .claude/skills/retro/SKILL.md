@@ -25,7 +25,8 @@ Read the conversation, `git log` since the date of the last entry in `docs/devse
 | Root, `backend/` or `frontend/` `CLAUDE.md` | How we work, for that scope. One line; delete what stopped mattering |
 | `.claude/rules/` | A rule that only matters for one kind of file |
 | Skill | A repeatable procedure that needs judgment |
-| Agent | Only with a reason: isolation, fresh eyes, a cheaper or stronger model, restricted tools, a role used often |
+| Prompt file in a skill folder | A fresh subagent is needed (independence, a big read), used by one skill: the skill dispatches a `general-purpose` subagent with the prompt |
+| Agent (`.claude/agents/`) | Only when several skills need the same role (for example a final review that combines several review types) or the tools must really be restricted |
 | Design doc "Parked" | Good idea, not now |
 | Nothing | One-off or already covered. Say so |
 

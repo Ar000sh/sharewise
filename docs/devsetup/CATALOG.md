@@ -12,15 +12,17 @@ Everything we add to the setup, why, and whether it earned its place. Add a row 
 | 2026-10-30 | `.githooks/` gates (`gate.mjs`): fast pre-commit, full pre-push | git hooks | "`main` stays green" and "contract in its own commit" were trust-only. In `workflows` the same kind of gate has run on every commit since 2026-10-22 | New. Watch: pre-push time (backend verify needs Docker) |
 | 2026-10-30 | Lock-file check in the pre-commit gate | git hook | npm on Windows drops other platforms' optional packages from `package-lock.json` (convention 04 section 7 existed, unchecked) | New |
 | 2026-10-30 | Sound hooks moved into the repo, opt-in per person | hook | They lived in the FAVS folder and did not play in sessions started in `sharewise/` | New |
-| 2026-10-30 | Skills `edge-case-probe`, `design-review`, `retro` (adapted from `workflows`) + agents `edge-case-attacker`, `design-reviewer` | skills + agents | In `workflows` a fresh attacker found 13 reproduced issues our own tests missed (5 fixed), a design review found model flaws behind about 40 % of the special cases; ShareWise has the same risk in money, lifecycle and events | Not used here yet |
-| 2026-10-30 | Skill `review-branch` + agent `conventions-reviewer` (Sonnet, read-only) | skill + agent | Merges were reviewed by hand; conventions drift (names like `payer`, missing Javadoc rule numbers) is not caught by the build | Not used yet |
+| 2026-10-30 | Skills `edge-case-probe`, `design-review`, `retro` (adapted from `workflows`) with fresh-subagent prompts (`attacker-prompt.md`, `reviewer-prompt.md`) | skills + subagent prompts | In `workflows` a fresh attacker found 13 reproduced issues our own tests missed (5 fixed), a design review found model flaws behind about 40 % of the special cases; ShareWise has the same risk in money, lifecycle and events | Not used here yet |
+| 2026-10-30 | Skill `review-branch` with a fresh Sonnet subagent (`reviewer-prompt.md`) | skill + subagent prompt | Merges were reviewed by hand; conventions drift (names like `payer`, missing Javadoc rule numbers) is not caught by the build | Not used yet |
 | 2026-10-30 | Skills `contract-change`, `hand-in`, `backend:domain-operation` | skills | The most error-prone multi-step routines: a new `ErrorCode` belongs in three places, the contract goes first, a hand-in tag cannot be moved | Not used yet |
 | 2026-10-30 | Permission allowlist in `.claude/settings.json` | config | Routine read-only and build commands asked for permission each time | New |
+| 2026-10-30 | No `.claude/agents/`: each fresh-subagent prompt lives in its skill folder | decision | Agent files duplicated the prompts, could be started without the skill (skipping the triage), and restricted tools only for one of three. Same style as the `workflows` repo. An agent file comes back only when several skills need the same role, or tools must really be restricted | — |
 
 ## What subagents inherit
 Not yet checked in this repo. In `workflows` (2026-10-23) a subagent got the project `CLAUDE.md`, saw the model-invocable skills (not the manual-only ones) and was blocked by the guard hook. Check once here, with a cheap agent, and record the result.
 
 ## Candidates (decide when the need shows up)
+- A combined final review (conventions + correctness + edge cases before a hand-in or presentation): the first case where several skills share reviewer roles, so those roles would become agents in `.claude/agents/`.
 - A `frontend:new-page` skill (route + proxy handler + `useApi` + tests), if building pages turns out repetitive in Ex5.
 - A diagram-sync check: compare type and field names in `backend/src/main` with the names in the draw.io diagram.
 - CI pipeline (Ex7): run `gate.mjs pre-push` in the pipeline so the same checks guard the remote.
