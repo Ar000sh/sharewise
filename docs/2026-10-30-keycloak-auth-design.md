@@ -58,7 +58,39 @@ Later phases (containers, CI/CD, cloud, microservices) are not part of this docu
 - Time and eventual consistency rules of document 02 section 4 stay.
 
 ## 6. Failure modes
-To be filled by `/edge-case-probe` plan mode (next step). Topics already known: concurrent first login, token expired mid-request, refresh token revoked or expired, Keycloak down, `sub` of a deactivated account, email claim missing or changed in Keycloak, issuer/clock skew, callback with a wrong `state`, logout while the access token is still valid.
+Filled by `/edge-case-probe` plan mode on 30.10.26. Ranked by impact × likelihood. Status: **design** = handled by the design as written, **test** = goes into the plan with a test, **parked** = not in phase one (reason given).
+
+| # | Risk | What stops it | Status |
+|---|---|---|---|
+| F1 | **Two first requests at once** (the callback's `GET /me` and the page's own fetches arrive together) create two accounts or two `AccountRegistered` events | Primary key = `sub`; losing insert catches the unique violation and re-reads; the event is published only by the winner (C4) | design + test: integration test with two threads, one account, one event |
+| F2 | **CSRF on the BFF.** The cookie is sent automatically, so another site could POST to our route handlers (create expense, accept invitation) | Cookie `SameSite=Lax`, state-changing handlers check the `Origin` header, logout is a POST | test: cross-origin POST is rejected, no backend call made |
+| F3 | **Same email, new `sub`** (user deleted and recreated in Keycloak, or Keycloak volume wiped while Postgres is kept): the insert hits `unique(email)` and would be a 500 | Caught and answered 401 `UNAUTHENTICATED`, cause logged, never a 500 *(call)*; `RUNNING.md` says "reset Keycloak and Postgres volumes together" | test: service test for the conflict, nothing saved, no event |
+| F4 | **Cookie too big.** Access + refresh + id token can pass the browser's ~4 KB cookie limit, the cookie is silently dropped and login loops | Builder must split the cookie into chunks or keep only what is needed (logout can use `client_id` instead of an `id_token_hint`); a stateless cookie also keeps the Next.js app scalable in the container phase | test: login with realistic token sizes keeps the session |
+| F5 | **Open redirect.** A `returnTo` parameter after login sends the user to another site | Only a relative path starting with a single `/` is accepted, everything else goes to `/` | test: `//evil.com`, `https://evil.com`, `/\evil.com` |
+| F6 | **Callback abuse:** wrong or missing `state`, replayed code, missing PKCE verifier | Handler checks `state` and verifier cookie, rejects and sets no session cookie | test: each variant ends at the login page with no session |
+| F7 | **Refresh race.** Several parallel requests find the access token expired and all refresh with the same refresh token; if Keycloak rotates refresh tokens the second one fails and the user is logged out | One refresh at a time per session in the Next.js server (others wait for its result) | test: ten parallel requests with an expired token cause one refresh call |
+| F8 | **Bad tokens at the backend:** expired, signed with another key, wrong issuer, `alg=none`, no `Bearer`, token of another realm | Resource server validation; answer is 401 `UNAUTHENTICATED` as problem+json, never 500 | test: one case per kind. Note: JWT expiry uses the system clock, not our `MutableClock` bean, so expiry is tested with a token made already-expired, not by advancing the clock |
+| F9 | **`sub` that is not a UUID**, or `email` missing | Rejected with 401 before anything is saved | test: unit test on the token-to-user mapping |
+| F10 | **Display name unusable:** empty `name`, only whitespace, emoji, very long | Fallback chain and truncation of C7 | test: parameterised test on the derivation |
+| F11 | **Deactivated account** with a still-valid token | 401 on every request (C3) | test: service test, nothing resolved |
+| F12 | **Refresh token expired or revoked** | Next.js clears the cookie and redirects to login (C8) | test: route handler test |
+| F13 | **Keycloak down.** Login cannot start; already issued tokens keep working as long as the backend has the signing keys cached; a cold backend cannot fetch them | The backend must start without Keycloak (keys are fetched on the first token, not at startup); the login route shows a plain "sign-in unavailable" page, not a stack trace | test: login route with an unreachable Keycloak. Backend cold start with Keycloak down: parked, documented |
+| F14 | **Brute force.** The old code counted failed logins; that now belongs to Keycloak | `bruteForceProtected: true` in the realm file | test: a test reads the realm settings through the admin API |
+| F15 | **Logout leaves the Keycloak session**, or logout loop | End-session call with the registered post-logout URI (D9) | test: after logout the next login asks for credentials |
+| F16 | **Realm file changes do not apply** to an existing Keycloak volume (import runs only if the realm is missing) | Documented in `RUNNING.md`: `docker compose down -v` after a realm change | parked: documentation only |
+| F17 | **Slow or flaky Keycloak start in tests** and in the push gate | One shared container, wait for the health endpoint, not a fixed delay | test infrastructure; measure the added time and report it |
+| F18 | **Any other token accepted.** Another Keycloak client of the same realm could present its tokens | One realm, one app in phase one | parked: audience check when a second client exists |
+| F19 | **Keycloak user deleted, `Account` stays**; groups still show the person | No sync from Keycloak to ShareWise | parked: needs account deactivation on a Keycloak event, later phase |
+| F20 | **Email changed in Keycloak** is not reflected | Email is stored on first login only (C2) | parked: not needed until invitations are sent by email |
+
+**Scope decision (user, 30.10.26): only F1 and F2 get their own tests, "at most", not more.** All other rows are not tested in phase one. What that means in practice:
+- Where the behaviour costs nothing, it is still built as written in the table: the F3 catch (401, never a 500), the F5 relative-path check, the F7 single refresh, F8/F9/F11/F12/F13 answers, the F14 realm setting. They are just not pinned by a test of their own.
+- `state` and PKCE (F6) are checked by the OIDC library the builder picks; we do not write extra tests for them.
+- F4 (cookie size) is a known risk; the builder checks it once by hand during the end-to-end run.
+- F15, F17 to F20 stay as described (documentation or parked).
+- If one of these bites later, it gets a regression test at that point (`/retro` records it).
+
+Authorization inside groups (non-members, former members, ids of another group) does not change with this feature: it is done on `UserId`, which keeps its meaning. One test at the API level keeps that honest: a Keycloak user who is not a member gets 403/404 on a group as before.
 
 ## 7. Left to the builder
 - Library choice for the OIDC client in Next.js (Auth.js, `openid-client`, or hand-written code flow); the requirement is D2 and the anti-goals.
