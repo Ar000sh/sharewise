@@ -43,8 +43,6 @@ Idempotent and order-tolerant by design (see `2026-10-27-event-delivery-and-mess
 
 ## The alternative we rejected for now: a synchronous port
 
-The branch `alt/membership-port-snapshot` keeps this variant, runnable and green, for comparison (`git diff alt/membership-port-snapshot main`).
-
 Before 28.10 (decision D-A) `Expense.record` received a `GroupMembershipView` that `GroupMembership.view(group)` built from a fresh database read when the expense was recorded.
 
 ## What the copy bought us
