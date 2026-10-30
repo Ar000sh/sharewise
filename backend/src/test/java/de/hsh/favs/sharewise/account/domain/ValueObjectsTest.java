@@ -8,6 +8,7 @@ import de.hsh.favs.sharewise.shared.ErrorCode;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /** The value objects of the account context: what they accept and what they hide. */
@@ -36,6 +37,18 @@ class ValueObjectsTest {
 	void aBlankOrTooLongDisplayNameIsRejected(String text) {
 		assertThatThrownBy(() -> new DisplayName(text)).isInstanceOfSatisfying(DomainException.class,
 				e -> assertThat(e.code()).isEqualTo(ErrorCode.BAD_REQUEST));
+	}
+
+	@ParameterizedTest
+	@CsvSource({ "Alice A, alice, a@x.org, Alice A", "'  ', alice, a@x.org, alice", "'', '', a@x.org, a" })
+	void deriveFallsBackFromNameToUsernameToEmailPrefix(String name, String preferredUsername, String email,
+			String expected) {
+		assertThat(DisplayName.derive(name, preferredUsername, email).value()).isEqualTo(expected);
+	}
+
+	@Test
+	void deriveCutsALongNameToTheLimit() {
+		assertThat(DisplayName.derive("x".repeat(150), "alice", "a@x.org").value()).isEqualTo("x".repeat(100));
 	}
 
 	static Stream<String> passwordsOfTheWrongLength() {

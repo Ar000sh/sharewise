@@ -74,6 +74,24 @@ public class Account {
 	}
 
 	/**
+	 * Creates the ACTIVE account of a person who signed in at the identity provider for
+	 * the first time. The id is the provider's subject, so the same person always maps to
+	 * the same {@link UserId} (D4); email and display name are taken once and owned by
+	 * ShareWise afterwards (D10, C2).
+	 * @return the account and its {@link AccountRegistered}
+	 */
+	public static Registration registerFromIdentityProvider(UserId id, Email email, DisplayName displayName,
+			Instant now) {
+		Account account = new Account();
+		account.id = id.value();
+		account.email = email.value();
+		account.displayName = displayName.value();
+		account.status = AccountStatus.ACTIVE;
+		account.registeredAt = now;
+		return new Registration(account, new AccountRegistered(id, email, now));
+	}
+
+	/**
 	 * Checks a sign-in attempt. Only an ACTIVE account with the right password succeeds;
 	 * the outcome is returned, not thrown, because a failed attempt must still be saved
 	 * (it is counted).
