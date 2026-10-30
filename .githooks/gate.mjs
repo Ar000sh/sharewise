@@ -22,7 +22,8 @@ const CONTRACT = 'docs/api/openapi.yaml';
 const LOCK_FILE = 'frontend/package-lock.json';
 const PLATFORM_ENTRY = /"node_modules\/[^"]*(darwin|linux|win32|freebsd|android|openbsd|sunos|aix)[^"]*"/g;
 const isWindows = process.platform === 'win32';
-const mvnw = isWindows ? 'mvnw.cmd' : './mvnw';
+// explicit path: cmd.exe does not always search the current folder (NoDefaultCurrentDirectoryInExePath)
+const mvnw = isWindows ? '.\\mvnw.cmd' : './mvnw';
 
 function git(...args) {
 	return execFileSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
