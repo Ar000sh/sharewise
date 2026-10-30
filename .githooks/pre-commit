@@ -1,0 +1,3 @@
+#!/bin/sh
+# Commit gate, see .githooks/gate.mjs. Enable once per clone: git config core.hooksPath .githooks
+exec node "$(git rev-parse --show-toplevel)/.githooks/gate.mjs" pre-commit

@@ -54,11 +54,12 @@ Write documents in English, with headings that can be linked to, tables for comp
 
 ## 6. Git
 
-- **Branches:** `main` is always green. Work happens on `feature/<what>`, `fix/<what>` or `refactor/<what>` and is merged with `git merge --no-ff` and a merge commit `merge: <branch> (<one line>)`. No direct commits to `main` except documentation fixes.
+- **Branches:** `main` is always green. Work happens on `feature/<what>`, `fix/<what>`, `refactor/<what>` or `chore/<what>` and is merged with `git merge --no-ff` and a merge commit `merge: <branch> (<one line>)`. No direct commits to `main` except documentation fixes.
 - **Commit format:** `<type>(<scope>): <imperative subject, lowercase, no full stop, at most 72 characters>`.
   - Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `contract` (a change to `openapi.yaml`, always on its own).
-  - Scopes: `account`, `group`, `expense`, `settlement`, `shared`, `frontend`, `e2e`, `build`.
-  - Body (optional): why, not what. Trailer on assisted commits: `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`.
+  - Scopes: `account`, `group`, `expense`, `settlement`, `shared`, `frontend`, `e2e`, `build`, `devsetup` (the `.claude/` and `.githooks/` setup).
+  - Body (optional): why, not what. Trailer on assisted commits: `Co-Authored-By: Claude <model> <noreply@anthropic.com>`, naming the model that did the work (e.g. `Claude Opus 5.5`).
+- **Gates:** `.githooks/pre-commit` and `pre-push` (see `docs/devsetup/README.md`) run on every commit and push once enabled with `git config core.hooksPath .githooks`. Never `--no-verify`; change the gate in its own commit if it is wrong.
 - **One concern per commit.** A rename and a behaviour change are two commits. Every commit builds and passes its own tests.
 - Never commit secrets, `.env.local`, build output, `node_modules`, or generated reports (`test-results/`, `playwright-report/`). `.env.example` is committed.
 - Tags mark hand-ins: `ex4`, `ex5`, … on the commit that was submitted. A tag is never moved after submission.

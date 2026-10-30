@@ -133,6 +133,7 @@ Method names on services are the operation names (`recordExpense`, `acceptInvita
 - One Flyway folder per module: `db/migration/<module>/V<n>__<what>.sql`. Version ranges: shared `V0xx`, account `V1xx`, group `V2xx`, expense `V3xx`, settlement `V4xx`. **Never edit a migration that is on `main`; add a new one.**
 - Because every module numbers its own migrations, Flyway runs with `out-of-order: true` (`application.yml`). Without it a new `V104` is refused by any database that already has `V401`. Found when the first refactoring ran on a real database; fresh test databases hide it.
 - Tables `snake_case`, plural (`accounts`, `groups`, `memberships`, `expenses`, `expense_shares`, `settlement_ledgers`); columns `snake_case`; ids `UUID`; money `NUMERIC(19,2)` named `<name>` (not `_cents`); instants `TIMESTAMPTZ` named `<what>_at`; enumerations stored as `VARCHAR` of the constant name.
+- Every migration starts with a `--` comment saying why it exists; every non-obvious column, index and constraint gets a one-line `--` why.
 - `spring.jpa.hibernate.ddl-auto=validate`: the schema comes from migrations only.
 - No foreign keys between modules. A column that references another module holds the id as a plain `UUID`.
 - Lazy collections are never read outside a transaction; ports that other modules call use queries (see document 02, pitfalls).

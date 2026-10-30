@@ -22,6 +22,9 @@ These rules exist because the parallel build produced four slightly different co
 | Java formatter check | `./mvnw validate` (`spring-javaformat:validate`) | a file is not formatted; fix with `./mvnw spring-javaformat:apply` |
 | ESLint + `tsc` | `npm run lint`, `npm run typecheck` | frontend rules of document 04 are broken |
 | Contract lint | `npx @redocly/cli lint docs/api/openapi.yaml` | the contract is invalid |
+| Commit gate | `.githooks/pre-commit` | a secret or key is staged, the contract is mixed with code, the lock file lost platforms, or the staged part fails format/lint/typecheck |
+| Push gate | `.githooks/pre-push` | any check above fails (full backend `verify`, Docker required) |
+| Guard hook (Claude only) | `.claude/hooks/guard.mjs` | Claude edits a secrets file, `schema.d.ts`, a migration on `main`, or uses `--no-verify` |
 
 Everything must be green before a commit lands on `main`:
 ```
