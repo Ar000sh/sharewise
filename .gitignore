@@ -5,3 +5,7 @@ node_modules/
 .vscode/
 .env*.local
 *.log
+.claude/settings.local.json
+# probe tests written by the edge-case-attacker agent; promoted to real tests by hand
+backend/src/test/java/de/hsh/favs/sharewise/probe/
+frontend/src/probe/
