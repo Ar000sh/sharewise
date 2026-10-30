@@ -1,5 +1,20 @@
 # Local development database. Start with: docker compose up -d db
 services:
+  # Identity provider. Start with: docker compose up -d keycloak
+  # Admin console http://localhost:8180 (admin/admin is for local development ONLY).
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: http://localhost:8180
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./docker/keycloak:/opt/keycloak/data/import:ro
+
   db:
     image: postgres:17
     environment:
