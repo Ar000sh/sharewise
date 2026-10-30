@@ -3,6 +3,7 @@ package de.hsh.favs.sharewise.expense.domain;
 import de.hsh.favs.sharewise.expense.api.ExpenseId;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import de.hsh.favs.sharewise.expense.api.ExpenseShare;
+import de.hsh.favs.sharewise.group.api.GroupMembershipView;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;

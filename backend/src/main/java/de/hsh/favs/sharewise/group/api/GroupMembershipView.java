@@ -1,4 +1,4 @@
-package de.hsh.favs.sharewise.expense.domain;
+package de.hsh.favs.sharewise.group.api;
 
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.UserId;

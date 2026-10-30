@@ -1,6 +1,7 @@
 package de.hsh.favs.sharewise.group.domain;
 
 import de.hsh.favs.sharewise.group.api.GroupCreated;
+import de.hsh.favs.sharewise.group.api.GroupMembershipView;
 import de.hsh.favs.sharewise.group.api.GroupRole;
 import de.hsh.favs.sharewise.group.api.GroupStatus;
 import de.hsh.favs.sharewise.group.api.InvitationId;
@@ -140,6 +141,22 @@ public class Group {
 
 	public boolean hasActiveMember(UserId user) {
 		return memberships.stream().anyMatch(m -> m.isActiveMember() && m.userId().equals(user));
+	}
+
+	/**
+	 * A snapshot of who is in the group and whether it is open, for other contexts'
+	 * rules.
+	 */
+	public GroupMembershipView membershipView() {
+		Set<UserId> active = memberships.stream()
+			.filter(Membership::isActiveMember)
+			.map(Membership::userId)
+			.collect(Collectors.toSet());
+		Set<UserId> admins = memberships.stream()
+			.filter(m -> m.isActiveMember() && m.role() == GroupRole.ADMIN)
+			.map(Membership::userId)
+			.collect(Collectors.toSet());
+		return new GroupMembershipView(groupId(), status == GroupStatus.OPEN, active, admins);
 	}
 
 	public GroupId groupId() {

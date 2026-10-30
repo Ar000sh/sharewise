@@ -6,9 +6,8 @@ import static de.hsh.favs.sharewise.expense.domain.ExpenseFixture.CAROL;
 import static de.hsh.favs.sharewise.expense.domain.ExpenseFixture.GROUP;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -22,15 +21,13 @@ import de.hsh.favs.sharewise.expense.domain.Expense;
 import de.hsh.favs.sharewise.expense.domain.ExpenseFixture;
 import de.hsh.favs.sharewise.expense.domain.SplitStrategy;
 import de.hsh.favs.sharewise.expense.persistence.ExpenseRepository;
+import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.Money;
-import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Clock;
 import java.time.ZoneOffset;
-import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,7 +37,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.transaction.support.TransactionOperations;
 
 /**
  * Orchestration only: what is asked, saved and published, and that a refused call leaves
@@ -50,7 +46,7 @@ import org.springframework.transaction.support.TransactionOperations;
 class ExpenseServiceTest {
 
 	@Mock
-	KnownMemberships memberships;
+	GroupMembership groups;
 
 	@Mock
 	ExpenseRepository expenses;
@@ -62,17 +58,15 @@ class ExpenseServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new ExpenseService(memberships, expenses, events, TransactionOperations.withoutTransaction(),
-				Clock.fixed(MutableClock.START, ZoneOffset.UTC));
+		service = new ExpenseService(groups, expenses, events, Clock.fixed(MutableClock.START, ZoneOffset.UTC));
 	}
 
 	private void groupIsOpenWithTheFourFriends() {
-		when(memberships.awaiting(eq(GROUP), anyCollection()))
-			.thenReturn(Optional.of(new ExpenseFixture().groupView()));
+		when(groups.view(GROUP)).thenReturn(new ExpenseFixture().groupView());
 	}
 
 	@Test
-	void recordingAsksTheKnownMembershipThenSavesAndPublishesExpenseRecorded() {
+	void recordingChecksTheCallerThenAsksForTheGroupSavesAndPublishesExpenseRecorded() {
 		// given
 		groupIsOpenWithTheFourFriends();
 
@@ -80,8 +74,9 @@ class ExpenseServiceTest {
 		Expense expense = service.recordExpense(new RecordExpenseCommandFixture().build());
 
 		// then
-		var order = inOrder(memberships, expenses, events);
-		order.verify(memberships).awaiting(eq(GROUP), anyCollection());
+		var order = inOrder(groups, expenses, events);
+		order.verify(groups).requireMember(GROUP, ALICE);
+		order.verify(groups).view(GROUP);
 		order.verify(expenses).save(expense);
 		ArgumentCaptor<ExpenseRecorded> published = ArgumentCaptor.forClass(ExpenseRecorded.class);
 		order.verify(events).publishEvent(published.capture());
@@ -93,47 +88,18 @@ class ExpenseServiceTest {
 	@Test
 	void aCallerWhoIsNotInTheGroupIsRefusedBeforeAnythingElse() {
 		// given
-		when(memberships.awaiting(eq(GROUP), anyCollection()))
-			.thenReturn(Optional.of(new ExpenseFixture().withGroupMembers(ALICE, BOB).groupView()));
+		doThrow(new DomainException(ErrorCode.NOT_A_MEMBER, "no")).when(groups).requireMember(GROUP, CAROL);
 
 		// when / then
 		assertThatThrownBy(() -> service.recordExpense(new RecordExpenseCommandFixture().withCaller(CAROL).build()))
-			.isInstanceOfSatisfying(DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
+			.isInstanceOf(DomainException.class);
+		verify(groups, never()).view(any());
 		verifyNoInteractions(expenses, events);
-	}
-
-	@Test
-	void aGroupTheCopyHasNeverHeardOfIsNotFound() {
-		// given
-		when(memberships.awaiting(eq(GROUP), anyCollection())).thenReturn(Optional.empty());
-
-		// when / then
-		assertThatThrownBy(() -> service.recordExpense(new RecordExpenseCommandFixture().build()))
-			.isInstanceOfSatisfying(DomainException.class,
-					e -> assertThat(e.code()).isEqualTo(ErrorCode.GROUP_NOT_FOUND));
-		verifyNoInteractions(expenses, events);
-	}
-
-	@Test
-	void theWaitCoversTheCallerThePayerAndEveryParticipant() {
-		// given
-		groupIsOpenWithTheFourFriends();
-
-		// when
-		service.recordExpense(
-				new RecordExpenseCommandFixture().withCaller(BOB).withPaidBy(ALICE).withParticipants(CAROL).build());
-
-		// then
-		ArgumentCaptor<Collection<UserId>> needed = ArgumentCaptor.captor();
-		verify(memberships).awaiting(eq(GROUP), needed.capture());
-		assertThat(needed.getValue()).containsExactlyInAnyOrder(BOB, ALICE, CAROL);
 	}
 
 	@ParameterizedTest
 	@EnumSource(value = SplitStrategy.class, names = { "EXACT", "PERCENTAGE" })
 	void aSplitStrategyOtherThanEqualIsRefusedAndNothingIsSaved(SplitStrategy strategy) {
-		groupIsOpenWithTheFourFriends();
-
 		assertThatThrownBy(
 				() -> service.recordExpense(new RecordExpenseCommandFixture().withSplitStrategy(strategy).build()))
 			.isInstanceOfSatisfying(DomainException.class,
@@ -144,8 +110,7 @@ class ExpenseServiceTest {
 	@Test
 	void aRuleOfTheAggregateRefusesTheExpenseAndNothingIsSavedOrPublished() {
 		// given a group where carol is no member
-		when(memberships.awaiting(eq(GROUP), anyCollection()))
-			.thenReturn(Optional.of(new ExpenseFixture().withGroupMembers(ALICE, BOB).groupView()));
+		when(groups.view(GROUP)).thenReturn(new ExpenseFixture().withGroupMembers(ALICE, BOB).groupView());
 
 		// when / then
 		assertThatThrownBy(
@@ -158,8 +123,7 @@ class ExpenseServiceTest {
 	@Test
 	void anExpenseForAClosedGroupIsRefused() {
 		// given
-		when(memberships.awaiting(eq(GROUP), anyCollection()))
-			.thenReturn(Optional.of(new ExpenseFixture().withClosedGroup().groupView()));
+		when(groups.view(GROUP)).thenReturn(new ExpenseFixture().withClosedGroup().groupView());
 
 		// when / then
 		assertThatThrownBy(() -> service.recordExpense(new RecordExpenseCommandFixture().build()))
@@ -171,7 +135,6 @@ class ExpenseServiceTest {
 	@Test
 	void listingChecksMembershipFirstThenAsksTheRepositoryNewestFirst() {
 		// given
-		groupIsOpenWithTheFourFriends();
 		Expense hotel = new ExpenseFixture().build();
 		when(expenses.findByGroupIdOrderByDateDescCreatedAtDesc(GROUP.value())).thenReturn(List.of(hotel));
 
@@ -179,8 +142,8 @@ class ExpenseServiceTest {
 		var listed = service.listExpenses(GROUP, BOB);
 
 		// then
-		var order = inOrder(memberships, expenses);
-		order.verify(memberships).awaiting(GROUP, List.of(BOB));
+		var order = inOrder(groups, expenses);
+		order.verify(groups).requireMember(GROUP, BOB);
 		order.verify(expenses).findByGroupIdOrderByDateDescCreatedAtDesc(GROUP.value());
 		assertThat(listed).containsExactly(hotel);
 	}

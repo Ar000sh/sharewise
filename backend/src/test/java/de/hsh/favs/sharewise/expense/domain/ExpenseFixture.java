@@ -3,6 +3,7 @@ package de.hsh.favs.sharewise.expense.domain;
 import de.hsh.favs.sharewise.MutableClock;
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import de.hsh.favs.sharewise.expense.api.ExpenseShare;
+import de.hsh.favs.sharewise.group.api.GroupMembershipView;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.Money;
 import de.hsh.favs.sharewise.shared.UserId;

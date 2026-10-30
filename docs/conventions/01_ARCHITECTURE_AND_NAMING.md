@@ -77,7 +77,7 @@ Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCam
 - Operations (each returns its event): `createGroup`, `inviteMember`, `acceptInvitation`, `declineInvitation`, `promoteToAdmin`, `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, `updateBalanceStatus`.
 - Enumerations `GroupStatus {OPEN, CLOSED_FOR_SETTLEMENT, ARCHIVED}`, `GroupRole {ADMIN, MEMBER}`, `MembershipStatus {ACTIVE, FORMER_MEMBER}`, `InvitationStatus {PENDING, ACCEPTED, DECLINED, EXPIRED}`.
 - Events: `GroupCreated`, `MemberInvited`, `MemberJoined`, `MemberLeft`, `MemberRemoved`, `MemberPromoted`, `InvitationDeclined`, `GroupClosedForSettlement`, `GroupReopened`, `GroupArchived`.
-- No read model of its own: other contexts that need group facts keep their own copy from the events (Expense: `GroupMembershipView`, see `2026-10-28-membership-copy-decision.md`).
+- Read model `GroupMembershipView`.
 
 ### 3.2 Expense context
 - Aggregate root `Expense`: `id: ExpenseId`, `groupId`, `paidBy: UserId`, `recordedBy: UserId`, `title: ExpenseTitle`, `totalAmount: Money`, `splitStrategy: SplitStrategy`, `status: ExpenseStatus`, `shares: List<ExpenseShare>`.

@@ -21,6 +21,12 @@ public interface GroupMembership {
 	GroupStatus status(GroupId group);
 
 	/**
+	 * A fresh snapshot of the group's status, active members and admins.
+	 * @throws DomainException GROUP_NOT_FOUND when there is no such group
+	 */
+	GroupMembershipView view(GroupId group);
+
+	/**
 	 * The caller check every group-scoped endpoint uses (D16): an unknown group is 404, a
 	 * non-member is 403. It lives here so that every implementation behaves the same.
 	 */

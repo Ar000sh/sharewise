@@ -1,6 +1,7 @@
 package de.hsh.favs.sharewise.group.application;
 
 import de.hsh.favs.sharewise.group.api.GroupMembership;
+import de.hsh.favs.sharewise.group.api.GroupMembershipView;
 import de.hsh.favs.sharewise.group.api.GroupStatus;
 import de.hsh.favs.sharewise.group.domain.Group;
 import de.hsh.favs.sharewise.group.domain.Membership;
@@ -41,6 +42,11 @@ class GroupMembershipImpl implements GroupMembership {
 	@Override
 	public GroupStatus status(GroupId group) {
 		return load(group).status();
+	}
+
+	@Override
+	public GroupMembershipView view(GroupId group) {
+		return load(group).membershipView();
 	}
 
 	private Group load(GroupId group) {
