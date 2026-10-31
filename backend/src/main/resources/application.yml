@@ -6,6 +6,14 @@ spring:
     url: jdbc:postgresql://localhost:5432/sharewise
     username: sharewise
     password: sharewise
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # The sharewise realm of the local Keycloak from docker-compose.yml (D3, C5). Tests replace it with the
+          # Testcontainers Keycloak. The signing keys are fetched on the first token, so the backend starts without
+          # Keycloak (F13).
+          issuer-uri: http://localhost:8180/realms/sharewise
   modulith:
     events:
       # An event whose listener failed or was cut off (for example by a restart) stays unfinished in

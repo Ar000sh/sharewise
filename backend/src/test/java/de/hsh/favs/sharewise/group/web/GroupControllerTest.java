@@ -75,7 +75,7 @@ class GroupControllerTest {
 			});
 		groups.detail(id.value(), alice)
 			.andExpect(jsonPath("$.members[0].userId").value(alice.idString()))
-			.andExpect(jsonPath("$.members[0].displayName").value("Alice"))
+			.andExpect(jsonPath("$.members[0].displayName").value(alice.displayName()))
 			.andExpect(jsonPath("$.members[0].role").value("ADMIN"));
 	}
 
@@ -125,9 +125,11 @@ class GroupControllerTest {
 		groups.detail(id, bob)
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.memberCount").value(2))
-			.andExpect(jsonPath("$.members[?(@.userId=='" + alice.idString() + "')].displayName").value("Alice"))
+			.andExpect(jsonPath("$.members[?(@.userId=='" + alice.idString() + "')].displayName")
+				.value(alice.displayName()))
 			.andExpect(jsonPath("$.members[?(@.userId=='" + alice.idString() + "')].role").value("ADMIN"))
-			.andExpect(jsonPath("$.members[?(@.userId=='" + bob.idString() + "')].displayName").value("Bob"))
+			.andExpect(
+					jsonPath("$.members[?(@.userId=='" + bob.idString() + "')].displayName").value(bob.displayName()))
 			.andExpect(jsonPath("$.members[?(@.userId=='" + bob.idString() + "')].role").value("MEMBER"));
 	}
 

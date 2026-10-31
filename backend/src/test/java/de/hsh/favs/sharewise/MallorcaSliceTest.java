@@ -41,7 +41,9 @@ class MallorcaSliceTest {
 	@Autowired
 	JsonMapper json;
 
-	/** User ids of four freshly signed-up users, and the session token of each. */
+	/**
+	 * User ids of four freshly signed-up users, and the Keycloak access token of each.
+	 */
 	String alice, bob, carol, david;
 
 	final Map<String, String> tokens = new LinkedHashMap<>();

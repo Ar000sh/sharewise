@@ -37,9 +37,9 @@ class UserProfilesImplTest {
 		var found = profiles.findProfiles(Set.of(dora.userId(), emil.userId(), unknown));
 
 		// then
-		assertThat(found).containsExactlyInAnyOrder(new UserProfile(dora.userId(), "Dora", true),
-				new UserProfile(emil.userId(), "Emil", true));
-		assertThat(profiles.find(dora.userId())).contains(new UserProfile(dora.userId(), "Dora", true));
+		assertThat(found).containsExactlyInAnyOrder(new UserProfile(dora.userId(), dora.displayName(), true),
+				new UserProfile(emil.userId(), emil.displayName(), true));
+		assertThat(profiles.find(dora.userId())).contains(new UserProfile(dora.userId(), dora.displayName(), true));
 		assertThat(profiles.find(unknown)).isEmpty();
 	}
 

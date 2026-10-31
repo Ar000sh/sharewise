@@ -1,8 +1,9 @@
 package de.hsh.favs.sharewise.account.domain;
 
 /**
- * Where an account is in its life. Only ACTIVE can sign in. The other states arrive with
- * email verification, lock-out and deactivation in later exercises.
+ * Where an account is in its life. Only ACTIVE accounts are let in (C3). The other states
+ * arrive with deactivation in later exercises; email verification and lock-out belong to
+ * the identity provider.
  */
 public enum AccountStatus {
 

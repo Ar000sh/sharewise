@@ -15,10 +15,10 @@ The code follows the diagram `work/ShareWise_Domain_Model.drawio` (study repo) f
 | 7 | `Expense.record(...)` | `record(view, groupId, title, paidBy, recordedBy, totalAmount, shares, splitStrategy): ExpenseRecorded` | `groupId` comes from the view; extra parameters `date`, `now`; returns `Recorded(expense, event)` | one source for the group id; time is a parameter |
 | 8 | Operations returning events | return the event | return a small holder: `Creation(group, groupCreated, creatorJoined)`, `Invited(invitation, event)`, `Recorded(expense, event)`, `Registration(account, event)` | an operation can produce more than one event, and the caller needs the new object too |
 | 9 | `Group.createGroup` | `GroupCreated` | also returns `MemberJoined` for the creator | the creator is a member from the first moment |
-| 10 | `Account.login` | `boolean` | returns `AccountEvent`: `LoginSucceeded` or `LoginFailed` | a failed attempt is counted and must be saved, so it cannot throw |
+| 10 | `Account` (external identity provider variant) | `registerFromIdentityProvider(UserId, Email, DisplayName)` | same, plus `now`; there is no `login`, no `passwordHash`, no `LoginSucceeded`/`LoginFailed` | sign-in belongs to Keycloak (design 2026-10-30); the account is created on the first request of a new subject |
 | 11 | Events | no time | every event ends with `occurredAt: Instant` | audit, ordering |
 | 12 | `GroupMembershipView` | local copy updated from group events | snapshot built by the `GroupMembership` port with one fresh query when an expense is recorded; same shape and same use as drawn. The event-fed copy exists on branch `feature/expense-membership-copy` (P3 step, see `2026-10-28-membership-copy-decision.md`) | decision D-A: no race between "joined" and "first expense"; can become the event-fed copy later without touching the domain |
-| 13 | Account context | `Account`, tokens, `Hasher`, `EmailSender` | adds `AuthSession` (bearer-token session, only its SHA-256 is stored), `CurrentUser` (the caller of the HTTP request), `SessionIdentityFilter`; `UserProfile` is served by the port `UserProfiles` | sign-in needs a session; they are infrastructure, not part of the `Account` aggregate |
+| 13 | Account context | `Account`, the external identity provider | adds `CurrentUser` (the caller of the HTTP request, from the validated Keycloak token) and `JwtCallerConverter`; `UserProfile` is served by the port `UserProfiles` | infrastructure, not part of the `Account` aggregate |
 | 14 | `ExpenseShare` | value object of Expense | lives in `expense.api` (events carry it); stored through an internal `StoredShare` | `api` may not import `domain` |
 
 ## Known gaps (diagram is right, code comes later)
@@ -26,5 +26,5 @@ The code follows the diagram `work/ShareWise_Domain_Model.drawio` (study repo) f
 - Group: `declineInvitation`, `promoteToAdmin`, `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, `updateBalanceStatus`, and their events; the enums already have all their values.
 - Expense: `correct`, `remove`, the `EXACT` and `PERCENTAGE` split strategies, `ExpenseCorrected`, `ExpenseRemoved`.
 - Settlement: `appendCorrectionReversal`, `appendRemovalReversal`, `appendSettlementPayment`, `appendDebtWaiver`, `projectSimplifiedPlan`, the `SettlementPayment` aggregate and its events, `MemberBalanceStatusChanged`, `AllBalancesSettled`.
-- Account: email verification, password reset, `changePassword`, `changeDisplayName`, `deactivate`, lock-out after five failed attempts (the counter exists), `AccountToken`, `EmailSender`.
+- Account: `changeDisplayName`, `deactivate` (email verification, password reset and lock-out are Keycloak's).
 - Invitations by email and the in-app invitation inbox (decision D-B).

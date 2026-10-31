@@ -1,6 +1,6 @@
 # Backend (Spring Boot modulith)
 
-Java 21, Spring Boot 4.1, Spring Modulith 2.1, JPA + Flyway on Postgres 17. Maven only through `./mvnw` (Maven is not on the PATH). Docker Desktop must run for every test that touches the database.
+Java 21, Spring Boot 4.1, Spring Modulith 2.1, JPA + Flyway on Postgres 17. Maven only through `./mvnw` (Maven is not on the PATH). Docker Desktop must run for every test that touches the database (Testcontainers starts Postgres and Keycloak). The backend is an OAuth2 resource server: Keycloak owns sign-up, sign-in and passwords; the `Account` is created on the first request of a new token subject.
 
 ## Before you change code
 - Find the module and the layer first (`account`, `group`, `expense`, `settlement`, `shared`; each with `api/ domain/ application/ persistence/ web/`). Other modules may only import a module's `api`.
