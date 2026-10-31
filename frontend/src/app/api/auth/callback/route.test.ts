@@ -64,4 +64,28 @@ describe("/api/auth/callback route", () => {
     const token = fetchMock.mock.calls[0];
     expect(String(token[1]?.body)).toContain("code_verifier=v-1");
   });
+
+  it("callbackWithARefusedAccountSetsNoSessionCookieAndShowsAnExplanation", async () => {
+    // given
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      if (String(input).endsWith("/protocol/openid-connect/token")) {
+        return new Response(
+          JSON.stringify({ access_token: "acc.ess.token", refresh_token: "ref.resh.token", expires_in: 300 }),
+          { status: 200 },
+        );
+      }
+      return new Response("{}", { status: 401 });
+    });
+
+    // when
+    const res = await GET(callback("code=abc&state=s-1"));
+
+    // then
+    expect(res.status).toBe(403);
+    expect(res.headers.getSetCookie().some((c) => c.startsWith("sw_session=") && !c.includes("Max-Age=0"))).toBe(false);
+    expect(res.headers.getSetCookie().some((c) => c.startsWith("sw_login=") && c.includes("Max-Age=0"))).toBe(true);
+    const body = await res.text();
+    expect(body).toContain("ShareWise");
+    expect(body).toContain("openid-connect/logout");
+  });
 });

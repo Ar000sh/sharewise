@@ -1,7 +1,7 @@
 import { connection } from "next/server";
-import { TokenRejectedError, appUrl, exchangeCode } from "@/lib/oidc";
+import { FETCH_TIMEOUT_MS, TokenRejectedError, appUrl, endSessionUrl, exchangeCode } from "@/lib/oidc";
 import { clearedLoginFlowCookie, readLoginFlow, sessionCookie } from "@/lib/session";
-import { signInUnavailable } from "@/lib/unavailable";
+import { signInRefused, signInUnavailable } from "@/lib/unavailable";
 
 function redirect(path: string, cookies: string[]): Response {
   const headers = new Headers({ location: `${appUrl()}${path}` });
@@ -34,12 +34,19 @@ export async function GET(req: Request) {
   }
 
   // The only fetch of the backend outside proxyToBackend: it needs the brand-new token, which is not in a cookie yet.
-  // A failure is not fatal; the backend creates the account on the next authenticated request as well.
+  // 401 means ShareWise refuses this account (R15): no session, an explanation instead. Any other outcome, also a
+  // timeout or an error, is not fatal; the backend creates the account on the next authenticated request as well.
   try {
-    await fetch(`${process.env.BACKEND_URL ?? "http://localhost:8080"}/me`, {
+    const me = await fetch(`${process.env.BACKEND_URL ?? "http://localhost:8080"}/me`, {
       headers: { authorization: `Bearer ${tokens.accessToken}` },
       cache: "no-store",
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
+    if (me.status === 401) {
+      const refused = signInRefused(endSessionUrl());
+      refused.headers.append("set-cookie", clearedLoginFlowCookie());
+      return refused;
+    }
   } catch {
     // see above
   }
