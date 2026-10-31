@@ -271,7 +271,7 @@ components:
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
-          example: { type: "about:blank", title: Unauthorized, status: 401, code: UNAUTHENTICATED, detail: "Missing or invalid session" }
+          example: { type: "about:blank", title: Unauthorized, status: 401, code: UNAUTHENTICATED, detail: "Missing or invalid token" }
     NotAMember:
       description: The caller is not a member of the group
       content:
