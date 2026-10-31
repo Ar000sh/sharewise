@@ -88,6 +88,9 @@ class AccountFirstLoginTest {
 		}
 
 		// then
+		// The race only exercises the guard when both requests are in flight together;
+		// the end state
+		// (one row, one event) holds either way.
 		assertThat(results).extracting(FirstRequest::status).containsExactly(200, 200);
 		assertThat(jdbc.queryForObject("select count(*) from accounts where id = ?", Integer.class, id.value()))
 			.isEqualTo(1);
