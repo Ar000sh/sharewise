@@ -1,5 +1,5 @@
-import { appUrl, refresh, type Tokens } from "@/lib/oidc";
-import { clearedSessionCookie, readSession, sessionCookie } from "@/lib/session";
+import { refresh, type Tokens } from "@/lib/oidc";
+import { clearedSessionCookie, isSameOrigin, readSession, sessionCookie } from "@/lib/session";
 
 /** Refresh when the access token has less than this left (milliseconds, like `Tokens.expiresAt`). */
 const REFRESH_MARGIN_MS = 30_000;
@@ -15,7 +15,7 @@ function refreshOnce(refreshToken: string): Promise<Tokens> {
   return started;
 }
 
-function problem(status: number, title: string, code: string, detail: string, setCookie?: string): Response {
+export function problem(status: number, title: string, code: string, detail: string, setCookie?: string): Response {
   const headers = new Headers({ "content-type": "application/problem+json" });
   if (setCookie) headers.append("set-cookie", setCookie);
   return new Response(JSON.stringify({ type: "about:blank", title, status, code, detail }), { status, headers });
@@ -31,7 +31,7 @@ function problem(status: number, title: string, code: string, detail: string, se
  */
 export async function proxyToBackend(req: Request, backendPath: string): Promise<Response> {
   const changesState = req.method !== "GET" && req.method !== "HEAD";
-  if (changesState && req.headers.get("origin") !== new URL(appUrl()).origin) {
+  if (changesState && !isSameOrigin(req)) {
     return problem(403, "Forbidden", "FORBIDDEN_ORIGIN", "The request does not come from this application");
   }
 

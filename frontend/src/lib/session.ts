@@ -1,4 +1,4 @@
-import type { Tokens } from "@/lib/oidc";
+import { appUrl, type Tokens } from "@/lib/oidc";
 import { SESSION_COOKIE } from "@/lib/user-cookie";
 
 const WEEK_SECONDS = 7 * 24 * 60 * 60;
@@ -10,6 +10,14 @@ const SEPARATOR = "~";
 
 /** What the login route remembers between the redirect to Keycloak and the callback. */
 export type LoginFlow = { state: string; verifier: string; returnTo: string };
+
+/**
+ * True when the request carries exactly this app's Origin. A cookie is sent by the browser on its own, so a request
+ * that changes something (the API proxy, sign-out) must prove it comes from our own page (F2). A missing Origin fails.
+ */
+export function isSameOrigin(req: Request): boolean {
+  return req.headers.get("origin") === new URL(appUrl()).origin;
+}
 
 /** Reads one cookie from the request's Cookie header. */
 export function readCookie(req: Request, name: string): string | undefined {
