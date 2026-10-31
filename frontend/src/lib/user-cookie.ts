@@ -1,2 +1,2 @@
-/** httpOnly cookie that holds the session token from /auth/login. The browser's scripts never read it. */
+/** httpOnly cookie with the Keycloak access and refresh token (set by /api/auth/callback). The browser's scripts never read it. */
 export const SESSION_COOKIE = "sw_session";

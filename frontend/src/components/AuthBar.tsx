@@ -6,22 +6,19 @@ import { useCurrentUser } from "@/lib/currentUser";
 export function AuthBar() {
   const user = useCurrentUser();
 
-  async function signOut() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    // A full page load on purpose: it drops all client state of the signed-out user.
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.assign("/login");
-  }
-
   if (!user) return null;
   return (
     <div className="flex items-center gap-3 text-sm">
       <span>
         Signed in as <strong>{user.displayName}</strong>
       </span>
-      <button onClick={signOut} className="rounded border px-2 py-1">
-        Sign out
-      </button>
+      {/* A real form post, not fetch: the answer redirects to Keycloak's logout page, which a script cannot follow
+          across origins. The full page load also drops all client state of the signed-out user. */}
+      <form method="post" action="/api/auth/logout">
+        <button type="submit" className="rounded border px-2 py-1">
+          Sign out
+        </button>
+      </form>
     </div>
   );
 }

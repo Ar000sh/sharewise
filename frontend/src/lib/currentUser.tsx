@@ -6,7 +6,7 @@ import { ApiError, api } from "@/lib/api";
 
 type User = components["schemas"]["User"];
 
-const PUBLIC_PATHS = ["/login", "/register"];
+const PUBLIC_PATHS = ["/login"];
 
 const CurrentUserContext = createContext<User | undefined>(undefined);
 

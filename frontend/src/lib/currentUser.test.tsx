@@ -53,7 +53,7 @@ describe("CurrentUserProvider", () => {
     expect(screen.getByText("nobody")).toBeInTheDocument();
   });
 
-  it.each(["/login", "/register"])("doesNotAskOnThePublicPage %s", (pathname) => {
+  it.each(["/login"])("doesNotAskOnThePublicPage %s", (pathname) => {
     stubLocation(pathname);
 
     render(

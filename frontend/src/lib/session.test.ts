@@ -1,29 +1,46 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { signInResponse } from "@/lib/session";
+import { clearedSessionCookie, readSession, safeReturnTo, sessionCookie } from "@/lib/session";
 
-describe("signInResponse", () => {
-  it("movesTheTokenIntoAnHttpOnlyCookieAndKeepsItOutOfTheBody", async () => {
-    const backend = new Response(JSON.stringify({ token: "t0ken", userId: "u1", displayName: "Alice" }), {
-      status: 201,
-    });
-
-    const res = await signInResponse(backend);
-
-    expect(res.status).toBe(201);
-    expect(await res.json()).toEqual({ userId: "u1", displayName: "Alice" });
-    const cookie = res.headers.get("set-cookie") ?? "";
-    expect(cookie).toContain("sw_session=t0ken");
-    expect(cookie).toContain("HttpOnly");
-    expect(cookie).toContain("SameSite=Lax");
+describe("safeReturnTo", () => {
+  it.each([
+    ["/groups", "/groups"],
+    ["//evil.com", "/"],
+    ["https://evil.com", "/"],
+    ["/\\evil.com", "/"],
+    [null, "/"],
+    // Browsers read a backslash like a slash and ignore tabs and newlines inside a URL, so each of
+    // these would leave the site after sign-in.
+    ["/\t/evil.example", "/"],
+    ["/\n/evil.example", "/"],
+    ["\\\\evil.example", "/"],
+    ["javascript:alert(1)", "/"],
+    ["", "/"],
+  ])("acceptsOnlyRelativePaths %j -> %j", (input, expected) => {
+    expect(safeReturnTo(input)).toBe(expected);
   });
 
-  it("passesErrorsThroughWithoutACookie", async () => {
-    const backend = new Response('{"code":"INVALID_CREDENTIALS"}', { status: 401 });
+  it("keepsPathsWithQueryAndEncodedCharacters", () => {
+    expect(safeReturnTo("/groups/abc?tab=Balances")).toBe("/groups/abc?tab=Balances");
+    expect(safeReturnTo("/join/a%5Cb")).toBe("/join/a%5Cb");
+  });
+});
 
-    const res = await signInResponse(backend);
+describe("session cookie", () => {
+  const tokens = { accessToken: "a.b.c", refreshToken: "d.e.f", expiresAt: 1_900_000_000_000 };
 
-    expect(res.status).toBe(401);
-    expect(res.headers.get("set-cookie")).toBeNull();
+  it("isHttpOnlyAndSameSiteLaxAndReadsBackFromARequest", () => {
+    const cookie = sessionCookie(tokens);
+
+    expect(cookie).toContain("HttpOnly");
+    expect(cookie).toContain("SameSite=Lax");
+    const req = new Request("http://localhost:3000/api/me", { headers: { cookie: cookie.split(";")[0] } });
+    expect(readSession(req)).toEqual(tokens);
+  });
+
+  it("isGoneAfterClearing", () => {
+    expect(clearedSessionCookie()).toContain("Max-Age=0");
+    const req = new Request("http://localhost:3000/", { headers: { cookie: "sw_session=garbage" } });
+    expect(readSession(req)).toBeUndefined();
   });
 });
