@@ -1,0 +1,660 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="sharewise-team" name="ShareWise team model">
+    <mxGraphModel dx="2112" dy="1348" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3000" pageHeight="2400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=top;fontSize=12;fillColor=none;strokeColor=none;" value="&lt;b style='font-size:18px'&gt;ShareWise – class diagram (team version 17.10.26 + Account context added 18.10.26, simple login added 19.10.26) – &lt;span style=&quot;color:#D08A2E&quot;&gt;PROPOSAL: Account with external identity provider&lt;/span&gt;&lt;/b&gt;&lt;br/&gt;Dashed boxes = aggregates. Aggregates refer to each other by ID only and react to each other's domain events (DDD slides 64–71). Purple dashed arrow = publishes, orange dashed arrow = subscribes to, ◆ = composition (part of the aggregate), grey dashed = uses / references by ID. Colours: cyan aggregate root, blue entity, green value object, yellow enumeration, pink read model, purple domain events. Brown context = generic subdomain." vertex="1">
+          <mxGeometry height="100" width="1500" y="-130" as="geometry" />
+        </mxCell>
+        <mxCell id="G" parent="1" style="rounded=1;arcSize=1;container=1;collapsible=0;html=1;whiteSpace=wrap;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontStyle=1;fontSize=15;fillColor=#FAF6EC;strokeColor=#86681A;fontColor=#86681A;" value="Group context" vertex="1">
+          <mxGeometry height="865" width="1359" as="geometry" />
+        </mxCell>
+        <mxCell id="AG" parent="G" style="rounded=1;arcSize=2;container=1;collapsible=0;html=1;whiteSpace=wrap;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontStyle=1;fontSize=13;fillColor=#FFFFFF;strokeColor=#0E8FA3;fontColor=#0E8FA3;dashed=1;dashPattern=8 4;strokeWidth=2;" value="«Aggregate» Group" vertex="1">
+          <mxGeometry height="785" width="949" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="Group" parent="AG" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#DAF5F9;strokeColor=#0E8FA3;strokeWidth=2;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Aggregate Root»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;Group&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ id: GroupId&lt;br/&gt;+ name: GroupName&lt;br/&gt;+ currency: Currency&lt;br/&gt;+ status: GroupStatus&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ createGroup(GroupName name, Currency currency, UserId creator): GroupCreated&lt;br/&gt;+ inviteMember(Email, UserId adminOrMember): MemberInvited&lt;br/&gt;+ promoteToAdmin(UserId targetMember, UserId actingAdmin): MemberPromoted&lt;br/&gt;+ removeMember(UserId targetMember, UserId actingAdmin): MemberRemoved&lt;br/&gt;+ leaveGroup(UserId member): MemberLeft&lt;br/&gt;+ closeForSettlement(UserId actingAdmin): GroupClosedForSettlement&lt;br/&gt;+ reopenGroup(UserId actingAdmin): GroupReopened&lt;br/&gt;+ archiveGroup(UserId actingAdmin): GroupArchived&lt;br/&gt;+ acceptInvitation(InvitationId, UserId): MemberJoined&lt;br/&gt;+ declineInvitation(InvitationId): InvitationDeclined&lt;br/&gt;+ updateBalanceStatus(UserId member, boolean hasZeroBalance)&lt;/p&gt;" vertex="1">
+          <mxGeometry height="285" width="574" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="Membership" parent="AG" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#DCE8FB;strokeColor=#2A63C6;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Entity»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;Membership&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ userId: UserId&lt;br/&gt;+ role: GroupRole&lt;br/&gt;+ status: MembershipStatus&lt;br/&gt;+ hasZeroBalance: boolean&lt;br/&gt;+ joinedAt: Instant&lt;/p&gt;" vertex="1">
+          <mxGeometry height="125" width="210" x="20" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="GroupStatus" parent="AG" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#FFF6CC;strokeColor=#B8960B;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Enumeration»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;GroupStatus&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;OPEN&lt;br/&gt;CLOSED_FOR_SETTLEMENT&lt;br/&gt;ARCHIVED&lt;/p&gt;" vertex="1">
+          <mxGeometry height="95" width="175" x="280" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="Invitation" parent="AG" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#DCE8FB;strokeColor=#2A63C6;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Entity»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;Invitation&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ id: InvitationId&lt;br/&gt;+ email: Email&lt;br/&gt;+ status: InvitationStatus&lt;br/&gt;+ expiresAt: Instant&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ accept(UserId user)&lt;br/&gt;+ decline()&lt;/p&gt;" vertex="1">
+          <mxGeometry height="150" width="210" x="505" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="MembershipStatus" parent="AG" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#FFF6CC;strokeColor=#B8960B;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Enumeration»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;MembershipStatus&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;ACTIVE&lt;br/&gt;FORMER_MEMBER&lt;/p&gt;" vertex="1">
+          <mxGeometry height="80" width="182" x="20" y="645" as="geometry" />
+        </mxCell>
+        <mxCell id="GroupRole" parent="AG" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#FFF6CC;strokeColor=#B8960B;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Enumeration»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;GroupRole&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;ADMIN&lt;br/&gt;MEMBER&lt;/p&gt;" vertex="1">
+          <mxGeometry height="80" width="154" x="232" y="645" as="geometry" />
+        </mxCell>
+        <mxCell id="InvitationStatus" parent="AG" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#FFF6CC;strokeColor=#B8960B;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Enumeration»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;InvitationStatus&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;PENDING&lt;br/&gt;ACCEPTED&lt;br/&gt;DECLINED&lt;br/&gt;EXPIRED&lt;/p&gt;" vertex="1">
+          <mxGeometry height="110" width="182" x="519" y="645" as="geometry" />
+        </mxCell>
+        <mxCell id="GroupName" parent="AG" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#E3F4E1;strokeColor=#3C8A3A;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Value Object»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;GroupName&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ value: String&lt;/p&gt;" vertex="1">
+          <mxGeometry height="65" width="154" x="674" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="Email" parent="AG" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#E3F4E1;strokeColor=#3C8A3A;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Value Object»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;Email&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ value: String&lt;/p&gt;" vertex="1">
+          <mxGeometry height="65" width="154" x="775" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="InvitationId" parent="AG" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#E3F4E1;strokeColor=#3C8A3A;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Value Object»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;InvitationId&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ value: UUID&lt;/p&gt;" vertex="1">
+          <mxGeometry height="65" width="154" x="775" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="GroupDomainEvents" parent="G" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#EEE8FB;strokeColor=#6A4FB3;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Domain Events»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;GroupDomainEvents&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;GroupCreated&lt;br/&gt;MemberInvited&lt;br/&gt;MemberJoined&lt;br/&gt;MemberLeft&lt;br/&gt;MemberRemoved&lt;br/&gt;MemberPromoted&lt;br/&gt;InvitationDeclined&lt;br/&gt;GroupClosedForSettlement&lt;br/&gt;GroupReopened&lt;br/&gt;GroupArchived&lt;/p&gt;" vertex="1">
+          <mxGeometry height="200" width="196" x="1029" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="noteInvite" parent="G" style="shape=note;whiteSpace=wrap;html=1;size=14;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;spacingRight=8;fontSize=11;fillColor=#FFFDF2;strokeColor=#B8A77A;" value="&lt;b&gt;Decision 17.10: invitations go through the root&lt;/b&gt;&lt;br/&gt;What: Group.acceptInvitation() checks that the group is OPEN and the user is not yet a member, calls invitation.accept() (PENDING, not expired), adds the Membership and publishes MemberJoined. declineInvitation() works the same way. Invitation keeps accept() / decline(), but they only change its status.&lt;br/&gt;Why: aggregate rule 1 (DDD slide 67): rules that involve several parts are protected via the root. Events are published by the aggregate (slide 71), not by an inner entity." vertex="1">
+          <mxGeometry height="175" width="300" x="1029" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="GroupMembershipView" parent="G" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#FCEAF4;strokeColor=#B0458A;dashed=1;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Read Model»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;GroupMembershipView&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ groupId: GroupId&lt;br/&gt;+ isOpen: boolean&lt;br/&gt;+ activeMembers: Set&amp;lt;UserId&amp;gt;&lt;br/&gt;+ admins: Set&amp;lt;UserId&amp;gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ isActiveMember(UserId): boolean&lt;br/&gt;+ isAdmin(UserId): boolean&lt;/p&gt;" vertex="1">
+          <mxGeometry height="150" width="259" x="1023" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="h2bhQfGRuUDeRtqC1HHt-1" edge="1" parent="G" source="Group" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;defaultLabelBackgroundColor=gap;endArrow=open;endFill=0;dashed=1;" target="GroupMembershipView">
+          <mxGeometry relative="1" x="0.0039" as="geometry">
+            <Array as="points">
+              <mxPoint x="1000" y="250" />
+              <mxPoint x="1000" y="570" />
+              <mxPoint x="1152.5" y="570" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="h2bhQfGRuUDeRtqC1HHt-2" connectable="0" parent="h2bhQfGRuUDeRtqC1HHt-1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];defaultLabelBackgroundColor=gap;" value="projects" vertex="1">
+          <mxGeometry relative="1" x="-0.5334" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="Membership" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.183;entryY=1.000;entryDx=0;entryDy=0;" target="Group" value="belongs to">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1s" connectable="0" parent="e1" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1..*" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e1t" connectable="0" parent="e1" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="GroupStatus" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.605;entryY=1.000;entryDx=0;entryDy=0;" target="Group" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2s" connectable="0" parent="e2" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2t" connectable="0" parent="e2" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="Invitation" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.920;entryY=1.000;entryDx=0;entryDy=0;" target="Group" value="tracks">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3s" connectable="0" parent="e3" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e3t" connectable="0" parent="e3" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="MembershipStatus" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.433;entryY=1.000;entryDx=0;entryDy=0;" target="Membership" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4s" connectable="0" parent="e4" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e4t" connectable="0" parent="e4" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="GroupRole" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.920;entryY=1.000;entryDx=0;entryDy=0;" target="Membership" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5s" connectable="0" parent="e5" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e5t" connectable="0" parent="e5" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="InvitationStatus" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.500;entryY=1.000;entryDx=0;entryDy=0;" target="Invitation" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6s" connectable="0" parent="e6" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e6t" connectable="0" parent="e6" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="GroupName" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.000;exitY=0.500;exitDx=0;exitDy=0;entryX=1.000;entryY=0.886;entryDx=0;entryDy=0;" target="Group" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7s" connectable="0" parent="e7" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e7t" connectable="0" parent="e7" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="Email" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.000;exitY=0.500;exitDx=0;exitDy=0;entryX=1.000;entryY=0.350;entryDx=0;entryDy=0;" target="Invitation" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8s" connectable="0" parent="e8" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8t" connectable="0" parent="e8" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="InvitationId" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.000;exitY=0.500;exitDx=0;exitDy=0;entryX=1.000;entryY=0.750;entryDx=0;entryDy=0;" target="Invitation" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9s" connectable="0" parent="e9" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e9t" connectable="0" parent="e9" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="Group" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;dashed=1;endArrow=open;endFill=0;endSize=10;strokeColor=#6A4FB3;fontColor=#6A4FB3;exitX=1.000;exitY=0.140;exitDx=0;exitDy=0;entryX=0.000;entryY=0.200;entryDx=0;entryDy=0;" target="GroupDomainEvents" value="publishes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="E" parent="1" style="rounded=1;arcSize=1;container=1;collapsible=0;html=1;whiteSpace=wrap;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontStyle=1;fontSize=15;fillColor=#F3F6FC;strokeColor=#2A63C6;fontColor=#2A63C6;" value="Expense context" vertex="1">
+          <mxGeometry height="635" width="1880" x="1479" as="geometry" />
+        </mxCell>
+        <mxCell id="AE" parent="E" style="rounded=1;arcSize=2;container=1;collapsible=0;html=1;whiteSpace=wrap;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontStyle=1;fontSize=13;fillColor=#FFFFFF;strokeColor=#0E8FA3;fontColor=#0E8FA3;dashed=1;dashPattern=8 4;strokeWidth=2;" value="«Aggregate» Expense" vertex="1">
+          <mxGeometry height="555" width="1339" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="Expense" parent="AE" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#DAF5F9;strokeColor=#0E8FA3;strokeWidth=2;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Aggregate Root»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;Expense&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ id: ExpenseId&lt;br/&gt;+ groupId: GroupId&lt;br/&gt;+ paidBy: UserId&lt;br/&gt;+ recordedBy: UserId&lt;br/&gt;+ title: ExpenseTitle&lt;br/&gt;+ totalAmount: Money&lt;br/&gt;+ splitStrategy: SplitStrategy&lt;br/&gt;+ status: ExpenseStatus&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ record(GroupMembershipView view, GroupId groupId, ExpenseTitle title,&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;UserId paidBy, UserId recordedBy, Money totalAmount,&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;List&amp;lt;ExpenseShare&amp;gt; shares, SplitStrategy splitStrategy): ExpenseRecorded&lt;br/&gt;+ correct(GroupMembershipView view, Money newAmount, List&amp;lt;ExpenseShare&amp;gt; newShares,&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;String reason, UserId actor): ExpenseCorrected&lt;br/&gt;+ remove(GroupMembershipView view, UserId actor): ExpenseRemoved&lt;/p&gt;" vertex="1">
+          <mxGeometry height="270" width="602" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="ExpenseShare" parent="AE" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#E3F4E1;strokeColor=#3C8A3A;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Value Object»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;ExpenseShare&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ participantId: UserId&lt;br/&gt;+ owedShare: Money&lt;/p&gt;" vertex="1">
+          <mxGeometry height="80" width="189" x="20" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="SplitStrategy" parent="AE" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#FFF6CC;strokeColor=#B8960B;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Enumeration»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;SplitStrategy&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;EQUAL&lt;br/&gt;EXACT&lt;br/&gt;PERCENTAGE&lt;/p&gt;" vertex="1">
+          <mxGeometry height="95" width="161" x="569" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="ExpenseStatus" parent="AE" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#FFF6CC;strokeColor=#B8960B;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Enumeration»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;ExpenseStatus&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;ACTIVE&lt;br/&gt;CORRECTED&lt;br/&gt;REMOVED&lt;/p&gt;" vertex="1">
+          <mxGeometry height="95" width="161" x="770" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="ExpenseId" parent="AE" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#E3F4E1;strokeColor=#3C8A3A;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Value Object»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;ExpenseId&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ value: UUID&lt;/p&gt;" vertex="1">
+          <mxGeometry height="65" width="154" x="971" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="ExpenseTitle" parent="AE" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#E3F4E1;strokeColor=#3C8A3A;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Value Object»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;ExpenseTitle&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ value: String&lt;/p&gt;" vertex="1">
+          <mxGeometry height="65" width="154" x="1165" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="ExpenseDomainEvents" parent="E" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#EEE8FB;strokeColor=#6A4FB3;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Domain Events»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;ExpenseDomainEvents&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;ExpenseRecorded&lt;br/&gt;ExpenseCorrected&lt;br/&gt;ExpenseRemoved&lt;/p&gt;" vertex="1">
+          <mxGeometry height="95" width="203" x="1419" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="noteView" parent="E" style="shape=note;whiteSpace=wrap;html=1;size=14;align=left;verticalAlign=top;spacingLeft=8;spacingTop=4;spacingRight=8;fontSize=11;fillColor=#FFFDF2;strokeColor=#B8A77A;" value="&lt;b&gt;Decision 17.10: GroupMembershipView&lt;/b&gt;&lt;br/&gt;What: Expense keeps a local copy of the group (open?, members, admins), updated from GroupDomainEvents, and gets it passed into record / correct / remove.&lt;br/&gt;Why: Expense only knows the groupId but must enforce R2/R3 (payer and participants are members), R5 (no changes when closed) and R6 (recorder, payer or admin). Same pattern as Membership.hasZeroBalance (DDD slide 67, rule 4: eventual consistency)." vertex="1">
+          <mxGeometry height="140" width="300" x="1550" y="455" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="ExpenseShare" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.157;entryY=1.000;entryDx=0;entryDy=0;" target="Expense" value="splits into">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11s" connectable="0" parent="e11" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1..*" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e11t" connectable="0" parent="e11" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="SplitStrategy" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.790;entryY=1.000;entryDx=0;entryDy=0;" target="Expense" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2148" y="426" />
+              <mxPoint x="1995" y="426" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e13s" connectable="0" parent="e13" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e13t" connectable="0" parent="e13" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e14" edge="1" parent="1" source="ExpenseStatus" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.840;entryY=1.000;entryDx=0;entryDy=0;" target="Expense" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2350" y="415" />
+              <mxPoint x="2025" y="415" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e14s" connectable="0" parent="e14" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e14t" connectable="0" parent="e14" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e15" edge="1" parent="1" source="ExpenseId" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.890;entryY=1.000;entryDx=0;entryDy=0;" target="Expense" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2547" y="405" />
+              <mxPoint x="2055" y="405" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e15s" connectable="0" parent="e15" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e15t" connectable="0" parent="e15" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e16" edge="1" parent="1" source="ExpenseTitle" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.940;entryY=1.000;entryDx=0;entryDy=0;" target="Expense" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2741" y="394" />
+              <mxPoint x="2085" y="394" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e16s" connectable="0" parent="e16" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e16t" connectable="0" parent="e16" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e17" edge="1" parent="1" source="Expense" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;dashed=1;endArrow=open;endFill=0;endSize=10;strokeColor=#6A4FB3;fontColor=#6A4FB3;exitX=1.000;exitY=0.907;exitDx=0;exitDy=0;entryX=0.000;entryY=0.263;entryDx=0;entryDy=0;" target="ExpenseDomainEvents" value="publishes">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" edge="1" parent="1" source="Expense" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;dashed=1;endArrow=open;endFill=0;endSize=10;strokeColor=#666666;fontColor=#444444;exitX=0;exitY=0.25;exitDx=0;exitDy=0;" target="GroupMembershipView" value="reads">
+          <mxGeometry relative="1" x="0.4317" as="geometry">
+            <Array as="points">
+              <mxPoint x="1519" y="140" />
+              <mxPoint x="1440" y="140" />
+              <mxPoint x="1440" y="675" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="S" parent="1" style="rounded=1;arcSize=1;container=1;collapsible=0;html=1;whiteSpace=wrap;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontStyle=1;fontSize=15;fillColor=#F3F6FC;strokeColor=#2A63C6;fontColor=#2A63C6;" value="Settlement context" vertex="1">
+          <mxGeometry height="865" width="2046" y="1005" as="geometry" />
+        </mxCell>
+        <mxCell id="AL" parent="S" style="rounded=1;arcSize=2;container=1;collapsible=0;html=1;whiteSpace=wrap;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontStyle=1;fontSize=13;fillColor=#FFFFFF;strokeColor=#0E8FA3;fontColor=#0E8FA3;dashed=1;dashPattern=8 4;strokeWidth=2;" value="«Aggregate» GroupLedger" vertex="1">
+          <mxGeometry height="775" width="446" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="GroupLedger" parent="AL" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#DAF5F9;strokeColor=#0E8FA3;strokeWidth=2;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Aggregate Root»&lt;/i&gt;&lt;br&gt;&lt;b&gt;GroupLedger&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ groupId: GroupId&lt;/p&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ groupLedger: List&amp;lt;LedgerEntry&amp;gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ appendExpenseEntry(ExpenseRecorded):&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;MemberBalanceStatusChanged, AllBalancesSettled&lt;br&gt;+ appendCorrectionReversal(ExpenseCorrected):&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;MemberBalanceStatusChanged, AllBalancesSettled&lt;br&gt;+ appendRemovalReversal(ExpenseRemoved):&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;MemberBalanceStatusChanged, AllBalancesSettled&lt;br&gt;+ appendSettlementPayment(SettlementPaymentConfirmed):&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;MemberBalanceStatusChanged, AllBalancesSettled&lt;br&gt;+ appendDebtWaiver(DebtWaived):&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;MemberBalanceStatusChanged, AllBalancesSettled&lt;br&gt;+ projectBalances(): List&amp;lt;MemberBalance&amp;gt;&lt;br&gt;+ projectSimplifiedPlan(): SettlementPlan&lt;/p&gt;" vertex="1">
+          <mxGeometry height="255" width="406" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="LedgerEntry" parent="AL" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#DCE8FB;strokeColor=#2A63C6;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Entity»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;LedgerEntry&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ id: EntryId&lt;br/&gt;+ userId: UserId&lt;br/&gt;+ deltaAmount: Money&lt;br/&gt;+ type: LedgerEntryType&lt;br/&gt;+ referenceId: String&lt;br/&gt;+ occurredAt: Instant&lt;/p&gt;" vertex="1">
+          <mxGeometry height="140" width="189" x="128" y="385" as="geometry" />
+        </mxCell>
+        <mxCell id="LedgerEntryType" parent="AL" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#FFF6CC;strokeColor=#B8960B;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Enumeration»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;LedgerEntryType&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;EXPENSE_PAID&lt;br/&gt;EXPENSE_OWED&lt;br/&gt;EXPENSE_REVERSAL&lt;br/&gt;PAYMENT_SENT&lt;br/&gt;PAYMENT_RECEIVED&lt;br/&gt;DEBT_WAIVED&lt;/p&gt;" vertex="1">
+          <mxGeometry height="140" width="175" x="20" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="EntryId" parent="AL" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#E3F4E1;strokeColor=#3C8A3A;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Value Object»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;EntryId&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ value: UUID&lt;/p&gt;" vertex="1">
+          <mxGeometry height="65" width="154" x="235" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="SettlementDomainEvents" parent="S" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#EEE8FB;strokeColor=#6A4FB3;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Domain Events»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;SettlementDomainEvents&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;SettlementPaymentRecorded&lt;br/&gt;SettlementPaymentConfirmed&lt;br/&gt;SettlementPaymentRejected&lt;br/&gt;DebtWaived&lt;br/&gt;MemberBalanceStatusChanged&lt;br/&gt;AllBalancesSettled&lt;/p&gt;" vertex="1">
+          <mxGeometry height="140" width="224" x="846" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="MemberBalance" parent="S" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#FCEAF4;strokeColor=#B0458A;dashed=1;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Read Model»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;MemberBalance&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ userId: UserId&lt;br/&gt;+ netBalance: Money&lt;/p&gt;" vertex="1">
+          <mxGeometry height="80" width="161" x="870" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="SettlementPlan" parent="S" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#FCEAF4;strokeColor=#B0458A;dashed=1;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Read Model»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;SettlementPlan&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ simplifiedDebts: List&amp;lt;DirectedDebt&amp;gt;&lt;/p&gt;" vertex="1">
+          <mxGeometry height="65" width="287" x="846" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="DirectedDebt" parent="S" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#E3F4E1;strokeColor=#3C8A3A;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Value Object»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;DirectedDebt&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ fromDebtor: UserId&lt;br/&gt;+ toCreditor: UserId&lt;br/&gt;+ amount: Money&lt;/p&gt;" vertex="1">
+          <mxGeometry height="95" width="168" x="905" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="AP" parent="S" style="rounded=1;arcSize=2;container=1;collapsible=0;html=1;whiteSpace=wrap;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontStyle=1;fontSize=13;fillColor=#FFFFFF;strokeColor=#0E8FA3;fontColor=#0E8FA3;dashed=1;dashPattern=8 4;strokeWidth=2;" value="«Aggregate» SettlementPayment" vertex="1">
+          <mxGeometry height="495" width="523" x="1493" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="SettlementPayment" parent="AP" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#DAF5F9;strokeColor=#0E8FA3;strokeWidth=2;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Aggregate Root»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;SettlementPayment&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ id: SettlementPaymentId&lt;br/&gt;+ groupId: GroupId&lt;br/&gt;+ fromDebtor: UserId&lt;br/&gt;+ toCreditor: UserId&lt;br/&gt;+ amount: Money&lt;br/&gt;+ status: PaymentStatus&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ record(GroupId groupId, UserId fromDebtor, UserId toCreditor,&lt;br/&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Money amount, Money openDebt): SettlementPaymentRecorded&lt;br/&gt;+ confirm(UserId creditor): SettlementPaymentConfirmed&lt;br/&gt;+ reject(UserId creditor, String note): SettlementPaymentRejected&lt;br/&gt;+ waive(UserId creditor, String note): DebtWaived&lt;/p&gt;" vertex="1">
+          <mxGeometry height="225" width="483" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="PaymentStatus" parent="AP" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#FFF6CC;strokeColor=#B8960B;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Enumeration»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;PaymentStatus&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;PENDING&lt;br/&gt;CONFIRMED&lt;br/&gt;REJECTED&lt;br/&gt;WAIVED&lt;/p&gt;" vertex="1">
+          <mxGeometry height="110" width="161" x="49" y="355" as="geometry" />
+        </mxCell>
+        <mxCell id="SettlementPaymentId" parent="AP" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#E3F4E1;strokeColor=#3C8A3A;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Value Object»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;SettlementPaymentId&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ value: UUID&lt;/p&gt;" vertex="1">
+          <mxGeometry height="65" width="203" x="270" y="355" as="geometry" />
+        </mxCell>
+        <mxCell id="e20" edge="1" parent="1" source="LedgerEntry" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.499;entryY=1.000;entryDx=0;entryDy=0;" target="GroupLedger" value="append-only entries">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e20s" connectable="0" parent="e20" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e20t" connectable="0" parent="e20" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e21" edge="1" parent="1" source="LedgerEntryType" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.080;entryY=1.000;entryDx=0;entryDy=0;" target="LedgerEntry" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e21s" connectable="0" parent="e21" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e21t" connectable="0" parent="e21" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e22" edge="1" parent="1" source="EntryId" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.920;entryY=1.000;entryDx=0;entryDy=0;" target="LedgerEntry" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e22s" connectable="0" parent="e22" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e22t" connectable="0" parent="e22" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e23" edge="1" parent="1" source="DirectedDebt" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.498;entryY=1.000;entryDx=0;entryDy=0;" target="SettlementPlan" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e23s" connectable="0" parent="e23" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="0..*" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e23t" connectable="0" parent="e23" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e24" edge="1" parent="1" source="PaymentStatus" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.227;entryY=1.000;entryDx=0;entryDy=0;" target="SettlementPayment" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e24s" connectable="0" parent="e24" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e24t" connectable="0" parent="e24" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e25" edge="1" parent="1" source="SettlementPaymentId" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.728;entryY=1.000;entryDx=0;entryDy=0;" target="SettlementPayment" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e25s" connectable="0" parent="e25" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e25t" connectable="0" parent="e25" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e26" edge="1" parent="1" source="GroupLedger" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;dashed=1;endArrow=open;endFill=0;endSize=10;strokeColor=#6A4FB3;fontColor=#6A4FB3;exitX=1.000;exitY=0.176;exitDx=0;exitDy=0;entryX=0.000;entryY=0.321;entryDx=0;entryDy=0;" target="SettlementDomainEvents" value="publishes (MemberBalanceStatusChanged, AllBalancesSettled)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e27" edge="1" parent="1" source="GroupLedger" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;dashed=1;endArrow=open;endFill=0;endSize=10;strokeWidth=1.6;strokeColor=#C0410D;fontColor=#C0410D;exitX=1.000;exitY=0.431;exitDx=0;exitDy=0;entryX=0.000;entryY=0.786;entryDx=0;entryDy=0;" target="SettlementDomainEvents" value="subscribes to (Confirmed, DebtWaived)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e28" edge="1" parent="1" source="GroupLedger" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;dashed=1;endArrow=open;endFill=0;endSize=10;strokeColor=#666666;fontColor=#444444;exitX=1.000;exitY=0.950;exitDx=0;exitDy=0;entryX=0.000;entryY=0.375;entryDx=0;entryDy=0;" target="MemberBalance" value="projects">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="846" y="1347.3" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e29" edge="1" parent="1" source="GroupLedger" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;dashed=1;endArrow=open;endFill=0;endSize=10;strokeColor=#666666;fontColor=#444444;exitX=0.951;exitY=1.000;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" target="SettlementPlan" value="computes and projects">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="426" y="1498" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e30" edge="1" parent="1" source="SettlementPayment" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;dashed=1;endArrow=open;endFill=0;endSize=10;strokeColor=#6A4FB3;fontColor=#6A4FB3;exitX=0.000;exitY=0.200;exitDx=0;exitDy=0;entryX=1.000;entryY=0.321;entryDx=0;entryDy=0;" target="SettlementDomainEvents" value="publishes (Recorded, Confirmed, Rejected, DebtWaived)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="K" parent="1" style="rounded=1;arcSize=1;container=1;collapsible=0;html=1;whiteSpace=wrap;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontStyle=1;fontSize=15;fillColor=#F5F5F5;strokeColor=#777777;fontColor=#777777;" value="Shared types" vertex="1">
+          <mxGeometry height="315.0" width="422.0" x="2166" y="1005" as="geometry" />
+        </mxCell>
+        <mxCell id="Money" parent="K" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#E3F4E1;strokeColor=#3C8A3A;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Value Object»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;Money&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ amount: BigDecimal&lt;br/&gt;+ currency: Currency&lt;/p&gt;" vertex="1">
+          <mxGeometry height="80" width="168" x="30" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="GroupId" parent="K" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#E3F4E1;strokeColor=#3C8A3A;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Value Object»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;GroupId&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ value: UUID&lt;/p&gt;" vertex="1">
+          <mxGeometry height="65" width="154" x="238" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="UserId" parent="K" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#E3F4E1;strokeColor=#3C8A3A;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Value Object»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;UserId&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ value: UUID&lt;/p&gt;" vertex="1">
+          <mxGeometry height="65" width="154" x="238" y="165" as="geometry" />
+        </mxCell>
+        <mxCell id="Currency" parent="K" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#E3F4E1;strokeColor=#3C8A3A;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Value Object»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;Currency&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ code: String&lt;/p&gt;" vertex="1">
+          <mxGeometry height="65" width="154" x="37" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="e31" edge="1" parent="1" source="Currency" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.500;entryY=1.000;entryDx=0;entryDy=0;" target="Money" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e31s" connectable="0" parent="e31" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e31t" connectable="0" parent="e31" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e32" edge="1" parent="1" source="Money" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.000;exitY=0.375;exitDx=0;exitDy=0;entryX=1.000;entryY=-0.044;entryDx=0;entryDy=0;" target="SettlementPayment" value="amount">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e32s" connectable="0" parent="e32" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e32t" connectable="0" parent="e32" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e33" edge="1" parent="1" source="Money" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.700;exitY=0.000;exitDx=0;exitDy=0;entryX=1.000;entryY=0.600;entryDx=0;entryDy=0;" target="Expense" value="totalAmount">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2314" y="1035" />
+              <mxPoint x="3399" y="1035" />
+              <mxPoint x="3399" y="262" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e33s" connectable="0" parent="e33" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e33t" connectable="0" parent="e33" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e34" edge="1" parent="1" source="Expense" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;dashed=1;endArrow=open;endFill=0;endSize=10;strokeColor=#666666;fontColor=#444444;exitX=1.000;exitY=0.685;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" target="GroupId" value="references by ID">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="3417" y="285" />
+              <mxPoint x="3417" y="1023" />
+              <mxPoint x="2481" y="1023" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e36" edge="1" parent="1" source="GroupLedger" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;dashed=1;endArrow=open;endFill=0;endSize=10;strokeWidth=1.6;strokeColor=#C0410D;fontColor=#C0410D;exitX=0.850;exitY=0.000;exitDx=0;exitDy=0;entryX=0.500;entryY=1.000;entryDx=0;entryDy=0;" target="ExpenseDomainEvents" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="385" y="955" />
+              <mxPoint x="3000" y="955" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e36l" connectable="0" parent="e36" style="edgeLabel;html=1;fontSize=10;labelBackgroundColor=#FFFFFF;fontColor=#C0410D;" value="subscribes to" vertex="1">
+          <mxGeometry relative="1" x="0.6" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e37" edge="1" parent="1" source="Group" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;dashed=1;endArrow=open;endFill=0;endSize=10;strokeWidth=1.6;strokeColor=#C0410D;fontColor=#C0410D;exitX=0.000;exitY=0.500;exitDx=0;exitDy=0;entryX=0.500;entryY=0.000;entryDx=0;entryDy=0;" target="SettlementDomainEvents" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-40" y="242" />
+              <mxPoint x="-40" y="980" />
+              <mxPoint x="958" y="980" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e37l" connectable="0" parent="e37" style="edgeLabel;html=1;fontSize=10;labelBackgroundColor=#FFFFFF;fontColor=#C0410D;" value="subscribes to (MemberBalanceStatusChanged, AllBalancesSettled)" vertex="1">
+          <mxGeometry relative="1" x="0.55" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="A" parent="1" style="rounded=1;arcSize=1;container=1;collapsible=0;html=1;whiteSpace=wrap;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontStyle=1;fontSize=15;fillColor=#F7F1EC;strokeColor=#8A5A44;fontColor=#8A5A44;" value="Account context" vertex="1">
+          <mxGeometry height="515.0" width="1271.37" x="2688" y="1105" as="geometry" />
+        </mxCell>
+        <mxCell id="AA" parent="A" style="rounded=1;arcSize=2;container=1;collapsible=0;html=1;whiteSpace=wrap;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontStyle=1;fontSize=13;fillColor=#FFFFFF;strokeColor=#0E8FA3;fontColor=#0E8FA3;dashed=1;dashPattern=8 4;strokeWidth=2;" value="«Aggregate» Account" vertex="1">
+          <mxGeometry height="420" width="838.039502560351" x="20.950987564008777" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="Account" parent="AA" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#DAF5F9;strokeColor=#0E8FA3;strokeWidth=2;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Aggregate Root»&lt;/i&gt;&lt;br&gt;&lt;b&gt;Account&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ id: UserId&lt;br&gt;+ email: Email&lt;br&gt;+ displayName: DisplayName&lt;br&gt;+ status: AccountStatus&lt;br&gt;+ registeredAt: Instant&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ registerFromIdentityProvider(UserId, Email, DisplayName): Account&lt;br&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;(first login; UserId = the user id created by the identity provider)&lt;br&gt;+ changeDisplayName(DisplayName): void&lt;br&gt;+ deactivate(): void&lt;/p&gt;" vertex="1">
+          <mxGeometry height="230" width="601.2933430870519" x="20.950987564008777" y="50.72463768115942" as="geometry" />
+        </mxCell>
+        <mxCell id="AccountStatus" parent="AA" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#FFF6CC;strokeColor=#B8960B;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Enumeration»&lt;/i&gt;&lt;br&gt;&lt;b&gt;AccountStatus&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;ACTIVE&lt;br&gt;DEACTIVATED&lt;/p&gt;" vertex="1">
+          <mxGeometry height="80" width="209.50987564008776" x="20.95" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="AEmail" parent="AA" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#E3F4E1;strokeColor=#3C8A3A;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Value Object»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;Email&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ value: String&lt;/p&gt;" vertex="1">
+          <mxGeometry height="65.94202898550725" width="161.32260424286758" x="653.6708119970738" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="DisplayName" parent="AA" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#E3F4E1;strokeColor=#3C8A3A;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Value Object»&lt;/i&gt;&lt;br/&gt;&lt;b&gt;DisplayName&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;/&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ value: String&lt;/p&gt;" vertex="1">
+          <mxGeometry height="65.94202898550725" width="161.32260424286758" x="653.6708119970738" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="UserProfile" parent="A" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#FCEAF4;strokeColor=#B0458A;dashed=1;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Read Model»&lt;/i&gt;&lt;br&gt;&lt;b&gt;UserProfile&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ userId: UserId&lt;br&gt;+ displayName: DisplayName&lt;br&gt;+ isActive: boolean&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ findProfiles(Set&amp;lt;UserId&amp;gt;): List&amp;lt;UserProfile&amp;gt;&lt;/p&gt;" vertex="1">
+          <mxGeometry height="125" width="314.2648134601316" x="911.3679590343818" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="XzpjKA2ObuoxPU4UF4s7-1" parent="A" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=left;overflow=fill;fontSize=11;dashed=1;fillColor=#F2F2F2;strokeColor=#777777;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«External System»&lt;/i&gt;&lt;br&gt;&lt;b&gt;Identity Provider (Keycloak / Supabase Auth)&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;Does everything about credentials:&lt;br&gt;registration and login, passwords, email verification,&lt;br&gt;password reset, lockout, sessions / tokens (JWT).&lt;br&gt;ShareWise never sees a password.&lt;/p&gt;" vertex="1">
+          <mxGeometry height="110" width="330" x="911.37" y="-60" as="geometry" />
+        </mxCell>
+        <mxCell id="XzpjKA2ObuoxPU4UF4s7-2" edge="1" parent="A" source="Account" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;defaultLabelBackgroundColor=gap;dashed=1;endArrow=open;endFill=0;" target="XzpjKA2ObuoxPU4UF4s7-1" value="identity from (adapter: token → UserId)">
+          <mxGeometry relative="1" x="-0.0009" as="geometry" />
+        </mxCell>
+        <mxCell id="ea2" edge="1" parent="1" source="AccountStatus" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.500;exitY=0.000;exitDx=0;exitDy=0;entryX=0.749;entryY=1.000;entryDx=0;entryDy=0;" target="Account" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ea2s" connectable="0" parent="ea2" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ea2t" connectable="0" parent="ea2" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ea3" edge="1" parent="1" source="AEmail" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.000;exitY=0.500;exitDx=0;exitDy=0;entryX=1.000;entryY=0.162;entryDx=0;entryDy=0;" target="Account" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ea3s" connectable="0" parent="ea3" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ea3t" connectable="0" parent="ea3" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ea4" edge="1" parent="1" source="DisplayName" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;endArrow=diamondThin;endFill=1;endSize=14;strokeColor=#333333;exitX=0.000;exitY=0.500;exitDx=0;exitDy=0;entryX=1.000;entryY=0.510;entryDx=0;entryDy=0;" target="Account" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ea4s" connectable="0" parent="ea4" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=left;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="-0.8" as="geometry">
+            <mxPoint x="-6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ea4t" connectable="0" parent="ea4" style="edgeLabel;resizable=0;html=1;fontSize=10;labelBackgroundColor=none;align=right;verticalAlign=bottom;" value="1" vertex="1">
+          <mxGeometry relative="1" x="0.8" as="geometry">
+            <mxPoint x="6" y="-2" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ea9" edge="1" parent="1" source="Account" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;dashed=1;endArrow=open;endFill=0;endSize=10;strokeColor=#666666;fontColor=#444444;exitX=0.850;exitY=0.000;exitDx=0;exitDy=0;entryX=0.000;entryY=0.500;entryDx=0;entryDy=0;" target="UserProfile" value="projects">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="3241.0013167520115" y="1185.0" />
+              <mxPoint x="3581.367959034382" y="1185.0" />
+              <mxPoint x="3581.367959034382" y="1467.5" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ea10" edge="1" parent="1" source="Account" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;dashed=1;endArrow=open;endFill=0;endSize=10;strokeColor=#666666;fontColor=#444444;exitX=0.000;exitY=0.100;exitDx=0;exitDy=0;entryX=1.000;entryY=0.500;entryDx=0;entryDy=0;" target="UserId" value="owns identity (id)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="h2bhQfGRuUDeRtqC1HHt-3" edge="1" parent="1" source="Group" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;defaultLabelBackgroundColor=gap;dashed=1;endArrow=open;endFill=0;jumpStyle=arc;" target="MemberBalance">
+          <mxGeometry relative="1" x="0.059" as="geometry">
+            <Array as="points">
+              <mxPoint x="-140" y="171.3" />
+              <mxPoint x="-140" y="910" />
+              <mxPoint x="1130" y="910" />
+              <mxPoint x="1130" y="1355" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="h2bhQfGRuUDeRtqC1HHt-4" connectable="0" parent="h2bhQfGRuUDeRtqC1HHt-3" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];defaultLabelBackgroundColor=gap;" value="reads" vertex="1">
+          <mxGeometry relative="1" x="0.7331" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e35" edge="1" parent="1" source="Expense" style="html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=10;labelBackgroundColor=#FFFFFF;jumpStyle=arc;jumpSize=8;dashed=1;endArrow=open;endFill=0;endSize=10;strokeColor=#666666;fontColor=#444444;exitX=1.000;exitY=0.770;exitDx=0;exitDy=0;entryX=1.000;entryY=0.500;entryDx=0;entryDy=0;" target="UserId" value="references by ID">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="3435" y="308" />
+              <mxPoint x="3435" y="1202" />
+              <mxPoint x="2588" y="1202" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -5,7 +5,7 @@
 `backend/CLAUDE.md` and `frontend/CLAUDE.md` hold the rules for each side; `.claude/rules/` adds rules for specific file types (domain, tests, migrations, contract). How the whole setup is organised: `docs/devsetup/README.md`.
 
 ## Sources of truth, in this order
-1. **The domain diagram** (`work/ShareWise_Domain_Model.drawio` in the FAVS study folder) decides the names of aggregates, entities, value objects, events and operations. A code name the diagram lacks is a defect in one of the two.
+1. **The domain diagram** (`docs/domain/ShareWise_Domain_Model.drawio`, in this repository) decides the names of aggregates, entities, value objects, events and operations. A code name the diagram lacks is a defect in one of the two.
 2. **`docs/api/openapi.yaml`** decides the HTTP interface. It changes first, in its own commit.
 3. **`docs/conventions/`** decides everything else. If a rule is wrong, change the rule in the same commit as the code.
 4. Business rules are numbered R1 to R17 and L1 to L6 (`work/ShareWise_Requirements.md` in the FAVS folder). Code and Javadoc cite them: `(R4)`.

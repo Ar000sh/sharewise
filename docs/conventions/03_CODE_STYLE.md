@@ -48,7 +48,7 @@ The code says *how*; comments say *why* and *which rule*. Language: English, ful
 | `docs/conventions/*` | these rules | changed together with the code that breaks them |
 | `docs/2026-…-design.md`, `…-plan.md` | design decisions and plans for a piece of work | written before the work, not edited afterwards except to mark a decision changed |
 | `RUNNING.md` | how a stranger starts, tests and demos the app | updated in the same commit as any change to setup or commands |
-| `work/ShareWise_Domain_Model.drawio` (study repo) | the domain diagram shown to the professor | updated in the same change as a rename or new concept; a code name the diagram lacks is a defect in one of the two |
+| `docs/domain/ShareWise_Domain_Model.drawio` | the domain diagram shown to the professor | updated in the same change as a rename or new concept; a code name the diagram lacks is a defect in one of the two |
 
 Write documents in English, with headings that can be linked to, tables for comparisons, and commands in fenced blocks that can be copied. State assumptions as assumptions ("(call)" for a decision taken without asking).
 

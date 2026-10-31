@@ -1,6 +1,6 @@
 # Diagram deltas: what the code has that the diagram does not show (yet)
 
-The code follows the diagram `work/ShareWise_Domain_Model.drawio` (study repo) for every name and field it implements. This list is what is different after the alignment of 27.10.26. Each row is either a **diagram update to make** (the code is right) or a **known gap** (the diagram is right, the code comes later). Update the diagram in the same sitting; a code name the diagram lacks is a defect in one of the two.
+The code follows the diagram `docs/domain/ShareWise_Domain_Model.drawio` for every name and field it implements. This list is what is different after the alignment of 27.10.26. Each row is either a **diagram update to make** (the code is right) or a **known gap** (the diagram is right, the code comes later). Update the diagram in the same sitting; a code name the diagram lacks is a defect in one of the two.
 
 ## Diagram updates to make (code is right)
 
@@ -20,6 +20,7 @@ The code follows the diagram `work/ShareWise_Domain_Model.drawio` (study repo) f
 | 12 | `GroupMembershipView` | local copy updated from group events | snapshot built by the `GroupMembership` port with one fresh query when an expense is recorded; same shape and same use as drawn. The event-fed copy exists on branch `feature/expense-membership-copy` (P3 step, see `2026-10-28-membership-copy-decision.md`) | decision D-A: no race between "joined" and "first expense"; can become the event-fed copy later without touching the domain |
 | 13 | Account context | `Account`, the external identity provider | adds `CurrentUser` (the caller of the HTTP request, from the validated Keycloak token) and `JwtCallerConverter`; `UserProfile` is served by the port `UserProfiles` | infrastructure, not part of the `Account` aggregate |
 | 14 | `ExpenseShare` | value object of Expense | lives in `expense.api` (events carry it); stored through an internal `StoredShare` | `api` may not import `domain` |
+| 15 | Account events | the Account context draws no events | `Account.registerFromIdentityProvider` returns `AccountRegistered`, published when the first login creates the account | nothing listens to it yet; add the event to the diagram or drop it (open decision, 31.10.26) |
 
 ## Known gaps (diagram is right, code comes later)
 
