@@ -17,7 +17,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 /**
  * The backend is an OAuth2 resource server (D3): every request needs a valid Keycloak
- * access token except {@code /actuator/**}. Stateless and without CSRF protection,
+ * access token except {@code /actuator/health}. Stateless and without CSRF protection,
  * because the token comes in the {@code Authorization} header and this API sets no
  * cookies (the cookie lives in the Next.js server, D2). A missing or refused token is
  * answered with the contract's 401 problem, code UNAUTHENTICATED (F8).
@@ -35,12 +35,10 @@ class SecurityConfig {
 		return http.csrf(csrf -> csrf.disable())
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(requests -> requests
-				// the error dispatch keeps the status Spring already chose (404, 405,
-				// ...)
-				// instead of turning it into a 401
+				// the error dispatch keeps Spring's status (404, 405) instead of a 401
 				.dispatcherTypeMatchers(DispatcherType.ERROR)
 				.permitAll()
-				.requestMatchers("/actuator/**")
+				.requestMatchers("/actuator/health", "/actuator/health/**")
 				.permitAll()
 				.anyRequest()
 				.authenticated())

@@ -37,7 +37,7 @@ The code says *how*; comments say *why* and *which rule*. Language: English, ful
 ## 4. Security basics (apply to every change)
 
 - ShareWise has no passwords: no password, password hash or BCrypt anywhere in the code, logs or database. Sign-up, sign-in and token issuing belong to Keycloak (design 2026-10-30).
-- Every endpoint except `/actuator/**` needs a valid Keycloak access token (`Authorization: Bearer`, checked by the resource server: signature, issuer, expiry) and resolves the caller through `CurrentUser`; the caller's membership is checked through the group port (`requireMember`) before any group data is read or written. A missing or refused token is a 401 `UNAUTHENTICATED`, never a 500.
+- Every endpoint except `/actuator/health` needs a valid Keycloak access token (`Authorization: Bearer`, checked by the resource server: signature, issuer, expiry) and resolves the caller through `CurrentUser`; the caller's membership is checked through the group port (`requireMember`) before any group data is read or written. A missing or refused token is a 401 `UNAUTHENTICATED`, never a 500.
 - The browser never sees a token: the tokens live only in the httpOnly cookie of the Next.js server, which forwards the access token to the backend. Tokens are never logged.
 
 ## 5. Documentation
