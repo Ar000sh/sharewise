@@ -28,9 +28,19 @@ public class TestcontainersConfiguration {
 	 * One Keycloak for the whole test run, the same image and the same realm file as
 	 * docker-compose (D7). No KC_HOSTNAME: the issuer follows the dynamic port of the
 	 * request. Readiness is the realm's discovery document, so the import has finished.
+	 * The instance is static because the run has several Spring contexts
+	 * ({@link ModuleIntegrationTest}, {@code MallorcaSliceTest},
+	 * {@code SharewiseApplicationTests}) while {@link KeycloakUsers} holds one base URL:
+	 * a container per context would hand out tokens of the wrong issuer.
 	 */
+	private static final GenericContainer<?> KEYCLOAK = keycloak();
+
 	@Bean
 	GenericContainer<?> keycloakContainer() {
+		return KEYCLOAK;
+	}
+
+	private static GenericContainer<?> keycloak() {
 		return new GenericContainer<>(DockerImageName.parse("quay.io/keycloak/keycloak:26.8.1"))
 			.withCommand("start-dev", "--import-realm")
 			.withEnv("KC_BOOTSTRAP_ADMIN_USERNAME", KeycloakUsers.ADMIN_USER)
