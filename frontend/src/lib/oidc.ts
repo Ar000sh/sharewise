@@ -9,6 +9,9 @@ export class TokenRejectedError extends Error {
   }
 }
 
+/** How long a call to Keycloak may take before sign-in reports "unavailable" instead of hanging (F13). */
+export const FETCH_TIMEOUT_MS = 5000;
+
 function issuer(): string {
   return (process.env.KEYCLOAK_ISSUER ?? "http://localhost:8180/realms/sharewise").replace(/\/$/, "");
 }
@@ -72,6 +75,7 @@ async function tokenRequest(params: Record<string, string>): Promise<Tokens> {
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ client_id: clientId(), ...params }),
     cache: "no-store",
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (res.status >= 500) throw new Error(`Keycloak answered ${res.status}`);
   if (!res.ok) throw new TokenRejectedError();
@@ -113,7 +117,10 @@ export function endSessionUrl(): string {
 /** True when Keycloak answers at all; used to show "sign-in unavailable" instead of a browser error page (F13). */
 export async function keycloakReachable(): Promise<boolean> {
   try {
-    const res = await fetch(`${issuer()}/.well-known/openid-configuration`, { cache: "no-store" });
+    const res = await fetch(`${issuer()}/.well-known/openid-configuration`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
     return res.ok;
   } catch {
     return false;
