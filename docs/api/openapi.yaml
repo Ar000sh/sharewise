@@ -7,8 +7,9 @@ info:
     equal-split expense, see balances). Paths are the backend's. The browser calls
     them under /api on Next.js, which forwards /api/x to BACKEND_URL/x.
     Sign-up and sign-in are not part of this API: Keycloak handles them. Every endpoint expects
-    "Authorization: Bearer <Keycloak access token>". The browser reaches Keycloak only through the
-    Next.js server (login redirect, token exchange, httpOnly session cookie), never directly.
+    "Authorization: Bearer <Keycloak access token>". The browser never gets the tokens directly: the
+    Next.js server keeps them in an httpOnly cookie. Keycloak's sign-in, registration and sign-out
+    pages are opened by the browser directly.
     Money is a decimal string with two decimals (EUR), for example "900.00", never a JSON number. Ids are UUIDs.
     Change this file first, in its own commit, before any code that depends on it.
 servers:
