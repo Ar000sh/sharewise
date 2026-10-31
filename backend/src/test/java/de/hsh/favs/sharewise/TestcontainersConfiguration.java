@@ -2,7 +2,6 @@ package de.hsh.favs.sharewise;
 
 import java.time.Duration;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
@@ -28,16 +27,16 @@ public class TestcontainersConfiguration {
 	 * One Keycloak for the whole test run, the same image and the same realm file as
 	 * docker-compose (D7). No KC_HOSTNAME: the issuer follows the dynamic port of the
 	 * request. Readiness is the realm's discovery document, so the import has finished.
-	 * The instance is static because the run has several Spring contexts
-	 * ({@link ModuleIntegrationTest}, {@code MallorcaSliceTest},
+	 * The container is static and NOT a Spring bean, because the run has several Spring
+	 * contexts ({@link ModuleIntegrationTest}, {@code MallorcaSliceTest},
 	 * {@code SharewiseApplicationTests}) while {@link KeycloakUsers} holds one base URL:
-	 * a container per context would hand out tokens of the wrong issuer.
+	 * a container per context would hand out tokens of the wrong issuer, and a bean would
+	 * be stopped when the first context closes. Ryuk removes it when the JVM ends.
 	 */
 	private static final GenericContainer<?> KEYCLOAK = keycloak();
 
-	@Bean
-	GenericContainer<?> keycloakContainer() {
-		return KEYCLOAK;
+	static {
+		KEYCLOAK.start();
 	}
 
 	private static GenericContainer<?> keycloak() {
@@ -55,9 +54,9 @@ public class TestcontainersConfiguration {
 	}
 
 	@Bean
-	DynamicPropertyRegistrar keycloakProperties(@Qualifier("keycloakContainer") GenericContainer<?> keycloak) {
+	DynamicPropertyRegistrar keycloakProperties() {
 		return registry -> {
-			String baseUrl = "http://" + keycloak.getHost() + ":" + keycloak.getMappedPort(8080);
+			String baseUrl = "http://" + KEYCLOAK.getHost() + ":" + KEYCLOAK.getMappedPort(8080);
 			KeycloakUsers.configure(baseUrl);
 			registry.add("spring.security.oauth2.resourceserver.jwt.issuer-uri", () -> baseUrl + "/realms/" + REALM);
 		};
