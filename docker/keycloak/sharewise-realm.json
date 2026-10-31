@@ -8,6 +8,7 @@
   "verifyEmail": false,
   "resetPasswordAllowed": false,
   "bruteForceProtected": true,
+  "passwordPolicy": "length(8)",
   "sslRequired": "external",
   "clients": [
     {

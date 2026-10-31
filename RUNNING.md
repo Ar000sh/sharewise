@@ -41,8 +41,8 @@ If port 5432 is taken by another local Postgres, stop that one first (the compos
   from it, and the realm file must list it as a redirect URI.
 
 ### Signing up and in
-- Sign-up happens on Keycloak's own registration page: first name, last name, email and password. There is no email
-  verification locally.
+- Sign-up happens on Keycloak's own registration page: first name, last name, email and password (at least 8
+  characters). There is no email verification locally.
 - The ShareWise account is created on the first authenticated request after sign-in (display name from the token, see
   the design doc `docs/2026-10-30-keycloak-auth-design.md`).
 - **Sign out** ends the Keycloak session too and shows a Keycloak confirmation page ("Logout"); confirm it to come
