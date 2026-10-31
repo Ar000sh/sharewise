@@ -1,4 +1,4 @@
-# Local development database. Start with: docker compose up -d db
+# Local development database and identity provider. Start with: docker compose up -d db keycloak
 services:
   # Identity provider. Start with: docker compose up -d keycloak
   # Admin console http://localhost:8180 (admin/admin is for local development ONLY).

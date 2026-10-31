@@ -1,6 +1,6 @@
 # Frontend (Next.js)
 
-Next.js 16 (App Router, `src/`), React 19, Tailwind 4, Vitest + Testing Library, Playwright. The browser talks only to the Next.js route handlers, which forward to the backend (`proxyToBackend`); the session token lives in an httpOnly cookie.
+Next.js 16 (App Router, `src/`), React 19, Tailwind 4, Vitest + Testing Library, Playwright. The browser talks only to the Next.js route handlers, which forward to the backend (`proxyToBackend`); the Keycloak access and refresh tokens live in an httpOnly cookie (never readable by browser JavaScript).
 
 ## Before you change code
 - Next.js 16 differs from what you know (see the block below): read the matching guide in `node_modules/next/dist/docs/` first.

@@ -57,7 +57,7 @@ Value objects wrap every id and every concept the diagram draws as a value objec
 |---|---|
 | `shared` (used by 2+ modules) | `UserId`, `GroupId`, `Money`, `Email` (`Currency` is `java.util.Currency`) |
 | `<module>.api` (appears in an event or a port) | `InvitationId`, `ExpenseId`, `ExpenseShare`, `SettlementPaymentId` |
-| `<module>.domain` (stays inside) | `GroupName`, `ExpenseTitle`, `EntryId`, `DirectedDebt`, `DisplayName`, `TokenId` |
+| `<module>.domain` (stays inside) | `GroupName`, `ExpenseTitle`, `EntryId`, `DirectedDebt`, `DisplayName` |
 
 **Rule:** a value object that appears in an event or in an `api` port lives in `api`, because `api` may not import its own module's `domain`. Everything else stays in `domain`.
 
