@@ -51,11 +51,15 @@ If port 5432 is taken by another local Postgres, stop that one first (the compos
   for local development only.
 
 ### Changing or wiping Keycloak
-- The realm file `docker/keycloak/sharewise-realm.json` is imported only when the realm does not exist yet. After you change it, recreate
-  the container: `docker compose up -d --force-recreate keycloak`. If the realm still has the old settings, wipe the
-  volumes (below).
-- Wipe Keycloak and Postgres **together** (`docker compose down -v`). If only Keycloak is wiped, a user who signs up
-  again with an email that still exists in ShareWise gets a new Keycloak id, and the backend answers 401.
+- Keycloak keeps its data (users and realm) in the named volume `sharewise-keycloak`. Users survive a restart and
+  `docker compose down`.
+- The realm file `docker/keycloak/sharewise-realm.json` is imported only while that volume has no realm. After you
+  change the file, run `docker compose down -v` and start again; recreating the container is not enough.
+- `down -v` wipes Keycloak and Postgres **together**, on purpose. If only Keycloak were wiped, a user who signs up
+  again with an email that still exists in ShareWise would get a new Keycloak id, and the backend would answer 401.
+- Running this branch's backend once applies migration V105, which deletes all local data (accounts, groups,
+  expenses) and drops the password columns. Afterwards the backend of `main` no longer starts on that database;
+  `docker compose down -v` restores it.
 - The e2e tests register a fresh user per run, so test users accumulate in the local realm. `docker compose down -v`
   clears them.
 
@@ -101,8 +105,9 @@ BACKEND_URL=http://localhost:4010 npm run dev         # in frontend/
 ```
 
 ## Reset the database
-`docker compose down -v` deletes the volumes of Postgres and Keycloak (all accounts and users); Flyway recreates the
-schema on the next backend start and Keycloak imports the realm again.
+`docker compose down -v` deletes the volumes of Postgres and Keycloak (all accounts and users). Flyway recreates the
+schema on the next backend start and Keycloak imports the realm file again. Plain `docker compose down` keeps both
+volumes.
 
 ## Where things are
 - `docs/api/openapi.yaml` the API contract (change it first, then code)

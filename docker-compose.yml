@@ -13,6 +13,11 @@ services:
     ports:
       - "8180:8080"
     volumes:
+      # Users and realm settings (start-dev keeps its H2 database in data/h2). The whole data directory
+      # is the volume, because a volume on data/h2 alone is root-owned and Keycloak cannot write to it.
+      # The realm file is imported only while the volume has no realm yet: after editing it run
+      # `docker compose down -v`.
+      - sharewise-keycloak:/opt/keycloak/data
       - ./docker/keycloak:/opt/keycloak/data/import:ro
 
   db:
@@ -28,3 +33,4 @@ services:
 
 volumes:
   sharewise-db:
+  sharewise-keycloak:
