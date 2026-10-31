@@ -97,8 +97,7 @@ public class AccountFixture {
 	 * An ACTIVE {@link Account} with this fixture's id, built through the real factory.
 	 */
 	public Account build() {
-		return Account.registerFromIdentityProvider(userId(), new Email(email), new DisplayName(displayName), NOW)
-			.account();
+		return Account.registerFromIdentityProvider(userId(), new Email(email), new DisplayName(displayName), NOW);
 	}
 
 	public UUID id() {

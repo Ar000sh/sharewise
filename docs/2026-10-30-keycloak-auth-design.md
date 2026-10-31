@@ -4,6 +4,8 @@
 
 Marked *(call)* = chosen by Claude without asking, can be overruled. Everything else was decided by the user.
 
+**Changed 01.11.26 (user):** the event `AccountRegistered` is dropped. The diagram, now kept in `docs/domain/ShareWise_Domain_Model.drawio`, draws no events for the Account context and nothing listened to the event. `Account.registerFromIdentityProvider` returns the `Account`, and the first-login test (F1) checks one account row. Where this document still says `AccountRegistered` (the "Kept" list, F1, C4), read it as removed.
+
 **Measured (implementation):** session cookie `sw_session` 2191 bytes for a fresh user (F4, limit about 4 KB); the Keycloak test container starts in about 75 s, once per test JVM (D7 estimated 30 to 60 s); full `./mvnw -q clean verify` about 153 s (175 tests, last run of task 4/5).
 
 ## 1. Intent

@@ -94,7 +94,7 @@ Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCam
 ### 3.4 Account context
 - Aggregate root `Account`: `id: UserId` (the Keycloak subject), `email`, `displayName: DisplayName`, `status: AccountStatus`, `registeredAt`; operation `registerFromIdentityProvider`, … (the rest of the diagram arrives in later exercises). Passwords, sign-in, lock-out and tokens belong to the identity provider (Keycloak); ShareWise has none of them.
 - Read model `UserProfile(userId, displayName, isActive)`, served by a port that offers `findProfiles(Set<UserId>)`.
-- Events: `AccountRegistered`, …
+- Events: none yet; the diagram draws none for the Account context.
 
 ### 3.5 Words we do not use
 `User` for the aggregate (it is `Account`; `UserId` and `UserProfile` are fine), `Member` for a person (it is the `UserId` of an active `Membership`), `Share` alone (it is `ExpenseShare`), `Role` alone (`GroupRole`), `payer`/`payerId` (it is `paidBy`), `amountCents`/`Cents` (money is `Money`), `Dto`, `Manager`, `Helper`, `Util`, `Data`, `Info`, `Impl` for anything except an `api` port implementation.

@@ -1,6 +1,5 @@
 package de.hsh.favs.sharewise.account.domain;
 
-import de.hsh.favs.sharewise.account.api.AccountRegistered;
 import de.hsh.favs.sharewise.shared.Email;
 import de.hsh.favs.sharewise.shared.UserId;
 import jakarta.persistence.Column;
@@ -21,11 +20,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "accounts")
 public class Account {
-
-	/** An account together with the event that announces it. */
-	public record Registration(Account account, AccountRegistered event) {
-
-	}
 
 	@Id
 	private UUID id;
@@ -51,17 +45,16 @@ public class Account {
 	 * the first time. The id is the provider's subject, so the same person always maps to
 	 * the same {@link UserId} (D4); email and display name are taken once and owned by
 	 * ShareWise afterwards (D10, C2).
-	 * @return the account and its {@link AccountRegistered}
+	 * @return the new account; the Account context draws no events in the diagram
 	 */
-	public static Registration registerFromIdentityProvider(UserId id, Email email, DisplayName displayName,
-			Instant now) {
+	public static Account registerFromIdentityProvider(UserId id, Email email, DisplayName displayName, Instant now) {
 		Account account = new Account();
 		account.id = id.value();
 		account.email = email.value();
 		account.displayName = displayName.value();
 		account.status = AccountStatus.ACTIVE;
 		account.registeredAt = now;
-		return new Registration(account, new AccountRegistered(id, email, now));
+		return account;
 	}
 
 	public UserId userId() {

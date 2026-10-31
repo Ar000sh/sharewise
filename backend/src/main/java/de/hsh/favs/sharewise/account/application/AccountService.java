@@ -13,7 +13,6 @@ import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,24 +27,20 @@ class AccountService {
 
 	private final AccountRepository accounts;
 
-	private final ApplicationEventPublisher events;
-
 	private final Clock clock;
 
-	AccountService(AccountRepository accounts, ApplicationEventPublisher events, Clock clock) {
+	AccountService(AccountRepository accounts, Clock clock) {
 		this.accounts = accounts;
-		this.events = events;
 		this.clock = clock;
 	}
 
 	/**
 	 * The profile of the account the token's subject belongs to. An unknown subject gets
-	 * its account now and {@code AccountRegistered} is published, only by the request
-	 * that really inserted the row (F1, C4). A known account is never updated from the
-	 * token (D10, C2).
+	 * its account now; two concurrent first requests create it once (F1, C4). A known
+	 * account is never updated from the token (D10, C2).
 	 * @throws DomainException UNAUTHENTICATED for a subject that is not a UUID, a missing
 	 * or malformed email (F9), an email that already belongs to another account (F3) or
-	 * an account that is not active (C3, F11); nothing is saved or published then
+	 * an account that is not active (C3, F11); nothing is saved then
 	 */
 	@Transactional
 	public UserProfile resolveOrCreate(IdentityClaims claims) {
@@ -54,11 +49,10 @@ class AccountService {
 		if (known.isPresent()) {
 			return requireActive(known.get());
 		}
-		var registration = Account.registerFromIdentityProvider(new UserId(id), parseEmail(claims.email()),
+		Account created = Account.registerFromIdentityProvider(new UserId(id), parseEmail(claims.email()),
 				DisplayName.derive(claims.name(), claims.preferredUsername(), claims.email()), clock.instant());
-		if (accounts.insertIfAbsent(registration.account())) {
-			events.publishEvent(registration.event());
-			return toProfile(registration.account());
+		if (accounts.insertIfAbsent(created)) {
+			return toProfile(created);
 		}
 		// Lost the race against a concurrent first request (its row is committed and
 		// visible now), or the email belongs to an account with another id.
