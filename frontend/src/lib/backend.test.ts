@@ -22,7 +22,7 @@ describe("proxyToBackend", () => {
     const res = await proxyToBackend(
       new Request("http://localhost:3000/api/groups?a=1", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", origin: "http://localhost:3000" },
         body: '{"name":"Mallorca 2027"}',
       }),
       "/groups",
@@ -57,18 +57,73 @@ describe("proxyToBackend", () => {
   });
 });
 
+const IN_AN_HOUR = Date.now() + 60 * 60 * 1000;
+
+function sessionCookieHeader(access: string): string {
+  return `sw_session=${access}~refresh-1~${IN_AN_HOUR}`;
+}
+
 describe("proxyToBackend session", () => {
-  it("sendsTheSessionCookieAsBearerToken", async () => {
+  it("sendsTheAccessTokenOfTheSessionCookieAsBearerToken", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
 
     await proxyToBackend(
-      new Request("http://localhost:3000/api/me", { headers: { cookie: "sw_user_id=old; sw_session=abc123" } }),
+      new Request("http://localhost:3000/api/me", {
+        headers: { cookie: `sw_user_id=old; ${sessionCookieHeader("abc123")}` },
+      }),
       "/me",
     );
 
     const headers = fetchMock.mock.calls[0][1]?.headers as Headers;
     expect(headers.get("authorization")).toBe("Bearer abc123");
     expect(headers.get("x-user-id")).toBeNull();
-    fetchMock.mockRestore();
+  });
+
+  it("postFromAnotherOriginIsRejectedAndTheBackendIsNotCalled", async () => {
+    // given
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 201 }));
+
+    // when
+    const res = await proxyToBackend(
+      new Request("http://localhost:3000/api/groups", {
+        method: "POST",
+        headers: {
+          cookie: sessionCookieHeader("abc123"),
+          origin: "https://evil.example",
+          "content-type": "application/json",
+        },
+        body: "{}",
+      }),
+      "/groups",
+    );
+
+    // then
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ status: 403, code: "FORBIDDEN_ORIGIN" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("postFromTheSameOriginIsForwardedWithTheBearerToken", async () => {
+    // given
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 201 }));
+
+    // when
+    const res = await proxyToBackend(
+      new Request("http://localhost:3000/api/groups", {
+        method: "POST",
+        headers: {
+          cookie: sessionCookieHeader("abc123"),
+          origin: "http://localhost:3000",
+          "content-type": "application/json",
+        },
+        body: "{}",
+      }),
+      "/groups",
+    );
+
+    // then
+    expect(res.status).toBe(201);
+    const headers = fetchMock.mock.calls[0][1]?.headers as Headers;
+    expect(headers.get("authorization")).toBe("Bearer abc123");
   });
 });

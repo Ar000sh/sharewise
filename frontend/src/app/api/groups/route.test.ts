@@ -16,7 +16,7 @@ describe("/api/groups route", () => {
     const res = await POST(
       new Request("http://localhost:3000/api/groups", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", origin: "http://localhost:3000" },
         body: '{"name":"Mallorca 2027"}',
       }),
     );
