@@ -264,7 +264,7 @@ export interface components {
                  *       "title": "Unauthorized",
                  *       "status": 401,
                  *       "code": "UNAUTHENTICATED",
-                 *       "detail": "Missing or invalid session"
+                 *       "detail": "Missing or invalid token"
                  *     }
                  */
                 "application/problem+json": components["schemas"]["Problem"];
