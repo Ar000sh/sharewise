@@ -50,16 +50,16 @@ npx @redocly/cli lint docs/api/openapi.yaml                              # the A
 `MallorcaSliceTest` runs the whole slice (all four modules, real Postgres) as one scenario.
 
 ### End-to-end test in a real browser (Playwright)
-Three people sign up in three browsers, share a group and check the balances; a second test covers a wrong password,
-sign-out and the redirect to sign-in.
+Three people register on Keycloak's registration page in three browsers, share a group and check the balances; a
+second test covers a wrong password, sign-out and the redirect to sign-in.
 ```sh
-docker compose up -d db
+docker compose up -d db keycloak                # the realm allows http://localhost:3100, the port of the e2e frontend
 (cd backend && ./mvnw spring-boot:run)          # leave running
 cd frontend
 npx playwright install chromium                 # once
 npm run e2e                                     # starts the frontend itself on :3100
 ```
-Every run signs up fresh users (unique emails), so it can be repeated against the same database.
+Every run registers fresh users (unique emails), so it can be repeated against the same database.
 
 ## Frontend without a backend
 ```sh
