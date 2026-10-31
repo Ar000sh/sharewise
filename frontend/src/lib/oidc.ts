@@ -75,12 +75,16 @@ async function tokenRequest(params: Record<string, string>): Promise<Tokens> {
   });
   if (res.status >= 500) throw new Error(`Keycloak answered ${res.status}`);
   if (!res.ok) throw new TokenRejectedError();
-  const body = (await res.json()) as { access_token: string; refresh_token: string; expires_in: number };
-  return {
-    accessToken: body.access_token,
-    refreshToken: body.refresh_token,
-    expiresAt: Date.now() + body.expires_in * 1000,
-  };
+  const body = (await res.json()) as Record<string, unknown>;
+  const { access_token: access, refresh_token: refreshToken, expires_in: expiresIn } = body;
+  // Never store a half-valid session: that would redirect as if signed in and loop while the SSO session lives.
+  if (typeof access !== "string" || !access || typeof refreshToken !== "string" || !refreshToken) {
+    throw new Error("Keycloak answered without access and refresh token");
+  }
+  if (typeof expiresIn !== "number" || !Number.isFinite(expiresIn)) {
+    throw new Error("Keycloak answered without a numeric expires_in");
+  }
+  return { accessToken: access, refreshToken, expiresAt: Date.now() + expiresIn * 1000 };
 }
 
 /** Swaps the one-time code for tokens; Keycloak checks the PKCE verifier against the challenge sent earlier. */

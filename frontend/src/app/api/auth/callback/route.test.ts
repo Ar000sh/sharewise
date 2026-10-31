@@ -25,6 +25,20 @@ describe("/api/auth/callback route", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("callbackWithATokenResponseMissingTheRefreshTokenSetsNoSessionCookie", async () => {
+    // given
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ access_token: "acc.ess.token", expires_in: 300 }), { status: 200 }),
+    );
+
+    // when
+    const res = await GET(callback("code=abc&state=s-1"));
+
+    // then
+    expect(res.status).toBe(503);
+    expect(res.headers.getSetCookie()).toEqual([]);
+  });
+
   it("callbackWithAValidCodeSetsTheCookieAndCallsMe", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
       const url = String(input);

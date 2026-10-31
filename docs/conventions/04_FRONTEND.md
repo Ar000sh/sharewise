@@ -52,7 +52,7 @@ Amounts in the API are decimal strings (`"900.00"`). All parsing, formatting and
 | Route handler | Vitest (`@vitest-environment node`) | `fetch` mocked; assert target URL, method, forwarded headers and the cookie handling |
 | Journey | Playwright (`e2e/`) | fresh users per run (unique emails); no fixed sleeps; assertions retry |
 
-Test names are sentences about behaviour (`showsAReadableMessageForWrongCredentialsAndStaysOnThePage`). Run: `npm run lint && npm run typecheck && npm test && npm run build`, and `npm run e2e` with the backend running.
+Test names are sentences about behaviour (`callbackWithAWrongStateSetsNoSessionCookie`). Run: `npm run lint && npm run typecheck && npm test && npm run build`, and `npm run e2e` with the backend running.
 
 ## 7. Dependencies and tooling
 
