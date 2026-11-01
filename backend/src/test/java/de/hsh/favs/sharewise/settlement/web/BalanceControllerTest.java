@@ -52,11 +52,11 @@ class BalanceControllerTest {
 			.andExpect(content().contentTypeCompatibleWith("application/json"))
 			.andExpect(jsonPath("$.length()").value(3))
 			.andExpect(jsonPath("$[0].userId").value(alice.idString()))
-			.andExpect(jsonPath("$[0].displayName").value("Alice"))
+			.andExpect(jsonPath("$[0].displayName").value(alice.displayName()))
 			.andExpect(jsonPath("$[0].netBalance").value("0.00"))
-			.andExpect(jsonPath("$[1].displayName").value("Bob"))
+			.andExpect(jsonPath("$[1].displayName").value(bob.displayName()))
 			.andExpect(jsonPath("$[1].netBalance").value("45.00"))
-			.andExpect(jsonPath("$[2].displayName").value("Carol"))
+			.andExpect(jsonPath("$[2].displayName").value(carol.displayName()))
 			.andExpect(jsonPath("$[2].netBalance").value("-45.00"));
 	}
 

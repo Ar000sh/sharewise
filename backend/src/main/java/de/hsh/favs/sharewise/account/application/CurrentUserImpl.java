@@ -4,34 +4,26 @@ import de.hsh.favs.sharewise.account.api.CurrentUser;
 import de.hsh.favs.sharewise.account.api.UserProfile;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
-import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
 
 /**
- * The caller resolved by {@link SessionIdentityFilter}, held as an attribute of the
- * current request.
+ * The caller that {@link JwtCallerConverter} put into the Spring Security context of the
+ * current request. Needs no transaction and no HTTP request: outside a request (an event
+ * listener thread) the context is empty and the answer is UNAUTHENTICATED.
  */
 @Component
 class CurrentUserImpl implements CurrentUser {
 
-	private static final String ATTRIBUTE = CurrentUserImpl.class.getName() + ".CALLER";
-
-	static void bind(HttpServletRequest request, UserProfile caller) {
-		request.setAttribute(ATTRIBUTE, caller);
-	}
-
 	@Override
 	public UserProfile get() {
-		// getRequestAttributes() is null outside a request thread (e.g. an event
-		// listener).
-		RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
-		if (attributes != null
-				&& attributes.getAttribute(ATTRIBUTE, RequestAttributes.SCOPE_REQUEST) instanceof UserProfile profile) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication != null && authentication.isAuthenticated()
+				&& authentication.getPrincipal() instanceof UserProfile profile) {
 			return profile;
 		}
-		throw new DomainException(ErrorCode.UNAUTHENTICATED, "Missing or invalid session");
+		throw new DomainException(ErrorCode.UNAUTHENTICATED, "Missing or invalid token");
 	}
 
 }

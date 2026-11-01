@@ -4,9 +4,11 @@ package de.hsh.favs.sharewise.account.api;
 public interface CurrentUser {
 
 	/**
-	 * The caller's profile.
+	 * The caller's profile, resolved from the validated Keycloak access token. Works
+	 * without a transaction.
 	 * @throws de.hsh.favs.sharewise.shared.DomainException with UNAUTHENTICATED when
-	 * there is no valid session, which includes any call made outside an HTTP request
+	 * there is no authenticated caller, which includes any call made outside an HTTP
+	 * request
 	 */
 	UserProfile get();
 

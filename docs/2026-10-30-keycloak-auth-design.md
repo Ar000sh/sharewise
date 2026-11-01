@@ -1,0 +1,118 @@
+# Keycloak authentication (replaces the built-in login)
+
+**Date:** 30.10.26 · **Status:** implemented, in review · **Origin:** brainstorming with the user; the diagram variant is `work/proposals/ShareWise_Domain_Model_Account_External_IdP.drawio`
+
+Marked *(call)* = chosen by Claude without asking, can be overruled. Everything else was decided by the user.
+
+**Changed 01.11.26 (user):** the event `AccountRegistered` is dropped. The diagram, now kept in `docs/domain/ShareWise_Domain_Model.drawio`, draws no events for the Account context and nothing listened to the event. `Account.registerFromIdentityProvider` returns the `Account`, and the first-login test (F1) checks one account row. Where this document still says `AccountRegistered` (the "Kept" list, F1, C4), read it as removed.
+
+**Measured (implementation):** session cookie `sw_session` 2191 bytes for a fresh user (F4, limit about 4 KB); the Keycloak test container starts in about 75 s, once per test JVM (D7 estimated 30 to 60 s); full `./mvnw -q clean verify` about 153 s (175 tests, last run of task 4/5).
+
+## 1. Intent
+Phase one of the project is the complete, working application. Authentication is part of it and is done by a real identity provider (Keycloak), not by our own code. ShareWise never sees or stores a password; registration, login, password reset and token issuing belong to Keycloak. This is the "Account context with external identity provider" of the proposal diagram and practises: generic subdomain bought instead of built, OAuth2/OIDC, eventual consistency between two systems (no shared transaction).
+
+Later phases (containers, CI/CD, cloud, microservices) are not part of this document. The settlement feature and the other missing features of the diagram and R1 to R17 are separate brainstorming rounds that follow this one.
+
+## 2. Goals, non-goals, anti-goals
+**Goals**
+- A user signs up and signs in on Keycloak's own login page and returns to ShareWise signed in.
+- The backend accepts only valid Keycloak access tokens (JWT) and knows the caller as a `UserId`.
+- An `Account` exists in ShareWise for every person who has signed in, created automatically on first login.
+- `docker compose up` gives a working Keycloak with a ready realm on a fresh clone.
+- Backend integration tests run against a real Keycloak (Testcontainers), keeping the rule "no shortcuts around authentication".
+
+**Non-goals**
+- Email verification (off in phase one), social login, roles/permissions inside Keycloak, multi-factor, custom Keycloak theme.
+- Migrating existing accounts: all current accounts are test data and are dropped.
+- Changing group/expense/settlement behaviour.
+
+**Anti-goals** (it would be a failure even if it works)
+- A password or password hash anywhere in ShareWise code, logs or database.
+- Tokens readable by browser JavaScript.
+- A second code base deployed into Keycloak (no event listener plugin).
+- Test-only back doors in production code (a "trust this header" filter, a dev profile with seeded users).
+
+## 3. Decisions
+| # | Decision | Why |
+|---|---|---|
+| D1 | Sign-in uses **Keycloak's own login page** (OIDC authorization code flow with PKCE). Our own login/register forms are not built. *(user)* | Least code, the credentials never touch ShareWise, easy to defend in P2/P3. Cost: the login screen is Keycloak's look. |
+| D2 | **Next.js server is the OIDC client (BFF).** It starts the redirect, handles the callback, stores the tokens in an httpOnly cookie, refreshes them, and forwards the access token to the backend. *(call)* | The frontend already puts route handlers between browser and backend with a cookie; the tokens never reach browser JavaScript. |
+| D3 | **Backend is an OAuth2 resource server** (`spring-boot-starter-oauth2-resource-server`): it validates signature, issuer, expiry of the JWT and issues no tokens. `sub` becomes the `UserId`. *(call)* | Standard, small, nothing of our own to get wrong. |
+| D4 | **The `Account` is created on first login**, from the token's `sub`, `email` and name claim (`Account.registerFromIdentityProvider`). The Next.js callback calls `GET /me` right after login, and the backend also creates the account on the first authenticated request of an unknown `sub`, so no path skips it. *(user: "save on login"; mechanism = call)* | Keycloak cannot call us at registration without a plugin; creating on first use heals itself (the next request retries) and leaves no orphan if someone registers and never returns. It is eventual consistency between two systems. |
+| D5 | **Email verification off** in the realm. *(user)* | Keeps the demo fast. Can be switched on later with an SMTP server (Mailpit). |
+| D6 | **Existing accounts are dropped**, no migration. *(user)* | All test data. A new migration drops the credential/session tables and the password columns. |
+| D7 | **Backend integration tests use a real Keycloak via Testcontainers**, shared like the Postgres container; `AccountFixture.signUp` obtains a real token. *(user)* | Keeps "no shortcuts around authentication" true and tests the realm file and the claim mapping. Cost: one more container and roughly 30 to 60 seconds on first start. |
+| D8 | **Keycloak runs in `docker-compose.yml`** next to Postgres with a realm import file checked into the repo (self-registration on, email verification off, public client with PKCE for the frontend). *(call)* | A fresh clone works with one command. Keycloak's data lives in the named volume `sharewise-keycloak` (users survive restarts and `down`); the realm file is imported only while the volume has no realm, so a realm edit needs `docker compose down -v` (wipes Keycloak and Postgres together, see F3). |
+| D9 | **Logout also ends the Keycloak session** (RP-initiated logout). *(call)* | Otherwise "Sign out" would sign straight back in. Without an id token in the cookie, Keycloak shows a "Logout" confirmation page on sign-out; a deliberate trade, because the id token would add about 1 KB to a cookie of 2.2 KB measured (limit 4 KB). |
+| D10 | **Display name is owned by ShareWise after creation**: taken from the token on first login only, later changeable by `changeDisplayName`, never overwritten by a later login. *(call)* | The diagram has `changeDisplayName` on `Account`; overwriting it would undo the user's edit. |
+
+## 4. What changes
+**Removed:** `POST /auth/register`, `POST /auth/login`, `AuthSession` and its repository, `SessionIdentityFilter`, `PasswordHash`, `RawPassword`, `Hasher`, `BcryptHasher`, `LoginSucceeded`, `LoginFailed`, `LoginCommand`, `RegisterCommand`, the fields `passwordHash`, `failedLoginAttempts`, `lastLoginAt`, the `spring-security-crypto` dependency, the frontend register page and `api/auth/*` handlers, `session.ts` as it is today.
+
+**Kept:** `GET /me`, `Account` (id = Keycloak `sub`, `email`, `displayName`, `status`, `registeredAt`), `AccountStatus`, `DisplayName`, `UserProfiles` and `CurrentUser` ports (so group/expense/settlement do not change), `AccountRegistered` (still announces a new account).
+
+**New:** `Account.registerFromIdentityProvider(UserId, Email, DisplayName)`, a JWT-to-`CurrentUser` adapter, an idempotent "get or create account" in `AccountService`, Spring Security configuration (open: `/actuator/health`; everything else authenticated), a migration dropping the old tables and columns, Keycloak service and realm file in compose, OIDC callback/login/logout route handlers in Next.js, Testcontainers Keycloak configuration, updated `AccountFixture`.
+
+**Contract:** `/auth/register` and `/auth/login` leave `openapi.yaml` in its own first commit; the 401 problem stays `UNAUTHENTICATED`; `INVALID_CREDENTIALS` and similar login codes are removed from all three places. `npm run gen:api` regenerates `schema.d.ts` (the guard hook blocks a manual edit).
+
+## 5. Constraints
+- Sources of truth: the diagram variant above is moved to `sharewise/docs/domain/` on its own `chore/` branch before this feature merges; it replaces the current Account part of the model, and `docs/diagram-deltas.md` records the change.
+- Conventions apply: contract first in its own commit, module boundaries (`ModularityTests`), `ConventionTests`, Javadoc, tests at the right level. `docs/conventions/02_TESTING.md` section 3 (sign up through `POST /auth/register`) and `01`/`03`/`04` where they mention the old login are changed in the same commits as the code.
+- The concurrency rule: two simultaneous first requests of the same `sub` must give one account (unique key on the id, insert that tolerates the race).
+- Time and eventual consistency rules of document 02 section 4 stay.
+
+## 6. Failure modes
+Filled by `/edge-case-probe` plan mode on 30.10.26. Ranked by impact × likelihood. Status: **design** = handled by the design as written, **test** = goes into the plan with a test, **parked** = not in phase one (reason given).
+
+| # | Risk | What stops it | Status |
+|---|---|---|---|
+| F1 | **Two first requests at once** (the callback's `GET /me` and the page's own fetches arrive together) create two accounts or two `AccountRegistered` events | Primary key = `sub`; the insert is `INSERT ... ON CONFLICT DO NOTHING` and the affected-row count tells the winner (1) from the loser (0); only the request that really inserted publishes `AccountRegistered` (C4) | design + test: integration test with two threads, one account, one event |
+| F2 | **CSRF on the BFF.** The cookie is sent automatically, so another site could POST to our route handlers (create expense, accept invitation) | Cookie `SameSite=Lax`, state-changing handlers check the `Origin` header, logout is a POST; logout checks the `Origin` too (shared `isSameOrigin`), a foreign or missing Origin is 403 `FORBIDDEN_ORIGIN` and the cookie stays | test: cross-origin POST is rejected, no backend call made |
+| F3 | **Same email, new `sub`** (user deleted and recreated in Keycloak, or Keycloak volume wiped while Postgres is kept): the insert hits `unique(email)` and would be a 500 | Caught and answered 401 `UNAUTHENTICATED`, cause logged, never a 500 *(call)*; the sign-in callback also shows an explanation page (403, no session cookie, link to end the Keycloak session; it ends no session itself) when `/me` answers 401; `RUNNING.md` says "reset Keycloak and Postgres volumes together" | test: service test for the conflict, nothing saved, no event |
+| F4 | **Cookie too big.** Access + refresh + id token can pass the browser's ~4 KB cookie limit, the cookie is silently dropped and login loops | Builder must split the cookie into chunks or keep only what is needed (logout can use `client_id` instead of an `id_token_hint`); a stateless cookie also keeps the Next.js app scalable in the container phase | test: login with realistic token sizes keeps the session |
+| F5 | **Open redirect.** A `returnTo` parameter after login sends the user to another site | Only a relative path starting with a single `/` is accepted, everything else goes to `/` | test: `//evil.com`, `https://evil.com`, `/\evil.com` |
+| F6 | **Callback abuse:** wrong or missing `state`, replayed code, missing PKCE verifier | Handler checks `state` and verifier cookie, rejects and sets no session cookie | test: each variant ends at the login page with no session |
+| F7 | **Refresh race.** Several parallel requests find the access token expired and all refresh with the same refresh token; if Keycloak rotates refresh tokens the second one fails and the user is logged out | One refresh at a time per session in the Next.js server (others wait for its result). The single-flight map is module-level, so it exists once per route bundle in Next.js; that is harmless while Keycloak's refresh-token rotation is off (the realm default) | test: ten parallel requests with an expired token cause one refresh call |
+| F8 | **Bad tokens at the backend:** expired, signed with another key, wrong issuer, `alg=none`, no `Bearer`, token of another realm | Resource server validation; answer is 401 `UNAUTHENTICATED` as problem+json, never 500 | test: one case per kind. Note: JWT expiry uses the system clock, not our `MutableClock` bean, so expiry is tested with a token made already-expired, not by advancing the clock |
+| F9 | **`sub` that is not a UUID**, or `email` missing | Rejected with 401 before anything is saved | test: unit test on the token-to-user mapping |
+| F10 | **Display name unusable:** empty `name`, only whitespace, emoji, very long | Fallback chain and truncation of C7 | test: parameterised test on the derivation |
+| F11 | **Deactivated account** with a still-valid token | 401 on every request (C3) | test: service test, nothing resolved |
+| F12 | **Refresh token expired or revoked** | Next.js clears the cookie and redirects to login (C8) | test: route handler test |
+| F13 | **Keycloak down.** Login cannot start; already issued tokens keep working as long as the backend has the signing keys cached; a cold backend cannot fetch them | The backend must start without Keycloak (keys are fetched on the first token, not at startup); the login route shows a plain "sign-in unavailable" page, not a stack trace; calls to Keycloak and the callback's `/me` call time out after 5 s (`AbortSignal.timeout`), so a hanging server ends in the same page. A timeout of `/me` is not fatal (the session is set, the backend creates the account on the next request) | test: login route with an unreachable Keycloak. Backend cold start with Keycloak down: parked, documented |
+| F14 | **Brute force.** The old code counted failed logins; that now belongs to Keycloak | `bruteForceProtected: true` in the realm file; `passwordPolicy: length(8)` (user choice). Session lifetimes are Keycloak's defaults, 30 min idle and 10 h max (a deliberate user choice): a tab left alone for 30 minutes needs the password again | test: a test reads the realm settings through the admin API |
+| F15 | **Logout leaves the Keycloak session**, or logout loop | End-session call with the registered post-logout URI (D9) | test: after logout the next login asks for credentials |
+| F16 | **Realm file changes do not apply** to an existing Keycloak volume (import runs only if the realm is missing) | Documented in `RUNNING.md`: `docker compose down -v` after a realm change | parked: documentation only |
+| F17 | **Slow or flaky Keycloak start in tests** and in the push gate | One shared container, wait for the health endpoint, not a fixed delay | test infrastructure; measure the added time and report it |
+| F18 | **Any other token accepted.** Another Keycloak client of the same realm could present its tokens | One realm, one app in phase one | parked: audience check when a second client exists |
+| F19 | **Keycloak user deleted, `Account` stays**; groups still show the person | No sync from Keycloak to ShareWise | parked: needs account deactivation on a Keycloak event, later phase |
+| F20 | **Email changed in Keycloak** is not reflected | Email is stored on first login only (C2) | parked: not needed until invitations are sent by email |
+
+**Scope decision (user, 30.10.26): only F1 and F2 get their own tests, "at most", not more.** All other rows are not tested in phase one. What that means in practice:
+- Where the behaviour costs nothing, it is still built as written in the table: the F3 catch (401, never a 500), the F5 relative-path check, the F7 single refresh, F8/F9/F11/F12/F13 answers, the F14 realm setting. They are just not pinned by a test of their own.
+- `state` and PKCE (F6) are checked by the OIDC library the builder picks; we do not write extra tests for them.
+- F4 (cookie size) is a known risk; the builder checks it once by hand during the end-to-end run.
+- F15, F17 to F20 stay as described (documentation or parked).
+- If one of these bites later, it gets a regression test at that point (`/retro` records it).
+
+Authorization inside groups (non-members, former members, ids of another group) does not change with this feature: it is done on `UserId`, which keeps its meaning. One test at the API level keeps that honest: a Keycloak user who is not a member gets 403/404 on a group as before.
+
+## 7. Left to the builder
+- Library choice for the OIDC client in Next.js (Auth.js, `openid-client`, or hand-written code flow); the requirement is D2 and the anti-goals.
+- Names of cookies and route handlers, token lifetimes, claim names beyond `sub`/`email`, realm and client names.
+- Keycloak version (current stable, pinned) and how the Testcontainers Keycloak imports the same realm file as compose.
+
+## 8. Open items
+- Check whether the proposal diagram still lists `LoginSucceeded`/`LoginFailed` events; if it does, it is a diagram defect to fix (the IdP owns login now).
+- Where the realm file lives (`docker/keycloak/` is the suggestion) and whether `RUNNING.md` gets the Keycloak admin credentials for local use only.
+
+## 9. Calls from the builder check *(all Claude's calls, can be overruled)*
+| # | Question | Call |
+|---|---|---|
+| C1 | How do backend tests get a real token? | The test container imports the **same realm file as compose**, unchanged. `AccountFixture.signUp` then uses Keycloak's admin API (admin credentials of the test container) to create a user and enable a client with direct access grants **at test time**, so that client exists only in the test container, never in the realm file. Tests also prove the realm file (issuer, claims). The e2e tests use the real browser registration, no direct grants. |
+| C2 | Email collisions and changes | Keycloak refuses duplicate emails in the realm (`duplicateEmailsAllowed: false`, set explicitly in the realm file), so a second `sub` with the same email cannot occur. The email is stored on first login and **not refreshed** afterwards (same rule as the display name, D10); a later email change in Keycloak is parked. A token without an `email` claim is answered with 401 `UNAUTHENTICATED`. `accounts.email` keeps its unique constraint. |
+| C3 | Deactivated account | `deactivate()` is not reachable from the contract in phase one. A valid token of a DEACTIVATED account is answered with 401 `UNAUTHENTICATED`, checked on every request (the lookup is needed anyway to resolve the caller). No new error code. |
+| C4 | Where and in which transaction is the account created? | In the account module, in a filter/converter right after the JWT is validated (the place `SessionIdentityFilter` has today). It calls one `@Transactional` `AccountService` method that loads the account by `sub` or inserts it with `INSERT ... ON CONFLICT DO NOTHING`; a concurrent request that loses the race inserts no row (affected-row count 0) and re-reads. `AccountRegistered` is published inside that transaction only by the request that inserted the row. `GET /me` and the ports then find the account and need no transaction of their own (pitfalls 1 and 2 of document 02). |
+| C5 | Issuer and URLs | Compose uses a fixed `localhost` port and `KC_HOSTNAME` so the browser, the Next.js server and the backend see the same issuer (the apps run on the host, so no hosts-file entry). In tests the issuer comes from the container's dynamic port through test properties. |
+| C6 | Frontend and e2e tests | Updating them is in scope. The Playwright journey registers a fresh user through Keycloak's registration page each run (no seeded users). Component tests mock the route handlers. |
+| C7 | Which claim becomes `DisplayName`? | `name`; if empty `preferred_username`; if empty the part of the email before the `@`. The value is trimmed and cut to the `DisplayName` limit so first login cannot fail on validation. The realm requires first and last name at registration. |
+| C8 | Refresh failure and logout | If the refresh fails or is revoked, the Next.js server clears the cookie and redirects to Keycloak login. Logout does not revoke access tokens already issued; short access token lifetimes (Keycloak default, 5 minutes) limit that. |

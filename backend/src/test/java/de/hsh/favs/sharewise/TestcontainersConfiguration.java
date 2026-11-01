@@ -1,18 +1,65 @@
 package de.hsh.favs.sharewise;
 
+import java.time.Duration;
+
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.springframework.test.context.DynamicPropertyRegistrar;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
 
 @TestConfiguration(proxyBeanMethods = false)
 public class TestcontainersConfiguration {
+
+	private static final String REALM = "sharewise";
 
 	@Bean
 	@ServiceConnection
 	PostgreSQLContainer postgresContainer() {
 		return new PostgreSQLContainer(DockerImageName.parse("postgres:17"));
+	}
+
+	/**
+	 * One Keycloak for the whole test run, the same image and the same realm file as
+	 * docker-compose (D7). No KC_HOSTNAME: the issuer follows the dynamic port of the
+	 * request. Readiness is the realm's discovery document, so the import has finished.
+	 * The container is static and NOT a Spring bean, because the run has several Spring
+	 * contexts ({@link ModuleIntegrationTest}, {@code MallorcaSliceTest},
+	 * {@code SharewiseApplicationTests}) while {@link KeycloakUsers} holds one base URL:
+	 * a container per context would hand out tokens of the wrong issuer, and a bean would
+	 * be stopped when the first context closes. Ryuk removes it when the JVM ends.
+	 */
+	private static final GenericContainer<?> KEYCLOAK = keycloak();
+
+	static {
+		KEYCLOAK.start();
+	}
+
+	private static GenericContainer<?> keycloak() {
+		return new GenericContainer<>(DockerImageName.parse("quay.io/keycloak/keycloak:26.8.1"))
+			.withCommand("start-dev", "--import-realm")
+			.withEnv("KC_BOOTSTRAP_ADMIN_USERNAME", KeycloakUsers.ADMIN_USER)
+			.withEnv("KC_BOOTSTRAP_ADMIN_PASSWORD", KeycloakUsers.ADMIN_PASSWORD)
+			.withCopyFileToContainer(MountableFile.forHostPath("../docker/keycloak/sharewise-realm.json"),
+					"/opt/keycloak/data/import/sharewise-realm.json")
+			.withExposedPorts(8080)
+			.waitingFor(Wait.forHttp("/realms/" + REALM + "/.well-known/openid-configuration")
+				.forPort(8080)
+				.forStatusCode(200)
+				.withStartupTimeout(Duration.ofMinutes(3)));
+	}
+
+	@Bean
+	DynamicPropertyRegistrar keycloakProperties() {
+		return registry -> {
+			String baseUrl = "http://" + KEYCLOAK.getHost() + ":" + KEYCLOAK.getMappedPort(8080);
+			KeycloakUsers.configure(baseUrl);
+			registry.add("spring.security.oauth2.resourceserver.jwt.issuer-uri", () -> baseUrl + "/realms/" + REALM);
+		};
 	}
 
 }

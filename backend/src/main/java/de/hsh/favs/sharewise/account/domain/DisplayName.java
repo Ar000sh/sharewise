@@ -17,4 +17,23 @@ public record DisplayName(String value) {
 		}
 	}
 
+	/**
+	 * The name for a first login from the identity provider: the {@code name} claim, else
+	 * the {@code preferred_username}, else the part of the email before the {@code @};
+	 * trimmed and cut to the limit so a first login never fails on it (design C7).
+	 */
+	public static DisplayName derive(String name, String preferredUsername, String email) {
+		String chosen = firstNonBlank(name, preferredUsername, email == null ? null : email.split("@", 2)[0]);
+		return new DisplayName(chosen.length() > MAX_LENGTH ? chosen.substring(0, MAX_LENGTH) : chosen);
+	}
+
+	private static String firstNonBlank(String... candidates) {
+		for (String candidate : candidates) {
+			if (candidate != null && !candidate.isBlank()) {
+				return candidate.strip();
+			}
+		}
+		return "";
+	}
+
 }

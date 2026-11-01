@@ -18,10 +18,11 @@ e2e/                   Playwright specs (*.spec.ts)
 
 ## 2. API access and types
 
-- **Only `api<T>(path)`** (`lib/api.ts`) talks to the backend from the browser; **only `proxyToBackend`** (`lib/backend.ts`) talks to it from a route handler. No other `fetch` of the backend, no CORS.
+- **Only `api<T>(path)`** (`lib/api.ts`) talks to the backend from the browser; **only `proxyToBackend`** (`lib/backend.ts`) talks to it from a route handler. No other `fetch` of the backend, no CORS. One exception: the sign-in callback (`/api/auth/callback`) calls `/me` directly, because the brand-new token is not in a cookie yet.
+- `proxyToBackend` also does the authentication: a request other than GET or HEAD whose `Origin` is not `APP_URL` is answered `403` with the frontend-only code `FORBIDDEN_ORIGIN` and never reaches the backend (CSRF, F2); the bearer token is the access token from the session cookie; an access token with less than 30 seconds left is refreshed first (one refresh at a time per refresh token) and the new tokens are set on the response; a refresh that fails clears the cookie and answers `401 UNAUTHENTICATED`.
 - Types come from the contract: `components["schemas"]["Expense"]`. Do not hand-write a type that the contract has.
 - Field names in the UI are the contract's (= the diagram's): `paidBy`, `totalAmount`, `participantId`, `owedShare`, `netBalance`. No renaming in components.
-- The session lives in the httpOnly cookie `sw_session`, set and cleared by the `/api/auth/*` route handlers. Components never read or write it.
+- The session (Keycloak access + refresh token) lives in the httpOnly cookie `sw_session`, set and cleared by the `/api/auth/*` route handlers (OIDC code flow with PKCE; no password form of our own). Components never read or write it.
 
 ## 3. Money
 
@@ -31,7 +32,7 @@ Amounts in the API are decimal strings (`"900.00"`). All parsing, formatting and
 
 - Every failed call ends in `ApiError`. Display text comes from `messageFor(error)` (`lib/errors.ts`), which maps each contract `code` (plus `BACKEND_UNREACHABLE`, `NETWORK_ERROR`) to a sentence and falls back to the server `detail`. Adding a contract `ErrorCode` means adding its message there.
 - A page never renders blank on failure: errors show the `ErrorBanner`. Loading shows "Loading…".
-- A `401` anywhere sends the visitor to `/login?next=<path>`; `next` is only ever used through `safeNext`.
+- A `401` anywhere sends the visitor to `/login?next=<path>`; `next` and `returnTo` are only ever used through `safeReturnTo` (`lib/session.ts`).
 - Balances are eventually consistent: after recording an expense the balances view re-fetches and re-checks for a short, bounded time. Never assume the new balance is there immediately.
 
 ## 5. Components
@@ -47,12 +48,12 @@ Amounts in the API are decimal strings (`"900.00"`). All parsing, formatting and
 
 | Level | Tool | Rule |
 |---|---|---|
-| Unit (`lib/*`) | Vitest | pure functions: money, errors, `safeNext`, session cookie |
+| Unit (`lib/*`) | Vitest | pure functions: money, errors, `safeReturnTo`, session cookie |
 | Component | Vitest + Testing Library | one file per component; mock `@/lib/api`; query by role and label, not by class or test id; assert the message a user reads |
 | Route handler | Vitest (`@vitest-environment node`) | `fetch` mocked; assert target URL, method, forwarded headers and the cookie handling |
 | Journey | Playwright (`e2e/`) | fresh users per run (unique emails); no fixed sleeps; assertions retry |
 
-Test names are sentences about behaviour (`showsAReadableMessageForWrongCredentialsAndStaysOnThePage`). Run: `npm run lint && npm run typecheck && npm test && npm run build`, and `npm run e2e` with the backend running.
+Test names are sentences about behaviour (`callbackWithAWrongStateSetsNoSessionCookie`). Run: `npm run lint && npm run typecheck && npm test && npm run build`, and `npm run e2e` with the backend running.
 
 ## 7. Dependencies and tooling
 

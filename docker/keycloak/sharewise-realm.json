@@ -1,0 +1,34 @@
+{
+  "realm": "sharewise",
+  "enabled": true,
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "verifyEmail": false,
+  "resetPasswordAllowed": false,
+  "bruteForceProtected": true,
+  "passwordPolicy": "length(8)",
+  "sslRequired": "external",
+  "clients": [
+    {
+      "clientId": "sharewise-web",
+      "name": "ShareWise Web",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:3000/*", "http://localhost:3100/*"],
+      "webOrigins": ["http://localhost:3000", "http://localhost:3100"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*##http://localhost:3100/*"
+      },
+      "defaultClientScopes": ["basic", "web-origins", "profile", "email", "roles"],
+      "optionalClientScopes": []
+    }
+  ]
+}

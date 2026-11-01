@@ -1,15 +1,13 @@
 package de.hsh.favs.sharewise.account.domain;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
+import de.hsh.favs.sharewise.KeycloakUsers;
 import de.hsh.favs.sharewise.account.api.UserProfile;
 import de.hsh.favs.sharewise.shared.Email;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Instant;
-import java.util.Map;
 import java.util.UUID;
-import org.springframework.http.MediaType;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -17,12 +15,10 @@ import tools.jackson.databind.json.JsonMapper;
  * Test data for an account. Defaults to Alice; {@link #bob()}, {@link #carol()} and
  * {@link #david()} are the others. They have fixed ids and live in memory, which is
  * enough for unit and service tests. Integration tests call
- * {@link #signUp(MockMvc, JsonMapper, String)} to get a real account with a session
- * token. Override anything with {@code withX}.
+ * {@link #signUp(MockMvc, JsonMapper, String)} to get a real Keycloak user whose account
+ * exists in ShareWise, with a real access token. Override anything with {@code withX}.
  */
 public class AccountFixture {
-
-	public static final String PASSWORD = "secret-pass";
 
 	private static final Instant NOW = Instant.parse("2027-06-01T10:00:00Z");
 
@@ -31,8 +27,6 @@ public class AccountFixture {
 	private String displayName = "Alice";
 
 	private String email = "alice@example.com";
-
-	private String password = PASSWORD;
 
 	private String token;
 
@@ -58,21 +52,25 @@ public class AccountFixture {
 	}
 
 	/**
-	 * Signs a new account up through {@code POST /auth/register} (unique email) and
-	 * returns it with id and token.
+	 * Creates a new user in the test Keycloak (unique email) and calls {@code GET /me}
+	 * with its access token, which creates the account the way a first login does (D4).
+	 * Returns it with id (the Keycloak subject), email, token and the display name the
+	 * account got: the token's {@code name} claim, which is the given first name plus the
+	 * test user's last name (C7), so assert against {@link #displayName()}, not the
+	 * argument.
 	 */
 	public static AccountFixture signUp(MockMvc mvc, JsonMapper json, String displayName) throws Exception {
-		String email = displayName.toLowerCase() + "-" + UUID.randomUUID() + "@example.com";
-		String body = json.writeValueAsString(Map.of("email", email, "displayName", displayName, "password", PASSWORD));
-		var created = json
-			.readTree(mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
-				.andReturn()
-				.getResponse()
-				.getContentAsString());
-		return new AccountFixture().withId(UUID.fromString(created.get("userId").asString()))
-			.withDisplayName(displayName)
-			.withEmail(email)
-			.withToken(created.get("token").asString());
+		KeycloakUsers.Login login = KeycloakUsers.create(displayName);
+		var me = mvc.perform(get("/me").header("Authorization", "Bearer " + login.accessToken()))
+			.andReturn()
+			.getResponse();
+		if (me.getStatus() != 200) {
+			throw new IllegalStateException("GET /me for a new Keycloak user answered " + me.getStatus());
+		}
+		return new AccountFixture().withId(UUID.fromString(login.subject()))
+			.withDisplayName(json.readTree(me.getContentAsString()).get("displayName").asString())
+			.withEmail(login.email())
+			.withToken(login.accessToken());
 	}
 
 	public AccountFixture withId(UUID id) {
@@ -90,26 +88,16 @@ public class AccountFixture {
 		return this;
 	}
 
-	public AccountFixture withPassword(String password) {
-		this.password = password;
-		return this;
-	}
-
 	public AccountFixture withToken(String token) {
 		this.token = token;
 		return this;
 	}
 
 	/**
-	 * A registered {@link Account} with this fixture's id, built through the real factory
-	 * with a {@link StubHasher}.
+	 * An ACTIVE {@link Account} with this fixture's id, built through the real factory.
 	 */
 	public Account build() {
-		Account account = Account
-			.register(new Email(email), new DisplayName(displayName), new RawPassword(password), new StubHasher(), NOW)
-			.account();
-		ReflectionTestUtils.setField(account, "id", id);
-		return account;
+		return Account.registerFromIdentityProvider(userId(), new Email(email), new DisplayName(displayName), NOW);
 	}
 
 	public UUID id() {
@@ -130,10 +118,6 @@ public class AccountFixture {
 
 	public String email() {
 		return email;
-	}
-
-	public String password() {
-		return password;
 	}
 
 	/**

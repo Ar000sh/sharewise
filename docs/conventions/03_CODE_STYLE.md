@@ -36,9 +36,9 @@ The code says *how*; comments say *why* and *which rule*. Language: English, ful
 
 ## 4. Security basics (apply to every change)
 
-- Passwords exist only as `RawPassword` for the duration of one call and are stored as a BCrypt hash. Tokens are stored as SHA-256 hashes. Neither is ever logged or returned except the session token once, at sign-in.
-- Every endpoint except `/auth/**` and `/actuator/**` resolves the caller through `CurrentUser`; the caller's membership is checked through the group port (`requireMember`) before any group data is read or written.
-- The browser never sees the session token: the Next.js route handler moves it into an httpOnly cookie.
+- ShareWise has no passwords: no password, password hash or BCrypt anywhere in the code, logs or database. Sign-up, sign-in and token issuing belong to Keycloak (design 2026-10-30).
+- Every endpoint except `/actuator/health` needs a valid Keycloak access token (`Authorization: Bearer`, checked by the resource server: signature, issuer, expiry) and resolves the caller through `CurrentUser`; the caller's membership is checked through the group port (`requireMember`) before any group data is read or written. A missing or refused token is a 401 `UNAUTHENTICATED`, never a 500.
+- The browser never sees a token: the tokens live only in the httpOnly cookie of the Next.js server, which forwards the access token to the backend. Tokens are never logged.
 
 ## 5. Documentation
 
@@ -48,7 +48,7 @@ The code says *how*; comments say *why* and *which rule*. Language: English, ful
 | `docs/conventions/*` | these rules | changed together with the code that breaks them |
 | `docs/2026-…-design.md`, `…-plan.md` | design decisions and plans for a piece of work | written before the work, not edited afterwards except to mark a decision changed |
 | `RUNNING.md` | how a stranger starts, tests and demos the app | updated in the same commit as any change to setup or commands |
-| `work/ShareWise_Domain_Model.drawio` (study repo) | the domain diagram shown to the professor | updated in the same change as a rename or new concept; a code name the diagram lacks is a defect in one of the two |
+| `docs/domain/ShareWise_Domain_Model.drawio` | the domain diagram shown to the professor | updated in the same change as a rename or new concept; a code name the diagram lacks is a defect in one of the two |
 
 Write documents in English, with headings that can be linked to, tables for comparisons, and commands in fenced blocks that can be copied. State assumptions as assumptions ("(call)" for a decision taken without asking).
 

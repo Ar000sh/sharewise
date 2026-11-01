@@ -1,5 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/api";
 import { AuthBar } from "@/components/AuthBar";
@@ -16,10 +15,8 @@ afterEach(() => {
 });
 
 describe("AuthBar", () => {
-  it("showsWhoIsSignedInAndSignsOut", async () => {
+  it("showsWhoIsSignedInAndSignsOutWithAPostToTheLogoutRoute", async () => {
     vi.stubGlobal("location", { ...window.location, pathname: "/", search: "", assign });
-    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
-    vi.stubGlobal("fetch", fetchMock);
     apiMock.mockResolvedValue({ userId: "u1", displayName: "Alice" });
 
     render(
@@ -27,11 +24,11 @@ describe("AuthBar", () => {
         <AuthBar />
       </CurrentUserProvider>,
     );
-    expect(await screen.findByText("Alice")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
 
-    await waitFor(() => expect(assign).toHaveBeenCalledWith("/login"));
-    expect(fetchMock).toHaveBeenCalledWith("/api/auth/logout", { method: "POST" });
+    expect(await screen.findByText("Alice")).toBeInTheDocument();
+    const button = screen.getByRole("button", { name: "Sign out" });
+    expect(button.closest("form")).toHaveAttribute("method", "post");
+    expect(button.closest("form")).toHaveAttribute("action", "/api/auth/logout");
   });
 
   it("showsNothingWhileItDoesNotKnowWhoIsSignedIn", () => {

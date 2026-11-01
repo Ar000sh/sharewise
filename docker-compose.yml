@@ -1,5 +1,25 @@
-# Local development database. Start with: docker compose up -d db
+# Local development database and identity provider. Start with: docker compose up -d db keycloak
 services:
+  # Identity provider. Start with: docker compose up -d keycloak
+  # Admin console http://localhost:8180 (admin/admin is for local development ONLY).
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: http://localhost:8180
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8180:8080"
+    volumes:
+      # Users and realm settings (start-dev keeps its H2 database in data/h2). The whole data directory
+      # is the volume, because a volume on data/h2 alone is root-owned and Keycloak cannot write to it.
+      # The realm file is imported only while the volume has no realm yet: after editing it run
+      # `docker compose down -v`.
+      - sharewise-keycloak:/opt/keycloak/data
+      - ./docker/keycloak:/opt/keycloak/data/import:ro
+
   db:
     image: postgres:17
     environment:
@@ -13,3 +33,4 @@ services:
 
 volumes:
   sharewise-db:
+  sharewise-keycloak:

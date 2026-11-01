@@ -4,40 +4,6 @@
  */
 
 export interface paths {
-    "/auth/register": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Sign up with email, display name and password. Returns a session token, so the caller is signed in. */
-        post: operations["register"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Sign in with email and password. Returns a session token. */
-        post: operations["login"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/me": {
         parameters: {
             query?: never;
@@ -176,28 +142,12 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        RegisterRequest: {
-            /** Format: email */
-            email: string;
-            displayName: string;
-            password: string;
-        };
-        LoginRequest: {
-            email: string;
-            password: string;
-        };
-        AuthResult: {
-            token: string;
-            /** Format: uuid */
-            userId: string;
-            displayName: string;
-        };
         Problem: {
             type?: string;
             title?: string;
             status: number;
             /** @enum {string} */
-            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "GROUP_NOT_OPEN" | "SPLIT_NOT_SUPPORTED" | "EMAIL_TAKEN" | "INVALID_CREDENTIALS";
+            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "GROUP_NOT_OPEN" | "SPLIT_NOT_SUPPORTED";
             detail?: string;
         };
         User: {
@@ -302,7 +252,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description No, invalid or unknown session token */
+        /** @description No, invalid or expired access token */
         Unauthenticated: {
             headers: {
                 [name: string]: unknown;
@@ -314,7 +264,7 @@ export interface components {
                  *       "title": "Unauthorized",
                  *       "status": 401,
                  *       "code": "UNAUTHENTICATED",
-                 *       "detail": "Missing or invalid session"
+                 *       "detail": "Missing or invalid token"
                  *     }
                  */
                 "application/problem+json": components["schemas"]["Problem"];
@@ -438,119 +388,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    register: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                /**
-                 * @example {
-                 *       "email": "alice@example.com",
-                 *       "displayName": "Alice",
-                 *       "password": "correct horse"
-                 *     }
-                 */
-                "application/json": components["schemas"]["RegisterRequest"];
-            };
-        };
-        responses: {
-            /** @description Account created and signed in */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "token": "k3Xq9v2mT8aLw0pZr7YdNc4HbJf1UeS5k3Xq9v2mT8a",
-                     *       "userId": "aaaaaaaa-0000-0000-0000-000000000001",
-                     *       "displayName": "Alice"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["AuthResult"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            /** @description The email is already registered */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "type": "about:blank",
-                     *       "title": "Conflict",
-                     *       "status": 409,
-                     *       "code": "EMAIL_TAKEN",
-                     *       "detail": "This email is already registered"
-                     *     }
-                     */
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-        };
-    };
-    login: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                /**
-                 * @example {
-                 *       "email": "alice@example.com",
-                 *       "password": "correct horse"
-                 *     }
-                 */
-                "application/json": components["schemas"]["LoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Signed in */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "token": "k3Xq9v2mT8aLw0pZr7YdNc4HbJf1UeS5k3Xq9v2mT8a",
-                     *       "userId": "aaaaaaaa-0000-0000-0000-000000000001",
-                     *       "displayName": "Alice"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["AuthResult"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            /** @description Unknown email or wrong password (the same answer for both) */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "type": "about:blank",
-                     *       "title": "Unauthorized",
-                     *       "status": 401,
-                     *       "code": "INVALID_CREDENTIALS",
-                     *       "detail": "Wrong email or password"
-                     *     }
-                     */
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-        };
-    };
     getMe: {
         parameters: {
             query?: never;

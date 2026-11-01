@@ -32,7 +32,7 @@ Where a rule lives decides where it is tested: a rule in an aggregate is tested 
 - Defaults that are valid; `withX(...)` methods that return `this`; a `build()` that goes through the real factory or operation so the result is always valid.
 - Create what the test needs and override only what it is about: `new GroupFixture().withCreator(bob).withMember(carol).build()`.
 - HTTP set-up for controller tests lives in a small class per module (`GroupRequests`, `ExpenseRequests`), not inside the tests.
-- **No seeded users, no dev profile, no shortcuts around authentication.** Integration tests that need a caller sign up a real account through `POST /auth/register` (`AccountFixture.signUp(mvc, json, "Alice")` returns id and token) and send `Authorization: Bearer <token>`. Unit and service tests use `AccountFixture` values with fixed ids in memory.
+- **No seeded users, no dev profile, no shortcuts around authentication.** Integration tests that need a caller sign up a real user: `AccountFixture.signUp(mvc, json, "Alice")` creates the user in the shared test Keycloak (`KeycloakUsers.create`), gets a real access token and calls `GET /me` with it, which creates the account the way a first login does; it returns id (the Keycloak subject), email and token. Tests send `Authorization: Bearer <token>`. Unit and service tests use `AccountFixture` values with fixed ids in memory.
 - Do not call test doubles "fake". Use Mockito mocks or a fixture. Hand-written in-memory implementations only when a mock truly cannot express the case, and then name them `Stub<Port>`.
 
 ## 4. Shared integration set-up
