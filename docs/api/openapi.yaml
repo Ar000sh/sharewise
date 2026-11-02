@@ -245,6 +245,264 @@ paths:
         "403": { $ref: "#/components/responses/NotAMember" }
         "404": { $ref: "#/components/responses/GroupNotFound" }
 
+  /groups/{groupId}/settlement-plan:
+    parameters:
+      - { $ref: "#/components/parameters/GroupId" }
+    get:
+      tags: [settlement]
+      operationId: getSettlementPlan
+      summary: Who should pay whom to settle the group (one edge per debtor and creditor pair)
+      description: >
+        Computed from the balances (eventually consistent). pendingAmount is the part of amount already
+        reserved by PENDING settlement payments on that pair.
+      responses:
+        "200":
+          description: Settlement plan edges (empty when everything is settled)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SettlementPlanEdge" }
+              example:
+                - fromDebtor: "aaaaaaaa-0000-0000-0000-000000000003"
+                  fromDebtorName: Carol
+                  toCreditor: "aaaaaaaa-0000-0000-0000-000000000001"
+                  toCreditorName: Alice
+                  amount: "270.00"
+                  pendingAmount: "0.00"
+                - fromDebtor: "aaaaaaaa-0000-0000-0000-000000000004"
+                  fromDebtorName: David
+                  toCreditor: "aaaaaaaa-0000-0000-0000-000000000001"
+                  toCreditorName: Alice
+                  amount: "270.00"
+                  pendingAmount: "0.00"
+                - fromDebtor: "aaaaaaaa-0000-0000-0000-000000000002"
+                  fromDebtorName: Bob
+                  toCreditor: "aaaaaaaa-0000-0000-0000-000000000001"
+                  toCreditorName: Alice
+                  amount: "90.00"
+                  pendingAmount: "0.00"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/NotAMember" }
+        "404": { $ref: "#/components/responses/GroupNotFound" }
+
+  /groups/{groupId}/settlement-payments:
+    parameters:
+      - { $ref: "#/components/parameters/GroupId" }
+    get:
+      tags: [settlement]
+      operationId: listSettlementPayments
+      summary: Settlement payments of the group (all statuses), newest first
+      responses:
+        "200":
+          description: Settlement payments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SettlementPayment" }
+              example:
+                - id: "dddddddd-0000-0000-0000-000000000001"
+                  groupId: "bbbbbbbb-0000-0000-0000-000000000001"
+                  fromDebtor: "aaaaaaaa-0000-0000-0000-000000000003"
+                  fromDebtorName: Carol
+                  toCreditor: "aaaaaaaa-0000-0000-0000-000000000001"
+                  toCreditorName: Alice
+                  amount: "270.00"
+                  status: PENDING
+                  note: "Bank transfer"
+                  createdAt: "2027-06-10T10:00:00Z"
+                  resolvedAt: null
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/NotAMember" }
+        "404": { $ref: "#/components/responses/GroupNotFound" }
+    post:
+      tags: [settlement]
+      operationId: recordSettlementPayment
+      summary: The caller (the debtor) reports a payment to a creditor. Status starts PENDING until the creditor confirms.
+      description: >
+        The amount reserves that much of the open debt to the creditor, so it may not exceed the open debt
+        minus other PENDING payments (422 PAYMENT_EXCEEDS_OPEN_DEBT). A group that is archived answers 422 GROUP_NOT_OPEN.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecordSettlementPaymentRequest" }
+            example: { toCreditor: "aaaaaaaa-0000-0000-0000-000000000001", amount: "270.00", note: "Bank transfer" }
+      responses:
+        "201":
+          description: Recorded, status PENDING
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SettlementPayment" }
+              example:
+                id: "dddddddd-0000-0000-0000-000000000001"
+                groupId: "bbbbbbbb-0000-0000-0000-000000000001"
+                fromDebtor: "aaaaaaaa-0000-0000-0000-000000000003"
+                fromDebtorName: Carol
+                toCreditor: "aaaaaaaa-0000-0000-0000-000000000001"
+                toCreditorName: Alice
+                amount: "270.00"
+                status: PENDING
+                note: "Bank transfer"
+                createdAt: "2027-06-10T10:00:00Z"
+                resolvedAt: null
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/NotAMember" }
+        "404": { $ref: "#/components/responses/GroupNotFound" }
+        "422": { $ref: "#/components/responses/PaymentExceedsOpenDebt" }
+
+  /settlement-payments/{paymentId}/confirm:
+    parameters:
+      - { $ref: "#/components/parameters/PaymentId" }
+    post:
+      tags: [settlement]
+      operationId: confirmSettlementPayment
+      summary: The creditor confirms a PENDING payment. Status becomes CONFIRMED and the debt shrinks.
+      responses:
+        "200":
+          description: Confirmed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SettlementPayment" }
+              example:
+                id: "dddddddd-0000-0000-0000-000000000001"
+                groupId: "bbbbbbbb-0000-0000-0000-000000000001"
+                fromDebtor: "aaaaaaaa-0000-0000-0000-000000000003"
+                fromDebtorName: Carol
+                toCreditor: "aaaaaaaa-0000-0000-0000-000000000001"
+                toCreditorName: Alice
+                amount: "270.00"
+                status: CONFIRMED
+                note: "Bank transfer"
+                createdAt: "2027-06-10T10:00:00Z"
+                resolvedAt: "2027-06-11T09:30:00Z"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/NotTheCreditor" }
+        "404": { $ref: "#/components/responses/SettlementPaymentNotFound" }
+        "409": { $ref: "#/components/responses/PaymentNotPending" }
+
+  /settlement-payments/{paymentId}/reject:
+    parameters:
+      - { $ref: "#/components/parameters/PaymentId" }
+    post:
+      tags: [settlement]
+      operationId: rejectSettlementPayment
+      summary: The creditor rejects a PENDING payment with a reason. Status becomes REJECTED and the reservation is released.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RejectSettlementPaymentRequest" }
+            example: { note: "Money has not arrived" }
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SettlementPayment" }
+              example:
+                id: "dddddddd-0000-0000-0000-000000000001"
+                groupId: "bbbbbbbb-0000-0000-0000-000000000001"
+                fromDebtor: "aaaaaaaa-0000-0000-0000-000000000003"
+                fromDebtorName: Carol
+                toCreditor: "aaaaaaaa-0000-0000-0000-000000000001"
+                toCreditorName: Alice
+                amount: "270.00"
+                status: REJECTED
+                note: "Money has not arrived"
+                createdAt: "2027-06-10T10:00:00Z"
+                resolvedAt: "2027-06-11T09:30:00Z"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/NotTheCreditor" }
+        "404": { $ref: "#/components/responses/SettlementPaymentNotFound" }
+        "409": { $ref: "#/components/responses/PaymentNotPending" }
+
+  /groups/{groupId}/debt-waivers:
+    parameters:
+      - { $ref: "#/components/parameters/GroupId" }
+    post:
+      tags: [settlement]
+      operationId: waiveDebt
+      summary: The caller (the creditor) waives part of a debtor's debt. Recorded as a settlement payment with status WAIVED.
+      description: >
+        Takes effect at once, no confirmation needed. The amount may not exceed the open debt
+        (422 PAYMENT_EXCEEDS_OPEN_DEBT). A reason (note) is required.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WaiveDebtRequest" }
+            example: { fromDebtor: "aaaaaaaa-0000-0000-0000-000000000002", amount: "90.00", note: "Bob gets it as a gift" }
+      responses:
+        "201":
+          description: Waived, status WAIVED
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SettlementPayment" }
+              example:
+                id: "dddddddd-0000-0000-0000-000000000002"
+                groupId: "bbbbbbbb-0000-0000-0000-000000000001"
+                fromDebtor: "aaaaaaaa-0000-0000-0000-000000000002"
+                fromDebtorName: Bob
+                toCreditor: "aaaaaaaa-0000-0000-0000-000000000001"
+                toCreditorName: Alice
+                amount: "90.00"
+                status: WAIVED
+                note: "Bob gets it as a gift"
+                createdAt: "2027-06-10T10:00:00Z"
+                resolvedAt: "2027-06-10T10:00:00Z"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/NotAMember" }
+        "404": { $ref: "#/components/responses/GroupNotFound" }
+        "422": { $ref: "#/components/responses/PaymentExceedsOpenDebt" }
+
+  /me/settlement-payments:
+    get:
+      tags: [settlement]
+      operationId: listMySettlementPayments
+      summary: Settlement payments across the caller's groups, newest first
+      description: Both query parameters are optional filters. role says whether the caller is the creditor or the debtor.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/SettlementPaymentStatus" }
+        - name: role
+          in: query
+          required: false
+          schema: { type: string, enum: [creditor, debtor] }
+      responses:
+        "200":
+          description: Settlement payments
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SettlementPayment" }
+              example:
+                - id: "dddddddd-0000-0000-0000-000000000001"
+                  groupId: "bbbbbbbb-0000-0000-0000-000000000001"
+                  fromDebtor: "aaaaaaaa-0000-0000-0000-000000000003"
+                  fromDebtorName: Carol
+                  toCreditor: "aaaaaaaa-0000-0000-0000-000000000001"
+                  toCreditorName: Alice
+                  amount: "270.00"
+                  status: PENDING
+                  note: "Bank transfer"
+                  createdAt: "2027-06-10T10:00:00Z"
+                  resolvedAt: null
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/NotAMember" }
+        "404": { $ref: "#/components/responses/GroupNotFound" }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -256,6 +514,11 @@ components:
   parameters:
     GroupId:
       name: groupId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    PaymentId:
+      name: paymentId
       in: path
       required: true
       schema: { type: string, format: uuid }
@@ -307,10 +570,37 @@ components:
       description: >
         A domain rule was violated. code is one of AMOUNT_NOT_POSITIVE, PAYER_NOT_IN_GROUP,
         PARTICIPANT_NOT_IN_GROUP, NO_PARTICIPANTS, GROUP_NOT_OPEN, SPLIT_NOT_SUPPORTED.
+        GROUP_NOT_OPEN means the group is archived (also for settlement calls).
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
           example: { type: "about:blank", title: Unprocessable Entity, status: 422, code: PAYER_NOT_IN_GROUP, detail: "The payer is not a member of this group" }
+    PaymentExceedsOpenDebt:
+      description: >
+        The amount is larger than the open debt (minus other PENDING payments). code is
+        PAYMENT_EXCEEDS_OPEN_DEBT, or AMOUNT_NOT_POSITIVE, PARTICIPANT_NOT_IN_GROUP or GROUP_NOT_OPEN (group is archived).
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example: { type: "about:blank", title: Unprocessable Entity, status: 422, code: PAYMENT_EXCEEDS_OPEN_DEBT, detail: "The amount is larger than the open debt" }
+    SettlementPaymentNotFound:
+      description: Unknown settlement payment
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example: { type: "about:blank", title: Not Found, status: 404, code: SETTLEMENT_PAYMENT_NOT_FOUND, detail: "Settlement payment not found" }
+    PaymentNotPending:
+      description: The payment is no longer PENDING (already confirmed, rejected or waived)
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example: { type: "about:blank", title: Conflict, status: 409, code: PAYMENT_NOT_PENDING, detail: "The payment is not pending" }
+    NotTheCreditor:
+      description: Only the creditor of the payment may do this
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example: { type: "about:blank", title: Forbidden, status: 403, code: NOT_THE_CREDITOR, detail: "Only the creditor can resolve this payment" }
 
   schemas:
     Problem:
@@ -336,6 +626,10 @@ components:
             - NO_PARTICIPANTS
             - GROUP_NOT_OPEN
             - SPLIT_NOT_SUPPORTED
+            - PAYMENT_EXCEEDS_OPEN_DEBT
+            - SETTLEMENT_PAYMENT_NOT_FOUND
+            - PAYMENT_NOT_PENDING
+            - NOT_THE_CREDITOR
         detail: { type: string }
 
     User:
@@ -448,3 +742,69 @@ components:
         netBalance:
           allOf: [{ $ref: "#/components/schemas/Amount" }]
           description: "+ is owed, - owes"
+
+    SettlementPlanEdge:
+      type: object
+      required: [fromDebtor, fromDebtorName, toCreditor, toCreditorName, amount, pendingAmount]
+      properties:
+        fromDebtor: { type: string, format: uuid }
+        fromDebtorName: { type: string }
+        toCreditor: { type: string, format: uuid }
+        toCreditorName: { type: string }
+        amount:
+          allOf: [{ $ref: "#/components/schemas/Amount" }]
+          description: Open debt of fromDebtor to toCreditor.
+        pendingAmount:
+          allOf: [{ $ref: "#/components/schemas/Amount" }]
+          description: Part of amount reserved by PENDING settlement payments on this pair.
+
+    SettlementPaymentStatus:
+      type: string
+      enum: [PENDING, CONFIRMED, REJECTED, WAIVED]
+
+    SettlementPayment:
+      type: object
+      required: [id, groupId, fromDebtor, fromDebtorName, toCreditor, toCreditorName, amount, status, note, createdAt, resolvedAt]
+      properties:
+        id: { type: string, format: uuid }
+        groupId: { type: string, format: uuid }
+        fromDebtor: { type: string, format: uuid }
+        fromDebtorName: { type: string }
+        toCreditor: { type: string, format: uuid }
+        toCreditorName: { type: string }
+        amount: { $ref: "#/components/schemas/Amount" }
+        status: { $ref: "#/components/schemas/SettlementPaymentStatus" }
+        note:
+          type: [string, "null"]
+          description: Free text of the debtor, the rejection reason or the waiver reason.
+        createdAt: { type: string, format: date-time }
+        resolvedAt:
+          type: [string, "null"]
+          format: date-time
+          description: Null while PENDING.
+
+    RecordSettlementPaymentRequest:
+      type: object
+      required: [toCreditor, amount]
+      properties:
+        toCreditor: { type: string, format: uuid }
+        amount:
+          allOf: [{ $ref: "#/components/schemas/Amount" }]
+          description: Greater than zero (AMOUNT_NOT_POSITIVE otherwise) and at most the open debt.
+        note: { type: string, maxLength: 500 }
+
+    RejectSettlementPaymentRequest:
+      type: object
+      required: [note]
+      properties:
+        note: { type: string, minLength: 1, maxLength: 500 }
+
+    WaiveDebtRequest:
+      type: object
+      required: [fromDebtor, amount, note]
+      properties:
+        fromDebtor: { type: string, format: uuid }
+        amount:
+          allOf: [{ $ref: "#/components/schemas/Amount" }]
+          description: Greater than zero (AMOUNT_NOT_POSITIVE otherwise) and at most the open debt.
+        note: { type: string, minLength: 1, maxLength: 500 }
