@@ -10,7 +10,7 @@ One module per bounded context, plus `shared`. Root package `de.hsh.favs.sharewi
 | `group` | Group | supporting | `Group` (with entities `Membership`, `Invitation`) |
 | `expense` | Expense | core | `Expense` |
 | `settlement` | Settlement | core | `GroupLedger` (with entity `LedgerEntry`), `SettlementPayment` (Ex5) |
-| `shared` | none | none | value objects used by several contexts only (see 2.4) |
+| `shared` | none | none | value objects used by several contexts only (see 2.4); the package `shared.events` holds the two upstream balance events and nothing else (see 5.1) |
 
 A module's allowed dependencies are declared once, in its `package-info.java` (`@ApplicationModule(allowedDependencies = ...)`), and checked by `ModularityTests`. Current rules: `account → shared`; `group → account::api, shared`; `expense → account::api, group::api, shared`; `settlement → account::api, group::api, expense::api, shared`. Adding a dependency is a design decision: change the line, say why in the commit.
 
@@ -30,7 +30,7 @@ A module's allowed dependencies are declared once, in its `package-info.java` (`
 
 | Package | Contains | Must not contain |
 |---|---|---|
-| `api` | domain events this module publishes; ports (interfaces) other modules call; read-model records those ports return; enumerations that appear in them | entities, repositories, services, Spring beans |
+| `api` | domain events this module publishes (the one exception: 5.1); ports (interfaces) other modules call; read-model records those ports return; enumerations that appear in them | entities, repositories, services, Spring beans |
 | `domain` | the model exactly as in the diagram; business rules; `@Entity`/JPA annotations are allowed on aggregates, entities and embeddables (our one pragmatic deviation from textbook hexagonal) | `org.springframework.*`, `jakarta.servlet.*`, Spring Data, other modules' types except `shared` and other modules' `api` value types, I/O, `Instant.now()` (take the time as a parameter) |
 | `application` | `<Aggregate>Service` (transactions, loading, saving, publishing events), command records, `<Event>Listener` classes for other modules' events, `<Port>Impl` classes that implement this module's `api` ports | HTTP types, JSON, entities returned to other modules |
 | `persistence` | `<Aggregate>Repository extends JpaRepository`, custom queries | business rules |
@@ -73,7 +73,7 @@ Value objects wrap every id and every concept the diagram draws as a value objec
 Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCamelCase` for types, `lowerCamelCase` for fields and methods, `UPPER_SNAKE_CASE` for enumeration constants, `snake_case` for SQL.
 
 ### 3.1 Group context
-- Aggregate root `Group`: fields `id: GroupId`, `name: GroupName`, `currency: Currency`, `status: GroupStatus`; entities `Membership` (`userId`, `role: GroupRole`, `status: MembershipStatus`, `hasZeroBalance`, `joinedAt`) and `Invitation` (`id: InvitationId`, `email: Email`, `status: InvitationStatus`, `expiresAt`).
+- Aggregate root `Group`: fields `id: GroupId`, `name: GroupName`, `currency: Currency`, `status: GroupStatus`; entities `Membership` (`userId`, `role: GroupRole`, `status: MembershipStatus`, `hasZeroBalance`, `joinedAt`; plus `balanceStatusAt`, not in the diagram, see 5.1) and `Invitation` (`id: InvitationId`, `email: Email`, `status: InvitationStatus`, `expiresAt`).
 - Operations (each returns its event): `createGroup`, `inviteMember`, `acceptInvitation`, `declineInvitation`, `promoteToAdmin`, `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, `updateBalanceStatus`.
 - Enumerations `GroupStatus {OPEN, CLOSED_FOR_SETTLEMENT, ARCHIVED}`, `GroupRole {ADMIN, MEMBER}`, `MembershipStatus {ACTIVE, FORMER_MEMBER}`, `InvitationStatus {PENDING, ACCEPTED, DECLINED, EXPIRED}`.
 - Events: `GroupCreated`, `MemberInvited`, `MemberJoined`, `MemberLeft`, `MemberRemoved`, `MemberPromoted`, `InvitationDeclined`, `GroupClosedForSettlement`, `GroupReopened`, `GroupArchived`.
@@ -89,7 +89,7 @@ Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCam
 - Aggregate root `GroupLedger` (`groupId`, entries) with append-only entity `LedgerEntry` (`id: EntryId`, `userId`, `deltaAmount: Money`, `type: LedgerEntryType`, `referenceId`, `occurredAt`); operations `appendExpenseEntry`, `appendCorrectionReversal`, `appendRemovalReversal`, `appendSettlementPayment`, `appendDebtWaiver`, `projectBalances`, `projectSimplifiedPlan`.
 - Aggregate root `SettlementPayment` (`record`, `confirm`, `reject`, `waive`), enumeration `PaymentStatus`.
 - Read models `MemberBalance(userId, netBalance)`, `SettlementPlan(simplifiedDebts)`, value object `DirectedDebt(fromDebtor, toCreditor, amount)`.
-- Events: `SettlementPaymentRecorded`, `SettlementPaymentConfirmed`, `SettlementPaymentRejected`, `DebtWaived`, `MemberBalanceStatusChanged`, `AllBalancesSettled`.
+- Events: `SettlementPaymentRecorded`, `SettlementPaymentConfirmed`, `SettlementPaymentRejected`, `DebtWaived` (in `settlement.api`); `MemberBalanceStatusChanged`, `AllBalancesSettled` (published by settlement, but in `shared.events`, see 5.1).
 
 ### 3.4 Account context
 - Aggregate root `Account`: `id: UserId` (the Keycloak subject), `email`, `displayName: DisplayName`, `status: AccountStatus`, `registeredAt`; operation `registerFromIdentityProvider`, … (the rest of the diagram arrives in later exercises). Passwords, sign-in, lock-out and tokens belong to the identity provider (Keycloak); ShareWise has none of them.
@@ -105,7 +105,7 @@ Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCam
 |---|---|---|---|
 | Aggregate root, entity | the diagram name | `domain` | `Group`, `Membership` |
 | Value object, enumeration | the diagram name | `domain` or `shared` | `GroupName`, `GroupRole` |
-| Domain event | past tense, diagram name, a `record` | `api` | `ExpenseRecorded` |
+| Domain event | past tense, diagram name, a `record` | `api` of the publisher (only exception: `shared.events`, 5.1) | `ExpenseRecorded` |
 | Use-case service | `<Aggregate>Service`, one per aggregate | `application` | `ExpenseService` |
 | Command | `<Operation>Command`, a `record` | `application` | `RecordExpenseCommand` |
 | Listener for another module's event | `<Event>Listener` | `application` | `ExpenseRecordedListener` |
@@ -127,6 +127,16 @@ Method names on services are the operation names (`recordExpense`, `acceptInvita
 - Events carry **ids and value objects, never names or entities**. Display names are looked up at read time through the `UserProfiles` port.
 - Balances are therefore eventually consistent with expenses; the frontend and tests are written for that (document 02 and 04).
 - How events are delivered today, why a scheduled redelivery was skipped on purpose, and what to keep in mind for the move to a message broker: `docs/2026-10-27-event-delivery-and-messaging.md`.
+
+### 5.1 The one exception: `shared.events` (D12)
+
+Events live in the `api` of the module that publishes them, **except** `MemberBalanceStatusChanged` and `AllBalancesSettled`, which live in `de.hsh.favs.sharewise.shared.events`. Settlement publishes them after every ledger booking (expense, confirmed payment, waiver) when a zero-state flips; group consumes `MemberBalanceStatusChanged` to keep `Membership.hasZeroBalance` (R11) up to date. `AllBalancesSettled` has no consumer yet (auto-archive L5 is parked).
+
+- **Why:** the module graph stays one-way, `account ← group ← expense ← settlement`. Settlement already depends on `group::api`; a group listener for an event in `settlement.api` would make group depend on settlement, a cycle `ModularityTests` refuses. A survey of all diagram events found these two as the only ones that flow upstream.
+- **Alternatives rejected:** allow `group → settlement` (a cycle, and it blocks the P3 service split); a `canLeave` port in settlement (group would call settlement, the same cycle); settlement keeping its own copy of group data (the biggest change for the least gain).
+- **Order:** the events are asynchronous and may arrive out of order, so a `Membership` stores when its flag was last set (`balance_status_at`) and ignores an older event.
+- **Checked by** `ConventionTests.sharedEventsAreExactlyTheTwoBalanceEvents`: every class in `shared.events` is a record, and the names are exactly these two. Adding a third is a design decision, not a convenience.
+- **Change driver (P2):** if more events need to flow upstream, the split between group and settlement is probably wrong; revisit the boundaries instead of growing this package.
 
 ## 6. Persistence and database
 
