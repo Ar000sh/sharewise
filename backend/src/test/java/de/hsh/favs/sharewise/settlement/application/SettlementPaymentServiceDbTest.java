@@ -101,15 +101,19 @@ class SettlementPaymentServiceDbTest {
 		// when
 		start.countDown();
 		List<Object> outcomes = new ArrayList<>();
-		for (Future<SettlementPayment> call : calls) {
-			try {
-				outcomes.add(call.get(30, TimeUnit.SECONDS));
-			}
-			catch (ExecutionException e) {
-				outcomes.add(e.getCause());
+		try {
+			for (Future<SettlementPayment> call : calls) {
+				try {
+					outcomes.add(call.get(30, TimeUnit.SECONDS));
+				}
+				catch (ExecutionException e) {
+					outcomes.add(e.getCause());
+				}
 			}
 		}
-		pool.shutdown();
+		finally {
+			pool.shutdown();
+		}
 
 		// then exactly one is recorded, the other is refused
 		assertThat(outcomes).filteredOn(SettlementPayment.class::isInstance).hasSize(1);
@@ -139,9 +143,7 @@ class SettlementPaymentServiceDbTest {
 		// then it is still reserved
 		assertThat(reserved(bob, null)).isEqualByComparingTo("40.00");
 
-		// when an entry referencing the payment exists (Task 5 books real payment
-		// entries;
-		// an entry with the payment id as its reference stands in for it here)
+		// when an entry references the payment id (as Task 5 will book it)
 		ledgers.bookExpense(new ExpenseRecordedFixture().inGroup(trip)
 			.withExpenseId(new ExpenseId(bobs.paymentId().value()))
 			.paidBy(bob.userId())
