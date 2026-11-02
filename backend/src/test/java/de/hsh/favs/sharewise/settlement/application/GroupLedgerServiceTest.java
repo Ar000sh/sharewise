@@ -6,6 +6,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import de.hsh.favs.sharewise.MutableClock;
@@ -16,17 +17,24 @@ import de.hsh.favs.sharewise.settlement.api.DebtWaived;
 import de.hsh.favs.sharewise.settlement.api.SettlementPaymentConfirmed;
 import de.hsh.favs.sharewise.settlement.api.SettlementPaymentId;
 import de.hsh.favs.sharewise.shared.Money;
+import de.hsh.favs.sharewise.shared.UserId;
+import de.hsh.favs.sharewise.shared.events.AllBalancesSettled;
+import de.hsh.favs.sharewise.shared.events.MemberBalanceStatusChanged;
 import de.hsh.favs.sharewise.settlement.domain.GroupLedger;
 import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 /**
  * Orchestration only: the ledger is created if absent, locked, and an expense is booked
@@ -38,15 +46,26 @@ class GroupLedgerServiceTest {
 	@Mock
 	GroupLedgerRepository ledgers;
 
+	@Mock
+	ApplicationEventPublisher events;
+
 	GroupLedgerService service;
 
 	ExpenseRecorded event = new ExpenseRecordedFixture().build();
 
 	GroupLedger ledger = new GroupLedger(event.groupId());
 
+	UserId alice = AccountFixture.alice().userId();
+
+	UserId bob = AccountFixture.bob().userId();
+
+	UserId carol = AccountFixture.carol().userId();
+
+	UserId david = AccountFixture.david().userId();
+
 	@BeforeEach
 	void setUp() {
-		service = new GroupLedgerService(ledgers, Clock.fixed(MutableClock.START, ZoneOffset.UTC));
+		service = new GroupLedgerService(ledgers, events, Clock.fixed(MutableClock.START, ZoneOffset.UTC));
 		when(ledgers.findForUpdate(event.groupId().value())).thenReturn(Optional.of(ledger));
 	}
 
@@ -129,6 +148,100 @@ class GroupLedgerServiceTest {
 		order.verify(ledgers).findForUpdate(event.groupId().value());
 		order.verify(ledgers).isBooked(event.groupId().value(), confirmed.paymentId().value());
 		order.verify(ledgers).save(ledger);
+	}
+
+	@Test
+	void anExpenseThatMakesBalancesNonZeroPublishesOneStatusChangePerAffectedMember() {
+		// given nobody has entries yet; after Alice's 900.00 split by four everyone is
+		// non-zero
+		when(ledgers.isBooked(event.groupId().value(), event.expenseId().value())).thenReturn(false);
+		when(ledgers.totals(event.groupId().value())).thenReturn(List.of(), List.of(total(alice, "675.00"),
+				total(bob, "-225.00"), total(carol, "-225.00"), total(david, "-225.00")));
+
+		// when
+		service.bookExpense(event);
+
+		// then one change per person, and the group is not settled
+		assertThat(published(4)).containsExactlyInAnyOrder(statusChanged(alice, false), statusChanged(bob, false),
+				statusChanged(carol, false), statusChanged(david, false));
+	}
+
+	@Test
+	void aPaymentThatBringsEveryoneToZeroPublishesAllBalancesSettledOnce() {
+		// given Bob owes Alice 10.00; Carol has entries that already sum to zero
+		var confirmed = bobPaysAlice("10.00");
+		when(ledgers.isBooked(event.groupId().value(), confirmed.paymentId().value())).thenReturn(false);
+		when(ledgers.totals(event.groupId().value())).thenReturn(
+				List.of(total(alice, "10.00"), total(bob, "-10.00"), total(carol, "0.00")),
+				List.of(total(alice, "0.00"), total(bob, "0.00"), total(carol, "0.00")));
+
+		// when
+		service.bookSettlementPayment(confirmed);
+
+		// then Alice and Bob flip, Carol does not, and the group is settled once
+		assertThat(published(3)).containsExactlyInAnyOrder(statusChanged(alice, true), statusChanged(bob, true),
+				new AllBalancesSettled(event.groupId(), MutableClock.START));
+	}
+
+	@Test
+	void nothingIsPublishedWhenNoZeroStateFlips() {
+		// given Bob pays only half of the 10.00 he owes
+		var confirmed = bobPaysAlice("5.00");
+		when(ledgers.isBooked(event.groupId().value(), confirmed.paymentId().value())).thenReturn(false);
+		when(ledgers.totals(event.groupId().value())).thenReturn(List.of(total(alice, "10.00"), total(bob, "-10.00")),
+				List.of(total(alice, "5.00"), total(bob, "-5.00")));
+
+		// when
+		service.bookSettlementPayment(confirmed);
+
+		// then
+		verifyNoInteractions(events);
+	}
+
+	@Test
+	void aRedeliveredBookingPublishesNothing() {
+		// given the waiver is already booked
+		var waived = new DebtWaived(new SettlementPaymentId(UUID.randomUUID()), event.groupId(), bob, alice,
+				Money.eur("10.00"), MutableClock.START);
+		when(ledgers.isBooked(event.groupId().value(), waived.paymentId().value())).thenReturn(true);
+
+		// when
+		service.bookDebtWaiver(waived);
+
+		// then
+		verify(ledgers, never()).save(any());
+		verifyNoInteractions(events);
+	}
+
+	private SettlementPaymentConfirmed bobPaysAlice(String amount) {
+		return new SettlementPaymentConfirmed(new SettlementPaymentId(UUID.randomUUID()), event.groupId(), bob, alice,
+				Money.eur(amount), MutableClock.START);
+	}
+
+	private MemberBalanceStatusChanged statusChanged(UserId user, boolean hasZeroBalance) {
+		return new MemberBalanceStatusChanged(event.groupId(), user, hasZeroBalance, MutableClock.START);
+	}
+
+	private List<Object> published(int count) {
+		ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+		verify(events, times(count)).publishEvent(captor.capture());
+		return captor.getAllValues();
+	}
+
+	private static GroupLedgerRepository.UserTotal total(UserId user, String amount) {
+		return new GroupLedgerRepository.UserTotal() {
+
+			@Override
+			public UUID getUserId() {
+				return user.value();
+			}
+
+			@Override
+			public BigDecimal getAmount() {
+				return new BigDecimal(amount);
+			}
+
+		};
 	}
 
 }

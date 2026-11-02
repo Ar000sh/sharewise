@@ -5,20 +5,40 @@ import de.hsh.favs.sharewise.settlement.api.DebtWaived;
 import de.hsh.favs.sharewise.settlement.api.SettlementPaymentConfirmed;
 import de.hsh.favs.sharewise.settlement.domain.GroupLedger;
 import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
+import de.hsh.favs.sharewise.shared.GroupId;
+import de.hsh.favs.sharewise.shared.UserId;
+import de.hsh.favs.sharewise.shared.events.AllBalancesSettled;
+import de.hsh.favs.sharewise.shared.events.MemberBalanceStatusChanged;
+import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Use cases of the ledger aggregate: book what the other contexts announce. */
+/**
+ * Use cases of the ledger aggregate: book what the other contexts announce, and tell the
+ * group whose balance became or stopped being zero after every booking, expenses included
+ * (R11, D12).
+ */
 @Service
 public class GroupLedgerService {
 
 	private final GroupLedgerRepository ledgers;
 
+	private final ApplicationEventPublisher events;
+
 	private final Clock clock;
 
-	GroupLedgerService(GroupLedgerRepository ledgers, Clock clock) {
+	GroupLedgerService(GroupLedgerRepository ledgers, ApplicationEventPublisher events, Clock clock) {
 		this.ledgers = ledgers;
+		this.events = events;
 		this.clock = clock;
 	}
 
@@ -29,13 +49,7 @@ public class GroupLedgerService {
 	 */
 	@Transactional
 	public void bookExpense(ExpenseRecorded expense) {
-		var group = expense.groupId().value();
-		ledgers.createIfAbsent(group);
-		GroupLedger ledger = ledgers.findForUpdate(group).orElseThrow();
-		if (!ledgers.isBooked(group, expense.expenseId().value())) {
-			ledger.appendExpenseEntry(expense, clock.instant());
-			ledgers.save(ledger);
-		}
+		book(expense.groupId(), expense.expenseId().value(), (ledger, now) -> ledger.appendExpenseEntry(expense, now));
 	}
 
 	/**
@@ -45,13 +59,8 @@ public class GroupLedgerService {
 	 */
 	@Transactional
 	public void bookSettlementPayment(SettlementPaymentConfirmed payment) {
-		var group = payment.groupId().value();
-		ledgers.createIfAbsent(group);
-		GroupLedger ledger = ledgers.findForUpdate(group).orElseThrow();
-		if (!ledgers.isBooked(group, payment.paymentId().value())) {
-			ledger.appendSettlementPayment(payment, clock.instant());
-			ledgers.save(ledger);
-		}
+		book(payment.groupId(), payment.paymentId().value(),
+				(ledger, now) -> ledger.appendSettlementPayment(payment, now));
 	}
 
 	/**
@@ -60,13 +69,62 @@ public class GroupLedgerService {
 	 */
 	@Transactional
 	public void bookDebtWaiver(DebtWaived waiver) {
-		var group = waiver.groupId().value();
+		book(waiver.groupId(), waiver.paymentId().value(), (ledger, now) -> ledger.appendDebtWaiver(waiver, now));
+	}
+
+	/**
+	 * Lock, check, append, save; then compare every person's total before and after and
+	 * publish the zero-state flips. A redelivery books nothing and so publishes nothing.
+	 */
+	private void book(GroupId groupId, UUID referenceId, BiConsumer<GroupLedger, Instant> append) {
+		var group = groupId.value();
 		ledgers.createIfAbsent(group);
 		GroupLedger ledger = ledgers.findForUpdate(group).orElseThrow();
-		if (!ledgers.isBooked(group, waiver.paymentId().value())) {
-			ledger.appendDebtWaiver(waiver, clock.instant());
-			ledgers.save(ledger);
+		if (ledgers.isBooked(group, referenceId)) {
+			return;
 		}
+		Map<UUID, BigDecimal> before = totals(group);
+		Instant now = clock.instant();
+		append.accept(ledger, now);
+		ledgers.save(ledger);
+		// the totals query must see the entries just appended
+		ledgers.flush();
+		publishZeroStateFlips(groupId, before, totals(group), now);
+	}
+
+	/**
+	 * One {@link MemberBalanceStatusChanged} per person whose zero-state flipped (a
+	 * person without entries counts as zero), and {@link AllBalancesSettled} when
+	 * everybody is zero now and somebody was not before. Sorted by user id, so the order
+	 * is stable.
+	 */
+	private void publishZeroStateFlips(GroupId groupId, Map<UUID, BigDecimal> before, Map<UUID, BigDecimal> after,
+			Instant now) {
+		var people = new TreeSet<UUID>(before.keySet());
+		people.addAll(after.keySet());
+		for (UUID person : people) {
+			boolean wasZero = isZero(before.get(person));
+			boolean isZero = isZero(after.get(person));
+			if (wasZero != isZero) {
+				events.publishEvent(new MemberBalanceStatusChanged(groupId, new UserId(person), isZero, now));
+			}
+		}
+		boolean everybodyZeroNow = after.values().stream().allMatch(GroupLedgerService::isZero);
+		boolean somebodyWasNot = !before.values().stream().allMatch(GroupLedgerService::isZero);
+		if (everybodyZeroNow && somebodyWasNot) {
+			events.publishEvent(new AllBalancesSettled(groupId, now));
+		}
+	}
+
+	private Map<UUID, BigDecimal> totals(UUID group) {
+		return ledgers.totals(group)
+			.stream()
+			.collect(Collectors.toMap(GroupLedgerRepository.UserTotal::getUserId,
+					GroupLedgerRepository.UserTotal::getAmount, BigDecimal::add, HashMap::new));
+	}
+
+	private static boolean isZero(BigDecimal amount) {
+		return amount == null || amount.signum() == 0;
 	}
 
 }
