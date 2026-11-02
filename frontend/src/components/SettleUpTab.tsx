@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { Toast } from "@/components/Toast";
@@ -9,14 +9,9 @@ import { useCurrentUser } from "@/lib/currentUser";
 import { messageFor } from "@/lib/errors";
 import { amountToCents, centsToAmount, eurosToCents, formatEuro } from "@/lib/money";
 import { useApi } from "@/lib/useApi";
+import { useLookAgain } from "@/lib/useLookAgain";
 
 type PlanEdge = components["schemas"]["SettlementPlanEdge"];
-
-/**
- * Milliseconds after a payment was reported at which the plan is fetched again. The ledger follows the payment
- * through an event, so the first answer may still be the old one. Bounded, like the balances tab.
- */
-const LOOK_AGAIN_AFTER_MS = [500, 1000, 2000, 4000];
 
 function openCents(edge: PlanEdge): number {
   return amountToCents(edge.amount) - amountToCents(edge.pendingAmount);
@@ -35,13 +30,16 @@ function PaymentForm({ groupId, edge, onPaid }: { groupId: string; edge: PlanEdg
   const [note, setNote] = useState("");
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
+  // State updates are not visible to a second submit in the same tick; the ref is.
+  const sending = useRef(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (busy) return;
+    if (sending.current) return;
     const cents = eurosToCents(amount);
     if (cents === null) return setError("Please enter a valid amount, e.g. 19,99.");
     if (cents > open) return setError(`You can only pay up to ${formatEuro(open)} here.`);
+    sending.current = true;
     setBusy(true);
     try {
       await api(`/groups/${groupId}/settlement-payments`, {
@@ -58,6 +56,7 @@ function PaymentForm({ groupId, edge, onPaid }: { groupId: string; edge: PlanEdg
     } catch (err) {
       setError(messageFor(err));
     } finally {
+      sending.current = false;
       setBusy(false);
     }
   }
@@ -136,14 +135,7 @@ export function SettleUpTab({ groupId }: { groupId: string }) {
   const [notice, setNotice] = useState<string>();
   const dismissNotice = useCallback(() => setNotice(undefined), []);
 
-  useEffect(() => {
-    if (paidAt === undefined) return;
-    const age = Date.now() - paidAt;
-    const timers = LOOK_AGAIN_AFTER_MS.filter((delay) => delay > age).map((delay) =>
-      setTimeout(() => void reload(), delay - age),
-    );
-    return () => timers.forEach(clearTimeout);
-  }, [paidAt, reload]);
+  useLookAgain(paidAt, reload);
 
   if (error && !plan) return <ErrorBanner error={error} />;
   if (!plan || !me) return <p>Loading…</p>;

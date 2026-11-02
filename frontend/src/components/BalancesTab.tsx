@@ -1,19 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { amountToCents, formatEuro } from "@/lib/money";
 import { useApi } from "@/lib/useApi";
+import { useLookAgain } from "@/lib/useLookAgain";
 
 type Balance = components["schemas"]["Balance"];
-
-/**
- * Milliseconds after an expense was recorded at which the balances are fetched again. The ledger is updated by an
- * event after the expense is saved, so the first answer may still be the old one. The window is bounded: after the
- * last look the tab stops asking.
- */
-const LOOK_AGAIN_AFTER_MS = [500, 1000, 2000, 4000];
 
 function signed(cents: number): string {
   return cents > 0 ? `+${formatEuro(cents)}` : formatEuro(cents);
@@ -25,26 +18,7 @@ function signed(cents: number): string {
  */
 export function BalancesTab({ groupId, lastRecordedAt }: { groupId: string; lastRecordedAt?: number }) {
   const { data: balances, error, reload } = useApi<Balance[]>(`/groups/${groupId}/balances`);
-  const [updating, setUpdating] = useState(false);
-
-  useEffect(() => {
-    if (lastRecordedAt === undefined) return;
-    const age = Date.now() - lastRecordedAt;
-    const remaining = LOOK_AGAIN_AFTER_MS.filter((delay) => delay > age);
-    if (remaining.length === 0) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- starts a bounded series of timers
-    setUpdating(true);
-    const timers = remaining.map((delay, i) =>
-      setTimeout(() => {
-        void reload();
-        if (i === remaining.length - 1) setUpdating(false);
-      }, delay - age),
-    );
-    return () => {
-      timers.forEach(clearTimeout);
-      setUpdating(false);
-    };
-  }, [lastRecordedAt, reload]);
+  const { updating } = useLookAgain(lastRecordedAt, reload);
 
   if (error && !balances) return <ErrorBanner error={error} />;
   if (!balances) return <p>Loading…</p>;

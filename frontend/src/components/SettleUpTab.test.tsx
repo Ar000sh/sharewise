@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api } from "@/lib/api";
@@ -168,5 +168,46 @@ describe("SettleUpTab", () => {
     expect(await screen.findByText("100,00 € awaiting confirmation")).toBeInTheDocument();
     expect(JSON.parse(String(paymentCalls()[0][1]?.body))).toEqual({ toCreditor: ALICE, amount: "100.00" });
     expect(await screen.findByRole("status")).toHaveTextContent(/payment/i);
+  });
+
+  it("lookingAgainAfterAPaymentFetchesThePlanAgain", async () => {
+    // given a payment was just reported and the plan calls so far were counted
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      serve({ userId: CAROL, displayName: "Carol" }, mallorca, async () => ({}));
+      renderTab();
+      await userEvent.click(await screen.findByRole("button", { name: "I paid" }));
+      await userEvent.click(screen.getByRole("button", { name: "Send payment" }));
+      await screen.findByRole("status");
+      const planCalls = () => apiMock.mock.calls.filter(([path]) => path === "/groups/g1/settlement-plan").length;
+      const afterReload = planCalls();
+
+      // when about half a second passes
+      await act(() => vi.advanceTimersByTimeAsync(600));
+
+      // then the plan was asked for again without any user action
+      expect(planCalls()).toBeGreaterThan(afterReload);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("twoSubmitsInTheSameTickSendOnlyOnePayment", async () => {
+    // given
+    let finish: (value: unknown) => void = () => {};
+    serve({ userId: CAROL, displayName: "Carol" }, mallorca, () => new Promise((resolve) => (finish = resolve)));
+    renderTab();
+    await userEvent.click(await screen.findByRole("button", { name: "I paid" }));
+    const form = screen.getByRole("button", { name: "Send payment" }).closest("form")!;
+
+    // when the form is submitted twice before React re-rendered
+    act(() => {
+      fireEvent.submit(form);
+      fireEvent.submit(form);
+    });
+
+    // then one request left
+    expect(paymentCalls()).toHaveLength(1);
+    finish({});
   });
 });
