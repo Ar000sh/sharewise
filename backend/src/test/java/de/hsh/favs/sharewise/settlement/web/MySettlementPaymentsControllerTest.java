@@ -12,6 +12,7 @@ import de.hsh.favs.sharewise.group.web.GroupRequests;
 import de.hsh.favs.sharewise.settlement.application.GroupLedgerService;
 import java.time.Duration;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
@@ -36,6 +37,11 @@ class MySettlementPaymentsControllerTest {
 
 	@Autowired
 	MutableClock clock;
+
+	@BeforeEach
+	void resetClock() {
+		clock.reset();
+	}
 
 	@Test
 	void recordReturns201PendingAndTheCreditorSeesItInTheInbox() throws Exception {

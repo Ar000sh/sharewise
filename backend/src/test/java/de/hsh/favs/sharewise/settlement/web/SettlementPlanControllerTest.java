@@ -56,26 +56,25 @@ class SettlementPlanControllerTest {
 			.record(bob)
 			.andExpect(status().isCreated());
 
-		// when the balances have arrived
+		// when / then the final plan has arrived: three edges, all to Alice, nothing
+		// pending; the hotel alone already gives three edges of 225.00, so the amounts
+		// are part of what is awaited
 		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
 			JsonNode plan = json.readTree(settlement.body(settlement.plan(group, bob).andExpect(status().isOk())));
 			assertThat(plan.size()).isEqualTo(3);
+			for (JsonNode edge : plan) {
+				assertThat(edge.get("toCreditor").asString()).isEqualTo(alice.idString());
+				assertThat(edge.get("toCreditorName").asString()).isEqualTo(alice.displayName());
+				assertThat(edge.get("pendingAmount").asString()).isEqualTo("0.00");
+				assertThat(edge.size()).isEqualTo(6);
+				String expected = edge.get("fromDebtor").asString().equals(bob.idString()) ? "90.00" : "270.00";
+				assertThat(edge.get("amount").asString()).isEqualTo(expected);
+			}
+			assertThat(plan.findValuesAsString("fromDebtor")).containsExactlyInAnyOrder(bob.idString(),
+					carol.idString(), david.idString());
+			assertThat(plan.findValuesAsString("fromDebtor"))
+				.isSortedAccordingTo((x, y) -> UUID.fromString(x).compareTo(UUID.fromString(y)));
 		});
-
-		// then three edges, all to Alice, nothing pending
-		JsonNode plan = json.readTree(settlement.body(settlement.plan(group, bob)));
-		for (JsonNode edge : plan) {
-			assertThat(edge.get("toCreditor").asString()).isEqualTo(alice.idString());
-			assertThat(edge.get("toCreditorName").asString()).isEqualTo(alice.displayName());
-			assertThat(edge.get("pendingAmount").asString()).isEqualTo("0.00");
-			assertThat(edge.size()).isEqualTo(6);
-			String expected = edge.get("fromDebtor").asString().equals(bob.idString()) ? "90.00" : "270.00";
-			assertThat(edge.get("amount").asString()).isEqualTo(expected);
-		}
-		assertThat(plan.findValuesAsString("fromDebtor")).containsExactlyInAnyOrder(bob.idString(), carol.idString(),
-				david.idString());
-		assertThat(plan.findValuesAsString("fromDebtor"))
-			.isSortedAccordingTo((a, b) -> UUID.fromString(a).compareTo(UUID.fromString(b)));
 	}
 
 	@Test

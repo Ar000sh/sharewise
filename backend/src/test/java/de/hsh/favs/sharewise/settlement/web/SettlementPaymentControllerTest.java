@@ -73,6 +73,7 @@ class SettlementPaymentControllerTest {
 
 	@BeforeEach
 	void bobOwesAlice90() throws Exception {
+		clock.reset();
 		settlement = new SettlementRequests(mvc, json);
 		alice = AccountFixture.signUp(mvc, json, "Alice");
 		bob = AccountFixture.signUp(mvc, json, "Bob");
