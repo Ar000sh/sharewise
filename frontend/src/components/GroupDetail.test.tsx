@@ -29,6 +29,7 @@ function serve(me: Promise<unknown> | unknown) {
     if (path === "/groups/g1") return group;
     if (path === "/groups/g1/expenses") return [];
     if (path === "/groups/g1/balances") return [];
+    if (path === "/groups/g1/settlement-plan") return [];
     throw new Error(`unexpected call ${path}`);
   });
 }
@@ -55,6 +56,19 @@ describe("GroupDetail", () => {
     expect(screen.queryByRole("button", { name: /add expense/i })).not.toBeInTheDocument();
     answerMe({ userId: "u2", displayName: "Bob" });
     expect(await screen.findByLabelText(/paid by/i)).toHaveValue("u2");
+  });
+
+  it("offersASettleUpTabBetweenBalancesAndMembers", async () => {
+    // given
+    serve({ userId: "u2", displayName: "Bob" });
+    renderPage();
+
+    // when
+    await userEvent.click(await screen.findByRole("tab", { name: "Settle up" }));
+
+    // then
+    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Expenses", "Balances", "Settle up", "Members"]);
+    expect(await screen.findByText("Everybody is settled.")).toBeInTheDocument();
   });
 
   it("tellsTheUserThatBalancesFollowAfterAnExpenseWasRecorded", async () => {
