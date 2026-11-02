@@ -86,6 +86,23 @@ class GroupLedgerTest {
 	}
 
 	@Test
+	void theSimplifiedPlanOfTheMallorcaExampleSettlesEveryoneWithThreePayments() {
+		// given
+		ledger.appendExpenseEntry(new ExpenseRecordedFixture().build(), MutableClock.START);
+		ledger.appendExpenseEntry(new ExpenseRecordedFixture().paidBy(bob).withTotalAmount("180.00").build(),
+				MutableClock.START);
+
+		// when
+		SettlementPlan plan = ledger.projectSimplifiedPlan();
+
+		// then
+		assertThat(plan.simplifiedDebts()).hasSize(3);
+		assertThat(plan.edge(carol, alice)).isEqualTo(Money.eur("270.00"));
+		assertThat(plan.edge(david, alice)).isEqualTo(Money.eur("270.00"));
+		assertThat(plan.edge(bob, alice)).isEqualTo(Money.eur("90.00"));
+	}
+
+	@Test
 	void theBalancesOfAGroupAlwaysAddUpToZeroWhateverTheExpenses() {
 		// given 200 random expenses between a random number of people, with amounts that
 		// divide badly

@@ -70,6 +70,14 @@ public class GroupLedger {
 		return balances.entrySet().stream().map(e -> new MemberBalance(e.getKey(), e.getValue())).toList();
 	}
 
+	/**
+	 * The fewest payments that bring every balance to zero (R15), computed from
+	 * {@link #projectBalances()}. The ledger itself does not change.
+	 */
+	public SettlementPlan projectSimplifiedPlan() {
+		return SettlementPlan.of(projectBalances());
+	}
+
 	public GroupId groupId() {
 		return new GroupId(groupId);
 	}
