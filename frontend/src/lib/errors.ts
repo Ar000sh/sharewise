@@ -13,6 +13,10 @@ const MESSAGES: Record<string, string> = {
   NO_PARTICIPANTS: "Select at least one participant.",
   GROUP_NOT_OPEN: "This group is no longer open for new expenses.",
   SPLIT_NOT_SUPPORTED: "Only equal splits are supported for now.",
+  PAYMENT_EXCEEDS_OPEN_DEBT: "You can only pay up to what you owe.",
+  SETTLEMENT_PAYMENT_NOT_FOUND: "This settlement payment does not exist.",
+  PAYMENT_NOT_PENDING: "This settlement payment was already answered.",
+  NOT_THE_CREDITOR: "Only the person who is owed can do this.",
   BACKEND_UNREACHABLE: "The server is not reachable right now. Please try again later.",
   NETWORK_ERROR: "Could not reach the server. Check your connection and try again.",
 };
