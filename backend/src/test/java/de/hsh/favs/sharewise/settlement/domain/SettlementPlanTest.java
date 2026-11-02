@@ -79,7 +79,7 @@ class SettlementPlanTest {
 	}
 
 	@Test
-	void threeZeroSumSubgroupsNeedExactlyThreePaymentsNotFive() {
+	void sixPeopleInThreeZeroSumPairsAreSettledWithThreePayments() {
 		// given A +5, B +5, C -5, D -5, E +3, F -3: three pairs hide in six people
 		// when
 		SettlementPlan plan = SettlementPlan.of(List.of(balance(a, 500), balance(b, 500), balance(c, -500),
@@ -88,11 +88,25 @@ class SettlementPlanTest {
 		// then
 		assertThat(plan.simplifiedDebts()).hasSize(3);
 		assertThat(sumOfEdges(plan)).isEqualTo(Money.eur("13.00"));
-		assertThat(plan.edge(f, e)).isEqualTo(Money.eur("3.00"));
+		assertThat(plan.simplifiedDebts()).containsExactlyInAnyOrder(new DirectedDebt(c, a, Money.eur("5.00")),
+				new DirectedDebt(d, b, Money.eur("5.00")), new DirectedDebt(f, e, Money.eur("3.00")));
 	}
 
 	@Test
-	void theNumberOfPaymentsIsNeverMoreThanPeopleMinusSubgroups() {
+	void exactPlanBeatsGreedyWhenTwoSubgroupsExist() {
+		// given A +3, B +3, C -6, D +5, E -5: {A,B,C} and {D,E} are zero-sum groups, so 3
+		// payments suffice; plain greedy (C->D 5, E->A 3, E->B 2, C->B 1) needs 4
+		// when
+		SettlementPlan plan = SettlementPlan
+			.of(List.of(balance(a, 300), balance(b, 300), balance(c, -600), balance(d, 500), balance(e, -500)));
+
+		// then
+		assertThat(plan.simplifiedDebts()).containsExactly(new DirectedDebt(c, a, Money.eur("3.00")),
+				new DirectedDebt(c, b, Money.eur("3.00")), new DirectedDebt(e, d, Money.eur("5.00")));
+	}
+
+	@Test
+	void theNumberOfPaymentsIsExactlyPeopleMinusTheMostZeroSumSubgroups() {
 		// given random zero-sum balances of up to 8 people, fixed seed
 		Random random = new Random(20261102);
 		for (int round = 0; round < 300; round++) {
@@ -104,7 +118,7 @@ class SettlementPlanTest {
 			SettlementPlan plan = SettlementPlan.of(balances);
 
 			// then
-			assertThat(plan.simplifiedDebts().size()).isLessThanOrEqualTo((int) Math.max(0, nonZero - 1));
+			assertThat(plan.simplifiedDebts()).hasSize((int) nonZero - mostZeroSumGroups(balances));
 			assertSettles(balances, plan);
 		}
 	}
@@ -171,6 +185,41 @@ class SettlementPlanTest {
 		assertThat(plan.edge(b, a)).isEqualTo(Money.eur("5.00"));
 		assertThat(plan.edge(a, b)).isEqualTo(Money.eur("0.00"));
 		assertThat(plan.edge(c, a)).isEqualTo(Money.eur("0.00"));
+	}
+
+	/**
+	 * Brute force, independent of the production search: split by the group of the lowest
+	 * person.
+	 */
+	private static int mostZeroSumGroups(List<MemberBalance> balances) {
+		long[] cents = balances.stream().mapToLong(x -> x.netBalance().minorUnits()).filter(x -> x != 0).toArray();
+		return mostGroups(cents, (1 << cents.length) - 1);
+	}
+
+	private static int mostGroups(long[] cents, int mask) {
+		if (mask == 0) {
+			return 0;
+		}
+		int lowest = mask & -mask;
+		int best = Integer.MIN_VALUE;
+		for (int sub = mask; sub > 0; sub = (sub - 1) & mask) {
+			if ((sub & lowest) == 0) {
+				continue;
+			}
+			long sum = 0;
+			for (int i = 0; i < cents.length; i++) {
+				if ((sub & (1 << i)) != 0) {
+					sum += cents[i];
+				}
+			}
+			if (sum == 0) {
+				int rest = mostGroups(cents, mask & ~sub);
+				if (rest >= 0) {
+					best = Math.max(best, 1 + rest);
+				}
+			}
+		}
+		return best;
 	}
 
 	private List<MemberBalance> randomZeroSum(Random random, int people) {

@@ -21,7 +21,8 @@ import java.util.List;
  * minimum. Above the limit the subset search is too expensive, so the plan is the plain
  * greedy over everyone (largest debtor pays largest creditor); R15 then holds only as "at
  * most n - 1 payments". Ties are broken by user id so the same balances always give the
- * same plan.
+ * same plan; "ascending user id" means {@link java.util.UUID#compareTo} order, not the
+ * order of the hex text. {@link #edge} on an empty plan returns zero in EUR.
  */
 public record SettlementPlan(List<DirectedDebt> simplifiedDebts) {
 
