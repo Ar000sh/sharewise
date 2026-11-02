@@ -67,9 +67,14 @@ public class SettlementPayment {
 	@Column(name = "resolved_at")
 	private Instant resolvedAt;
 
+	/**
+	 * Boxed on purpose: the id is assigned here, so Spring Data can only tell a new
+	 * payment by a null version; it then persists instead of merging (an extra select and
+	 * a copy). Hibernate sets 0 on insert.
+	 */
 	@Version
 	@Column(nullable = false)
-	private long version;
+	private Long version;
 
 	protected SettlementPayment() {
 	}
