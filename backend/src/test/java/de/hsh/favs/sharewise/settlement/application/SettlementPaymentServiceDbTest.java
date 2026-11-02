@@ -128,17 +128,29 @@ class SettlementPaymentServiceDbTest {
 	void reservedSumCountsConfirmedUntilTheLedgerEntryExists() {
 		// given Bob's 40.00 is PENDING, Carol's 30.00 is REJECTED and 20.00 of Carol's
 		// debt is WAIVED
-		SettlementPayment bobs = service.record(bobPaysAlice("40.00"));
-		SettlementPayment carols = service
-			.record(new RecordSettlementPaymentCommand(trip, carol.userId(), alice.userId(), Money.eur("30.00"), null));
-		service.reject(alice.userId(), carols.paymentId(), "Not arrived");
-		service.waive(new WaiveDebtCommand(trip, alice.userId(), carol.userId(), Money.eur("20.00"), "Gift"));
+		// (built with the aggregate and saved directly: through the service the real
+		// listener would book them at once; that path is SettlementBookingTest)
+		SettlementPayment bobs = saved(SettlementPayment
+			.record(trip, bob.userId(), alice.userId(), Money.eur("40.00"), Money.eur("100.00"), null,
+					MutableClock.START)
+			.payment());
+		SettlementPayment carols = saved(SettlementPayment
+			.record(trip, carol.userId(), alice.userId(), Money.eur("30.00"), Money.eur("100.00"), null,
+					MutableClock.START)
+			.payment());
+		carols.reject(alice.userId(), "Not arrived", MutableClock.START);
+		payments.save(carols);
+		saved(SettlementPayment
+			.waive(trip, alice.userId(), carol.userId(), Money.eur("20.00"), Money.eur("100.00"), "Gift",
+					MutableClock.START)
+			.payment());
 		assertThat(reserved(bob, alice)).isEqualByComparingTo("40.00");
 		assertThat(reserved(carol, alice)).isEqualByComparingTo("20.00");
 		assertThat(reserved(null, alice)).isEqualByComparingTo("60.00");
 
 		// when Alice confirms, the ledger has not booked it yet (D5)
-		service.confirm(alice.userId(), bobs.paymentId());
+		bobs.confirm(alice.userId(), MutableClock.START);
+		payments.save(bobs);
 
 		// then it is still reserved
 		assertThat(reserved(bob, null)).isEqualByComparingTo("40.00");
@@ -229,6 +241,10 @@ class SettlementPaymentServiceDbTest {
 	private RecordSettlementPaymentCommand bobPaysAlice(String amount) {
 		return new RecordSettlementPaymentCommand(trip, bob.userId(), alice.userId(), Money.eur(amount),
 				"Bank transfer");
+	}
+
+	private SettlementPayment saved(SettlementPayment payment) {
+		return payments.save(payment);
 	}
 
 	private BigDecimal reserved(AccountFixture debtor, AccountFixture creditor) {

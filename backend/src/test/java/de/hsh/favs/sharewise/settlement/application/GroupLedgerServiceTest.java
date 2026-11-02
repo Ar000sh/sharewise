@@ -4,17 +4,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import de.hsh.favs.sharewise.MutableClock;
+import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture;
+import de.hsh.favs.sharewise.settlement.api.DebtWaived;
+import de.hsh.favs.sharewise.settlement.api.SettlementPaymentConfirmed;
+import de.hsh.favs.sharewise.settlement.api.SettlementPaymentId;
+import de.hsh.favs.sharewise.shared.Money;
 import de.hsh.favs.sharewise.settlement.domain.GroupLedger;
 import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
 import java.time.Clock;
 import java.time.ZoneOffset;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -72,6 +79,56 @@ class GroupLedgerServiceTest {
 		// then
 		verify(ledgers, never()).save(any());
 		assertThat(ledger.entries()).isEmpty();
+	}
+
+	@Test
+	void bookingTheSameConfirmedPaymentTwiceBooksOnce() {
+		// given the payment is booked by the first delivery
+		var confirmed = new SettlementPaymentConfirmed(new SettlementPaymentId(UUID.randomUUID()), event.groupId(),
+				AccountFixture.bob().userId(), AccountFixture.alice().userId(), Money.eur("10.00"), MutableClock.START);
+		when(ledgers.isBooked(event.groupId().value(), confirmed.paymentId().value())).thenReturn(false, true);
+
+		// when the event is delivered twice
+		service.bookSettlementPayment(confirmed);
+		service.bookSettlementPayment(confirmed);
+
+		// then one pair of entries and one save
+		verify(ledgers, times(1)).save(ledger);
+		assertThat(ledger.entries()).hasSize(2);
+		assertThat(ledger.entries()).allSatisfy(e -> assertThat(e.occurredAt()).isEqualTo(MutableClock.START));
+	}
+
+	@Test
+	void bookingTheSameWaiverTwiceBooksOnce() {
+		// given
+		var waived = new DebtWaived(new SettlementPaymentId(UUID.randomUUID()), event.groupId(),
+				AccountFixture.bob().userId(), AccountFixture.alice().userId(), Money.eur("10.00"), MutableClock.START);
+		when(ledgers.isBooked(event.groupId().value(), waived.paymentId().value())).thenReturn(false, true);
+
+		// when
+		service.bookDebtWaiver(waived);
+		service.bookDebtWaiver(waived);
+
+		// then
+		verify(ledgers, times(1)).save(ledger);
+		assertThat(ledger.entries()).hasSize(2);
+	}
+
+	@Test
+	void bookingCreatesTheLedgerIfNoExpenseCameFirst() {
+		// given
+		var confirmed = new SettlementPaymentConfirmed(new SettlementPaymentId(UUID.randomUUID()), event.groupId(),
+				AccountFixture.bob().userId(), AccountFixture.alice().userId(), Money.eur("10.00"), MutableClock.START);
+
+		// when
+		service.bookSettlementPayment(confirmed);
+
+		// then created, locked, checked, then saved
+		var order = inOrder(ledgers);
+		order.verify(ledgers).createIfAbsent(event.groupId().value());
+		order.verify(ledgers).findForUpdate(event.groupId().value());
+		order.verify(ledgers).isBooked(event.groupId().value(), confirmed.paymentId().value());
+		order.verify(ledgers).save(ledger);
 	}
 
 }
