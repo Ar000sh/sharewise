@@ -1,6 +1,7 @@
 package de.hsh.favs.sharewise.settlement.web;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.UUID;
@@ -12,6 +13,7 @@ import tools.jackson.databind.annotation.JsonDeserialize;
  * aggregate. The note is optional.
  */
 record RecordSettlementPaymentRequest(@NotNull UUID toCreditor,
-		@NotBlank @JsonDeserialize(using = AmountText.class) String amount, @Size(max = 500) String note) {
+		@NotBlank @JsonDeserialize(using = AmountText.class) String amount,
+		@Size(max = 500) @Pattern(regexp = NoteRule.NO_NUL) String note) {
 
 }

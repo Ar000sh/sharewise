@@ -121,6 +121,15 @@ class DebtWaiverControllerTest {
 	}
 
 	@Test
+	void aNoteWithANulCharacterIs400() throws Exception {
+		// when / then
+		settlement.waive(group, alice, bob, "10.00", "Gift\u0000")
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+		assertThat(events.stream(DebtWaived.class).count()).isZero();
+	}
+
+	@Test
 	void nonMemberIs403UnknownGroupIs404NoTokenIs401() throws Exception {
 		AccountFixture outsider = AccountFixture.signUp(mvc, json, "Outsider");
 

@@ -162,6 +162,23 @@ class SettlementPaymentControllerTest {
 	}
 
 	@Test
+	void aNoteWithANulCharacterIs400OnRecordAndOnReject() throws Exception {
+		// given
+		UUID payment = settlement.recordedPayment(group, bob, alice, "10.00");
+		long recordedBefore = events.stream(SettlementPaymentRecorded.class).count();
+
+		// when / then
+		settlement.record(group, bob, alice, "10.00", "Bank\u0000transfer")
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+		settlement.reject(payment, alice, "No\u0000pe")
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+		assertThat(events.stream(SettlementPaymentRecorded.class).count()).isEqualTo(recordedBefore);
+		assertThat(payments.findById(payment).orElseThrow().status()).isEqualTo(PaymentStatus.PENDING);
+	}
+
+	@Test
 	void aTooLongNoteIs400() throws Exception {
 		settlement.record(group, bob, alice, "10.00", "x".repeat(501))
 			.andExpect(status().isBadRequest())
