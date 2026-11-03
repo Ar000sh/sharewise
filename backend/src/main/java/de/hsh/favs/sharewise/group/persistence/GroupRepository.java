@@ -2,6 +2,7 @@ package de.hsh.favs.sharewise.group.persistence;
 
 import de.hsh.favs.sharewise.group.domain.Group;
 import jakarta.persistence.LockModeType;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,8 +21,19 @@ public interface GroupRepository extends JpaRepository<Group, UUID> {
 			where g.id = :groupId and m.userId = :userId and m.status = de.hsh.favs.sharewise.group.domain.MembershipStatus.ACTIVE""")
 	boolean existsActiveMember(@Param("groupId") UUID groupId, @Param("userId") UUID userId);
 
-	@Query("select g.id from Group g join g.invitations i where i.token = :token")
-	Optional<UUID> findIdByInvitationToken(@Param("token") String token);
+	@Query("select g.id from Group g join g.invitations i where i.id = :invitationId")
+	Optional<UUID> findIdByInvitationId(@Param("invitationId") UUID invitationId);
+
+	/**
+	 * The groups that have an open invitation (stored PENDING, not expired at
+	 * {@code now}) for the user. The expiry instant itself still counts as open.
+	 */
+	@Query("""
+			select distinct g from Group g join g.invitations i
+			where i.invitee = :userId
+			and i.status = de.hsh.favs.sharewise.group.domain.InvitationStatus.PENDING
+			and i.expiresAt >= :now""")
+	List<Group> findAllWithPendingInvitationFor(@Param("userId") UUID userId, @Param("now") Instant now);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select g from Group g where g.id = :id")

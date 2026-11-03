@@ -92,7 +92,7 @@ Each returns its event; the service stays thin: load (with the row lock), call, 
 - Accept and decline on an expired invitation throw `INVITATION_EXPIRED` (410) and write nothing.
 - Re-inviting after `DECLINED` or expiry is allowed. **(call)**
 - **Event shapes:** `MemberInvited` replaces `email` with `invitee: UserId`; it has no consumer yet (a later email channel would be one), like `AllBalancesSettled`. `MemberJoined` gains `invitedBy: UserId`, the member who sent the invitation, `null` when the person created the group; its Javadoc says so. **(N10)** Rejected: a second event `InvitationAccepted`.
-- Migration `V204__invitations_for_accounts.sql`: add `invitee_id` as `NOT NULL` (the database starts empty); drop the `token` and `email` columns; add a plain index on `invitee_id` for the pending-invitation query. No partial unique index.
+- Migration `V205__invitations_for_accounts.sql`: add `invitee_id` as `NOT NULL` (the database starts empty); drop the `token` and `email` columns; add a plain index on `invitee_id` for the pending-invitation query. No partial unique index.
 
 ### 5.3 "My pending invitations" (review, N9)
 - `GET /invitations` answers the caller's invitations whose `statusAt(now)` is `PENDING`, newest first: `invitationId`, `group {id, name}`, `invitedBy {userId, displayName, username}`, `expiresAt`. Only the caller's own; nothing else is filterable.

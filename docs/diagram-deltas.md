@@ -7,7 +7,7 @@ The code follows the diagram `docs/domain/ShareWise_Domain_Model.drawio` for eve
 | # | Where | Diagram says | Code does | Why |
 |---|---|---|---|---|
 | 1 | `Expense` | no date | `date: LocalDate` (expense date) | journeys J4 and the UI need it |
-| 2 | `Invitation` | `email: Email`, accept by `InvitationId` | adds `token` (the link secret); `email` is optional (null for a link invitation); a link invitation stays PENDING and admits several people, an email invitation becomes ACCEPTED when used | decision D-B: links work without a mail server |
+| 2 | `Invitation` | `email: Email`, accept by `InvitationId` | `invitee: UserId` (the existing account it is for) replaces the email; there is no token and no link; only the invitee can accept or decline; `EXPIRED` is a diagram status that is derived from `expiresAt` (`Invitation.statusAt(now)`), never stored; `MemberInvited` carries `invitee`, `MemberJoined` carries `invitedBy` (null for the group creator), `InvitationDeclined` carries `invitationId`, `invitee`, `invitedBy` | design 2026-11-03 N2/N10: invitations go to existing accounts found by exact username or email; supersedes the link invitation of decision D-B |
 | 3 | `GroupLedger` | attribute `groupLedger: List<LedgerEntry>` | `entries` | the attribute shared the class name |
 | 4 | `LedgerEntry` | `referenceId: String` | `referenceId: UUID` | it always references an expense or payment id |
 | 5 | `Currency` | value object with `code` | `java.util.Currency` | no reason to wrap the JDK type |
@@ -24,8 +24,8 @@ The code follows the diagram `docs/domain/ShareWise_Domain_Model.drawio` for eve
 
 ## Known gaps (diagram is right, code comes later)
 
-- Group: `declineInvitation`, `promoteToAdmin`, `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, `updateBalanceStatus`, and their events; the enums already have all their values.
+- Group: `promoteToAdmin`, `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, `updateBalanceStatus`, and their events; the enums already have all their values.
 - Expense: `correct`, `remove`, the `EXACT` and `PERCENTAGE` split strategies, `ExpenseCorrected`, `ExpenseRemoved`.
 - Settlement: `appendCorrectionReversal`, `appendRemovalReversal`, `appendSettlementPayment`, `appendDebtWaiver`, `projectSimplifiedPlan`, the `SettlementPayment` aggregate and its events, `MemberBalanceStatusChanged`, `AllBalancesSettled`.
 - Account: `changeDisplayName`, `deactivate` (email verification, password reset and lock-out are Keycloak's).
-- Invitations by email and the in-app invitation inbox (decision D-B).
+- Notification context (the in-app inbox): built with the `notification` module of design 2026-11-03.

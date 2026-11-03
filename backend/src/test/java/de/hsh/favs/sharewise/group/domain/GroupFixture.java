@@ -57,8 +57,7 @@ public class GroupFixture {
 		Group group = Group.createGroup(new GroupName(name), Currency.getInstance("EUR"), creator, createdAt).group();
 		ReflectionTestUtils.setField(group, "id", id);
 		for (UserId joiner : joiners) {
-			String token = "fixture-token-" + joiner.value();
-			Invitation invitation = group.inviteMember(null, creator, token, createdAt).invitation();
+			Invitation invitation = group.inviteMember(joiner, creator, createdAt).invitation();
 			group.acceptInvitation(invitation.id(), joiner, createdAt);
 		}
 		return group;
