@@ -21,6 +21,7 @@ These rules exist because the parallel build produced four slightly different co
 | `ConventionTests` (ArchUnit) | `backend/src/test/.../ConventionTests` | layering, package placement or class-suffix rules of document 01 are broken |
 | Java formatter check | `./mvnw validate` (`spring-javaformat:validate`) | a file is not formatted; fix with `./mvnw spring-javaformat:apply` |
 | ESLint + `tsc` | `npm run lint`, `npm run typecheck` | frontend rules of document 04 are broken |
+| Theme rules (dark mode) | `frontend/src/lib/themeRules.test.ts` (in `npm test`) | a component or page uses a fixed black, white or grey, a fixed background without its own text colour, or a coloured text without its `dark:` counterpart (document 04, section 5) |
 | Contract lint | `npx @redocly/cli lint docs/api/openapi.yaml` | the contract is invalid |
 | Commit gate | `.githooks/pre-commit` | a secret or key is staged, the contract is mixed with code, the lock file lost platforms, or the staged part fails format/lint/typecheck |
 | Push gate | `.githooks/pre-push` | any check above fails (full backend `verify`, Docker required) |
