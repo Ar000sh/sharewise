@@ -654,6 +654,15 @@
             </Array>
           </mxGeometry>
         </mxCell>
+        <mxCell id="N" parent="1" style="rounded=1;arcSize=1;container=1;collapsible=0;html=1;whiteSpace=wrap;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontStyle=1;fontSize=15;fillColor=#F1F7EC;strokeColor=#5A8A44;fontColor=#5A8A44;" value="Notification (generic subdomain: the inbox, a leaf that only consumes events)" vertex="1">
+          <mxGeometry height="330" width="560" x="2166" y="1360" as="geometry" />
+        </mxCell>
+        <mxCell id="Notification" parent="N" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#DAF5F9;strokeColor=#0E8FA3;strokeWidth=2;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Aggregate Root»&lt;/i&gt;&lt;br&gt;&lt;b&gt;Notification&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ id: NotificationId&lt;br&gt;+ recipient: UserId&lt;br&gt;+ type: NotificationType&lt;br&gt;+ groupId: GroupId&lt;br&gt;+ actor: UserId&lt;br&gt;+ reference: UUID&lt;br&gt;+ occurredAt: Instant&lt;br&gt;+ readAt: Instant [0..1]&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;+ notify(UserId, NotificationType, GroupId, UserId, UUID, Instant): Notification&lt;br&gt;+ markRead(Instant): void&lt;/p&gt;" vertex="1">
+          <mxGeometry height="195" width="330" x="20" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="NotificationType" parent="N" style="verticalAlign=top;align=left;overflow=fill;html=1;whiteSpace=wrap;fontSize=11;fontFamily=Helvetica;fillColor=#FDF1D6;strokeColor=#C79A2B;" value="&lt;p style=&quot;margin:0px;margin-top:5px;text-align:center;&quot;&gt;&lt;i&gt;«Enumeration»&lt;/i&gt;&lt;br&gt;&lt;b&gt;NotificationType&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;MEMBER_JOINED&lt;br&gt;INVITATION_DECLINED&lt;br&gt;(later: PAYMENT_TO_CONFIRM, PAYMENT_CONFIRMED, PAYMENT_REJECTED, DEBT_WAIVED, MEMBER_REMOVED)&lt;/p&gt;" vertex="1">
+          <mxGeometry height="100" width="170" x="370" y="50" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>

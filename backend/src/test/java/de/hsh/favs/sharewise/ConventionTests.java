@@ -26,7 +26,7 @@ class ConventionTests {
 	private static final String ROOT = "de.hsh.favs.sharewise";
 
 	/** Modules that already follow the conventions. */
-	private static final Set<String> CHECKED = Set.of("account", "group", "expense", "settlement");
+	private static final Set<String> CHECKED = Set.of("account", "group", "expense", "settlement", "notification");
 
 	private static final JavaClasses MAIN = new ClassFileImporter()
 		.withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
@@ -35,6 +35,24 @@ class ConventionTests {
 	@TestFactory
 	Stream<DynamicTest> everyCheckedModuleFollowsTheLayoutRules() {
 		return CHECKED.stream().map(m -> DynamicTest.dynamicTest(m, () -> check(m)));
+	}
+
+	/**
+	 * The notification module is a leaf (document 01, section 1): it consumes events and
+	 * nobody uses it.
+	 */
+	@org.junit.jupiter.api.Test
+	void nothingDependsOnTheNotificationModule() {
+		noClasses().that()
+			.resideOutsideOfPackages(ROOT + ".notification..")
+			.and()
+			.resideInAPackage(ROOT + "..")
+			.should()
+			.dependOnClassesThat()
+			.resideInAPackage(ROOT + ".notification..")
+			.because("notification is a leaf module that only consumes events")
+			.allowEmptyShould(true)
+			.check(MAIN);
 	}
 
 	private static void check(String module) {
@@ -70,7 +88,11 @@ class ConventionTests {
 			.check(own);
 
 		// the api package is a pure contract: interfaces, records, enumerations
-		classes().that().resideInAPackage(base + ".api").should(beInterfaceRecordOrEnum()).check(own);
+		classes().that()
+			.resideInAPackage(base + ".api")
+			.should(beInterfaceRecordOrEnum())
+			.allowEmptyShould(true)
+			.check(own);
 
 		// placement by suffix
 		classes().that()

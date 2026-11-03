@@ -25,7 +25,7 @@ spring:
     open-in-view: false
   flyway:
     # One folder per module. Versions are prefixed per module:
-    # shared V0xx, account V1xx, group V2xx, expense V3xx, settlement V4xx.
+    # shared V0xx, account V1xx, group V2xx, expense V3xx, settlement V4xx, notification V5xx.
     # Out of order, because a new account migration (V104) must still run on a database that already
     # has a settlement migration (V401).
     out-of-order: true
@@ -35,3 +35,4 @@ spring:
       - classpath:db/migration/group
       - classpath:db/migration/expense
       - classpath:db/migration/settlement
+      - classpath:db/migration/notification

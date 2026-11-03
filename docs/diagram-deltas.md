@@ -21,6 +21,8 @@ The code follows the diagram `docs/domain/ShareWise_Domain_Model.drawio` for eve
 | 13 | Account context | `Account`, the external identity provider | adds `CurrentUser` (the caller of the HTTP request, from the validated Keycloak token) and `JwtCallerConverter`; `UserProfile` is served by the port `UserProfiles` | infrastructure, not part of the `Account` aggregate |
 | 14 | `ExpenseShare` | value object of Expense | lives in `expense.api` (events carry it); stored through an internal `StoredShare` | `api` may not import `domain` |
 | 15 | `Account`, `UserProfile` | no username | `Account.username: Username` (set from the Keycloak `preferred_username` on first login, unique, never contains `@`); `UserProfile.username`; the port `UserProfiles` gains `findByIdentifier(String)` | invitations find an existing account by exact username or email (design 2026-11-03, N3/N4); the diagram was updated with this change |
+| 16 | Notification context | no such context | new context `Notification`: aggregate root `Notification` (ids only), enumeration `NotificationType`; consumes `MemberJoined` and `InvitationDeclined`; the diagram was updated with this change | design 2026-11-03 N1/N7: the inbox shows things that happened; a pending invitation is asked from the group context instead |
+| 17 | `GroupDirectory` | no such port | read model port in `group.api`: `findNames(Set<GroupId>)` | the inbox shows group names without copying them |
 
 ## Known gaps (diagram is right, code comes later)
 

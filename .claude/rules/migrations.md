@@ -5,7 +5,7 @@ paths:
 
 # Flyway migrations
 
-- **Never edit a migration that is on `main`** (the guard hook blocks it). Add a new file with the next free version of the module's range: shared `V0xx`, account `V1xx`, group `V2xx`, expense `V3xx`, settlement `V4xx`, in `db/migration/<module>/`.
+- **Never edit a migration that is on `main`** (the guard hook blocks it). Add a new file with the next free version of the module's range: shared `V0xx`, account `V1xx`, group `V2xx`, expense `V3xx`, settlement `V4xx`, notification `V5xx`, in `db/migration/<module>/`. Check the other open branches (`git ls-tree -r --name-only <branch> backend/src/main/resources/db/migration`) so two branches never use the same version: Flyway refuses to start with two files of one version after the merge.
 - `out-of-order: true` is on, so module ranges may interleave; never renumber.
 - Tables plural `snake_case`; ids `UUID`; money `NUMERIC(19,2)`; instants `TIMESTAMPTZ` named `<what>_at`; enumerations as `VARCHAR` of the constant name.
 - No foreign keys across modules: a column that references another module holds a plain `UUID`.
