@@ -17,7 +17,7 @@ function emailOf(firstName: string): string {
 /** Fills Keycloak's registration page (default login theme); the display name becomes "<firstName> Tester". */
 async function registerOnKeycloak(page: Page, firstName: string) {
   await expect(page).toHaveURL(/\/realms\/sharewise\//);
-  await page.getByLabel("Username", { exact: true }).fill(usernameOf(firstName));
+  await page.getByLabel("Username").fill(usernameOf(firstName));
   await page.getByLabel("First name").fill(firstName);
   await page.getByLabel("Last name").fill(LAST_NAME);
   await page.getByLabel("Email").fill(emailOf(firstName));
