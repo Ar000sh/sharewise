@@ -9,3 +9,6 @@ node_modules/
 # probe tests written by the edge-case-attacker agent; promoted to real tests by hand
 backend/src/test/java/de/hsh/favs/sharewise/probe/
 frontend/src/probe/
+
+# superpowers visual companion (throwaway mockups)
+.superpowers/
