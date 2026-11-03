@@ -52,7 +52,7 @@ export function InviteForm({ groupId }: { groupId: string }) {
       </button>
       {invited && <p role="status">Invitation sent to @{invited}</p>}
       {error && (
-        <p role="alert" className="text-red-700">
+        <p role="alert" className="text-red-700 dark:text-red-400">
           {error}
         </p>
       )}

@@ -128,14 +128,14 @@ export function InboxBell() {
         )}
       </button>
       {open && (
-        <div role="region" aria-label="Inbox entries" className="absolute right-0 z-10 mt-2 w-80 max-w-[90vw] rounded border bg-white p-3 text-sm shadow">
+        <div role="region" aria-label="Inbox entries" className="absolute right-0 z-10 mt-2 w-80 max-w-[90vw] rounded border bg-background p-3 text-sm text-foreground shadow">
           {error && (
-            <p role="alert" className="mb-2 text-red-700">
+            <p role="alert" className="mb-2 text-red-700 dark:text-red-400">
               {error}
             </p>
           )}
-          {invitations === null && <p className="mb-2 text-gray-600">Invitations could not be loaded.</p>}
-          {notifications === null && <p className="mb-2 text-gray-600">Entries could not be loaded.</p>}
+          {invitations === null && <p className="mb-2 text-foreground/70">Invitations could not be loaded.</p>}
+          {notifications === null && <p className="mb-2 text-foreground/70">Entries could not be loaded.</p>}
           <ul className="flex flex-col gap-2">
             {(invitations ?? []).map((invitation) => (
               <li key={invitation.invitationId} className="flex flex-col gap-1 border-l-4 border-blue-500 pl-2">
@@ -146,7 +146,7 @@ export function InboxBell() {
                     onClick={() => void accept(invitation)}
                     disabled={busyId === invitation.invitationId}
                     aria-label={`Accept invitation to ${invitation.group.name}`}
-                    className="rounded bg-black px-2 py-1 text-white disabled:opacity-50"
+                    className="rounded bg-foreground px-2 py-1 text-background disabled:opacity-50"
                   >
                     Accept
                   </button>
@@ -165,7 +165,7 @@ export function InboxBell() {
             {entries.map((entry) => (
               <li key={entry.id}>
                 {entry.readAt ? (
-                  <span className="text-gray-500">{describe(entry)}</span>
+                  <span className="text-foreground/60">{describe(entry)}</span>
                 ) : (
                   <button type="button" onClick={() => void markRead(entry)} className="text-left font-medium">
                     {describe(entry)}
@@ -174,7 +174,7 @@ export function InboxBell() {
               </li>
             ))}
           </ul>
-          {empty && invitations !== null && notifications !== null && <p className="text-gray-600">Nothing new.</p>}
+          {empty && invitations !== null && notifications !== null && <p className="text-foreground/70">Nothing new.</p>}
           {notifications && notifications.unreadCount > 0 && (
             <button type="button" onClick={() => void markAllRead()} className="mt-2 underline">
               Mark all as read

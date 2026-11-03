@@ -43,8 +43,8 @@ export function CreateGroupForm() {
           onChange={(e) => setName(e.target.value)}
         />
       </label>
-      {error && <p role="alert" className="text-red-700">{error}</p>}
-      <button type="submit" className="rounded bg-black px-3 py-2 text-white">
+      {error && <p role="alert" className="text-red-700 dark:text-red-400">{error}</p>}
+      <button type="submit" className="rounded bg-foreground px-3 py-2 text-background">
         Create group
       </button>
     </form>

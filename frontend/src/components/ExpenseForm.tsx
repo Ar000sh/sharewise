@@ -123,7 +123,7 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
         ))}
       </fieldset>
       {shares.length > 0 && (
-        <ul aria-label="Shares" className="text-sm text-gray-700">
+        <ul aria-label="Shares" className="text-sm text-foreground/80">
           {participants.map((m, i) => (
             <li key={m.userId} className="flex justify-between">
               <span>{m.displayName}</span>
@@ -132,8 +132,8 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
           ))}
         </ul>
       )}
-      {error && <p role="alert" className="text-red-700">{error}</p>}
-      <button type="submit" disabled={busy} className="rounded bg-black px-3 py-2 text-white disabled:opacity-50">
+      {error && <p role="alert" className="text-red-700 dark:text-red-400">{error}</p>}
+      <button type="submit" disabled={busy} className="rounded bg-foreground px-3 py-2 text-background disabled:opacity-50">
         Add expense
       </button>
     </form>

@@ -43,7 +43,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
             role="tab"
             aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={`px-3 py-2 ${tab === t ? "border-b-2 border-black font-medium" : "text-gray-600"}`}
+            className={`px-3 py-2 ${tab === t ? "border-b-2 border-foreground font-medium" : "text-foreground/70"}`}
           >
             {t}
           </button>
