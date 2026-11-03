@@ -25,15 +25,20 @@ public interface GroupRepository extends JpaRepository<Group, UUID> {
 	Optional<UUID> findIdByInvitationId(@Param("invitationId") UUID invitationId);
 
 	/**
-	 * The groups that have an open invitation (stored PENDING, not expired at
-	 * {@code now}) for the user. The expiry instant itself still counts as open.
+	 * The user's open invitations (stored PENDING, not expired at {@code now}; the expiry
+	 * instant itself still counts as open), newest first, as plain rows in one query. The
+	 * same rule as {@code Invitation.statusAt}, asked of the database so a list does not
+	 * load whole groups.
 	 */
 	@Query("""
-			select distinct g from Group g join g.invitations i
+			select new de.hsh.favs.sharewise.group.persistence.PendingInvitationRow(
+				i.id, g.id, g.name, i.createdBy, i.expiresAt)
+			from Group g join g.invitations i
 			where i.invitee = :userId
 			and i.status = de.hsh.favs.sharewise.group.domain.InvitationStatus.PENDING
-			and i.expiresAt >= :now""")
-	List<Group> findAllWithPendingInvitationFor(@Param("userId") UUID userId, @Param("now") Instant now);
+			and i.expiresAt >= :now
+			order by i.createdAt desc, i.id desc""")
+	List<PendingInvitationRow> findPendingInvitationsFor(@Param("userId") UUID userId, @Param("now") Instant now);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select g from Group g where g.id = :id")

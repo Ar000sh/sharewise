@@ -17,7 +17,6 @@ import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
@@ -171,24 +170,17 @@ public class GroupService {
 		events.publishEvent(declined);
 	}
 
-	/** The caller's open invitations, newest first. */
+	/**
+	 * The caller's open invitations, newest first. A read use case: one query that
+	 * returns plain rows, so no group is loaded and no lazy collection is touched.
+	 */
 	@Transactional(readOnly = true)
 	public List<PendingInvitationView> listPendingInvitations(UserId caller) {
-		Instant now = clock.instant();
-		return groups.findAllWithPendingInvitationFor(caller.value(), now)
+		return groups.findPendingInvitationsFor(caller.value(), clock.instant())
 			.stream()
-			.flatMap(group -> group.pendingInvitationsFor(caller, now)
-				.stream()
-				.map(invitation -> new Pending(invitation,
-						new PendingInvitationView(invitation.id(), group.groupId(), group.name().value(),
-								invitation.createdBy(), invitation.expiresAt()))))
-			.sorted(Comparator.comparing((Pending p) -> p.invitation().createdAt()).reversed())
-			.map(Pending::view)
+			.map(row -> new PendingInvitationView(new InvitationId(row.invitationId()), new GroupId(row.groupId()),
+					row.groupName(), new UserId(row.invitedBy()), row.expiresAt()))
 			.toList();
-	}
-
-	private record Pending(Invitation invitation, PendingInvitationView view) {
-
 	}
 
 	private Group lockedGroup(UUID groupId) {

@@ -26,12 +26,14 @@ import de.hsh.favs.sharewise.group.domain.GroupFixture;
 import de.hsh.favs.sharewise.group.domain.GroupName;
 import de.hsh.favs.sharewise.group.domain.Invitation;
 import de.hsh.favs.sharewise.group.persistence.GroupRepository;
+import de.hsh.favs.sharewise.group.persistence.PendingInvitationRow;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -263,21 +265,28 @@ class GroupServiceTest {
 	}
 
 	@Test
-	void pendingInvitationsAreListedNewestFirstWithTheGroupName() {
-		// given two groups that invited bob one hour apart
-		Group older = new GroupFixture().withCreator(alice).withName("Older").build();
-		Group newer = new GroupFixture().withId(UUID.randomUUID()).withCreator(alice).withName("Newer").build();
-		Invitation first = older.inviteMember(bob, alice, MutableClock.START).invitation();
-		Invitation second = newer.inviteMember(bob, alice, MutableClock.START.plus(Duration.ofHours(1))).invitation();
-		when(groups.findAllWithPendingInvitationFor(bob.value(), MutableClock.START)).thenReturn(List.of(older, newer));
+	void pendingInvitationsAreMappedFromTheRowsInTheOrderTheDatabaseGivesThem() {
+		// given the database answers with plain rows, newest first
+		UUID newerInvitation = UUID.randomUUID();
+		UUID olderInvitation = UUID.randomUUID();
+		UUID newerGroup = UUID.randomUUID();
+		UUID olderGroup = UUID.randomUUID();
+		Instant expiry = MutableClock.START.plus(Duration.ofDays(7));
+		when(groups.findPendingInvitationsFor(bob.value(), MutableClock.START))
+			.thenReturn(List.of(new PendingInvitationRow(newerInvitation, newerGroup, "Newer", alice.value(), expiry),
+					new PendingInvitationRow(olderInvitation, olderGroup, "Older", alice.value(), expiry)));
 
 		// when
 		var pending = service.listPendingInvitations(bob);
 
 		// then
-		assertThat(pending).extracting(p -> p.id()).containsExactly(second.id(), first.id());
+		assertThat(pending).extracting(p -> p.id().value()).containsExactly(newerInvitation, olderInvitation);
+		assertThat(pending).extracting(p -> p.groupId().value()).containsExactly(newerGroup, olderGroup);
 		assertThat(pending).extracting(p -> p.groupName()).containsExactly("Newer", "Older");
-		assertThat(pending).allSatisfy(p -> assertThat(p.invitedBy()).isEqualTo(alice));
+		assertThat(pending).allSatisfy(p -> {
+			assertThat(p.invitedBy()).isEqualTo(alice);
+			assertThat(p.expiresAt()).isEqualTo(expiry);
+		});
 	}
 
 }
