@@ -20,11 +20,24 @@ The code follows the diagram `docs/domain/ShareWise_Domain_Model.drawio` for eve
 | 12 | `GroupMembershipView` | local copy updated from group events | snapshot built by the `GroupMembership` port with one fresh query when an expense is recorded; same shape and same use as drawn. The event-fed copy exists on branch `feature/expense-membership-copy` (P3 step, see `2026-10-28-membership-copy-decision.md`) | decision D-A: no race between "joined" and "first expense"; can become the event-fed copy later without touching the domain |
 | 13 | Account context | `Account`, the external identity provider | adds `CurrentUser` (the caller of the HTTP request, from the validated Keycloak token) and `JwtCallerConverter`; `UserProfile` is served by the port `UserProfiles` | infrastructure, not part of the `Account` aggregate |
 | 14 | `ExpenseShare` | value object of Expense | lives in `expense.api` (events carry it); stored through an internal `StoredShare` | `api` may not import `domain` |
+| 15 | `GroupLedger.append*` | `appendExpenseEntry`, `appendSettlementPayment`, `appendDebtWaiver` return `MemberBalanceStatusChanged, AllBalancesSettled` | the append operations return nothing; `GroupLedgerService` compares the balance totals (a database query) before and after the booking and publishes one `MemberBalanceStatusChanged` per flipped person and `AllBalancesSettled` when everybody is at zero | the ledger would have to load every entry to know the old and new zero-states; the query reads only the totals (see `GroupLedger.projectBalances` Javadoc) |
+| 16 | `MemberBalanceStatusChanged`, `AllBalancesSettled` | drawn among `SettlementDomainEvents` | published by settlement, but live in `shared.events`, not in `settlement.api` | the one exception to "events live in the publisher's `api`" (D12, convention 01 section 5.1): group consumes the first, and a group listener for a `settlement.api` type would make the module graph cyclic. The diagram keeps them under settlement because it shows who publishes, not the Java package |
+
+## Deliberate changes made in the diagram (settlements, 03.11.26)
+
+The team version of 17.10.26 drew these differently; the diagram now shows what the code does.
+
+| # | Where | Team version said | Now (diagram and code) | Why |
+|---|---|---|---|---|
+| S1 | `SettlementPayment.waive` | instance operation `waive(UserId creditor, String note): DebtWaived` on an existing payment | a factory like `record`: `waive(GroupId, UserId creditor, UserId fromDebtor, Money amount, Money openDebt, String note): DebtWaived`; the new payment is WAIVED from the start (code: plus `now`, returns `Waived(payment, event)`, see row 8) | a creditor forgives a debt without any payment having been reported first, so there is no PENDING payment to call `waive` on (R17, design D8) |
+| S2 | `SettlementPayment` fields | `id`, `groupId`, `fromDebtor`, `toCreditor`, `amount`, `status` | adds `note: String`, `createdAt: Instant`, `resolvedAt: Instant`; `record` takes an optional `note` | the contract shows the debtor's note, the rejection or waiver reason, and when a payment was reported and answered |
+| S3 | `Group.updateBalanceStatus` | `updateBalanceStatus(UserId member, boolean hasZeroBalance)` | adds `Instant occurredAt` (the event's time) | `MemberBalanceStatusChanged` arrives asynchronously and possibly out of order; an older event must not overwrite a newer one, or a member with debts could leave (R11) |
+| S4 | `Membership` | no time for the balance flag | adds `balanceStatusAt: Instant` (column `balance_status_at`, migration `group/V204`, null before the first event) | where S3 stores the time of the last applied event; equal times apply, so a frozen test clock still works |
 
 ## Known gaps (diagram is right, code comes later)
 
-- Group: `declineInvitation`, `promoteToAdmin`, `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, `updateBalanceStatus`, and their events; the enums already have all their values.
+- Group: `declineInvitation`, `promoteToAdmin`, `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, and their events; the enums already have all their values.
 - Expense: `correct`, `remove`, the `EXACT` and `PERCENTAGE` split strategies, `ExpenseCorrected`, `ExpenseRemoved`.
-- Settlement: `appendCorrectionReversal`, `appendRemovalReversal`, `appendSettlementPayment`, `appendDebtWaiver`, `projectSimplifiedPlan`, the `SettlementPayment` aggregate and its events, `MemberBalanceStatusChanged`, `AllBalancesSettled`.
+- Settlement: `appendCorrectionReversal`, `appendRemovalReversal` (they follow `correct` and `remove` of the expense context). `AllBalancesSettled` is published but has no consumer yet (auto-archive L5 is parked).
 - Account: `changeDisplayName`, `deactivate` (email verification, password reset and lock-out are Keycloak's).
 - Invitations by email and the in-app invitation inbox (decision D-B).

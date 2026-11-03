@@ -9,7 +9,7 @@ One module per bounded context, plus `shared`. Root package `de.hsh.favs.sharewi
 | `account` | Account | generic | `Account` |
 | `group` | Group | supporting | `Group` (with entities `Membership`, `Invitation`) |
 | `expense` | Expense | core | `Expense` |
-| `settlement` | Settlement | core | `GroupLedger` (with entity `LedgerEntry`), `SettlementPayment` (Ex5) |
+| `settlement` | Settlement | core | `GroupLedger` (with entity `LedgerEntry`), `SettlementPayment` |
 | `shared` | none | none | value objects used by several contexts only (see 2.4); the package `shared.events` holds the two upstream balance events and nothing else (see 5.1) |
 
 A module's allowed dependencies are declared once, in its `package-info.java` (`@ApplicationModule(allowedDependencies = ...)`), and checked by `ModularityTests`. Current rules: `account → shared`; `group → account::api, shared`; `expense → account::api, group::api, shared`; `settlement → account::api, group::api, expense::api, shared`. Adding a dependency is a design decision: change the line, say why in the commit.
@@ -87,7 +87,7 @@ Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCam
 
 ### 3.3 Settlement context
 - Aggregate root `GroupLedger` (`groupId`, entries) with append-only entity `LedgerEntry` (`id: EntryId`, `userId`, `deltaAmount: Money`, `type: LedgerEntryType`, `referenceId`, `occurredAt`); operations `appendExpenseEntry`, `appendCorrectionReversal`, `appendRemovalReversal`, `appendSettlementPayment`, `appendDebtWaiver`, `projectBalances`, `projectSimplifiedPlan`.
-- Aggregate root `SettlementPayment` (`record`, `confirm`, `reject`, `waive`), enumeration `PaymentStatus`.
+- Aggregate root `SettlementPayment` (`record`, `confirm`, `reject`, `waive`; `record` and `waive` are factories that create the payment, `waive` already as WAIVED, see `docs/diagram-deltas.md` S1), enumeration `PaymentStatus`.
 - Read models `MemberBalance(userId, netBalance)`, `SettlementPlan(simplifiedDebts)`, value object `DirectedDebt(fromDebtor, toCreditor, amount)`.
 - Events: `SettlementPaymentRecorded`, `SettlementPaymentConfirmed`, `SettlementPaymentRejected`, `DebtWaived` (in `settlement.api`); `MemberBalanceStatusChanged`, `AllBalancesSettled` (published by settlement, but in `shared.events`, see 5.1).
 
