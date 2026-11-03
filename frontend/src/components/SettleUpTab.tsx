@@ -129,7 +129,7 @@ function Section({ title, quiet, children }: { title: string; quiet?: boolean; c
  * The settle-up plan of a group (R10 to R12): who pays whom how much. Everybody sees the whole plan; the rows that
  * involve the current user come first. "I paid" reports a payment, which the creditor still has to confirm.
  */
-export function SettleUpTab({ groupId }: { groupId: string }) {
+export function SettleUpTab({ groupId, onAnswered }: { groupId: string; onAnswered?: () => void }) {
   const me = useCurrentUser();
   const { data: plan, error, reload } = useApi<PlanEdge[]>(`/groups/${groupId}/settlement-plan`);
   const [paidAt, setPaidAt] = useState<number>();
@@ -154,6 +154,7 @@ export function SettleUpTab({ groupId }: { groupId: string }) {
           // The ledger books a confirmation asynchronously, so the plan is looked at again for a while.
           void reload();
           setPaidAt(Date.now());
+          onAnswered?.();
         }}
       />
       {plan.length === 0 && <p>Everybody is settled.</p>}

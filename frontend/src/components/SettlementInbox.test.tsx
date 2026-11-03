@@ -231,6 +231,21 @@ describe("PendingBadge", () => {
     expect(view.container).toBeEmptyDOMElement();
   });
 
+  it("badgeAsksAgainAsSoonAsItsRefreshKeyChanges", async () => {
+    // given the badge shows two
+    serve([[payment("p1", "Bob", "30.00"), payment("p2", "Carol", "1.00")], [payment("p2", "Carol", "1.00")]]);
+    const view = render(<PendingBadge refreshKey={0} />);
+    await screen.findByLabelText("2 settlement payments waiting for your answer");
+    expect(inboxCalls()).toBe(1);
+
+    // when the key is bumped (an answer was given)
+    view.rerender(<PendingBadge refreshKey={1} />);
+
+    // then the count drops without waiting for the poll
+    expect(await screen.findByLabelText("1 settlement payment waiting for your answer")).toBeInTheDocument();
+    expect(inboxCalls()).toBe(2);
+  });
+
   it("badgePollsAgainEvery30Seconds", async () => {
     // given
     vi.useFakeTimers({ shouldAdvanceTime: true });

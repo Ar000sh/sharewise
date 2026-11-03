@@ -28,6 +28,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
   );
   const [tab, setTab] = useState<Tab>("Expenses");
   const [lastRecordedAt, setLastRecordedAt] = useState<number>();
+  const [answers, setAnswers] = useState(0);
   const [notice, setNotice] = useState<string>();
   const dismissNotice = useCallback(() => setNotice(undefined), []);
 
@@ -48,7 +49,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
             className={`px-3 py-2 ${tab === t ? "border-b-2 border-black font-medium" : "text-gray-600"}`}
           >
             {t}
-            {t === "Settle up" && <PendingBadge groupId={group.id} />}
+            {t === "Settle up" && <PendingBadge groupId={group.id} refreshKey={answers} />}
           </button>
         ))}
       </div>
@@ -75,7 +76,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
         </div>
       )}
       {tab === "Balances" && <BalancesTab groupId={group.id} lastRecordedAt={lastRecordedAt} />}
-      {tab === "Settle up" && <SettleUpTab groupId={group.id} />}
+      {tab === "Settle up" && <SettleUpTab groupId={group.id} onAnswered={() => setAnswers((n) => n + 1)} />}
       {tab === "Members" && (
         <section className="flex flex-col gap-3">
           <MemberList members={group.members} currentUserId={me?.userId} />

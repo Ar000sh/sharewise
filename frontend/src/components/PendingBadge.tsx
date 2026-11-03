@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { components } from "@/api/schema";
 import { PENDING_FOR_ME_PATH } from "@/components/SettlementInbox";
 import { useApi } from "@/lib/useApi";
@@ -11,8 +11,16 @@ type SettlementPayment = components["schemas"]["SettlementPayment"];
 export const BADGE_POLL_MS = 30_000;
 
 /** The number of settlement payments waiting for my answer (all groups, or one). Renders nothing at zero or on failure. */
-export function PendingBadge({ groupId }: { groupId?: string }) {
+export function PendingBadge({ groupId, refreshKey = 0 }: { groupId?: string; refreshKey?: number }) {
   const { data, reload } = useApi<SettlementPayment[]>(PENDING_FOR_ME_PATH);
+  const loadedFor = useRef(refreshKey);
+
+  // The caller bumps `refreshKey` after an answer, so the count is asked for at once and not only by the poll.
+  useEffect(() => {
+    if (loadedFor.current === refreshKey) return;
+    loadedFor.current = refreshKey;
+    void reload();
+  }, [refreshKey, reload]);
 
   useEffect(() => {
     const timer = setInterval(() => void reload(), BADGE_POLL_MS);
