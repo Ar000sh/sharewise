@@ -5,6 +5,7 @@ import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { SettlementInbox } from "@/components/SettlementInbox";
 import { Toast } from "@/components/Toast";
+import { WaiveDebtForm, openCents } from "@/components/WaiveDebtForm";
 import { api } from "@/lib/api";
 import { useCurrentUser } from "@/lib/currentUser";
 import { messageFor } from "@/lib/errors";
@@ -13,10 +14,6 @@ import { useApi } from "@/lib/useApi";
 import { useLookAgain } from "@/lib/useLookAgain";
 
 type PlanEdge = components["schemas"]["SettlementPlanEdge"];
-
-function openCents(edge: PlanEdge): number {
-  return amountToCents(edge.amount) - amountToCents(edge.pendingAmount);
-}
 
 function Pending({ edge }: { edge: PlanEdge }) {
   const pending = amountToCents(edge.pendingAmount);
@@ -134,6 +131,8 @@ export function SettleUpTab({ groupId, onAnswered }: { groupId: string; onAnswer
   const { data: plan, error, reload } = useApi<PlanEdge[]>(`/groups/${groupId}/settlement-plan`);
   const [paidAt, setPaidAt] = useState<number>();
   const [notice, setNotice] = useState<string>();
+  // `n` changes with every click on a "Waive" button so the form starts over with that debtor.
+  const [waivePrefill, setWaivePrefill] = useState<{ fromDebtor: string; n: number }>();
   const dismissNotice = useCallback(() => setNotice(undefined), []);
 
   useLookAgain(paidAt, reload);
@@ -143,6 +142,7 @@ export function SettleUpTab({ groupId, onAnswered }: { groupId: string; onAnswer
 
   const owe = plan.filter((e) => e.fromDebtor === me.userId);
   const owed = plan.filter((e) => e.toCreditor === me.userId);
+  const waivable = owed.filter((e) => openCents(e) > 0);
   const others = plan.filter((e) => e.fromDebtor !== me.userId && e.toCreditor !== me.userId);
 
   return (
@@ -178,7 +178,18 @@ export function SettleUpTab({ groupId, onAnswered }: { groupId: string; onAnswer
         <Section title="Owed to you">
           {owed.map((e) => (
             <li key={e.fromDebtor} className="px-3 py-2">
-              <span>{`${e.fromDebtorName} owes ${formatEuro(amountToCents(e.amount))}`}</span>
+              <div className="flex items-center justify-between gap-2">
+                <span>{`${e.fromDebtorName} owes ${formatEuro(amountToCents(e.amount))}`}</span>
+                {openCents(e) > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setWaivePrefill({ fromDebtor: e.fromDebtor, n: (waivePrefill?.n ?? 0) + 1 })}
+                    className="rounded border px-3 py-1"
+                  >
+                    Waive
+                  </button>
+                )}
+              </div>
               <Pending edge={e} />
             </li>
           ))}
@@ -192,6 +203,22 @@ export function SettleUpTab({ groupId, onAnswered }: { groupId: string; onAnswer
             </li>
           ))}
         </Section>
+      )}
+      {waivable.length > 0 && (
+        <section aria-label="Waive manually" className="flex flex-col gap-1">
+          <h2 className="font-medium">Waive manually</h2>
+          <WaiveDebtForm
+            key={waivePrefill?.n ?? 0}
+            groupId={groupId}
+            debtors={waivable}
+            prefill={waivePrefill}
+            onWaived={() => {
+              void reload();
+              setPaidAt(Date.now());
+              setNotice("Debt waived.");
+            }}
+          />
+        </section>
       )}
       {notice && <Toast message={notice} onDismiss={dismissNotice} />}
     </div>
