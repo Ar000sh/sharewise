@@ -123,7 +123,7 @@ function Section({ title, quiet, children }: { title: string; quiet?: boolean; c
 }
 
 /**
- * The settle-up plan of a group (R10 to R12): who pays whom how much. Everybody sees the whole plan; the rows that
+ * The settle-up plan of a group (R15 to R17): who pays whom how much. Everybody sees the whole plan; the rows that
  * involve the current user come first. "I paid" reports a payment, which the creditor still has to confirm.
  */
 export function SettleUpTab({ groupId, onAnswered }: { groupId: string; onAnswered?: () => void }) {
