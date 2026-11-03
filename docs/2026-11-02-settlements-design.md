@@ -137,3 +137,16 @@ Then, separately: group lifecycle; team discussion of auto-archive.
 
 ## 10. Left to the builder
 Exact table columns of `settlement_payments` (migration V403), JSON field names (`openapi.yaml` decides), listener class names, query shapes for the reservation sums.
+
+## 8c. Attack findings (independent Opus attacker, 2026-11-03)
+The attacker reproduced eight issues; none was found by our own tests. Fixed: A4 (a NUL character in a note gave 500; now 400, `NoteRule`), A5 (amounts outside the contract pattern were accepted; now 400, `AmountText`), A8 (wrong rule range in a `SettleUpTab` comment). Held up: concurrent confirms, record against waive races, a repeated confirm event, all authorization checks, the amount and note edge cases.
+
+| Id | Finding | Status |
+|---|---|---|
+| A1 | A PENDING payment can be confirmed after a later plain expense has already zeroed the pair; booking it makes the creditor negative (50.00 payment, Bob then pays a 50.00 expense for Alice, Alice confirms: Alice -50.00). `OpenDebtPolicy` only caps at `record` time. F6 placed this risk in package 2, but package 1 already reaches it. | **DECIDE** (user): confirm refuses or caps, or the anti-goal is reworded |
+| A2 | `AllBalancesSettled` is published while a PENDING payment is open. The parked auto-archive (L5) would archive a group with an open payment. | **DECIDE** (user), before L5 consumes the event |
+| A3 | After a plan reshuffle the plan can show an edge the server always refuses with `PAYMENT_EXCEEDS_OPEN_DEBT` (the person cap is used up on another pair, `pendingAmount` only counts the pair). | **DECIDE** (user): plan counts the person-level reservation |
+| A6 | Note length: contract counts characters, Bean Validation counts UTF-16 units (300 emoji are refused). | parked, low |
+| A7 | `confirm` / `reject` answer 422 `GROUP_NOT_OPEN` for an archived group; the contract lists no 422 there. | parked, needs `/contract-change` |
+| A9 | The contract's Amount pattern accepts `010.00`; the code now refuses leading zeros (stricter than the contract). Tighten the pattern in a contract commit. | parked, low |
+Not probed: former members (no leave operation yet), out-of-order `MemberBalanceStatusChanged`, HTTP-level concurrency, more than 16 non-zero members (greedy fallback), a listener failing halfway (F4). The UI limits notes to 200 characters while the API allows 500; `PaymentForm` lets a 0 amount through to the server.
