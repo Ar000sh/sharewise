@@ -14,7 +14,7 @@ src/
 e2e/                   Playwright specs (*.spec.ts)
 ```
 - Components: `PascalCase.tsx`, one exported component per file, named like the file. Hooks: `useThing.ts`. Plain modules: `camelCase.ts`.
-- Route handlers mirror the backend path (`/api/groups/{groupId}/expenses` → `src/app/api/groups/[groupId]/expenses/route.ts`), each starts with `await connection()` and forwards through `proxyToBackend`.
+- Route handlers mirror the backend path (`/api/groups/{groupId}/expenses` → `src/app/api/groups/[groupId]/expenses/route.ts`), each starts with `await connection()` and forwards through `proxyToBackend`. One exception: an *aggregating* handler that has no single backend endpoint (`/api/inbox` asks `/invitations` and `/notifications` and merges the answers, so the bell needs one call) is named after what it serves, still calls the backend only through `proxyToBackend`, and passes a 401 on unchanged.
 
 ## 2. API access and types
 

@@ -97,13 +97,13 @@ Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCam
 - Read model `UserProfile(userId, displayName, username, isActive)`, served by a port that offers `findProfiles(Set<UserId>)` and `findByIdentifier(String)` (exact username or email, trimmed, case-insensitive, never partial).
 - Events: none yet; the diagram draws none for the Account context.
 
-### 3.5a Notification context
+### 3.5 Words we do not use
+`User` for the aggregate (it is `Account`; `UserId` and `UserProfile` are fine), `Member` for a person (it is the `UserId` of an active `Membership`), `Share` alone (it is `ExpenseShare`), `Role` alone (`GroupRole`), `payer`/`payerId` (it is `paidBy`), `amountCents`/`Cents` (money is `Money`), `Dto`, `Manager`, `Helper`, `Util`, `Data`, `Info`, `Impl` for anything except an `api` port implementation.
+
+### 3.6 Notification context
 - Aggregate root `Notification`: `id: NotificationId`, `recipient: UserId`, `type: NotificationType`, `groupId: GroupId`, `actor: UserId` (who did it), `reference: UUID` (what it points at), `occurredAt`, `readAt` (null = unread); operations `notify` (factory) and `markRead`. It stores ids only; names and texts are looked up when the inbox is read.
 - Enumeration `NotificationType {MEMBER_JOINED, INVITATION_DECLINED}`; later `PAYMENT_TO_CONFIRM`, `PAYMENT_CONFIRMED`, `PAYMENT_REJECTED`, `DEBT_WAIVED`, `MEMBER_REMOVED`. A received invitation is not an entry: it is state, asked from the group context (`GET /invitations`).
 - Consumes `MemberJoined` and `InvitationDeclined` (listeners are asynchronous and delegate to `NotificationService`). Uses the ports `UserProfiles` and `GroupDirectory`.
-
-### 3.5 Words we do not use
-`User` for the aggregate (it is `Account`; `UserId` and `UserProfile` are fine), `Member` for a person (it is the `UserId` of an active `Membership`), `Share` alone (it is `ExpenseShare`), `Role` alone (`GroupRole`), `payer`/`payerId` (it is `paidBy`), `amountCents`/`Cents` (money is `Money`), `Dto`, `Manager`, `Helper`, `Util`, `Data`, `Info`, `Impl` for anything except an `api` port implementation.
 
 ## 4. Class naming by role (checked by `ConventionTests`)
 
