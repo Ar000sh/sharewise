@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { SettlementInbox } from "@/components/SettlementInbox";
 import { Toast } from "@/components/Toast";
 import { api } from "@/lib/api";
 import { useCurrentUser } from "@/lib/currentUser";
@@ -147,6 +148,14 @@ export function SettleUpTab({ groupId }: { groupId: string }) {
   return (
     <div className="flex flex-col gap-4">
       <ErrorBanner error={error} />
+      <SettlementInbox
+        groupId={groupId}
+        onAnswered={() => {
+          // The ledger books a confirmation asynchronously, so the plan is looked at again for a while.
+          void reload();
+          setPaidAt(Date.now());
+        }}
+      />
       {plan.length === 0 && <p>Everybody is settled.</p>}
       {owe.length > 0 && (
         <Section title="You owe">

@@ -8,6 +8,7 @@ import { ExpenseForm } from "@/components/ExpenseForm";
 import { ExpenseList } from "@/components/ExpenseList";
 import { InviteButton } from "@/components/InviteButton";
 import { MemberList } from "@/components/MemberList";
+import { PendingBadge } from "@/components/PendingBadge";
 import { SettleUpTab } from "@/components/SettleUpTab";
 import { Toast } from "@/components/Toast";
 import { useCurrentUser } from "@/lib/currentUser";
@@ -47,6 +48,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
             className={`px-3 py-2 ${tab === t ? "border-b-2 border-black font-medium" : "text-gray-600"}`}
           >
             {t}
+            {t === "Settle up" && <PendingBadge groupId={group.id} />}
           </button>
         ))}
       </div>
