@@ -69,7 +69,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create an invite link token (valid 7 days). The caller must be a member. */
+        /** Invite an existing account by exact username or exact email (valid 7 days, R9). The caller must be a member. The invitation belongs to that account; there is no link anyone can use. */
         post: operations["createInvitation"];
         delete?: never;
         options?: never;
@@ -77,19 +77,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/invitations/{token}/accept": {
+    "/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's own open invitations (not accepted, declined or older than 7 days), newest first. */
+        get: operations["listPendingInvitations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/invitations/{invitationId}/accept": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                token: string;
+                invitationId: components["parameters"]["InvitationId"];
             };
             cookie?: never;
         };
         get?: never;
         put?: never;
-        /** Join the group the token belongs to. The caller becomes a MEMBER. */
+        /** Join the group. Only the invited account can accept; an invitation meant for somebody else is INVITATION_NOT_FOUND. The caller becomes a MEMBER. */
         post: operations["acceptInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/invitations/{invitationId}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitationId: components["parameters"]["InvitationId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decline the invitation. Only the invited account can decline; nobody joins. */
+        post: operations["declineInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's inbox entries about things that happened (somebody joined, somebody declined), newest first, plus the number of unread ones. An invitation that waits for an answer is not an entry: it is in GET /invitations. */
+        get: operations["listNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Marks all of the caller's entries as read. */
+        post: operations["markAllNotificationsRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/{notificationId}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notificationId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Marks one of the caller's entries as read. Another person's entry is NOTIFICATION_NOT_FOUND. */
+        post: operations["markNotificationRead"];
         delete?: never;
         options?: never;
         head?: never;
@@ -147,13 +236,26 @@ export interface components {
             title?: string;
             status: number;
             /** @enum {string} */
-            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "GROUP_NOT_OPEN" | "SPLIT_NOT_SUPPORTED";
+            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "GROUP_NOT_OPEN" | "SPLIT_NOT_SUPPORTED" | "ACCOUNT_NOT_FOUND" | "ALREADY_INVITED" | "NOTIFICATION_NOT_FOUND";
             detail?: string;
         };
         User: {
             /** Format: uuid */
             userId: string;
             displayName: string;
+            /** @description Lower case, 3 to 30 characters of a-z 0-9 . _ -, chosen at sign-up. */
+            username: string;
+        };
+        UserSummary: {
+            /** Format: uuid */
+            userId: string;
+            displayName: string;
+            username: string;
+        };
+        GroupRef: {
+            /** Format: uuid */
+            id: string;
+            name: string;
         };
         CreateGroupRequest: {
             name: string;
@@ -176,10 +278,51 @@ export interface components {
         GroupDetail: components["schemas"]["Group"] & {
             members: components["schemas"]["Member"][];
         };
+        InviteMemberRequest: {
+            /** @description Exact username or exact email of an existing account (an identifier with "@" is an email). Trimmed and compared case-insensitively; no partial matching. */
+            identifier: string;
+        };
         Invitation: {
-            token: string;
+            /** Format: uuid */
+            invitationId: string;
+            invitee: components["schemas"]["UserSummary"];
             /** Format: date-time */
             expiresAt: string;
+        };
+        PendingInvitation: {
+            /** Format: uuid */
+            invitationId: string;
+            group: components["schemas"]["GroupRef"];
+            invitedBy: components["schemas"]["UserSummary"];
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        /**
+         * @description More types arrive with later features (payments, waived debts, removal).
+         * @enum {string}
+         */
+        NotificationType: "MEMBER_JOINED" | "INVITATION_DECLINED";
+        Notification: {
+            /** Format: uuid */
+            id: string;
+            type: components["schemas"]["NotificationType"];
+            /** Format: date-time */
+            occurredAt: string;
+            /** Format: date-time */
+            readAt: string | null;
+            /** @description Who did it (the person who joined or declined); null when the account cannot be resolved. */
+            actor: components["schemas"]["UserSummary"] | null;
+            /** @description The group it is about; null when the group cannot be resolved. */
+            group: components["schemas"]["GroupRef"] | null;
+            /**
+             * Format: uuid
+             * @description What the entry points at (the person who joined, or the declined invitation).
+             */
+            reference: string;
+        };
+        NotificationList: {
+            unreadCount: number;
+            items: components["schemas"]["Notification"][];
         };
         /**
          * @description Money as a decimal string with exactly two decimals (EUR), e.g. "900.00".
@@ -306,7 +449,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description Unknown invitation token */
+        /** @description Unknown invitation, already answered, or meant for somebody else (the three look the same, so ids cannot be probed) */
         InvitationNotFound: {
             headers: {
                 [name: string]: unknown;
@@ -319,6 +462,24 @@ export interface components {
                  *       "status": 404,
                  *       "code": "INVITATION_NOT_FOUND",
                  *       "detail": "Invitation not found"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Unknown entry, or an entry of another person */
+        NotificationNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Not Found",
+                 *       "status": 404,
+                 *       "code": "NOTIFICATION_NOT_FOUND",
+                 *       "detail": "Notification not found"
                  *     }
                  */
                 "application/problem+json": components["schemas"]["Problem"];
@@ -381,6 +542,7 @@ export interface components {
     };
     parameters: {
         GroupId: string;
+        InvitationId: string;
     };
     requestBodies: never;
     headers: never;
@@ -406,7 +568,8 @@ export interface operations {
                     /**
                      * @example {
                      *       "userId": "aaaaaaaa-0000-0000-0000-000000000001",
-                     *       "displayName": "Alice"
+                     *       "displayName": "Alice",
+                     *       "username": "alice"
                      *     }
                      */
                     "application/json": components["schemas"]["User"];
@@ -540,7 +703,16 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "identifier": "bob"
+                 *     }
+                 */
+                "application/json": components["schemas"]["InviteMemberRequest"];
+            };
+        };
         responses: {
             /** @description Created */
             201: {
@@ -550,7 +722,12 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "token": "k3Xq9v2mT8aLw0pZr7YdNc4HbJf1UeS5",
+                     *       "invitationId": "dddddddd-0000-0000-0000-000000000001",
+                     *       "invitee": {
+                     *         "userId": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *         "displayName": "Bob",
+                     *         "username": "bob"
+                     *       },
                      *       "expiresAt": "2027-06-08T10:00:00Z"
                      *     }
                      */
@@ -560,7 +737,62 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["NotAMember"];
-            404: components["responses"]["GroupNotFound"];
+            /** @description Unknown group, or no account for the username or email */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The person is already a member, or already has an open invitation to this group */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPendingInvitations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pending invitations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "invitationId": "dddddddd-0000-0000-0000-000000000001",
+                     *         "group": {
+                     *           "id": "bbbbbbbb-0000-0000-0000-000000000001",
+                     *           "name": "Mallorca 2027"
+                     *         },
+                     *         "invitedBy": {
+                     *           "userId": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *           "displayName": "Alice",
+                     *           "username": "alice"
+                     *         },
+                     *         "expiresAt": "2027-06-08T10:00:00Z"
+                     *       }
+                     *     ]
+                     */
+                    "application/json": components["schemas"]["PendingInvitation"][];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
         };
     };
     acceptInvitation: {
@@ -568,7 +800,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                token: string;
+                invitationId: components["parameters"]["InvitationId"];
             };
             cookie?: never;
         };
@@ -595,6 +827,119 @@ export interface operations {
             404: components["responses"]["InvitationNotFound"];
             409: components["responses"]["AlreadyMember"];
             410: components["responses"]["InvitationExpired"];
+        };
+    };
+    declineInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invitationId: components["parameters"]["InvitationId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Declined */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["InvitationNotFound"];
+            410: components["responses"]["InvitationExpired"];
+        };
+    };
+    listNotifications: {
+        parameters: {
+            query?: {
+                /** @description Only unread entries. */
+                unread?: boolean;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The entries and the unread count */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "unreadCount": 1,
+                     *       "items": [
+                     *         {
+                     *           "id": "eeeeeeee-0000-0000-0000-000000000001",
+                     *           "type": "MEMBER_JOINED",
+                     *           "occurredAt": "2027-06-02T09:30:00Z",
+                     *           "readAt": null,
+                     *           "actor": {
+                     *             "userId": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *             "displayName": "Bob",
+                     *             "username": "bob"
+                     *           },
+                     *           "group": {
+                     *             "id": "bbbbbbbb-0000-0000-0000-000000000001",
+                     *             "name": "Mallorca 2027"
+                     *           },
+                     *           "reference": "aaaaaaaa-0000-0000-0000-000000000002"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["NotificationList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+        };
+    };
+    markAllNotificationsRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+        };
+    };
+    markNotificationRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notificationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotificationNotFound"];
         };
     };
     listExpenses: {

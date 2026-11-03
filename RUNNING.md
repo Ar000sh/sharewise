@@ -71,10 +71,13 @@ If port 5432 is taken by another local Postgres, stop that one first (the compos
 ### Try the Mallorca example (needs one browser profile per person)
 Use a normal window for Alice and private/incognito windows (or other browsers) for Bob and Carol, because the session
 cookie is per browser.
-1. **Alice:** sign up, create the group "Mallorca 2027", open the Members tab, **Invite someone**, copy the link.
-2. **Bob / Carol:** open the link, **Create an account**, then **Join group**.
-3. **Alice:** add "Hotel", 900 €, paid by Alice, everyone. **Bob:** "Dinner", 180 €, paid by Bob, everyone.
-4. Balances tab: Alice +540,00 €, Bob -180,00 €, Carol -360,00 €. They arrive through an event, so they can lag the
+1. **Bob / Carol:** sign up first (choose a username). Only people with an account can be invited.
+2. **Alice:** sign up, create the group "Mallorca 2027", open the Members tab, type Bob's username (or Carol's email)
+   into **Username or email** and press **Invite**. "No account found" means that person has not signed in yet.
+3. **Bob / Carol:** reload, open the bell (**Inbox**), read "Alice … invited you to Mallorca 2027" and press **Accept**
+   (or **Decline**). Alice's bell shows "… joined Mallorca 2027" a moment later (it arrives through an event).
+4. **Alice:** add "Hotel", 900 €, paid by Alice, everyone. **Bob:** "Dinner", 180 €, paid by Bob, everyone.
+5. Balances tab: Alice +540,00 €, Bob -180,00 €, Carol -360,00 €. They arrive through an event, so they can lag the
    expense by a moment.
 
 ## Tests

@@ -1,5 +1,6 @@
 "use client";
 
+import { InboxBell } from "@/components/InboxBell";
 import { useCurrentUser } from "@/lib/currentUser";
 
 /** Header part that shows who is signed in. Finding out (and sending visitors to sign in) is the provider's job. */
@@ -9,6 +10,7 @@ export function AuthBar() {
   if (!user) return null;
   return (
     <div className="flex items-center gap-3 text-sm">
+      <InboxBell />
       <span>
         Signed in as <strong>{user.displayName}</strong>
       </span>

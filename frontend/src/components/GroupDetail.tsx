@@ -6,7 +6,7 @@ import { BalancesTab } from "@/components/BalancesTab";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { ExpenseForm } from "@/components/ExpenseForm";
 import { ExpenseList } from "@/components/ExpenseList";
-import { InviteButton } from "@/components/InviteButton";
+import { InviteForm } from "@/components/InviteForm";
 import { MemberList } from "@/components/MemberList";
 import { Toast } from "@/components/Toast";
 import { useCurrentUser } from "@/lib/currentUser";
@@ -75,7 +75,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
       {tab === "Members" && (
         <section className="flex flex-col gap-3">
           <MemberList members={group.members} currentUserId={me?.userId} />
-          <InviteButton groupId={group.id} />
+          <InviteForm groupId={group.id} />
         </section>
       )}
       {notice && <Toast message={notice} onDismiss={dismissNotice} />}
