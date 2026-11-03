@@ -67,8 +67,8 @@ Concepts this practises (for P2/P3): bounded context and context map (a new, ups
 | `declineInvitation(invitationId, user, now)` (new) | same checks as accept; sets `DECLINED`; nothing joins | `InvitationDeclined(groupId, invitationId, invitee, invitedBy, occurredAt)` (new) |
 
 - `GroupService.inviteMember(groupId, inviter, identifier)` resolves the identifier through `UserProfiles.findByIdentifier` (group already depends on `account::api`) and passes the `UserId` to the domain. No account found: `ACCOUNT_NOT_FOUND` (404, new); the domain never calls another module.
-- Two members inviting the same person at the same time: a partial unique index on `(group_id, invitee_id) WHERE status = 'PENDING'` makes the database the referee; the loser gets `ALREADY_INVITED`. Accept and decline lock the group row like accept does today.
-- An expired invitation is never "swept": it is expired **at read time** (`expiresAt` passed), as accept does today. `EXPIRED` is shown, not stored, until something needs it stored. **(call)**
+- **The partial unique index on `(group_id, invitee_id) WHERE status = 'PENDING'` is what guarantees one pending invitation per person and group.** `inviteMember` loads the group with the same row lock that accept uses (`findByIdForUpdate`, a one-word difference), so two members inviting the same person together get a clean `ALREADY_INVITED` for the second instead of a database error. There is no dedicated parallel test: the rule is tested sequentially. (An invite cannot race with the invitee's own accept: while an invitation is pending a new invite is refused, and after accepting the person is a member.)
+- **Expiry is checked at read time, and stored when touched.** An invitation counts as expired when `now` is after `expiresAt` (as accept does today); at the exact instant it is still valid. Because the partial unique index looks at the *stored* status, an expired invitation still stored as `PENDING` would block every re-invitation forever. So `inviteMember` first sets the stored status of that invitee's expired `PENDING` invitations in this group to `EXPIRED` (a `Group` root method, same transaction), and only then checks for `ALREADY_INVITED`. Accept and decline on an expired invitation answer `INVITATION_EXPIRED` (410) and may store `EXPIRED` too. **(found by the probe, section 9 F1)**
 - Re-inviting after `DECLINED` or expiry is allowed. **(call)** (Spam by repeated invites is listed as a failure mode, section 9.)
 - **Event shape changes:** `MemberInvited` replaces `email` with `invitee: UserId`. `MemberJoined` gains `invitedBy: UserId`, the member who sent the invitation; it is `null` when the person created the group, because nobody invited them. The notification listener creates nothing when it is `null`. The Javadoc of the record says so. **(decided O1, option A)** Rejected: a second event `InvitationAccepted` (cleaner, but one more event the diagram lacks and two messages for one action in P3).
 - Migration `V204__invitations_for_accounts.sql`: add `invitee_id` as `NOT NULL` (the database starts empty, so no old link invitations need converting); drop the `token` and `email` columns (nothing reads them any more); add the partial unique index.
@@ -84,7 +84,7 @@ Why a module and not a table in `group`: payment and waiver entries come from `s
 - Operations: `Notification.notify(...)` (factory) and `markRead(now)` (idempotent: reading twice keeps the first time).
 - `NotificationType` starts with `INVITATION_RECEIVED`, `MEMBER_JOINED`, `INVITATION_DECLINED`; later `PAYMENT_TO_CONFIRM`, `PAYMENT_CONFIRMED`, `PAYMENT_REJECTED`, `DEBT_WAIVED`, `MEMBER_REMOVED`.
 - A notification is **immutable except `readAt`**. It stores ids, never texts or names; the texts are built from the type and the looked-up names when the inbox is read (names through `UserProfiles`, the group name through a new group port, see 6.4). Why: names change, texts can be reworded or translated, and events must stay ids only (document 01).
-- Table `notifications`, migration `V501__notifications.sql` (new range `V5xx`), `UNIQUE (recipient_id, type, reference)` so a redelivered event cannot create a second row (idempotent consumer); the insert uses `ON CONFLICT DO NOTHING`, the same technique as `AccountRepository.insertIfAbsent`. Index on `(recipient_id, read_at, occurred_at DESC)` for the bell.
+- Table `notifications`, migration `V501__notifications.sql` (new range `V5xx`), `UNIQUE (recipient_id, type, reference, occurred_at)` so a redelivered event cannot create a second row (idempotent consumer). `occurred_at` is in the key because `MEMBER_JOINED` has no invitation to point at: its `reference` is the id of the person who joined, and without the time a person who leaves and rejoins would be dropped as a duplicate. A redelivered event carries the same `occurredAt`, so it still collides; the insert uses `ON CONFLICT DO NOTHING`, the same technique as `AccountRepository.insertIfAbsent`. Index on `(recipient_id, read_at, occurred_at DESC)` for the bell.
 - Nothing is sent to yourself: if `actor` equals the recipient no row is made.
 
 ### 6.3 Which event becomes which entry
@@ -102,7 +102,7 @@ One `<Event>Listener` per event, `@ApplicationModuleListener` (asynchronous, aft
 
 ### 6.4 Ports and endpoints
 - Group `api` gets one read-only port `GroupDirectory` **(call)**, which answers without a transaction: the group name for a set of group ids, and the status of a set of invitation ids (so the inbox can hide Accept/Decline on an invitation that was answered meanwhile). Unknown ids are left out. It needs an integration test without a transaction (document 02, pitfall 5).
-- **When an entry counts as read** **(call)**: when the user clicks it, answers an invitation (accept or decline), or uses "mark all as read". Merely opening the dropdown does not mark anything, so an unanswered invitation keeps the badge until it is dealt with.
+- **When an entry counts as read** **(call)**: when the user clicks it, answers an invitation, or uses "mark all as read". Merely opening the dropdown does not mark anything, so an unanswered invitation keeps the badge until it is dealt with. **Answering is detected by a listener, not by the browser or by `group`:** `group` must not call `notification` (it is a leaf), and the browser making a second call would leave the badge wrong when the invitation is answered in another tab. So `notification` also listens to `MemberJoined` and `InvitationDeclined` and marks the invitee's `INVITATION_RECEIVED` entry of that group as read (one pending invitation per person and group is guaranteed, section 5). The badge therefore drops a moment after the answer (eventual consistency). **(found by the probe, F6)**
 - **Retention** **(call)**: entries are never deleted in this version (like completed `event_publication` rows, document `2026-10-27`); a cleanup is parked.
 - HTTP (contract first, `/contract-change`); every call is for the caller's own notifications only:
   - `GET /notifications?unread=true&limit=10` returns entries with `id`, `type`, `occurredAt`, `readAt`, `actor {userId, displayName, username}`, `group {id, name}`, `reference`, and for invitations the current `invitationStatus`; plus `unreadCount`.
@@ -128,16 +128,74 @@ Delivery channels are separate from the inbox: a later `EmailNotifier` is anothe
 5. Frontend: invite box, bell and dropdown, removal of the link flow, e2e.
 6. After `feature/settlements` is merged into `main`: listeners for payment, confirmation, rejection and waiver; `MemberRemoved` when `removeMember` exists.
 
-## 9. Failure modes (first list; `/edge-case-probe` plan mode completes it)
-- Invitation answered or expired while the entry is still in an open dropdown: accept answers 404/409/410 and the UI refreshes the entry.
-- The listener fails: the invitation exists but no inbox row. Redelivered on restart only (document `2026-10-27`); consequence accepted, the inviter sees the pending invitation in the group and can re-invite after it expires.
-- Event delivered twice: unique constraint plus `ON CONFLICT DO NOTHING`; tested.
-- Invitee deactivated, or deletes the account, after being invited.
-- Repeated invitations to someone who declined (harassment): not limited in this version; parked.
-- Account enumeration: "No account found" tells the inviter whether a username or address is registered. Accepted: only a signed-in member of a group can ask, and a clear message matters more here **(decided)**. No rate limit.
-- Two people choosing the same username at the same moment: Keycloak refuses the second; the unique index in ShareWise is the second safety net.
-- Group closed or archived with open invitations: accept follows the group status rules when those exist.
-- Notification for an actor who is also the recipient: no row.
+## 9. Failure modes (edge-case-probe, plan mode, 03.11.26)
+Marks: **design** = handled by a rule in this document; **test** = goes into the plan as a test from the start; **parked** = not in this version, with why and the trigger that brings it back. Ranked by impact × likelihood inside each block. "F" numbers are referenced from the sections above.
+
+### Fixed in the design by this probe (were flaws)
+| # | Flaw found | Fix |
+|---|---|---|
+| F1 | Expiry was only checked at read time, but the unique index looks at the stored `PENDING` status: an expired, never-touched invitation would block re-inviting that person forever. | `inviteMember` stores `EXPIRED` for the invitee's expired invitations first (section 5). **test**: invite, advance the clock past 7 days, invite again succeeds; at exactly `expiresAt` the old one is still valid. |
+| F2 | Two members inviting the same person in the same instant both pass the in-memory check; the second would fail on the unique index with a 500. (Very unlikely in a friends-sized group; an invite racing with the invitee's own accept is impossible, see section 5.) | `inviteMember` takes the same row lock as accept, one word (section 5). **test**: sequential only, a second invite of the same person gives `ALREADY_INVITED`. No thread-based test. |
+| F3 | "Answering an invitation marks its entry read" implied `group` calls `notification` or the browser makes a second call. | A listener in `notification` on `MemberJoined` / `InvitationDeclined` (section 6.4). **test**: after accept the entry is read; accepting in another session also clears the badge. |
+| F4 | The unique key `(recipient, type, reference)` would drop a rejoin as a duplicate (`MEMBER_JOINED` has no invitation id). | `occurred_at` joins the key (section 6.2). **test**: same event twice gives one row; same person joining twice gives two. |
+
+### Authorization and input
+| # | Case | Handling |
+|---|---|---|
+| F5 | Accept or decline an invitation meant for somebody else, or a random id. | **design**: `INVITATION_NOT_FOUND` (404) for both, so ids cannot be probed. **test** at API level, with an invitee who is also a member of another group. |
+| F6 | Mark read / list the notifications of another person. | **design**: every query filters on the caller; a foreign id answers 404. **test**: Alice cannot read or mark Bob's entry, `read-all` touches only her rows. |
+| F7 | A non-member, or a former member, invites. | **design**: `NOT_A_MEMBER` (existing rule). **test**. |
+| F8 | Identifier blank, whitespace only, 255+ characters, upper case, unicode look-alikes, `%` or `_` (wildcards if someone writes a `LIKE`), `@` only, two `@`. | **design**: trim, lower case, exact equality only (never `LIKE`), blank is 400, longer than 254 is 400. Usernames are ASCII only, so look-alike letters never match. **test** (parameterized) incl. `%` and `_`. |
+| F9 | Invite yourself; invite a current member; invite somebody with a pending invitation. | **design**: `ALREADY_MEMBER` / `ALREADY_INVITED`. **test**. |
+| F10 | `limit` of 0, negative or huge on `GET /notifications`; `unread=maybe`. | **design**: limit 1 to 50 (default 10), else 400. **test**. |
+| F11 | Every new endpoint without a token, with an expired token. | **design**: 401 `UNAUTHENTICATED` like the others. **test** one per endpoint group. |
+
+### Accounts and usernames
+| # | Case | Handling |
+|---|---|---|
+| F12 | A person signed up at Keycloak but has never opened ShareWise: no `Account` exists yet (accounts are created on the first request), so the lookup says "No account found". | **design, accepted**: the sign-up flow lands on ShareWise, which calls `GET /me` at once, so this is a short window. The message names it: "No account found. The person must have signed in to ShareWise once." **test**: a Keycloak user without `GET /me` is not found; after `GET /me` it is. |
+| F13 | The sign-up form's username rule (Keycloak validator) and `Username` in Java drift apart. | **test**: reads the pattern from `sharewise-realm.json` and checks it against the same sample list as `Username`. |
+| F14 | A username with `@` or upper case reaches ShareWise (admin console, direct API). | **design**: `Username` normalizes to lower case and rejects `@`; first login is refused with 401 (section 4). Prevents the hijack of invitations meant for an email address. **test** both. |
+| F15 | A username unique violation inside `insertIfAbsent`. It uses `ON CONFLICT DO NOTHING`, which swallows *any* unique conflict, so the code reads it as "lost the race" and may answer a confusing 401. | **test**: two accounts with the same username (only possible through a Keycloak bug) end in a logged warning and a 401, never a half-created account. Extend the warning text that names the email so it names the username too. |
+| F16 | Email changed in Keycloak after the account was created: ShareWise keeps the first one (D10), so inviting by the new email says "not found", and the old email still finds the person. | **parked**: same as D10, an accepted rule of this project; revisit with an account-sync story. |
+| F17 | Invitee deactivated or removed after being invited. | **design**: an inactive account is not found by new lookups; an existing invitation stays, and accept fails with 401 because the token is refused. **test**: lookup of an inactive account. |
+| F18 | Test suite: realm now has no email-as-username, so `KeycloakUsers.create` must supply a unique username per test (shared Keycloak and database). | **design**: the helper generates `u` + unique suffix; fixtures expose it. |
+
+### Events and eventual consistency
+| # | Case | Handling |
+|---|---|---|
+| F19 | The same event twice. | **design**: unique key plus `ON CONFLICT DO NOTHING`. **test**: publish twice, one row. |
+| F20 | `MemberJoined` arrives for the group creator (`invitedBy` is null), or `actor` equals the recipient. | **design**: no row. **test**. |
+| F21 | A listener fails: the invitation exists, the inbox row does not. | **parked, consequence accepted**: redelivery only on restart (document `2026-10-27`). The inviter still sees the pending invitation and can re-invite after 7 days. Trigger to revisit: the broker step (Ex9). |
+| F22 | `InvitationDeclined` or `MemberJoined` is processed before `MemberInvited` (no ordering across events). | **design**: rows are independent. If the "mark read" runs first, there is nothing to mark and the later `INVITATION_RECEIVED` row stays unread although answered. **test**: that order, and the inbox then shows the invitation's real status (not the buttons) because the status is looked up at read time (section 6.4). The unread badge for it is a known small inconsistency; **parked**. |
+| F23 | Listener code calls `CurrentUser` / request-scoped state (pitfall 3) or reads a lazy collection without a transaction (pitfall 1). | **design**: listeners take ids from the event only. **test**: integration tests for `GroupDirectory` and `UserProfiles.findByIdentifier`, called with no transaction (pitfall 5). |
+| F24 | A user or group cannot be resolved when the inbox is read (account gone, group missing): ports leave unknown ids out. | **design**: the response uses a neutral fallback (`actor` null, `group` null) and the frontend shows "someone" / "a group". **test**. |
+| F25 | Old rows in `event_publication` carry the old `MemberInvited` shape (with `email`). | **design**: the database is deleted and recreated (decided), so none exist. |
+
+### Lifecycle and concurrency
+| # | Case | Handling |
+|---|---|---|
+| F26 | Double accept (double click, two tabs). | **design**: the second one sees `ACCEPTED`, answers `INVITATION_NOT_FOUND` (404; today's link flow would answer `ALREADY_MEMBER`). The frontend disables the button while the call runs and treats the 404 after a success as "already done". **test**: accept twice in a row gives 200, then 404, one membership (sequential, no threads). |
+| F27 | Accept and decline at the same moment. | **design**: the existing group lock in accept and decline serializes them; the second answers 404. **no extra test**: the status check is the same one F26 tests. |
+| F28 | Decline an expired invitation. | **design**: 410 `INVITATION_EXPIRED`, same checks as accept. **test**. |
+| F29 | Group closed or archived while an invitation is open. | **parked, trigger `closeForSettlement`/`archiveGroup`**: accept and invite must then answer `GROUP_NOT_OPEN`; the status check belongs in `Group`. Cannot happen on `main` today. The plan carries a checklist item for whoever builds those operations. |
+| F30 | A former member is invited again and accepts: `uq_memberships_group_user` would reject the second `Membership` row (500). | **parked, trigger `leaveGroup`/`removeMember`**: those operations must define whether a former member's row is reactivated (R10, `2026-10-28-membership-copy-decision.md`). Unreachable on `main` today; the plan carries a checklist item. |
+
+### Abuse and display
+| # | Case | Handling |
+|---|---|---|
+| F31 | Invitation spam: one user creates many groups and invites the same person, or re-invites after every decline. | **parked**: no limit in this version (decided: no rate limit). Trigger: any real user complaint; the cheap fix is a cool-down per (group, invitee) after a decline. |
+| F32 | A group name or display name such as `<script>` or an extremely long name appears in the inbox. | **design**: texts are built in the frontend as React text, never as HTML; names already have length limits. **test**: a component test renders `<img onerror>` as text. |
+| F33 | The bell polls with an expired token or while signed out. | **design**: the poll stops on 401 and the page handles sign-in as it does today. **test** (component). |
+| F34 | Account enumeration by "No account found". | **design, accepted (decided)**: only a signed-in group member can ask; no rate limit. |
+| F35 | An inbox entry about a group the person left or was removed from links to a page they cannot open. | **design**: `MEMBER_REMOVED` shows no link; the group page already answers 403/404 and the frontend shows its normal error. |
+
+### Ranked for scope (impact × likelihood)
+1. **F1, F26** (re-invite blocked forever after expiry, double accept): fixed in the design, mandatory tests; these happen in ordinary use and would be real bugs in a demo. F2 and F27 are one-word or no-cost, covered by the sequential tests; no concurrency tests.
+2. **F3, F19, F4** (inbox consistency: read marking, duplicates): fixed in the design, mandatory tests.
+3. **F5, F6, F8, F14** (authorization and lookup input): mandatory tests; F14 is the only one with a security impact.
+4. **F12, F13, F18** (sign-up and realm): tests; F12 is the one the user will actually hit, so its message is worded for it.
+5. **F29, F30** are parked with a trigger and a checklist item in the plan; **F31, F16, F21, F22** are parked with a reason above.
 
 ## 10. Documents that change with the code
 - **Diagram** (`docs/domain/ShareWise_Domain_Model.drawio`) and `docs/diagram-deltas.md`: new context Notification (`Notification`, `NotificationType`); `Account.username`; `Invitation.invitee: UserId` replacing the email; event `MemberInvited` carries `invitee`; `MemberJoined.invitedBy`. A code name the diagram lacks is a defect, so the diagram changes in the same commit as the code.
