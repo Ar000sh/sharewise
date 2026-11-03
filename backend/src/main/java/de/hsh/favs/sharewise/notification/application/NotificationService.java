@@ -33,10 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class NotificationService {
 
-	static final int MIN_LIMIT = 1;
-
-	static final int MAX_LIMIT = 50;
-
 	/**
 	 * One entry as it is read: the actor and the group name are null when they cannot be
 	 * resolved.
@@ -97,16 +93,13 @@ public class NotificationService {
 	}
 
 	/**
-	 * The caller's entries, newest first.
-	 * @param limit 1 to 50
-	 * @throws DomainException BAD_REQUEST for a limit outside 1 to 50
+	 * The caller's entries, newest first, together with how many unread ones the caller
+	 * has in all.
+	 * @param limit how many entries to return; the range 1 to 50 is checked by the
+	 * controller, which owns the shape of the request
 	 */
 	@Transactional(readOnly = true)
 	public NotificationList list(UserId caller, boolean unreadOnly, int limit) {
-		if (limit < MIN_LIMIT || limit > MAX_LIMIT) {
-			throw new DomainException(ErrorCode.BAD_REQUEST,
-					"The limit must be between " + MIN_LIMIT + " and " + MAX_LIMIT);
-		}
 		List<Notification> entries = notifications.findInbox(caller.value(), unreadOnly, PageRequest.of(0, limit));
 		Map<UserId, UserProfile> actors = profiles
 			.findProfiles(entries.stream().map(Notification::actor).collect(Collectors.toSet()))

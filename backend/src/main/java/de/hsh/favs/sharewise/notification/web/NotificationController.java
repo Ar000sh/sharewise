@@ -4,6 +4,8 @@ import de.hsh.favs.sharewise.account.api.CurrentUser;
 import de.hsh.favs.sharewise.notification.application.NotificationService;
 import de.hsh.favs.sharewise.notification.domain.NotificationId;
 import de.hsh.favs.sharewise.shared.UserId;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,7 +33,7 @@ class NotificationController {
 
 	@GetMapping("/notifications")
 	NotificationListResponse list(@RequestParam(defaultValue = "false") boolean unread,
-			@RequestParam(defaultValue = "10") int limit) {
+			@RequestParam(defaultValue = "10") @Min(1) @Max(50) int limit) {
 		return NotificationListResponse.of(notifications.list(caller(), unread, limit));
 	}
 

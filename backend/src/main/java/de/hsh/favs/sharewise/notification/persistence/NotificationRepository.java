@@ -11,6 +11,9 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+/**
+ * Stores the inbox entries and answers the queries of one recipient's inbox.
+ */
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
 
 	/**
