@@ -132,9 +132,9 @@ One `<Event>Listener` per event, `@ApplicationModuleListener` (asynchronous, aft
 - **Retention** **(call)**: entries are never deleted in this version (like completed `event_publication` rows, document `2026-10-27`); a cleanup is parked.
 - HTTP (contract first, `/contract-change`); every call is for the caller's own data only:
   - `GET /notifications?unread=true&limit=10` returns entries with `id`, `type`, `occurredAt`, `readAt`, `actor {userId, displayName, username}`, `group {id, name}`, `reference`; plus `unreadCount`. `limit` is 1 to 50, default 10.
-  - `POST /notifications/{id}/read`, `POST /notifications/read-all`. Another person's id answers 404.
+  - `POST /notifications/{id}/read`, `POST /notifications/read-all`. Another person's (or an unknown) id answers 404 `NOTIFICATION_NOT_FOUND` (new code, added in the plan).
   - Group: `POST /groups/{groupId}/invitations` with `{ "identifier": "alice" }` (replaces the link creation), `GET /invitations` (5.3), `POST /invitations/{invitationId}/accept` (replaces the token path), `POST /invitations/{invitationId}/decline`.
-  - New error codes `ACCOUNT_NOT_FOUND` (404), `ALREADY_INVITED` (409), in all three places (document 03, section 3).
+  - New error codes `ACCOUNT_NOT_FOUND` (404), `ALREADY_INVITED` (409), `NOTIFICATION_NOT_FOUND` (404), in all three places (document 03, section 3).
 
 ### 6.5 Seam for email later
 Delivery channels are separate from the inbox: a later `EmailNotifier` is another listener on the same events (`MemberInvited` among them), reading the recipient's email through `UserProfiles`. Not built now.
