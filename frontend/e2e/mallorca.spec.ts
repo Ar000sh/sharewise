@@ -37,7 +37,7 @@ async function addExpense(page: Page, title: string, euros: string) {
   await expect(page.getByText(title).first()).toBeVisible();
 }
 
-test("three friends sign up, share a group and see who owes what", async ({ browser }) => {
+test("three friends sign up, share a group, see who owes what and settle up", async ({ browser }) => {
   // Alice signs up, creates the group and an invite link.
   const alice = await signUp(browser, "Alice");
 
@@ -91,6 +91,29 @@ test("three friends sign up, share a group and see who owes what", async ({ brow
   await expect(balances.filter({ hasText: "Bob Tester" })).toContainText("-180,00");
   await expect(balances.filter({ hasText: "Carol Tester" })).toContainText("-360,00");
   await expect(alice.getByText("Sum: 0,00")).toBeVisible();
+
+  // Carol settles up: she reports her whole debt to Alice. It only counts once Alice confirms it (R16).
+  const carol = others[1];
+  await carol.getByRole("tab", { name: /^Settle up/ }).click();
+  const carolOwes = carol.getByRole("region", { name: "You owe" });
+  await expect(carolOwes).toContainText("360,00 € to Alice Tester");
+  await carolOwes.getByRole("button", { name: "I paid" }).click();
+  await expect(carolOwes.getByLabel("Amount (€)")).toHaveValue("360.00");
+  await carolOwes.getByRole("button", { name: "Send payment" }).click();
+  await expect(carolOwes).toContainText("360,00 € awaiting confirmation");
+
+  // Alice finds the payment in her inbox above the plan and confirms it.
+  await alice.getByRole("tab", { name: /^Settle up/ }).click();
+  const inbox = alice.getByRole("region", { name: "Waiting for your answer" });
+  await expect(inbox).toContainText("Carol Tester marked 360,00 € as paid to you");
+  await inbox.getByRole("button", { name: "Confirm payment from Carol Tester" }).click();
+  await expect(inbox).toContainText("Nothing is waiting for your answer.");
+
+  // The ledger books the confirmation asynchronously; the plan shrinks to Bob's debt alone.
+  const owedToAlice = alice.getByRole("region", { name: "Owed to you" });
+  await expect(owedToAlice.getByRole("listitem")).toHaveCount(1);
+  await expect(owedToAlice).toContainText("Bob Tester owes 180,00 €");
+  await expect(owedToAlice).not.toContainText("Carol Tester");
 });
 
 test("wrong password is refused, signed-out visitors are sent to sign in, signing in again works", async ({
