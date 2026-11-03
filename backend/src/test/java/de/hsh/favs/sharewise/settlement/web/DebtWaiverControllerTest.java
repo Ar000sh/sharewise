@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
@@ -118,6 +120,16 @@ class DebtWaiverControllerTest {
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
 		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "10.000", "10", "10.5", "010.00" })
+	void waiveRefusesAmountsOutsideTheContractPattern(String amount) throws Exception {
+		// when / then
+		settlement.waive(group, alice, bob, amount, "reason")
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+		assertThat(events.stream(DebtWaived.class).count()).isZero();
 	}
 
 	@Test

@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.event.ApplicationEvents;
@@ -159,6 +161,16 @@ class SettlementPaymentControllerTest {
 		settlement.recordRaw(group, bob, "{\"toCreditor\":\"not-a-uuid\",\"amount\":\"10.00\"}")
 			.andExpect(status().isBadRequest());
 		settlement.recordRaw(group, bob, "{").andExpect(status().isBadRequest());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "10.000", "10", "10.5", "010.00" })
+	void recordRefusesAmountsOutsideTheContractPattern(String amount) throws Exception {
+		// when / then
+		settlement.record(group, bob, alice, amount, null)
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+		assertThat(events.stream(SettlementPaymentRecorded.class).count()).isZero();
 	}
 
 	@Test
