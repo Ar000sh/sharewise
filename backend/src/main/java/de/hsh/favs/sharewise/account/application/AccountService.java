@@ -3,6 +3,7 @@ package de.hsh.favs.sharewise.account.application;
 import de.hsh.favs.sharewise.account.api.UserProfile;
 import de.hsh.favs.sharewise.account.domain.Account;
 import de.hsh.favs.sharewise.account.domain.DisplayName;
+import de.hsh.favs.sharewise.account.domain.Username;
 import de.hsh.favs.sharewise.account.persistence.AccountRepository;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.Email;
@@ -50,6 +51,7 @@ class AccountService {
 			return requireActive(known.get());
 		}
 		Account created = Account.registerFromIdentityProvider(new UserId(id), parseEmail(claims.email()),
+				parseUsername(claims.preferredUsername()),
 				DisplayName.derive(claims.name(), claims.preferredUsername(), claims.email()), clock.instant());
 		if (accounts.insertIfAbsent(created)) {
 			return toProfile(created);
@@ -57,13 +59,14 @@ class AccountService {
 		// Lost the race against a concurrent first request (its row is committed and
 		// visible now), or the email belongs to an account with another id.
 		return accounts.findById(id).map(AccountService::requireActive).orElseThrow(() -> {
-			log.warn("Refused first login of subject {}: its email belongs to another account", id);
+			log.warn("Refused first login of subject {}: its email or username belongs to another account", id);
 			return unauthenticated();
 		});
 	}
 
 	static UserProfile toProfile(Account account) {
-		return new UserProfile(account.userId(), account.displayName().value(), account.isActive());
+		return new UserProfile(account.userId(), account.displayName().value(), account.username().value(),
+				account.isActive());
 	}
 
 	private static UserProfile requireActive(Account account) {
@@ -90,6 +93,17 @@ class AccountService {
 			return new Email(email);
 		}
 		catch (DomainException malformed) {
+			throw unauthenticated();
+		}
+	}
+
+	private static Username parseUsername(String username) {
+		try {
+			return new Username(username);
+		}
+		catch (DomainException malformed) {
+			// The realm only lets valid usernames register; anything else is refused
+			// instead of repaired.
 			throw unauthenticated();
 		}
 	}

@@ -41,6 +41,17 @@ class AccountControllerTest {
 	}
 
 	@Test
+	void meReturnsTheUsername() throws Exception {
+		// given
+		AccountFixture jana = AccountFixture.signUp(mvc, json, "Jana");
+
+		// when / then
+		mvc.perform(get("/me").header("Authorization", jana.bearer()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.username").value(jana.username()));
+	}
+
+	@Test
 	void meWithoutATokenIs401Unauthenticated() throws Exception {
 		mvc.perform(get("/me"))
 			.andExpect(status().isUnauthorized())

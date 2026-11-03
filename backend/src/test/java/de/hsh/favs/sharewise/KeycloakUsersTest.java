@@ -10,6 +10,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ModuleIntegrationTest
 class KeycloakUsersTest {
@@ -35,6 +36,23 @@ class KeycloakUsersTest {
 		assertThat(claims.path("sub").asString()).isEqualTo(login.subject());
 		assertThat(claims.path("email").asString()).isEqualTo(login.email());
 		assertThat(claims.path("name").asString()).isNotEmpty().contains("Alice");
+	}
+
+	@Test
+	void theRealmRefusesAUsernameWithAnAtSign() {
+		assertThatThrownBy(() -> KeycloakUsers.create("Bob", "bob@example.com"))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("400");
+	}
+
+	@Test
+	void createdUserCarriesItsUsernameInTheToken() {
+		// when
+		KeycloakUsers.Login login = KeycloakUsers.create("Carla");
+
+		// then
+		assertThat(payloadOf(login.accessToken()).path("preferred_username").asString()).isEqualTo(login.username());
+		assertThat(login.username()).matches("[a-z0-9._-]{3,30}");
 	}
 
 	private JsonNode payloadOf(String jwt) {

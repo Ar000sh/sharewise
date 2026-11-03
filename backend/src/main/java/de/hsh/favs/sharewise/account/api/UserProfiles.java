@@ -12,6 +12,15 @@ public interface UserProfiles {
 	Optional<UserProfile> find(UserId userId);
 
 	/**
+	 * The active account an exact username or email belongs to. The text is trimmed and
+	 * compared in lower case; one containing {@code @} is an email, any other a username.
+	 * There is no partial matching, so a blank text, a wildcard character or a prefix
+	 * finds nobody. Empty for an unknown identifier and for an account that is not
+	 * active. Works without a transaction.
+	 */
+	Optional<UserProfile> findByIdentifier(String identifier);
+
+	/**
 	 * The profiles of the given accounts; ids without an account are left out. Order is
 	 * not defined.
 	 */

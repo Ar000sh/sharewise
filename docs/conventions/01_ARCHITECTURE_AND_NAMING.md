@@ -92,8 +92,8 @@ Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCam
 - Events: `SettlementPaymentRecorded`, `SettlementPaymentConfirmed`, `SettlementPaymentRejected`, `DebtWaived`, `MemberBalanceStatusChanged`, `AllBalancesSettled`.
 
 ### 3.4 Account context
-- Aggregate root `Account`: `id: UserId` (the Keycloak subject), `email`, `displayName: DisplayName`, `status: AccountStatus`, `registeredAt`; operation `registerFromIdentityProvider`, … (the rest of the diagram arrives in later exercises). Passwords, sign-in, lock-out and tokens belong to the identity provider (Keycloak); ShareWise has none of them.
-- Read model `UserProfile(userId, displayName, isActive)`, served by a port that offers `findProfiles(Set<UserId>)`.
+- Aggregate root `Account`: `id: UserId` (the Keycloak subject), `email`, `username: Username` (lower case, 3 to 30 characters of `a-z 0-9 . _ -`, never an `@`; chosen at sign-up at Keycloak, copied on first login), `displayName: DisplayName`, `status: AccountStatus`, `registeredAt`; operation `registerFromIdentityProvider`, … (the rest of the diagram arrives in later exercises). Passwords, sign-in, lock-out and tokens belong to the identity provider (Keycloak); ShareWise has none of them.
+- Read model `UserProfile(userId, displayName, username, isActive)`, served by a port that offers `findProfiles(Set<UserId>)` and `findByIdentifier(String)` (exact username or email, trimmed, case-insensitive, never partial).
 - Events: none yet; the diagram draws none for the Account context.
 
 ### 3.5 Words we do not use

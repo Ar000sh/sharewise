@@ -1,6 +1,7 @@
 package de.hsh.favs.sharewise.account.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -10,6 +11,8 @@ import de.hsh.favs.sharewise.account.api.UserProfile;
 import de.hsh.favs.sharewise.account.domain.Account;
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import de.hsh.favs.sharewise.account.persistence.AccountRepository;
+import de.hsh.favs.sharewise.shared.DomainException;
+import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Clock;
 import java.time.Instant;
@@ -53,7 +56,37 @@ class AccountServiceTest {
 		ArgumentCaptor<Account> inserted = ArgumentCaptor.forClass(Account.class);
 		verify(accounts).insertIfAbsent(inserted.capture());
 		assertThat(inserted.getValue().userId()).isEqualTo(alice.userId());
-		assertThat(profile).isEqualTo(new UserProfile(new UserId(alice.id()), "Alice", true));
+		assertThat(profile).isEqualTo(new UserProfile(new UserId(alice.id()), "Alice", "alice", true));
+	}
+
+	@Test
+	void firstLoginStoresTheUsernameFromTheToken() {
+		// given
+		when(accounts.findById(alice.id())).thenReturn(Optional.empty());
+		when(accounts.insertIfAbsent(any(Account.class))).thenReturn(true);
+
+		// when
+		UserProfile profile = service
+			.resolveOrCreate(new IdentityClaims(alice.idString(), alice.email(), "Alice", "alice1"));
+
+		// then
+		ArgumentCaptor<Account> inserted = ArgumentCaptor.forClass(Account.class);
+		verify(accounts).insertIfAbsent(inserted.capture());
+		assertThat(inserted.getValue().username().value()).isEqualTo("alice1");
+		assertThat(profile.username()).isEqualTo("alice1");
+	}
+
+	@Test
+	void firstLoginWithAnInvalidUsernameIs401AndSavesNothing() {
+		// given
+		when(accounts.findById(alice.id())).thenReturn(Optional.empty());
+
+		// when / then
+		assertThatThrownBy(() -> service
+			.resolveOrCreate(new IdentityClaims(alice.idString(), alice.email(), "Alice", "bob@example.com")))
+			.isInstanceOfSatisfying(DomainException.class,
+					e -> assertThat(e.code()).isEqualTo(ErrorCode.UNAUTHENTICATED));
+		verify(accounts, never()).insertIfAbsent(any(Account.class));
 	}
 
 	@Test
