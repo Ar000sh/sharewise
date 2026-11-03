@@ -134,4 +134,49 @@ describe("WaiveDebtForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/up to/i);
     expect(screen.getByRole("button", { name: "Waive debt" })).toBeEnabled();
   });
+
+  it("afterAFullWaiveTheFormOffersTheNextDebtorAndCanBeSubmitted", async () => {
+    // given Bob's debt disappears from the plan after the waiver
+    serve({ userId: ALICE, displayName: "Alice" }, [plan, plan.slice(0, 2)], async () => ({}));
+    renderTab();
+    await screen.findByText("Bob owes 90,00 €");
+    await userEvent.selectOptions(screen.getByLabelText("Debtor"), "Bob");
+    await userEvent.type(screen.getByLabelText("Reason"), "A gift");
+    await userEvent.click(screen.getByRole("button", { name: "Waive debt" }));
+    await vi.waitFor(() => expect(screen.queryByText("Bob owes 90,00 €")).not.toBeInTheDocument());
+
+    // when she waives again with what the form now shows
+    expect(screen.getByLabelText("Debtor")).toHaveDisplayValue("Carol");
+    await userEvent.type(screen.getByLabelText("Reason"), "Second");
+    await userEvent.click(screen.getByRole("button", { name: "Waive debt" }));
+
+    // then the request is for the shown debtor with the amount shown, not for the removed one
+    await vi.waitFor(() => expect(waiveCalls()).toHaveLength(2));
+    expect(JSON.parse(String(waiveCalls()[1][1]?.body))).toEqual({ fromDebtor: CAROL, amount: "240.00", note: "Second" });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("afterAPartialWaiveTheAmountFollowsTheNewOpenDebt", async () => {
+    // given David owed 270,00 and 40,00 of it is waived
+    const after = [plan[0], edge(DAVID, "David", "230.00"), plan[2]];
+    serve({ userId: ALICE, displayName: "Alice" }, [plan, after], async () => ({}));
+    renderTab();
+    await screen.findByText("David owes 270,00 €");
+    await userEvent.selectOptions(screen.getByLabelText("Debtor"), "David");
+    const amount = screen.getByLabelText("Waived amount (€)");
+    await userEvent.clear(amount);
+    await userEvent.type(amount, "40,00");
+    await userEvent.type(screen.getByLabelText("Reason"), "Part");
+    await userEvent.click(screen.getByRole("button", { name: "Waive debt" }));
+
+    // when the plan has reloaded
+    await screen.findByText("David owes 230,00 €");
+
+    // then the amount is the new open debt and the next waive is accepted
+    expect(screen.getByLabelText("Waived amount (€)")).toHaveValue("230.00");
+    await userEvent.type(screen.getByLabelText("Reason"), "Rest");
+    await userEvent.click(screen.getByRole("button", { name: "Waive debt" }));
+    await vi.waitFor(() => expect(waiveCalls()).toHaveLength(2));
+    expect(JSON.parse(String(waiveCalls()[1][1]?.body))).toEqual({ fromDebtor: DAVID, amount: "230.00", note: "Rest" });
+  });
 });

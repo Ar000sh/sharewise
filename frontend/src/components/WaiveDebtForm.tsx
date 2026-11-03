@@ -28,21 +28,23 @@ export function WaiveDebtForm({
   prefill?: { fromDebtor: string };
   onWaived?: () => void;
 }) {
-  const initial = debtors.find((d) => d.fromDebtor === prefill?.fromDebtor) ?? debtors[0];
-  const [fromDebtor, setFromDebtor] = useState(initial?.fromDebtor ?? "");
-  const [amount, setAmount] = useState(initial ? centsToAmount(openCents(initial)) : "");
+  // The choice and the typed amount are only what the user did; what is shown is derived from the current `debtors`,
+  // so a plan that reloads (a debtor gone, a smaller open amount) never leaves the form on stale values.
+  const [chosen, setChosen] = useState(prefill?.fromDebtor);
+  const [typedAmount, setTypedAmount] = useState<string>();
   const [note, setNote] = useState("");
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
   // State updates are not visible to a second submit in the same tick; the ref is.
   const sending = useRef(false);
 
-  const selected = debtors.find((d) => d.fromDebtor === fromDebtor);
+  const selected = debtors.find((d) => d.fromDebtor === chosen) ?? debtors[0];
+  const fromDebtor = selected?.fromDebtor ?? "";
+  const amount = typedAmount ?? (selected ? centsToAmount(openCents(selected)) : "");
 
   function pick(id: string) {
-    setFromDebtor(id);
-    const edge = debtors.find((d) => d.fromDebtor === id);
-    if (edge) setAmount(centsToAmount(openCents(edge)));
+    setChosen(id);
+    setTypedAmount(undefined);
   }
 
   async function submit(e: React.FormEvent) {
@@ -63,6 +65,7 @@ export function WaiveDebtForm({
       });
       setError(undefined);
       setNote("");
+      setTypedAmount(undefined);
       onWaived?.();
     } catch (err) {
       // The shared sentence talks about paying; here the creditor gives something up.
@@ -95,7 +98,7 @@ export function WaiveDebtForm({
           className="rounded border px-2 py-2"
           inputMode="decimal"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => setTypedAmount(e.target.value)}
         />
       </label>
       <label className="flex flex-col gap-1">
