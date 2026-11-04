@@ -1,6 +1,10 @@
 package de.hsh.favs.sharewise.settlement.persistence;
 
+import de.hsh.favs.sharewise.settlement.api.MemberBalance;
 import de.hsh.favs.sharewise.settlement.domain.GroupLedger;
+import de.hsh.favs.sharewise.shared.GroupId;
+import de.hsh.favs.sharewise.shared.Money;
+import de.hsh.favs.sharewise.shared.UserId;
 import jakarta.persistence.LockModeType;
 import java.math.BigDecimal;
 import java.util.List;
@@ -39,6 +43,17 @@ public interface GroupLedgerRepository extends JpaRepository<GroupLedger, UUID> 
 	@Query("select e.userId as userId, sum(e.deltaAmount) as amount from LedgerEntry e "
 			+ "where e.ledger.groupId = :groupId group by e.userId")
 	List<UserTotal> totals(@Param("groupId") UUID groupId);
+
+	/**
+	 * The booked balance of every person that has entries, in EUR: {@link #totals} as
+	 * {@link MemberBalance}s. The one place that turns the database sums into balances;
+	 * the open debt, the plan and the {@code Balances} port all read through it.
+	 */
+	default List<MemberBalance> balances(GroupId group) {
+		return totals(group.value()).stream()
+			.map(total -> new MemberBalance(new UserId(total.getUserId()), Money.eur(total.getAmount())))
+			.toList();
+	}
 
 	interface UserTotal {
 

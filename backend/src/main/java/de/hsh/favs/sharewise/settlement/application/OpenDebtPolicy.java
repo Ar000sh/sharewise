@@ -37,10 +37,7 @@ class OpenDebtPolicy {
 	 * no plan edge or the group has no ledger entries.
 	 */
 	Money openDebt(GroupId group, UserId debtor, UserId creditor) {
-		List<MemberBalance> balances = ledgers.totals(group.value())
-			.stream()
-			.map(total -> new MemberBalance(new UserId(total.getUserId()), Money.eur(total.getAmount())))
-			.toList();
+		List<MemberBalance> balances = ledgers.balances(group);
 		Money edge = SettlementPlan.of(balances)
 			.edge(debtor, creditor)
 			.minus(reserved(group, debtor.value(), creditor.value()));

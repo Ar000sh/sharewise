@@ -5,8 +5,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
+import de.hsh.favs.sharewise.settlement.api.MemberBalance;
 import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
-import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository.UserTotal;
 import de.hsh.favs.sharewise.settlement.persistence.SettlementPaymentRepository;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.Money;
@@ -185,8 +185,8 @@ class OpenDebtPolicyTest {
 		balances(total(ALICE, "630.00"), total(BOB, "-90.00"), total(CAROL, "-270.00"), total(DAVID, "-270.00"));
 	}
 
-	private void balances(UserTotal... totals) {
-		when(ledgers.totals(GROUP.value())).thenReturn(List.of(totals));
+	private void balances(MemberBalance... balances) {
+		when(ledgers.balances(GROUP)).thenReturn(List.of(balances));
 	}
 
 	private void reserved(UserId debtor, UserId creditor, String amount) {
@@ -195,20 +195,8 @@ class OpenDebtPolicyTest {
 			.thenReturn(new BigDecimal(amount));
 	}
 
-	private static UserTotal total(UserId user, String amount) {
-		return new UserTotal() {
-
-			@Override
-			public UUID getUserId() {
-				return user.value();
-			}
-
-			@Override
-			public BigDecimal getAmount() {
-				return new BigDecimal(amount);
-			}
-
-		};
+	private static MemberBalance total(UserId user, String amount) {
+		return new MemberBalance(user, Money.eur(amount));
 	}
 
 }

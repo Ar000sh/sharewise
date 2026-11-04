@@ -1,7 +1,6 @@
 package de.hsh.favs.sharewise.settlement.application;
 
 import de.hsh.favs.sharewise.group.api.GroupMembership;
-import de.hsh.favs.sharewise.settlement.api.MemberBalance;
 import de.hsh.favs.sharewise.settlement.domain.SettlementPlan;
 import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
 import de.hsh.favs.sharewise.settlement.persistence.SettlementPaymentRepository;
@@ -50,11 +49,7 @@ public class SettlementPlanService {
 	@Transactional(readOnly = true)
 	public List<PlanEntry> planFor(GroupId group, UserId caller) {
 		groups.requireMember(group, caller);
-		List<MemberBalance> balances = ledgers.totals(group.value())
-			.stream()
-			.map(total -> new MemberBalance(new UserId(total.getUserId()), Money.eur(total.getAmount())))
-			.toList();
-		return SettlementPlan.of(balances)
+		return SettlementPlan.of(ledgers.balances(group))
 			.simplifiedDebts()
 			.stream()
 			.map(debt -> new PlanEntry(debt.fromDebtor(), debt.toCreditor(), debt.amount(),

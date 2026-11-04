@@ -9,8 +9,8 @@ import static org.mockito.Mockito.when;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.settlement.application.SettlementPlanService.PlanEntry;
 import de.hsh.favs.sharewise.settlement.domain.SettlementPaymentFixture;
+import de.hsh.favs.sharewise.settlement.api.MemberBalance;
 import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
-import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository.UserTotal;
 import de.hsh.favs.sharewise.settlement.persistence.SettlementPaymentRepository;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
@@ -54,7 +54,7 @@ class SettlementPlanServiceTest {
 	@Test
 	void planForOwesEntriesWithTheReservedAmountOfTheirPair() {
 		// given bob owes alice 90.00 and has 40.00 reserved on that pair
-		when(ledgers.totals(GROUP.value())).thenReturn(List.of(total(ALICE, "90.00"), total(BOB, "-90.00")));
+		when(ledgers.balances(GROUP)).thenReturn(List.of(total(ALICE, "90.00"), total(BOB, "-90.00")));
 		when(payments.reserved(GROUP.value(), BOB.value(), ALICE.value())).thenReturn(new BigDecimal("40.00"));
 
 		// when
@@ -66,7 +66,7 @@ class SettlementPlanServiceTest {
 
 	@Test
 	void anEmptyLedgerGivesAnEmptyPlan() {
-		when(ledgers.totals(GROUP.value())).thenReturn(List.of());
+		when(ledgers.balances(GROUP)).thenReturn(List.of());
 
 		assertThat(service.planFor(GROUP, ALICE)).isEmpty();
 	}
@@ -82,18 +82,8 @@ class SettlementPlanServiceTest {
 		verifyNoInteractions(ledgers, payments);
 	}
 
-	private static UserTotal total(UserId user, String amount) {
-		return new UserTotal() {
-			@Override
-			public UUID getUserId() {
-				return user.value();
-			}
-
-			@Override
-			public BigDecimal getAmount() {
-				return new BigDecimal(amount);
-			}
-		};
+	private static MemberBalance total(UserId user, String amount) {
+		return new MemberBalance(user, Money.eur(amount));
 	}
 
 }
