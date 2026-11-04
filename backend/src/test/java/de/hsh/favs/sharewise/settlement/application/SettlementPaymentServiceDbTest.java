@@ -155,7 +155,7 @@ class SettlementPaymentServiceDbTest {
 		// then it is still reserved
 		assertThat(reserved(bob, null)).isEqualByComparingTo("40.00");
 
-		// when an entry references the payment id (as Task 5 will book it)
+		// when an entry references the payment id (as the ledger listener books it)
 		ledgers.bookExpense(new ExpenseRecordedFixture().inGroup(trip)
 			.withExpenseId(new ExpenseId(bobs.paymentId().value()))
 			.paidBy(bob.userId())

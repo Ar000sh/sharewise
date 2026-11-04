@@ -41,7 +41,7 @@ function describe(entry: Notification): string {
 }
 
 /**
- * One payment waiting for my answer (R12): confirm, or reject with a reason. The caller sends the answer and reloads
+ * One payment waiting for my answer (R16): confirm, or reject with a reason. The caller sends the answer and reloads
  * the bell; `busy` disables the buttons meanwhile, so a double click sends one request.
  */
 function PaymentRow({
