@@ -454,7 +454,8 @@ paths:
       summary: The caller (the debtor) reports a payment to a creditor. Status starts PENDING until the creditor confirms.
       description: >
         The amount reserves that much of the open debt to the creditor, so it may not exceed the open debt
-        minus other PENDING payments (422 PAYMENT_EXCEEDS_OPEN_DEBT). A group that is archived answers 422 GROUP_NOT_OPEN.
+        of the pair, which already excludes what other payments reserve (see payableAmount of the plan; 422
+        PAYMENT_EXCEEDS_OPEN_DEBT). A group that is archived answers 422 GROUP_NOT_OPEN.
       requestBody:
         required: true
         content:
@@ -622,10 +623,7 @@ paths:
                   note: "Bank transfer"
                   createdAt: "2027-06-10T10:00:00Z"
                   resolvedAt: null
-        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
-        "403": { $ref: "#/components/responses/NotAMember" }
-        "404": { $ref: "#/components/responses/GroupNotFound" }
 
 components:
   securitySchemes:
@@ -714,7 +712,7 @@ components:
           example: { type: "about:blank", title: Unprocessable Entity, status: 422, code: PAYER_NOT_IN_GROUP, detail: "The payer is not a member of this group" }
     PaymentExceedsOpenDebt:
       description: >
-        The amount is larger than the open debt (minus other PENDING payments). code is
+        The amount is larger than the open debt of the pair (payableAmount of the plan). code is
         PAYMENT_EXCEEDS_OPEN_DEBT, or AMOUNT_NOT_POSITIVE, PARTICIPANT_NOT_IN_GROUP or GROUP_NOT_OPEN (group is archived).
       content:
         application/problem+json:
