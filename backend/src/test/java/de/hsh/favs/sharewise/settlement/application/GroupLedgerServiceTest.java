@@ -14,6 +14,7 @@ import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture;
 import de.hsh.favs.sharewise.settlement.api.DebtWaived;
+import de.hsh.favs.sharewise.settlement.api.MemberBalance;
 import de.hsh.favs.sharewise.settlement.api.SettlementPaymentConfirmed;
 import de.hsh.favs.sharewise.settlement.api.SettlementPaymentId;
 import de.hsh.favs.sharewise.shared.Money;
@@ -22,7 +23,6 @@ import de.hsh.favs.sharewise.shared.events.AllBalancesSettled;
 import de.hsh.favs.sharewise.shared.events.MemberBalanceStatusChanged;
 import de.hsh.favs.sharewise.settlement.domain.GroupLedger;
 import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -155,7 +155,7 @@ class GroupLedgerServiceTest {
 		// given nobody has entries yet; after Alice's 900.00 split by four everyone is
 		// non-zero
 		when(ledgers.isBooked(event.groupId().value(), event.expenseId().value())).thenReturn(false);
-		when(ledgers.totals(event.groupId().value())).thenReturn(List.of(), List.of(total(alice, "675.00"),
+		when(ledgers.balances(event.groupId())).thenReturn(List.of(), List.of(total(alice, "675.00"),
 				total(bob, "-225.00"), total(carol, "-225.00"), total(david, "-225.00")));
 
 		// when
@@ -171,7 +171,7 @@ class GroupLedgerServiceTest {
 		// given Bob owes Alice 10.00; Carol has entries that already sum to zero
 		var confirmed = bobPaysAlice("10.00");
 		when(ledgers.isBooked(event.groupId().value(), confirmed.paymentId().value())).thenReturn(false);
-		when(ledgers.totals(event.groupId().value())).thenReturn(
+		when(ledgers.balances(event.groupId())).thenReturn(
 				List.of(total(alice, "10.00"), total(bob, "-10.00"), total(carol, "0.00")),
 				List.of(total(alice, "0.00"), total(bob, "0.00"), total(carol, "0.00")));
 
@@ -188,7 +188,7 @@ class GroupLedgerServiceTest {
 		// given Bob pays only half of the 10.00 he owes
 		var confirmed = bobPaysAlice("5.00");
 		when(ledgers.isBooked(event.groupId().value(), confirmed.paymentId().value())).thenReturn(false);
-		when(ledgers.totals(event.groupId().value())).thenReturn(List.of(total(alice, "10.00"), total(bob, "-10.00")),
+		when(ledgers.balances(event.groupId())).thenReturn(List.of(total(alice, "10.00"), total(bob, "-10.00")),
 				List.of(total(alice, "5.00"), total(bob, "-5.00")));
 
 		// when
@@ -228,20 +228,8 @@ class GroupLedgerServiceTest {
 		return captor.getAllValues();
 	}
 
-	private static GroupLedgerRepository.UserTotal total(UserId user, String amount) {
-		return new GroupLedgerRepository.UserTotal() {
-
-			@Override
-			public UUID getUserId() {
-				return user.value();
-			}
-
-			@Override
-			public BigDecimal getAmount() {
-				return new BigDecimal(amount);
-			}
-
-		};
+	private static MemberBalance total(UserId user, String amount) {
+		return new MemberBalance(user, Money.eur(amount));
 	}
 
 }

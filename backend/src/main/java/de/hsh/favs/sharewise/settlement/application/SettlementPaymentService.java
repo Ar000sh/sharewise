@@ -95,9 +95,8 @@ public class SettlementPaymentService {
 	/**
 	 * The creditor confirms that the money arrived (R16).
 	 * @throws DomainException with SETTLEMENT_PAYMENT_NOT_FOUND when the payment is
-	 * unknown or the caller is not a member of its group, GROUP_NOT_OPEN when the group
-	 * is archived, NOT_THE_CREDITOR, or PAYMENT_NOT_PENDING when it was already answered,
-	 * also by a concurrent answer
+	 * unknown or the caller is not a member of its group, NOT_THE_CREDITOR, or
+	 * PAYMENT_NOT_PENDING when it was already answered, also by a concurrent answer
 	 */
 	@Transactional
 	public SettlementPayment confirm(UserId caller, SettlementPaymentId paymentId) {
@@ -110,9 +109,9 @@ public class SettlementPaymentService {
 
 	/**
 	 * The creditor says the money did not arrive; the reservation is released (R16, D4).
-	 * @throws DomainException with SETTLEMENT_PAYMENT_NOT_FOUND, GROUP_NOT_OPEN,
-	 * NOT_THE_CREDITOR, PAYMENT_NOT_PENDING (as {@link #confirm}), or BAD_REQUEST when
-	 * the reason is blank or too long
+	 * @throws DomainException with SETTLEMENT_PAYMENT_NOT_FOUND, NOT_THE_CREDITOR,
+	 * PAYMENT_NOT_PENDING (as {@link #confirm}), or BAD_REQUEST when the reason is blank
+	 * or too long
 	 */
 	@Transactional
 	public SettlementPayment reject(UserId caller, SettlementPaymentId paymentId, String note) {
@@ -165,12 +164,10 @@ public class SettlementPaymentService {
 	private SettlementPayment loadForAnswer(UserId caller, SettlementPaymentId paymentId) {
 		// a payment of a group the caller is not in is reported as unknown, so the ids
 		// of other groups reveal nothing
-		SettlementPayment payment = payments.findById(paymentId.value())
+		return payments.findById(paymentId.value())
 			.filter(found -> groups.isMember(found.groupId(), caller))
 			.orElseThrow(
 					() -> new DomainException(ErrorCode.SETTLEMENT_PAYMENT_NOT_FOUND, "Settlement payment not found"));
-		requireNotArchived(payment.groupId());
-		return payment;
 	}
 
 	/**

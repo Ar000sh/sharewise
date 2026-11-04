@@ -138,20 +138,14 @@ class SettlementPaymentServiceTest {
 	}
 
 	@Test
-	void archivedGroupRefusesEveryOperation() {
+	void archivedGroupRefusesANewPaymentAndANewWaiver() {
 		// given
 		when(groups.status(GROUP)).thenReturn(GroupStatus.ARCHIVED);
-		SettlementPayment pending = new SettlementPaymentFixture().build();
-		when(payments.findById(pending.paymentId().value())).thenReturn(Optional.of(pending));
-		when(groups.isMember(GROUP, ALICE)).thenReturn(true);
 
 		// when / then
 		assertCode(() -> service.record(bobPaysAlice("10.00")), ErrorCode.GROUP_NOT_OPEN);
 		assertCode(() -> service.waive(new WaiveDebtCommand(GROUP, ALICE, BOB, Money.eur("10.00"), "Gift")),
 				ErrorCode.GROUP_NOT_OPEN);
-		assertCode(() -> service.confirm(ALICE, pending.paymentId()), ErrorCode.GROUP_NOT_OPEN);
-		assertCode(() -> service.reject(ALICE, pending.paymentId(), "Not arrived"), ErrorCode.GROUP_NOT_OPEN);
-		assertThat(pending.status()).isEqualTo(PaymentStatus.PENDING);
 		verify(payments, never()).save(any());
 		verify(payments, never()).saveAndFlush(any());
 		verifyNoInteractions(ledgers, openDebt, events);

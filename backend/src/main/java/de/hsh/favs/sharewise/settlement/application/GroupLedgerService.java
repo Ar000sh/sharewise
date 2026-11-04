@@ -117,10 +117,10 @@ public class GroupLedgerService {
 	}
 
 	private Map<UUID, BigDecimal> totals(UUID group) {
-		return ledgers.totals(group)
+		return ledgers.balances(new GroupId(group))
 			.stream()
-			.collect(Collectors.toMap(GroupLedgerRepository.UserTotal::getUserId,
-					GroupLedgerRepository.UserTotal::getAmount, BigDecimal::add, HashMap::new));
+			.collect(Collectors.toMap(balance -> balance.userId().value(), balance -> balance.netBalance().amount(),
+					BigDecimal::add, HashMap::new));
 	}
 
 	private static boolean isZero(BigDecimal amount) {
