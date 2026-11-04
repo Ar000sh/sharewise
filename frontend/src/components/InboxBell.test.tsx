@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api } from "@/lib/api";
 import { InboxBell } from "@/components/InboxBell";
+import { PAYMENT_ANSWERED } from "@/lib/paymentAnswered";
 
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<typeof import("@/lib/api")>()), api: vi.fn() }));
 const apiMock = vi.mocked(api);
@@ -172,6 +173,73 @@ describe("InboxBell", () => {
     // then
     await waitFor(() => expect(screen.queryByText(/marked 360,00/)).not.toBeInTheDocument());
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("aPaymentThatIsNoLongerPendingCountsAsDoneAndShowsNoError", async () => {
+    // given a second tab answered the payment first
+    inbox = { ...inbox, payments: [payment] };
+    backend((path) => {
+      if (path === "/settlement-payments/p1/confirm") {
+        inbox = { ...inbox, payments: [] };
+        throw new ApiError(409, "PAYMENT_NOT_PENDING");
+      }
+    });
+    await renderOpened();
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: "Confirm payment from Carol Tester" }));
+
+    // then
+    await waitFor(() => expect(screen.queryByText(/marked 360,00/)).not.toBeInTheDocument());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("announcesAnAnsweredPaymentSoAnOpenSettleUpTabLooksAgain", async () => {
+    // given
+    inbox = { ...inbox, payments: [payment] };
+    backend();
+    const announced = vi.fn();
+    window.addEventListener(PAYMENT_ANSWERED, announced);
+    await renderOpened();
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: "Confirm payment from Carol Tester" }));
+
+    // then
+    await waitFor(() => expect(announced).toHaveBeenCalledTimes(1));
+    window.removeEventListener(PAYMENT_ANSWERED, announced);
+  });
+
+  it("failedAnswerAnnouncesNothing", async () => {
+    // given the server refuses the confirm
+    inbox = { ...inbox, payments: [payment] };
+    backend((path) => {
+      if (path === "/settlement-payments/p1/confirm") throw new ApiError(403, "NOT_THE_CREDITOR");
+    });
+    const announced = vi.fn();
+    window.addEventListener(PAYMENT_ANSWERED, announced);
+    await renderOpened();
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: "Confirm payment from Carol Tester" }));
+
+    // then
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(announced).not.toHaveBeenCalled();
+    window.removeEventListener(PAYMENT_ANSWERED, announced);
+  });
+
+  it("openingTheGroupFromAPaymentClosesTheDropdown", async () => {
+    // given
+    inbox = { ...inbox, payments: [payment] };
+    backend();
+    await renderOpened();
+
+    // when
+    await userEvent.click(screen.getByRole("link", { name: "Open group" }));
+
+    // then
+    expect(screen.queryByRole("region", { name: "Inbox entries" })).not.toBeInTheDocument();
   });
 
   it("describesTheThreeSettlementEntries", async () => {

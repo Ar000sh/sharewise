@@ -7,6 +7,7 @@ import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { ApiError, api } from "@/lib/api";
 import { amountToCents, formatEuro } from "@/lib/money";
+import { announcePaymentAnswered } from "@/lib/paymentAnswered";
 
 type PendingInvitation = components["schemas"]["PendingInvitation"];
 type NotificationList = components["schemas"]["NotificationList"];
@@ -49,9 +50,11 @@ function PaymentRow({
   busy,
   onConfirm,
   onReject,
+  onOpenGroup,
 }: {
   payment: SettlementPayment;
   busy: boolean;
+  onOpenGroup: () => void;
   onConfirm: () => void;
   onReject: (reason: string) => void;
 }) {
@@ -61,7 +64,7 @@ function PaymentRow({
     <li className="flex flex-col gap-1 border-l-4 border-green-600 pl-2">
       <span>{`${payment.fromDebtorName} marked ${formatEuro(amountToCents(payment.amount))} as paid to you`}</span>
       {payment.note && <span className="text-foreground/70">{payment.note}</span>}
-      <Link href={`/groups/${payment.groupId}`} className="underline">
+      <Link href={`/groups/${payment.groupId}`} onClick={onOpenGroup} className="underline">
         Open group
       </Link>
       {!rejecting && (
@@ -154,8 +157,9 @@ export function InboxBell() {
   }, [load]);
 
   /**
-   * Runs one action of the bell, then asks again so the screen shows the truth. A 404 means the thing is already gone
-   * (answered in a second tab, a double click): nothing to report, just refresh.
+   * Runs one action of the bell, then asks again so the screen shows the truth. A 404, or a payment that is no longer
+   * pending, means the thing is already done (answered in a second tab, a double click): nothing to report, just
+   * refresh.
    */
   async function perform(action: () => Promise<unknown>, busy?: string) {
     setBusyId(busy);
@@ -163,7 +167,8 @@ export function InboxBell() {
     try {
       await action();
     } catch (e) {
-      if (!(e instanceof ApiError && e.status === 404)) setError(e);
+      const alreadyDone = e instanceof ApiError && (e.status === 404 || e.code === "PAYMENT_NOT_PENDING");
+      if (!alreadyDone) setError(e);
     } finally {
       setBusyId(undefined);
     }
@@ -181,18 +186,20 @@ export function InboxBell() {
     perform(() => api(`/invitations/${invitation.invitationId}/decline`, { method: "POST" }), invitation.invitationId);
 
   const confirmPayment = (payment: SettlementPayment) =>
-    perform(() => api(`/settlement-payments/${payment.id}/confirm`, { method: "POST" }), payment.id);
+    perform(async () => {
+      await api(`/settlement-payments/${payment.id}/confirm`, { method: "POST" });
+      announcePaymentAnswered();
+    }, payment.id);
 
   const rejectPayment = (payment: SettlementPayment, note: string) =>
-    perform(
-      () =>
-        api(`/settlement-payments/${payment.id}/reject`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ note }),
-        }),
-      payment.id,
-    );
+    perform(async () => {
+      await api(`/settlement-payments/${payment.id}/reject`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ note }),
+      });
+      announcePaymentAnswered();
+    }, payment.id);
 
   const markRead = (entry: Notification) => perform(() => api(`/notifications/${entry.id}/read`, { method: "POST" }));
 
@@ -258,6 +265,7 @@ export function InboxBell() {
                 key={payment.id}
                 payment={payment}
                 busy={busyId === payment.id}
+                onOpenGroup={() => setOpen(false)}
                 onConfirm={() => void confirmPayment(payment)}
                 onReject={(note) => void rejectPayment(payment, note)}
               />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { Toast } from "@/components/Toast";
@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { useCurrentUser } from "@/lib/currentUser";
 import { messageFor } from "@/lib/errors";
 import { amountToCents, centsToAmount, eurosToCents, formatEuro } from "@/lib/money";
+import { PAYMENT_ANSWERED } from "@/lib/paymentAnswered";
 import { useApi } from "@/lib/useApi";
 import { useLookAgain } from "@/lib/useLookAgain";
 
@@ -99,7 +100,7 @@ function OweRow({ groupId, edge, onPaid }: { groupId: string; edge: PlanEdge; on
       </div>
       <Pending edge={edge} />
       {payableCents(edge) <= 0 && amountToCents(edge.pendingAmount) <= 0 && (
-        <p className="text-sm text-foreground/70">Not payable yet: another payment of yours is waiting for an answer.</p>
+        <p className="text-sm text-foreground/70">Not payable right now: payments that wait for an answer use up this amount.</p>
       )}
       {formOpen && (
         <PaymentForm
@@ -131,13 +132,20 @@ function Section({ title, quiet, children }: { title: string; quiet?: boolean; c
 export function SettleUpTab({ groupId }: { groupId: string }) {
   const me = useCurrentUser();
   const { data: plan, error, reload } = useApi<PlanEdge[]>(`/groups/${groupId}/settlement-plan`);
-  const [paidAt, setPaidAt] = useState<number>();
+  const [changedAt, setChangedAt] = useState<number>();
   const [notice, setNotice] = useState<string>();
   // `n` changes with every click on a "Waive" button so the form starts over with that debtor.
   const [waivePrefill, setWaivePrefill] = useState<{ fromDebtor: string; n: number }>();
   const dismissNotice = useCallback(() => setNotice(undefined), []);
 
-  useLookAgain(paidAt, reload);
+  useLookAgain(changedAt, reload);
+
+  // The bell answers payments of any group; looking again at a plan that did not change is harmless.
+  useEffect(() => {
+    const onAnswered = () => setChangedAt(Date.now());
+    window.addEventListener(PAYMENT_ANSWERED, onAnswered);
+    return () => window.removeEventListener(PAYMENT_ANSWERED, onAnswered);
+  }, []);
 
   if (error && !plan) return <ErrorBanner error={error} />;
   if (!plan || !me) return <p>Loading…</p>;
@@ -160,7 +168,7 @@ export function SettleUpTab({ groupId }: { groupId: string }) {
               edge={e}
               onPaid={() => {
                 void reload();
-                setPaidAt(Date.now());
+                setChangedAt(Date.now());
                 setNotice("Payment reported. It counts once it is confirmed.");
               }}
             />
@@ -207,7 +215,7 @@ export function SettleUpTab({ groupId }: { groupId: string }) {
             prefill={waivePrefill}
             onWaived={() => {
               void reload();
-              setPaidAt(Date.now());
+              setChangedAt(Date.now());
               setNotice("Debt waived.");
             }}
           />

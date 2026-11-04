@@ -1,9 +1,10 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api } from "@/lib/api";
 import { SettleUpTab } from "@/components/SettleUpTab";
 import { CurrentUserProvider } from "@/lib/currentUser";
+import { announcePaymentAnswered } from "@/lib/paymentAnswered";
 
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<typeof import("@/lib/api")>()), api: vi.fn() }));
 
@@ -139,8 +140,23 @@ describe("SettleUpTab", () => {
     renderTab();
 
     // then
-    expect(await screen.findByText("Not payable yet: another payment of yours is waiting for an answer.")).toBeInTheDocument();
+    expect(await screen.findByText("Not payable right now: payments that wait for an answer use up this amount.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "I paid" })).not.toBeInTheDocument();
+  });
+
+  it("looksAtThePlanAgainWhenThePaymentBellAnswersAPayment", async () => {
+    // given Alice is looking at the plan
+    serve({ userId: ALICE, displayName: "Alice" }, mallorca);
+    renderTab();
+    await screen.findByRole("region", { name: "Owed to you" });
+    const planCalls = () => apiMock.mock.calls.filter(([path]) => path === "/groups/g1/settlement-plan").length;
+    const before = planCalls();
+
+    // when the bell announces that a payment was answered
+    act(() => announcePaymentAnswered());
+
+    // then the plan is asked for again after the ledger had a moment to book it
+    await waitFor(() => expect(planCalls()).toBeGreaterThan(before), { timeout: 3000 });
   });
 
   it("noIPaidButtonButThePendingAmountWhenTheWholeDebtIsAlreadyReported", async () => {
