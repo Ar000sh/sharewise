@@ -116,16 +116,28 @@ test("three friends sign up, share a group, see who owes what and settle up", as
   await carolOwes.getByRole("button", { name: "Send payment" }).click();
   await expect(carolOwes).toContainText("360,00 € awaiting confirmation");
 
-  // Alice finds the payment in her inbox above the plan and confirms it.
-  await alice.getByRole("tab", { name: /^Settle up/ }).click();
-  const inbox = alice.getByRole("region", { name: "Waiting for your answer" });
-  await expect(inbox).toContainText("Carol Tester marked 360,00 € as paid to you");
-  await inbox.getByRole("button", { name: "Confirm payment from Carol Tester" }).click();
-  await expect(inbox).toContainText("Nothing is waiting for your answer.");
+  // Alice finds the payment waiting for her answer in the bell (state, not an event: a reload shows it) and confirms it.
+  await alice.reload();
+  await alice.getByRole("button", { name: /inbox/i }).click();
+  await expect(alice.getByText("Carol Tester marked 360,00 € as paid to you")).toBeVisible();
+  await alice.getByRole("button", { name: "Confirm payment from Carol Tester" }).click();
+  await expect(alice.getByText("Carol Tester marked 360,00 € as paid to you")).toHaveCount(0);
+
+  // Carol hears about it: the entry arrives through an event, so she reloads until it is there.
+  await expect(async () => {
+    await carol.reload();
+    await carol.getByRole("button", { name: /inbox/i }).click();
+    await expect(carol.getByText("Alice Tester confirmed your payment in Mallorca 2027")).toBeVisible({ timeout: 2000 });
+  }).toPass();
 
   // The ledger books the confirmation asynchronously; the plan shrinks to Bob's debt alone.
+  // The plan is only fetched when the tab opens, so she reloads until the booking has arrived.
   const owedToAlice = alice.getByRole("region", { name: "Owed to you" });
-  await expect(owedToAlice.getByRole("listitem")).toHaveCount(1);
+  await expect(async () => {
+    await alice.reload();
+    await alice.getByRole("tab", { name: /^Settle up/ }).click();
+    await expect(owedToAlice.getByRole("listitem")).toHaveCount(1, { timeout: 2000 });
+  }).toPass();
   await expect(owedToAlice).toContainText("Bob Tester owes 180,00 €");
   await expect(owedToAlice).not.toContainText("Carol Tester");
 });
