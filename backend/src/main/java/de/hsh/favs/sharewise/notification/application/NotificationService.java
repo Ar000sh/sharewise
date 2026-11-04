@@ -9,6 +9,9 @@ import de.hsh.favs.sharewise.notification.domain.Notification;
 import de.hsh.favs.sharewise.notification.domain.NotificationId;
 import de.hsh.favs.sharewise.notification.domain.NotificationType;
 import de.hsh.favs.sharewise.notification.persistence.NotificationRepository;
+import de.hsh.favs.sharewise.settlement.api.DebtWaived;
+import de.hsh.favs.sharewise.settlement.api.SettlementPaymentConfirmed;
+import de.hsh.favs.sharewise.settlement.api.SettlementPaymentRejected;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;
@@ -90,6 +93,27 @@ public class NotificationService {
 	public void recordInvitationDeclined(InvitationDeclined event) {
 		record(Notification.notify(event.invitedBy(), NotificationType.INVITATION_DECLINED, event.groupId(),
 				event.invitee(), event.invitationId().value(), event.occurredAt()));
+	}
+
+	/** Tells the debtor that the creditor confirmed the payment. */
+	@Transactional
+	public void recordPaymentConfirmed(SettlementPaymentConfirmed event) {
+		record(Notification.notify(event.fromDebtor(), NotificationType.PAYMENT_CONFIRMED, event.groupId(),
+				event.toCreditor(), event.paymentId().value(), event.occurredAt()));
+	}
+
+	/** Tells the debtor that the creditor rejected the payment. */
+	@Transactional
+	public void recordPaymentRejected(SettlementPaymentRejected event) {
+		record(Notification.notify(event.fromDebtor(), NotificationType.PAYMENT_REJECTED, event.groupId(),
+				event.toCreditor(), event.paymentId().value(), event.occurredAt()));
+	}
+
+	/** Tells the debtor that the creditor forgave part of the debt. */
+	@Transactional
+	public void recordDebtWaived(DebtWaived event) {
+		record(Notification.notify(event.fromDebtor(), NotificationType.DEBT_WAIVED, event.groupId(),
+				event.toCreditor(), event.paymentId().value(), event.occurredAt()));
 	}
 
 	/**

@@ -8,7 +8,12 @@ import de.hsh.favs.sharewise.group.api.GroupRole;
 import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.InvitationId;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
+import de.hsh.favs.sharewise.settlement.api.DebtWaived;
+import de.hsh.favs.sharewise.settlement.api.SettlementPaymentConfirmed;
+import de.hsh.favs.sharewise.settlement.api.SettlementPaymentId;
+import de.hsh.favs.sharewise.settlement.api.SettlementPaymentRejected;
 import de.hsh.favs.sharewise.shared.GroupId;
+import de.hsh.favs.sharewise.shared.Money;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Instant;
 import java.util.UUID;
@@ -37,6 +42,12 @@ class NotificationEventsTest {
 	UserId inviter = new UserId(UUID.randomUUID());
 
 	UserId joiner = new UserId(UUID.randomUUID());
+
+	UserId debtor = new UserId(UUID.randomUUID());
+
+	UserId creditor = new UserId(UUID.randomUUID());
+
+	SettlementPaymentId payment = new SettlementPaymentId(UUID.randomUUID());
 
 	@Test
 	void joiningThroughAnInvitationCreatesAnEntryForTheInviter() {
@@ -100,6 +111,55 @@ class NotificationEventsTest {
 		assertThat(row).containsEntry("type", "INVITATION_DECLINED")
 			.containsEntry("actor_id", joiner.value())
 			.containsEntry("reference", invitation.value());
+	}
+
+	@Test
+	void aConfirmedPaymentCreatesOneEntryForTheDebtorFromTheCreditor() {
+		// given
+		var event = new SettlementPaymentConfirmed(payment, group, debtor, creditor, Money.eur("50.00"), NOW);
+
+		// when delivered twice
+		notifications.recordPaymentConfirmed(event);
+		notifications.recordPaymentConfirmed(event);
+
+		// then
+		assertOneEntryForTheDebtor("PAYMENT_CONFIRMED");
+	}
+
+	@Test
+	void aRejectedPaymentCreatesOneEntryForTheDebtorFromTheCreditor() {
+		// given
+		var event = new SettlementPaymentRejected(payment, group, debtor, creditor, Money.eur("50.00"), NOW);
+
+		// when delivered twice
+		notifications.recordPaymentRejected(event);
+		notifications.recordPaymentRejected(event);
+
+		// then
+		assertOneEntryForTheDebtor("PAYMENT_REJECTED");
+	}
+
+	@Test
+	void aWaivedDebtCreatesOneEntryForTheDebtorFromTheCreditor() {
+		// given
+		var event = new DebtWaived(payment, group, debtor, creditor, Money.eur("50.00"), NOW);
+
+		// when delivered twice
+		notifications.recordDebtWaived(event);
+		notifications.recordDebtWaived(event);
+
+		// then
+		assertOneEntryForTheDebtor("DEBT_WAIVED");
+	}
+
+	private void assertOneEntryForTheDebtor(String type) {
+		assertThat(count("recipient_id", debtor)).isEqualTo(1);
+		assertThat(count("recipient_id", creditor)).isZero();
+		var row = jdbc.queryForMap("select * from notifications where recipient_id = ?", debtor.value());
+		assertThat(row).containsEntry("type", type)
+			.containsEntry("actor_id", creditor.value())
+			.containsEntry("group_id", group.value())
+			.containsEntry("reference", payment.value());
 	}
 
 	private int count(String column, UserId user) {

@@ -15,6 +15,8 @@ import de.hsh.favs.sharewise.group.web.GroupRequests;
 import de.hsh.favs.sharewise.notification.application.NotificationService;
 import de.hsh.favs.sharewise.notification.domain.Notification;
 import de.hsh.favs.sharewise.notification.domain.NotificationType;
+import de.hsh.favs.sharewise.settlement.application.GroupLedgerService;
+import de.hsh.favs.sharewise.settlement.web.SettlementRequests;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Duration;
@@ -47,6 +49,9 @@ class NotificationControllerTest {
 
 	@Autowired
 	NotificationService notifications;
+
+	@Autowired
+	GroupLedgerService ledgers;
 
 	GroupRequests groups;
 
@@ -101,6 +106,25 @@ class NotificationControllerTest {
 		assertThat(entry.get("type").asString()).isEqualTo("INVITATION_DECLINED");
 		assertThat(entry.get("actor").get("userId").asString()).isEqualTo(bob.idString());
 		assertThat(entry.get("reference").asString()).isEqualTo(invitation.toString());
+	}
+
+	@Test
+	void aConfirmedPaymentShowsAConfirmedEntryForTheDebtorPointingAtThePayment() throws Exception {
+		// given bob owes alice 50.00 and reports the payment
+		var settlement = new SettlementRequests(mvc, json);
+		UUID group = groups.groupWith(alice, "Trip", bob);
+		SettlementRequests.bookDebt(ledgers, group, alice, bob, "50.00");
+		UUID payment = settlement.recordedPayment(group, bob, alice, "50.00");
+
+		// when
+		settlement.confirm(payment, alice).andExpect(status().isOk());
+
+		// then the entry arrives through the settlement event (I2)
+		JsonNode entry = awaitEntries(bob, 1).get("items").get(0);
+		assertThat(entry.get("type").asString()).isEqualTo("PAYMENT_CONFIRMED");
+		assertThat(entry.get("actor").get("userId").asString()).isEqualTo(alice.idString());
+		assertThat(entry.get("group").get("id").asString()).isEqualTo(group.toString());
+		assertThat(entry.get("reference").asString()).isEqualTo(payment.toString());
 	}
 
 	@Test
