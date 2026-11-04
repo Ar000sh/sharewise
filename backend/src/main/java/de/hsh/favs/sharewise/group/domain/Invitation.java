@@ -82,12 +82,19 @@ public class Invitation {
 	 * INVITATION_EXPIRED when it is older than 7 days
 	 */
 	void requireAnswerableBy(UserId user, Instant now) {
-		if (!invitee.equals(user.value()) || status != InvitationStatus.PENDING) {
-			throw new DomainException(ErrorCode.INVITATION_NOT_FOUND, "Invitation not found");
+		if (!invitee.equals(user.value())) {
+			throw notFound();
 		}
-		if (statusAt(now) == InvitationStatus.EXPIRED) {
-			throw new DomainException(ErrorCode.INVITATION_EXPIRED, "This invitation has expired");
+		switch (statusAt(now)) {
+			case PENDING -> {
+			}
+			case EXPIRED -> throw new DomainException(ErrorCode.INVITATION_EXPIRED, "This invitation has expired");
+			case ACCEPTED, DECLINED -> throw notFound();
 		}
+	}
+
+	private static DomainException notFound() {
+		return new DomainException(ErrorCode.INVITATION_NOT_FOUND, "Invitation not found");
 	}
 
 	void accept() {

@@ -221,6 +221,28 @@ class GroupTest {
 	}
 
 	@Test
+	void anAnsweredInvitationCannotBeAnsweredAgainWhateverTheAnswerWas() {
+		// given one invitation declined and one accepted
+		Invitation declined = group.inviteMember(bob, alice, NOW).invitation();
+		group.declineInvitation(declined.id(), bob, NOW);
+		Invitation accepted = group.inviteMember(bob, alice, NOW).invitation();
+		group.acceptInvitation(accepted.id(), bob, NOW);
+
+		// when / then: all four combinations are "not found", nothing changes
+		assertThatThrownBy(() -> group.acceptInvitation(declined.id(), bob, NOW)).isInstanceOfSatisfying(
+				DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.INVITATION_NOT_FOUND));
+		assertThatThrownBy(() -> group.declineInvitation(declined.id(), bob, NOW)).isInstanceOfSatisfying(
+				DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.INVITATION_NOT_FOUND));
+		assertThatThrownBy(() -> group.declineInvitation(accepted.id(), bob, NOW)).isInstanceOfSatisfying(
+				DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.INVITATION_NOT_FOUND));
+		assertThatThrownBy(() -> group.acceptInvitation(accepted.id(), bob, NOW)).isInstanceOfSatisfying(
+				DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.INVITATION_NOT_FOUND));
+		assertThat(declined.status()).isEqualTo(InvitationStatus.DECLINED);
+		assertThat(accepted.status()).isEqualTo(InvitationStatus.ACCEPTED);
+		assertThat(group.memberCount()).isEqualTo(2);
+	}
+
+	@Test
 	void decliningReturnsInvitationDeclinedAndNobodyJoins() {
 		// given
 		Invitation invitation = group.inviteMember(bob, alice, NOW).invitation();
