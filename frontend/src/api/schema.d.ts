@@ -238,7 +238,7 @@ export interface paths {
         };
         /**
          * Who should pay whom to settle the group (one edge per debtor and creditor pair)
-         * @description Computed from the balances (eventually consistent). pendingAmount is the part of amount already reserved by PENDING settlement payments on that pair.
+         * @description Computed from the booked balances (eventually consistent), in the order creditor, then debtor id. pendingAmount is the part of amount already reserved on that pair by payments that are PENDING or confirmed but not yet booked. payableAmount is what the server would accept as a new payment (or waiver) on that pair right now; it can be lower than amount minus pendingAmount when the debtor's other reservations, or the creditor's, use up the rest.
          */
         get: operations["getSettlementPlan"];
         put?: never;
@@ -340,8 +340,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Settlement payments across the caller's groups, newest first
-         * @description Both query parameters are optional filters. role says whether the caller is the creditor or the debtor.
+         * Settlement payments waiting for the caller's answer, newest first
+         * @description The PENDING payments in which the caller is the creditor and so is the one to confirm or reject. This is state, asked like the caller's open invitations; what happened to a payment arrives as a notification.
          */
         get: operations["listMySettlementPayments"];
         put?: never;
@@ -423,10 +423,10 @@ export interface components {
             expiresAt: string;
         };
         /**
-         * @description More types arrive with later features (payments, waived debts, removal).
+         * @description PAYMENT_CONFIRMED and PAYMENT_REJECTED tell the payer how the creditor answered; DEBT_WAIVED tells the debtor that the creditor forgave part of the debt. The actor is the creditor and the reference is the settlement payment. A payment waiting for an answer is not an entry (see GET /me/settlement-payments). More types arrive with later features (removal).
          * @enum {string}
          */
-        NotificationType: "MEMBER_JOINED" | "INVITATION_DECLINED";
+        NotificationType: "MEMBER_JOINED" | "INVITATION_DECLINED" | "PAYMENT_CONFIRMED" | "PAYMENT_REJECTED" | "DEBT_WAIVED";
         Notification: {
             /** Format: uuid */
             id: string;
@@ -509,8 +509,10 @@ export interface components {
             toCreditorName: string;
             /** @description Open debt of fromDebtor to toCreditor. */
             amount: components["schemas"]["Amount"];
-            /** @description Part of amount reserved by PENDING settlement payments on this pair. */
+            /** @description Part of amount reserved on this pair by payments that are PENDING or confirmed but not yet booked. */
             pendingAmount: components["schemas"]["Amount"];
+            /** @description What the server accepts as a new payment or waiver on this pair right now (the open debt). Show the "I paid" action only when it is above zero. */
+            payableAmount: components["schemas"]["Amount"];
         };
         /** @enum {string} */
         SettlementPaymentStatus: "PENDING" | "CONFIRMED" | "REJECTED" | "WAIVED";
@@ -1398,12 +1400,22 @@ export interface operations {
                     /**
                      * @example [
                      *       {
+                     *         "fromDebtor": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *         "fromDebtorName": "Bob",
+                     *         "toCreditor": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *         "toCreditorName": "Alice",
+                     *         "amount": "90.00",
+                     *         "pendingAmount": "0.00",
+                     *         "payableAmount": "90.00"
+                     *       },
+                     *       {
                      *         "fromDebtor": "aaaaaaaa-0000-0000-0000-000000000003",
                      *         "fromDebtorName": "Carol",
                      *         "toCreditor": "aaaaaaaa-0000-0000-0000-000000000001",
                      *         "toCreditorName": "Alice",
                      *         "amount": "270.00",
-                     *         "pendingAmount": "0.00"
+                     *         "pendingAmount": "270.00",
+                     *         "payableAmount": "0.00"
                      *       },
                      *       {
                      *         "fromDebtor": "aaaaaaaa-0000-0000-0000-000000000004",
@@ -1411,15 +1423,8 @@ export interface operations {
                      *         "toCreditor": "aaaaaaaa-0000-0000-0000-000000000001",
                      *         "toCreditorName": "Alice",
                      *         "amount": "270.00",
-                     *         "pendingAmount": "0.00"
-                     *       },
-                     *       {
-                     *         "fromDebtor": "aaaaaaaa-0000-0000-0000-000000000002",
-                     *         "fromDebtorName": "Bob",
-                     *         "toCreditor": "aaaaaaaa-0000-0000-0000-000000000001",
-                     *         "toCreditorName": "Alice",
-                     *         "amount": "90.00",
-                     *         "pendingAmount": "0.00"
+                     *         "pendingAmount": "0.00",
+                     *         "payableAmount": "270.00"
                      *       }
                      *     ]
                      */
@@ -1676,17 +1681,14 @@ export interface operations {
     };
     listMySettlementPayments: {
         parameters: {
-            query?: {
-                status?: components["schemas"]["SettlementPaymentStatus"];
-                role?: "creditor" | "debtor";
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Settlement payments */
+            /** @description Settlement payments waiting for the caller's answer */
             200: {
                 headers: {
                     [name: string]: unknown;
