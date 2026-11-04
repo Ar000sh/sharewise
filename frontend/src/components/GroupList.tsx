@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { components } from "@/api/schema";
-import { messageFor } from "@/lib/errors";
+import { ErrorBanner } from "@/components/ErrorBanner";
 import { useApi } from "@/lib/useApi";
 
 type Group = components["schemas"]["Group"];
@@ -10,7 +10,7 @@ type Group = components["schemas"]["Group"];
 export function GroupList() {
   const { data: groups, error } = useApi<Group[]>("/groups");
 
-  if (error) return <p role="alert" className="text-red-700 dark:text-red-400">{messageFor(error)}</p>;
+  if (error) return <ErrorBanner error={error} />;
   if (!groups) return <p>Loading…</p>;
   if (groups.length === 0) {
     return (

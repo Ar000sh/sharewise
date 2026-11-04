@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import type { components } from "@/api/schema";
+import { ErrorBanner } from "@/components/ErrorBanner";
 import { api } from "@/lib/api";
-import { messageFor } from "@/lib/errors";
 import { centsToAmount, eurosToCents, formatEuro } from "@/lib/money";
 
 type Member = components["schemas"]["Member"];
@@ -36,7 +36,7 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
     members.find((m) => m.userId === currentUserId)?.userId ?? members[0]?.userId ?? "",
   );
   const [excluded, setExcluded] = useState<string[]>([]);
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
 
   const participants = members.filter((m) => !excluded.includes(m.userId));
@@ -72,7 +72,7 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
       setError(undefined);
       onRecorded();
     } catch (err) {
-      setError(messageFor(err));
+      setError(err);
     } finally {
       setBusy(false);
     }
@@ -132,7 +132,7 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
           ))}
         </ul>
       )}
-      {error && <p role="alert" className="text-red-700 dark:text-red-400">{error}</p>}
+      <ErrorBanner error={error} />
       <button type="submit" disabled={busy} className="rounded bg-foreground px-3 py-2 text-background disabled:opacity-50">
         Add expense
       </button>

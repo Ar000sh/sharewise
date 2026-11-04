@@ -20,8 +20,12 @@ const MESSAGES: Record<string, string> = {
   NETWORK_ERROR: "Could not reach the server. Check your connection and try again.",
 };
 
-/** A readable message for an error: known problem code first, then the server's detail. */
+/**
+ * A readable message for an error: a plain text (a validation message of a form) as it is, else the known problem
+ * code, then the server's detail.
+ */
 export function messageFor(error: unknown): string {
+  if (typeof error === "string") return error;
   if (!(error instanceof ApiError)) return "Something went wrong.";
   return MESSAGES[error.code] ?? error.detail ?? "Something went wrong.";
 }

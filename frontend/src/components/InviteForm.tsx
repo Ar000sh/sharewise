@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import type { components } from "@/api/schema";
+import { ErrorBanner } from "@/components/ErrorBanner";
 import { api } from "@/lib/api";
-import { messageFor } from "@/lib/errors";
 
 type Invitation = components["schemas"]["Invitation"];
 
@@ -12,7 +12,7 @@ export function InviteForm({ groupId }: { groupId: string }) {
   const [identifier, setIdentifier] = useState("");
   const [busy, setBusy] = useState(false);
   const [invited, setInvited] = useState<string>();
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<unknown>();
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -29,7 +29,7 @@ export function InviteForm({ groupId }: { groupId: string }) {
       setError(undefined);
       setIdentifier("");
     } catch (e) {
-      setError(messageFor(e));
+      setError(e);
       setInvited(undefined);
     } finally {
       setBusy(false);
@@ -51,11 +51,7 @@ export function InviteForm({ groupId }: { groupId: string }) {
         Invite
       </button>
       {invited && <p role="status">Invitation sent to @{invited}</p>}
-      {error && (
-        <p role="alert" className="text-red-700 dark:text-red-400">
-          {error}
-        </p>
-      )}
+      <ErrorBanner error={error} />
     </form>
   );
 }

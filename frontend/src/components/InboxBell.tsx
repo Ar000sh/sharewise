@@ -3,8 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { components } from "@/api/schema";
+import { ErrorBanner } from "@/components/ErrorBanner";
 import { ApiError, api } from "@/lib/api";
-import { messageFor } from "@/lib/errors";
 
 type PendingInvitation = components["schemas"]["PendingInvitation"];
 type NotificationList = components["schemas"]["NotificationList"];
@@ -31,7 +31,7 @@ export function InboxBell() {
   const [inbox, setInbox] = useState<Inbox>();
   const [open, setOpen] = useState(false);
   const [busyId, setBusyId] = useState<string>();
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<unknown>();
   const stopped = useRef(false);
 
   const load = useCallback(async () => {
@@ -58,60 +58,43 @@ export function InboxBell() {
     };
   }, [load]);
 
-  async function accept(invitation: PendingInvitation) {
-    setBusyId(invitation.invitationId);
+  /**
+   * Runs one action of the bell, then asks again so the screen shows the truth. A 404 means the thing is already gone
+   * (answered in a second tab, a double click): nothing to report, just refresh.
+   */
+  async function perform(action: () => Promise<unknown>, busy?: string) {
+    setBusyId(busy);
     setError(undefined);
     try {
+      await action();
+    } catch (e) {
+      if (!(e instanceof ApiError && e.status === 404)) setError(e);
+    } finally {
+      setBusyId(undefined);
+    }
+    await load();
+  }
+
+  const accept = (invitation: PendingInvitation) =>
+    perform(async () => {
       const group = await api<Group>(`/invitations/${invitation.invitationId}/accept`, { method: "POST" });
       setOpen(false);
       router.push(`/groups/${group.id}`);
-      void load();
-    } catch (e) {
-      // 404 means it was answered meanwhile (a second tab, a double click): nothing to report, just refresh.
-      if (e instanceof ApiError && e.status === 404) await load();
-      else setError(messageFor(e));
-    } finally {
-      setBusyId(undefined);
-    }
-  }
+    }, invitation.invitationId);
 
-  async function decline(invitation: PendingInvitation) {
-    setBusyId(invitation.invitationId);
-    setError(undefined);
-    try {
-      await api(`/invitations/${invitation.invitationId}/decline`, { method: "POST" });
-      await load();
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 404) await load();
-      else setError(messageFor(e));
-    } finally {
-      setBusyId(undefined);
-    }
-  }
+  const decline = (invitation: PendingInvitation) =>
+    perform(() => api(`/invitations/${invitation.invitationId}/decline`, { method: "POST" }), invitation.invitationId);
 
-  async function markRead(entry: Notification) {
-    try {
-      await api(`/notifications/${entry.id}/read`, { method: "POST" });
-    } catch (e) {
-      if (!(e instanceof ApiError && e.status === 404)) setError(messageFor(e));
-    }
-    await load();
-  }
+  const markRead = (entry: Notification) => perform(() => api(`/notifications/${entry.id}/read`, { method: "POST" }));
 
-  async function markAllRead() {
-    try {
-      await api("/notifications/read-all", { method: "POST" });
-    } catch (e) {
-      setError(messageFor(e));
-    }
-    await load();
-  }
+  const markAllRead = () => perform(() => api("/notifications/read-all", { method: "POST" }));
 
   const invitations = inbox?.invitations;
   const notifications = inbox?.notifications;
-  const count = (invitations?.length ?? 0) + (notifications?.unreadCount ?? 0);
+  const openInvitations = invitations ?? [];
   const entries = notifications?.items ?? [];
-  const empty = (invitations ?? []).length === 0 && entries.length === 0;
+  const count = openInvitations.length + (notifications?.unreadCount ?? 0);
+  const empty = openInvitations.length === 0 && entries.length === 0;
 
   return (
     <div className="relative">
@@ -128,16 +111,12 @@ export function InboxBell() {
         )}
       </button>
       {open && (
-        <div role="region" aria-label="Inbox entries" className="absolute right-0 z-10 mt-2 w-80 max-w-[90vw] rounded border bg-background p-3 text-sm text-foreground shadow">
-          {error && (
-            <p role="alert" className="mb-2 text-red-700 dark:text-red-400">
-              {error}
-            </p>
-          )}
-          {invitations === null && <p className="mb-2 text-foreground/70">Invitations could not be loaded.</p>}
-          {notifications === null && <p className="mb-2 text-foreground/70">Entries could not be loaded.</p>}
+        <div role="region" aria-label="Inbox entries" className="absolute right-0 z-10 mt-2 w-80 max-w-[90vw] flex flex-col gap-2 rounded border bg-background p-3 text-sm text-foreground shadow">
+          <ErrorBanner error={error} />
+          {invitations === null && <p className="text-foreground/70">Invitations could not be loaded.</p>}
+          {notifications === null && <p className="text-foreground/70">Entries could not be loaded.</p>}
           <ul className="flex flex-col gap-2">
-            {(invitations ?? []).map((invitation) => (
+            {openInvitations.map((invitation) => (
               <li key={invitation.invitationId} className="flex flex-col gap-1 border-l-4 border-blue-500 pl-2">
                 <span>{`${invitation.invitedBy.displayName} invited you to ${invitation.group.name}`}</span>
                 <span className="flex gap-2">
@@ -176,7 +155,7 @@ export function InboxBell() {
           </ul>
           {empty && invitations !== null && notifications !== null && <p className="text-foreground/70">Nothing new.</p>}
           {notifications && notifications.unreadCount > 0 && (
-            <button type="button" onClick={() => void markAllRead()} className="mt-2 underline">
+            <button type="button" onClick={() => void markAllRead()} className="self-start underline">
               Mark all as read
             </button>
           )}

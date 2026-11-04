@@ -26,6 +26,10 @@ describe("messageFor", () => {
     expect(messageFor(new ApiError(500, "UNKNOWN"))).toBe("Something went wrong.");
   });
 
+  it("showsAPlainTextMessageAsItIs", () => {
+    expect(messageFor("Please enter a title.")).toBe("Please enter a title.");
+  });
+
   it("handlesNonApiErrors", () => {
     expect(messageFor(new Error("x"))).toBe("Something went wrong.");
   });
