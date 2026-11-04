@@ -3,7 +3,7 @@
 //
 // pre-commit (fast, only for what is staged):
 //   1. no secrets file staged, no Anthropic API key in the added lines
-//   2. docs/api/openapi.yaml is committed on its own (contract first, docs/conventions/03 section 6)
+//   2. docs/api/openapi.yaml is committed on its own (contract first, docs/conventions/03 section 6); a merge commit is exempt
 //   3. package-lock.json did not lose other platforms' entries (npm on Windows drops them, docs/conventions/04 section 7)
 //   4. checks for the staged parts: backend format, frontend lint + typecheck, contract lint, guard hook tests
 //   Docs-only commits (.md) skip step 4.
@@ -64,6 +64,16 @@ function lockFileLostPlatforms() {
 	return countPlatformEntries(git('show', `:${LOCK_FILE}`)) < countPlatformEntries(before);
 }
 
+function isMergeCommit() {
+	try {
+		git('rev-parse', '-q', '--verify', 'MERGE_HEAD');
+		return true;
+	}
+	catch {
+		return false;
+	}
+}
+
 function preCommit() {
 	const staged = git('diff', '--cached', '--name-only').split('\n').filter(Boolean);
 	if (staged.length === 0) {
@@ -76,7 +86,9 @@ function preCommit() {
 	if (KEY_IN_ADDED_LINES.test(git('diff', '--cached', '-U0'))) {
 		fail('an Anthropic API key (sk-ant-...) is in the staged changes. Remove it; rotate the key if it was ever pushed.');
 	}
-	if (staged.includes(CONTRACT) && staged.length > 1) {
+	// A merge commit carries the other branch's contract change together with its code; the contract commit
+	// itself was already made alone on that branch.
+	if (staged.includes(CONTRACT) && staged.length > 1 && !isMergeCommit()) {
 		fail(`${CONTRACT} is staged together with other files. The contract changes in its own commit ("contract(<scope>): ..."), the code follows.`);
 	}
 	if (staged.includes(LOCK_FILE) && lockFileLostPlatforms()) {
