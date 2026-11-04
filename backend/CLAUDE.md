@@ -19,3 +19,4 @@ Java 21, Spring Boot 4.1, Spring Modulith 2.1, JPA + Flyway on Postgres 17. Mave
 ## The rules (binding, checked by ArchUnit and Spring Modulith where possible)
 @../docs/conventions/01_ARCHITECTURE_AND_NAMING.md
 @../docs/conventions/03_CODE_STYLE.md
+@../docs/conventions/02_TESTING.md
