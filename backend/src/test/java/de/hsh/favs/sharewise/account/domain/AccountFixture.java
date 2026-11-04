@@ -26,6 +26,8 @@ public class AccountFixture {
 
 	private String displayName = "Alice";
 
+	private String username = "alice";
+
 	private String email = "alice@example.com";
 
 	private String token;
@@ -35,15 +37,24 @@ public class AccountFixture {
 	}
 
 	public static AccountFixture bob() {
-		return new AccountFixture().withId(seededId(2)).withDisplayName("Bob").withEmail("bob@example.com");
+		return new AccountFixture().withId(seededId(2))
+			.withDisplayName("Bob")
+			.withUsername("bob")
+			.withEmail("bob@example.com");
 	}
 
 	public static AccountFixture carol() {
-		return new AccountFixture().withId(seededId(3)).withDisplayName("Carol").withEmail("carol@example.com");
+		return new AccountFixture().withId(seededId(3))
+			.withDisplayName("Carol")
+			.withUsername("carol")
+			.withEmail("carol@example.com");
 	}
 
 	public static AccountFixture david() {
-		return new AccountFixture().withId(seededId(4)).withDisplayName("David").withEmail("david@example.com");
+		return new AccountFixture().withId(seededId(4))
+			.withDisplayName("David")
+			.withUsername("david")
+			.withEmail("david@example.com");
 	}
 
 	/** A well-formed id that belongs to no account. */
@@ -69,6 +80,7 @@ public class AccountFixture {
 		}
 		return new AccountFixture().withId(UUID.fromString(login.subject()))
 			.withDisplayName(json.readTree(me.getContentAsString()).get("displayName").asString())
+			.withUsername(login.username())
 			.withEmail(login.email())
 			.withToken(login.accessToken());
 	}
@@ -80,6 +92,11 @@ public class AccountFixture {
 
 	public AccountFixture withDisplayName(String displayName) {
 		this.displayName = displayName;
+		return this;
+	}
+
+	public AccountFixture withUsername(String username) {
+		this.username = username;
 		return this;
 	}
 
@@ -97,7 +114,8 @@ public class AccountFixture {
 	 * An ACTIVE {@link Account} with this fixture's id, built through the real factory.
 	 */
 	public Account build() {
-		return Account.registerFromIdentityProvider(userId(), new Email(email), new DisplayName(displayName), NOW);
+		return Account.registerFromIdentityProvider(userId(), new Email(email), new Username(username),
+				new DisplayName(displayName), NOW);
 	}
 
 	public UUID id() {
@@ -116,6 +134,10 @@ public class AccountFixture {
 		return displayName;
 	}
 
+	public String username() {
+		return username;
+	}
+
 	public String email() {
 		return email;
 	}
@@ -128,7 +150,7 @@ public class AccountFixture {
 	}
 
 	public UserProfile profile() {
-		return new UserProfile(userId(), displayName, true);
+		return new UserProfile(userId(), displayName, username, true);
 	}
 
 	private static UUID seededId(int n) {

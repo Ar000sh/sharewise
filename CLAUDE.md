@@ -20,6 +20,8 @@
 - **Gates are not optional.** `.githooks/` checks every commit and push (enable once per clone: `git config core.hooksPath .githooks`). Never use `--no-verify`; if a gate is wrong or too slow, ask whether to change it.
 - **Never write regexes or backslashes through shell heredocs or `node -e`.** Escapes get mangled. Use Write/Edit and prove each regex with a test.
 - **Verify money with a script** before writing balances or examples into docs (the Mallorca numbers are checked that way).
+- **Keep it simple.** One place per rule, no duplicated logic, no defence for a case that cannot happen, no new mechanism where an existing rule, lock or constraint does (`docs/conventions/03` section 7). Edge cases only when they can really happen in the app.
+- **Keep line endings.** Edit with the edit tools, not `sed -i`; the repo mixes CRLF and LF and the gate refuses a flip. Check `git diff --stat` before committing.
 
 ## Workflow by stage
 | Stage | Do |
@@ -27,7 +29,7 @@
 | New feature (an exercise, a journey) | superpowers brainstorming → design doc `docs/YYYY-MM-DD-<topic>-design.md` → `/edge-case-probe` plan mode; `/design-review` when it touches statuses, money or several writers → plan |
 | HTTP interface changes | `/contract-change` |
 | New aggregate operation | `/backend:domain-operation` |
-| Before merging a branch | `/review-branch` (conventions + diagram names, fresh reviewer) |
+| Before merging a branch | `/review-branch` (conventions, duplication, diagram names, fresh reviewer), then `/review-doc` (the short jump-start guide `docs/review/<feature>/REVIEW.md` for the user's own review) |
 | A module or exercise is done | `/edge-case-probe` attack mode, then `/hand-in exN` |
 | End of an exercise, or something went badly | `/retro` (manual) |
 

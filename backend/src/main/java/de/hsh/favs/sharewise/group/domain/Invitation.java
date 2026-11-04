@@ -2,7 +2,6 @@ package de.hsh.favs.sharewise.group.domain;
 
 import de.hsh.favs.sharewise.group.api.InvitationId;
 import de.hsh.favs.sharewise.shared.DomainException;
-import de.hsh.favs.sharewise.shared.Email;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.UserId;
 import jakarta.persistence.Column;
@@ -16,9 +15,14 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * An offer to join a group, valid for 7 days (R9). It carries a secret token that makes
- * up the invitation link, and optionally the email address it was meant for. Part of the
- * {@link Group} aggregate, only reachable through it.
+ * An offer to join a group, made to one existing account and valid for 7 days (R9). Part
+ * of the {@link Group} aggregate, only reachable through it. Only the invited account can
+ * answer it.
+ *
+ * <p>
+ * {@code EXPIRED} is never stored: the stored status is PENDING, ACCEPTED or DECLINED,
+ * and {@link #statusAt(Instant)} derives EXPIRED from the expiry time. That way no reader
+ * can see a stale PENDING.
  */
 @Entity
 @Table(name = "invitations")
@@ -30,11 +34,8 @@ public class Invitation {
 	@Id
 	private UUID id;
 
-	@Column(nullable = false)
-	private String token;
-
-	/** Lower case; null for a link invitation. */
-	private String email;
+	@Column(name = "invitee_id", nullable = false)
+	private UUID invitee;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
@@ -52,11 +53,10 @@ public class Invitation {
 	protected Invitation() {
 	}
 
-	static Invitation issue(Email email, String token, UserId createdBy, Instant now) {
+	static Invitation issue(UserId invitee, UserId createdBy, Instant now) {
 		Invitation invitation = new Invitation();
 		invitation.id = UUID.randomUUID();
-		invitation.token = token;
-		invitation.email = email == null ? null : email.value();
+		invitation.invitee = invitee.value();
 		invitation.status = InvitationStatus.PENDING;
 		invitation.createdBy = createdBy.value();
 		invitation.createdAt = now;
@@ -65,52 +65,71 @@ public class Invitation {
 	}
 
 	/**
-	 * Fails unless this invitation can still be used at {@code now}.
-	 * @throws DomainException INVITATION_NOT_FOUND when it was already used or declined,
-	 * INVITATION_EXPIRED when it is older than 7 days
+	 * Where this invitation is at {@code now}: a stored PENDING past its expiry time is
+	 * EXPIRED. At the exact expiry instant it is still PENDING.
 	 */
-	void requireUsable(Instant now) {
-		if (status != InvitationStatus.PENDING) {
-			throw new DomainException(ErrorCode.INVITATION_NOT_FOUND, "Invitation not found");
+	public InvitationStatus statusAt(Instant now) {
+		if (status == InvitationStatus.PENDING && now.isAfter(expiresAt)) {
+			return InvitationStatus.EXPIRED;
 		}
-		if (isExpiredAt(now)) {
-			throw new DomainException(ErrorCode.INVITATION_EXPIRED, "This invitation has expired");
-		}
+		return status;
 	}
 
 	/**
-	 * Marks it used. A link invitation stays PENDING so the same link can admit several
-	 * people.
+	 * Fails unless {@code user} can still answer this invitation at {@code now}.
+	 * @throws DomainException INVITATION_NOT_FOUND when it is meant for somebody else or
+	 * was already answered (the cases look the same, so ids cannot be probed),
+	 * INVITATION_EXPIRED when it is older than 7 days
 	 */
-	void accept() {
-		if (email != null) {
-			status = InvitationStatus.ACCEPTED;
+	void requireAnswerableBy(UserId user, Instant now) {
+		if (!invitee.equals(user.value())) {
+			throw notFound();
+		}
+		switch (statusAt(now)) {
+			case PENDING -> {
+			}
+			case EXPIRED -> throw new DomainException(ErrorCode.INVITATION_EXPIRED, "This invitation has expired");
+			case ACCEPTED, DECLINED -> throw notFound();
 		}
 	}
 
-	boolean isExpiredAt(Instant now) {
-		return now.isAfter(expiresAt);
+	private static DomainException notFound() {
+		return new DomainException(ErrorCode.INVITATION_NOT_FOUND, "Invitation not found");
+	}
+
+	void accept() {
+		status = InvitationStatus.ACCEPTED;
+	}
+
+	void decline() {
+		status = InvitationStatus.DECLINED;
 	}
 
 	public InvitationId id() {
 		return new InvitationId(id);
 	}
 
-	public String token() {
-		return token;
+	/** The account this invitation is for. */
+	public UserId invitee() {
+		return new UserId(invitee);
 	}
 
-	/** The address this invitation was meant for, or null for a link invitation. */
-	public Email email() {
-		return email == null ? null : new Email(email);
+	/** The member who sent it. */
+	public UserId createdBy() {
+		return new UserId(createdBy);
 	}
 
-	public InvitationStatus status() {
-		return status;
+	public Instant createdAt() {
+		return createdAt;
 	}
 
 	public Instant expiresAt() {
 		return expiresAt;
+	}
+
+	/** The stored status; use {@link #statusAt(Instant)} to see expiry. */
+	public InvitationStatus status() {
+		return status;
 	}
 
 }

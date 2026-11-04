@@ -4,7 +4,9 @@ import de.hsh.favs.sharewise.account.api.CurrentUser;
 import de.hsh.favs.sharewise.account.api.UserProfile;
 import de.hsh.favs.sharewise.account.api.UserProfiles;
 import de.hsh.favs.sharewise.group.application.GroupService;
+import de.hsh.favs.sharewise.group.api.InvitationId;
 import de.hsh.favs.sharewise.group.application.GroupService.GroupView;
+import de.hsh.favs.sharewise.group.application.GroupService.PendingInvitationView;
 import de.hsh.favs.sharewise.group.domain.GroupName;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.UserId;
@@ -22,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Groups, their members and the invitation links. */
+/** Groups, their members and invitations to existing accounts. */
 @RestController
 class GroupController {
 
@@ -66,13 +68,29 @@ class GroupController {
 
 	@PostMapping("/groups/{groupId}/invitations")
 	@ResponseStatus(HttpStatus.CREATED)
-	InvitationResponse inviteMember(@PathVariable UUID groupId) {
-		return InvitationResponse.of(groups.inviteMember(new GroupId(groupId), caller()));
+	InvitationResponse inviteMember(@PathVariable UUID groupId, @Valid @RequestBody InviteMemberRequest request) {
+		return InvitationResponse.of(groups.inviteMember(new GroupId(groupId), caller(), request.identifier()));
 	}
 
-	@PostMapping("/invitations/{token}/accept")
-	GroupResponse acceptInvitation(@PathVariable String token) {
-		return GroupResponse.of(groups.acceptInvitation(token, caller()));
+	@GetMapping("/invitations")
+	List<PendingInvitationResponse> listPendingInvitations() {
+		List<PendingInvitationView> pending = groups.listPendingInvitations(caller());
+		Set<UserId> inviters = pending.stream().map(PendingInvitationView::invitedBy).collect(Collectors.toSet());
+		Map<UUID, UserSummaryResponse> people = profiles.findProfiles(inviters)
+			.stream()
+			.collect(Collectors.toMap(p -> p.userId().value(), UserSummaryResponse::of, (a, b) -> a));
+		return pending.stream().map(invitation -> PendingInvitationResponse.of(invitation, people)).toList();
+	}
+
+	@PostMapping("/invitations/{invitationId}/accept")
+	GroupResponse acceptInvitation(@PathVariable UUID invitationId) {
+		return GroupResponse.of(groups.acceptInvitation(new InvitationId(invitationId), caller()));
+	}
+
+	@PostMapping("/invitations/{invitationId}/decline")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	void declineInvitation(@PathVariable UUID invitationId) {
+		groups.declineInvitation(new InvitationId(invitationId), caller());
 	}
 
 	private UserId caller() {

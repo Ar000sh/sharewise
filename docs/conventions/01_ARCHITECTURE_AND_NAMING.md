@@ -10,9 +10,10 @@ One module per bounded context, plus `shared`. Root package `de.hsh.favs.sharewi
 | `group` | Group | supporting | `Group` (with entities `Membership`, `Invitation`) |
 | `expense` | Expense | core | `Expense` |
 | `settlement` | Settlement | core | `GroupLedger` (with entity `LedgerEntry`), `SettlementPayment` (Ex5) |
+| `notification` | Notification | generic | `Notification` (the inbox: things that happened to a person; a leaf, nothing depends on it, so it has no `api` package) |
 | `shared` | none | none | value objects used by several contexts only (see 2.4) |
 
-A module's allowed dependencies are declared once, in its `package-info.java` (`@ApplicationModule(allowedDependencies = ...)`), and checked by `ModularityTests`. Current rules: `account → shared`; `group → account::api, shared`; `expense → account::api, group::api, shared`; `settlement → account::api, group::api, expense::api, shared`. Adding a dependency is a design decision: change the line, say why in the commit.
+A module's allowed dependencies are declared once, in its `package-info.java` (`@ApplicationModule(allowedDependencies = ...)`), and checked by `ModularityTests`. Current rules: `account → shared`; `group → account::api, shared`; `expense → account::api, group::api, shared`; `settlement → account::api, group::api, expense::api, shared`; `notification → account::api, group::api, shared` (later also `settlement::api`), and **nothing depends on `notification`** (checked by `ConventionTests.nothingDependsOnTheNotificationModule`). Why a module of its own: payment entries come from `settlement`, which already depends on `group`; entries stored inside `group` would force `group → settlement`, a cycle. Adding a dependency is a design decision: change the line, say why in the commit.
 
 ## 2. One layout for every module (no exceptions)
 
@@ -73,7 +74,7 @@ Value objects wrap every id and every concept the diagram draws as a value objec
 Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCamelCase` for types, `lowerCamelCase` for fields and methods, `UPPER_SNAKE_CASE` for enumeration constants, `snake_case` for SQL.
 
 ### 3.1 Group context
-- Aggregate root `Group`: fields `id: GroupId`, `name: GroupName`, `currency: Currency`, `status: GroupStatus`; entities `Membership` (`userId`, `role: GroupRole`, `status: MembershipStatus`, `hasZeroBalance`, `joinedAt`) and `Invitation` (`id: InvitationId`, `email: Email`, `status: InvitationStatus`, `expiresAt`).
+- Aggregate root `Group`: fields `id: GroupId`, `name: GroupName`, `currency: Currency`, `status: GroupStatus`; entities `Membership` (`userId`, `role: GroupRole`, `status: MembershipStatus`, `hasZeroBalance`, `joinedAt`) and `Invitation` (`id: InvitationId`, `invitee: UserId`, `status: InvitationStatus`, `expiresAt`). An invitation belongs to one existing account and only that account can answer it; `EXPIRED` is derived from `expiresAt`, never stored.
 - Operations (each returns its event): `createGroup`, `inviteMember`, `acceptInvitation`, `declineInvitation`, `promoteToAdmin`, `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, `updateBalanceStatus`.
 - Enumerations `GroupStatus {OPEN, CLOSED_FOR_SETTLEMENT, ARCHIVED}`, `GroupRole {ADMIN, MEMBER}`, `MembershipStatus {ACTIVE, FORMER_MEMBER}`, `InvitationStatus {PENDING, ACCEPTED, DECLINED, EXPIRED}`.
 - Events: `GroupCreated`, `MemberInvited`, `MemberJoined`, `MemberLeft`, `MemberRemoved`, `MemberPromoted`, `InvitationDeclined`, `GroupClosedForSettlement`, `GroupReopened`, `GroupArchived`.
@@ -92,12 +93,17 @@ Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCam
 - Events: `SettlementPaymentRecorded`, `SettlementPaymentConfirmed`, `SettlementPaymentRejected`, `DebtWaived`, `MemberBalanceStatusChanged`, `AllBalancesSettled`.
 
 ### 3.4 Account context
-- Aggregate root `Account`: `id: UserId` (the Keycloak subject), `email`, `displayName: DisplayName`, `status: AccountStatus`, `registeredAt`; operation `registerFromIdentityProvider`, … (the rest of the diagram arrives in later exercises). Passwords, sign-in, lock-out and tokens belong to the identity provider (Keycloak); ShareWise has none of them.
-- Read model `UserProfile(userId, displayName, isActive)`, served by a port that offers `findProfiles(Set<UserId>)`.
+- Aggregate root `Account`: `id: UserId` (the Keycloak subject), `email`, `username: Username` (lower case, 3 to 30 characters of `a-z 0-9 . _ -`, never an `@`; chosen at sign-up at Keycloak, copied on first login), `displayName: DisplayName`, `status: AccountStatus`, `registeredAt`; operation `registerFromIdentityProvider`, … (the rest of the diagram arrives in later exercises). Passwords, sign-in, lock-out and tokens belong to the identity provider (Keycloak); ShareWise has none of them.
+- Read model `UserProfile(userId, displayName, username, isActive)`, served by a port that offers `findProfiles(Set<UserId>)` and `findByIdentifier(String)` (exact username or email, trimmed, case-insensitive, never partial).
 - Events: none yet; the diagram draws none for the Account context.
 
 ### 3.5 Words we do not use
 `User` for the aggregate (it is `Account`; `UserId` and `UserProfile` are fine), `Member` for a person (it is the `UserId` of an active `Membership`), `Share` alone (it is `ExpenseShare`), `Role` alone (`GroupRole`), `payer`/`payerId` (it is `paidBy`), `amountCents`/`Cents` (money is `Money`), `Dto`, `Manager`, `Helper`, `Util`, `Data`, `Info`, `Impl` for anything except an `api` port implementation.
+
+### 3.6 Notification context
+- Aggregate root `Notification`: `id: NotificationId`, `recipient: UserId`, `type: NotificationType`, `groupId: GroupId`, `actor: UserId` (who did it), `reference: UUID` (what it points at), `occurredAt`, `readAt` (null = unread); operations `notify` (factory) and `markRead`. It stores ids only; names and texts are looked up when the inbox is read.
+- Enumeration `NotificationType {MEMBER_JOINED, INVITATION_DECLINED}`; later `PAYMENT_TO_CONFIRM`, `PAYMENT_CONFIRMED`, `PAYMENT_REJECTED`, `DEBT_WAIVED`, `MEMBER_REMOVED`. A received invitation is not an entry: it is state, asked from the group context (`GET /invitations`).
+- Consumes `MemberJoined` and `InvitationDeclined` (listeners are asynchronous and delegate to `NotificationService`). Uses the ports `UserProfiles` and `GroupDirectory`.
 
 ## 4. Class naming by role (checked by `ConventionTests`)
 
@@ -130,7 +136,7 @@ Method names on services are the operation names (`recordExpense`, `acceptInvita
 
 ## 6. Persistence and database
 
-- One Flyway folder per module: `db/migration/<module>/V<n>__<what>.sql`. Version ranges: shared `V0xx`, account `V1xx`, group `V2xx`, expense `V3xx`, settlement `V4xx`. **Never edit a migration that is on `main`; add a new one.**
+- One Flyway folder per module: `db/migration/<module>/V<n>__<what>.sql`. Version ranges: shared `V0xx`, account `V1xx`, group `V2xx`, expense `V3xx`, settlement `V4xx`, notification `V5xx`. **Never edit a migration that is on `main`; add a new one.** Check the open branches for a version you are about to use (two branches with the same version make Flyway refuse to start after the merge).
 - Because every module numbers its own migrations, Flyway runs with `out-of-order: true` (`application.yml`). Without it a new `V104` is refused by any database that already has `V401`. Found when the first refactoring ran on a real database; fresh test databases hide it.
 - Tables `snake_case`, plural (`accounts`, `groups`, `memberships`, `expenses`, `expense_shares`, `settlement_ledgers`); columns `snake_case`; ids `UUID`; money `NUMERIC(19,2)` named `<name>` (not `_cents`); instants `TIMESTAMPTZ` named `<what>_at`; enumerations stored as `VARCHAR` of the constant name.
 - Every migration starts with a `--` comment saying why it exists; every non-obvious column, index and constraint gets a one-line `--` why.

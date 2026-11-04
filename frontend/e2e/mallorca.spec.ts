@@ -5,6 +5,11 @@ const LAST_NAME = "Tester";
 // Unique per run, so the test can be repeated against the same Keycloak and database.
 const RUN = Date.now();
 
+/** Lower case letters and digits only, as the realm demands (3 to 30 characters). */
+function usernameOf(firstName: string): string {
+  return `${firstName.toLowerCase()}${RUN}`;
+}
+
 function emailOf(firstName: string): string {
   return `${firstName.toLowerCase()}-${RUN}@example.com`;
 }
@@ -12,6 +17,7 @@ function emailOf(firstName: string): string {
 /** Fills Keycloak's registration page (default login theme); the display name becomes "<firstName> Tester". */
 async function registerOnKeycloak(page: Page, firstName: string) {
   await expect(page).toHaveURL(/\/realms\/sharewise\//);
+  await page.getByLabel("Username").fill(usernameOf(firstName));
   await page.getByLabel("First name").fill(firstName);
   await page.getByLabel("Last name").fill(LAST_NAME);
   await page.getByLabel("Email").fill(emailOf(firstName));
@@ -52,27 +58,36 @@ test("three friends sign up, share a group and see who owes what", async ({ brow
   await alice.getByRole("button", { name: "Create group" }).click();
   await expect(alice.getByRole("heading", { name: "Mallorca 2027" })).toBeVisible();
 
-  await alice.getByRole("tab", { name: "Members" }).click();
-  await alice.getByRole("button", { name: "Invite someone" }).click();
-  const inviteLink = await alice.getByLabel("Invite link (valid for 7 days)").inputValue();
+  // Bob and Carol sign up first: only existing accounts can be invited.
+  const bob = await signUp(browser, "Bob");
+  const carol = await signUp(browser, "Carol");
 
-  // Bob and Carol open the link without an account: they are sent to sign in, register on Keycloak, and land on the
-  // join page.
-  const others: Page[] = [];
-  for (const name of ["Bob", "Carol"]) {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await page.goto(inviteLink);
-    await expect(page).toHaveURL(/\/login\?next=/);
-    await page.getByRole("link", { name: "Create an account" }).click();
-    await registerOnKeycloak(page, name);
-    // The page is server-rendered: wait until React has hydrated, or the click lands on a button without handler.
+  // Alice invites Bob by username and Carol by email.
+  await alice.getByRole("tab", { name: "Members" }).click();
+  await alice.getByLabel("Username or email").fill(usernameOf("Bob"));
+  await alice.getByRole("button", { name: "Invite" }).click();
+  await expect(alice.getByRole("status")).toContainText(`Invitation sent to @${usernameOf("Bob")}`);
+  await alice.getByLabel("Username or email").fill(emailOf("Carol"));
+  await alice.getByRole("button", { name: "Invite" }).click();
+  await expect(alice.getByRole("status")).toContainText(`Invitation sent to @${usernameOf("Carol")}`);
+
+  // Each of them finds the invitation in the bell and accepts it.
+  for (const page of [bob, carol]) {
+    await page.reload();
     await page.waitForLoadState("networkidle");
-    await page.getByRole("button", { name: "Join group" }).click();
+    await page.getByRole("button", { name: /inbox/i }).click();
+    await expect(page.getByText("Alice Tester invited you to Mallorca 2027")).toBeVisible();
+    await page.getByRole("button", { name: /accept invitation/i }).click();
     await expect(page.getByRole("heading", { name: "Mallorca 2027" })).toBeVisible();
-    others.push(page);
   }
-  const [bob] = others;
+
+  // Alice hears about it: the entries arrive through an event, so she reloads until they are there.
+  await expect(async () => {
+    await alice.reload();
+    await alice.getByRole("button", { name: /inbox/i }).click();
+    await expect(alice.getByText("Bob Tester joined Mallorca 2027")).toBeVisible({ timeout: 2000 });
+    await expect(alice.getByText("Carol Tester joined Mallorca 2027")).toBeVisible({ timeout: 2000 });
+  }).toPass();
 
   // Alice pays the hotel (900 €, all three), Bob pays the dinner (180 €, all three).
   await alice.reload();
@@ -109,7 +124,7 @@ test("wrong password is refused, signed-out visitors are sent to sign in, signin
   await expect(page).toHaveURL(/\/login\?next=/);
 
   await page.getByRole("link", { name: "Sign in" }).click();
-  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Username or email").fill(email);
   await page.getByRole("textbox", { name: "Password", exact: true }).fill("not-the-password");
   await page.getByRole("button", { name: "Sign In" }).click();
   await expect(page.getByText("Invalid username or password")).toBeVisible();

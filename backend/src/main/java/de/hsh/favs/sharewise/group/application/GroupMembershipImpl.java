@@ -36,7 +36,7 @@ class GroupMembershipImpl implements GroupMembership {
 
 	@Override
 	public List<UserId> members(GroupId group) {
-		return load(group).memberships().stream().filter(Membership::isActiveMember).map(Membership::userId).toList();
+		return load(group).activeMemberships().stream().map(Membership::userId).toList();
 	}
 
 	@Override

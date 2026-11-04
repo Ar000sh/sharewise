@@ -1,10 +1,9 @@
 package de.hsh.favs.sharewise.group.domain;
 
 /**
- * Where an invitation is in its life. A link invitation (no email) stays PENDING and can
- * be used by several people until it expires; an invitation to an email address becomes
- * ACCEPTED when used. DECLINED and EXPIRED are reached by the inbox and expiry handling
- * of later exercises; today an expired invitation is recognised by its expiry time.
+ * Where an invitation is in its life. PENDING, ACCEPTED and DECLINED are stored; EXPIRED
+ * is never stored, it is derived from the expiry time (see
+ * {@link Invitation#statusAt(java.time.Instant)}), so no reader sees a stale PENDING.
  */
 public enum InvitationStatus {
 

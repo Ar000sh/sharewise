@@ -14,6 +14,7 @@
 - ShareWise never sees, stores or logs a password; no `passwordHash`, `Hasher`, `RawPassword` anywhere after Task 4.
 - Tokens only in an httpOnly cookie (`SameSite=Lax`); never readable by browser JavaScript. Only access + refresh token are stored (no id token), so the cookie stays under 4 KB. Logout uses `client_id` + `post_logout_redirect_uri`.
 - Backend answers a missing/invalid token, an inactive account, a missing `email` claim or a non-UUID `sub` with 401 problem+json, `code: UNAUTHENTICATED`, never 500. Open without token: `/actuator/**` only.
+- *(Changed 03.11.26, design `2026-11-03-notifications-design.md` N4: the realm no longer uses the email as username; the username is also taken from `preferred_username` on first login and must be a valid `Username`, else 401.)*
 - `sub` = `UserId`. Email and display name are taken from the token on first login only (D10, C2). Display name: claim `name`, else `preferred_username`, else the email before `@`; trimmed and cut to the `DisplayName` limit (C7).
 - Realm `sharewise`: self-registration on, `verifyEmail` false, `loginWithEmailAllowed` true, `duplicateEmailsAllowed` false, `bruteForceProtected` true, public client `sharewise-web` with PKCE S256, no direct grants. Keycloak on fixed `http://localhost:8180`, issuer `http://localhost:8180/realms/sharewise`.
 - Contract first, in its own commit (`.githooks` rejects a mixed commit). Regenerate with `npm run gen:api`; never edit `schema.d.ts`.

@@ -22,7 +22,7 @@ describe("safeReturnTo", () => {
 
   it("keepsPathsWithQueryAndEncodedCharacters", () => {
     expect(safeReturnTo("/groups/abc?tab=Balances")).toBe("/groups/abc?tab=Balances");
-    expect(safeReturnTo("/join/a%5Cb")).toBe("/join/a%5Cb");
+    expect(safeReturnTo("/groups/a%5Cb")).toBe("/groups/a%5Cb");
   });
 });
 

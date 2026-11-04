@@ -19,3 +19,5 @@ On Windows, check `git diff package-lock.json` after `npm install`: the commit g
 
 ## The rules (binding)
 @../docs/conventions/04_FRONTEND.md
+@../docs/conventions/03_CODE_STYLE.md
+(03 is shared with the backend: section 1 is Java formatting and does not apply here; sections 3 to 7 do: errors, security, documentation, git and commits, keep it simple.)

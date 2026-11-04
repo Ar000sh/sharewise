@@ -45,7 +45,7 @@ public class GroupRequests {
 	public UUID groupWith(AccountFixture admin, String name, AccountFixture... joiners) throws Exception {
 		UUID group = createGroup(admin, name);
 		for (AccountFixture joiner : joiners) {
-			accept(invite(group, admin), joiner).andExpect(status().isOk());
+			accept(invite(group, admin, joiner), joiner).andExpect(status().isOk());
 		}
 		return group;
 	}
@@ -58,18 +58,34 @@ public class GroupRequests {
 		return mvc.perform(get("/groups/" + group).header(USER_HEADER, caller.bearer()));
 	}
 
-	public ResultActions createInvitation(UUID group, AccountFixture caller) throws Exception {
-		return mvc.perform(post("/groups/" + group + "/invitations").header(USER_HEADER, caller.bearer()));
+	/**
+	 * Invites whoever {@code identifier} (username or email) names, as {@code caller}.
+	 */
+	public ResultActions createInvitation(UUID group, AccountFixture caller, String identifier) throws Exception {
+		return mvc.perform(post("/groups/" + group + "/invitations").header(USER_HEADER, caller.bearer())
+			.contentType(APPLICATION_JSON)
+			.content(json.writeValueAsString(Map.of("identifier", identifier))));
 	}
 
-	/** Creates an invitation (expects 201) and returns its token. */
-	public String invite(UUID group, AccountFixture caller) throws Exception {
-		String body = body(createInvitation(group, caller).andExpect(status().isCreated()));
-		return json.readTree(body).get("token").asString();
+	/**
+	 * Invites {@code invitee} by username (expects 201) and returns the invitation id.
+	 */
+	public UUID invite(UUID group, AccountFixture inviter, AccountFixture invitee) throws Exception {
+		String body = body(createInvitation(group, inviter, invitee.username()).andExpect(status().isCreated()));
+		return UUID.fromString(json.readTree(body).get("invitationId").asString());
 	}
 
-	public ResultActions accept(String token, AccountFixture caller) throws Exception {
-		return mvc.perform(post("/invitations/" + token + "/accept").header(USER_HEADER, caller.bearer()));
+	public ResultActions accept(UUID invitationId, AccountFixture caller) throws Exception {
+		return mvc.perform(post("/invitations/" + invitationId + "/accept").header(USER_HEADER, caller.bearer()));
+	}
+
+	public ResultActions decline(UUID invitationId, AccountFixture caller) throws Exception {
+		return mvc.perform(post("/invitations/" + invitationId + "/decline").header(USER_HEADER, caller.bearer()));
+	}
+
+	/** The caller's open invitations. */
+	public ResultActions pending(AccountFixture caller) throws Exception {
+		return mvc.perform(get("/invitations").header(USER_HEADER, caller.bearer()));
 	}
 
 	public String body(ResultActions result) throws Exception {

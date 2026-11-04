@@ -9,13 +9,14 @@ import org.springframework.modulith.core.ApplicationModules;
 class ModularityTests {
 
 	@Test
-	void detectsTheFourContextsAndSharedTypes() {
+	void detectsTheFiveContextsAndSharedTypes() {
 		List<String> names = ApplicationModules.of(SharewiseApplication.class)
 			.stream()
 			.map(m -> m.getIdentifier().toString())
 			.toList();
 
-		assertThat(names).containsExactlyInAnyOrder("account", "group", "expense", "settlement", "shared");
+		assertThat(names).containsExactlyInAnyOrder("account", "group", "expense", "settlement", "notification",
+				"shared");
 	}
 
 	@Test

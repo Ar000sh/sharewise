@@ -41,10 +41,15 @@ If port 5432 is taken by another local Postgres, stop that one first (the compos
   from it, and the realm file must list it as a redirect URI.
 
 ### Signing up and in
-- Sign-up happens on Keycloak's own registration page: first name, last name, email and password (at least 8
-  characters). There is no email verification locally.
-- The ShareWise account is created on the first authenticated request after sign-in (display name from the token, see
-  the design doc `docs/2026-10-30-keycloak-auth-design.md`).
+- Sign-up happens on Keycloak's own registration page: username, first name, last name, email and password (at least
+  8 characters). The username is 3 to 30 lowercase letters, digits, dots, underscores or hyphens (no `@`); it is what
+  other people type to invite you, together with your email. You can sign in with the username or the email. There is
+  no email verification locally.
+- The ShareWise account is created on the first authenticated request after sign-in (display name and username from
+  the token, see the design doc `docs/2026-10-30-keycloak-auth-design.md`). A person who signed up at Keycloak but
+  never opened ShareWise has no account yet and cannot be invited.
+- **After the username change (migration V106 and the changed realm) delete the old local data once:** `docker compose
+  down -v`. The realm is imported again and the database starts empty; there is no backfill.
 - **Sign out** ends the Keycloak session too and shows a Keycloak confirmation page ("Logout"); confirm it to come
   back.
 - Admin console: http://localhost:8180 with `admin` / `admin`. These credentials are in `docker-compose.yml` and are
@@ -66,10 +71,13 @@ If port 5432 is taken by another local Postgres, stop that one first (the compos
 ### Try the Mallorca example (needs one browser profile per person)
 Use a normal window for Alice and private/incognito windows (or other browsers) for Bob and Carol, because the session
 cookie is per browser.
-1. **Alice:** sign up, create the group "Mallorca 2027", open the Members tab, **Invite someone**, copy the link.
-2. **Bob / Carol:** open the link, **Create an account**, then **Join group**.
-3. **Alice:** add "Hotel", 900 €, paid by Alice, everyone. **Bob:** "Dinner", 180 €, paid by Bob, everyone.
-4. Balances tab: Alice +540,00 €, Bob -180,00 €, Carol -360,00 €. They arrive through an event, so they can lag the
+1. **Bob / Carol:** sign up first (choose a username). Only people with an account can be invited.
+2. **Alice:** sign up, create the group "Mallorca 2027", open the Members tab, type Bob's username (or Carol's email)
+   into **Username or email** and press **Invite**. "No account found" means that person has not signed in yet.
+3. **Bob / Carol:** reload, open the bell (**Inbox**), read "Alice … invited you to Mallorca 2027" and press **Accept**
+   (or **Decline**). Alice's bell shows "… joined Mallorca 2027" a moment later (it arrives through an event).
+4. **Alice:** add "Hotel", 900 €, paid by Alice, everyone. **Bob:** "Dinner", 180 €, paid by Bob, everyone.
+5. Balances tab: Alice +540,00 €, Bob -180,00 €, Carol -360,00 €. They arrive through an event, so they can lag the
    expense by a moment.
 
 ## Tests

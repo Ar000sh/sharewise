@@ -26,7 +26,7 @@ import tools.jackson.databind.json.JsonMapper;
 public final class KeycloakUsers {
 
 	/** What a test needs to act as the created user. */
-	public record Login(String subject, String email, String accessToken) {
+	public record Login(String subject, String email, String username, String accessToken) {
 	}
 
 	static final String ADMIN_USER = "admin";
@@ -56,10 +56,21 @@ public final class KeycloakUsers {
 	}
 
 	/**
-	 * Registers a new user with a unique email, the given first name and a fixed last
-	 * name, and signs them in.
+	 * Registers a new user with a unique email and a unique valid username, the given
+	 * first name and a fixed last name, and signs them in.
 	 */
 	public static synchronized Login create(String displayName) {
+		String letters = displayName.toLowerCase().replaceAll("[^a-z0-9]", "");
+		String username = letters.substring(0, Math.min(letters.length(), 12)) + "-"
+				+ UUID.randomUUID().toString().substring(0, 8);
+		return create(displayName, username);
+	}
+
+	/**
+	 * Like {@link #create(String)} with the given username. Throws when Keycloak refuses
+	 * it, which is how the realm's username rule is tested.
+	 */
+	public static synchronized Login create(String displayName, String username) {
 		if (baseUrl == null) {
 			throw new IllegalStateException("Keycloak test container is not started; use @ModuleIntegrationTest");
 		}
@@ -67,7 +78,7 @@ public final class KeycloakUsers {
 		ensureDirectGrantClient(adminToken);
 		String email = displayName.toLowerCase().replaceAll("[^a-z0-9]", "") + "-" + UUID.randomUUID()
 				+ "@example.test";
-		Map<String, Object> user = Map.of("username", email, "email", email, "firstName", displayName, "lastName",
+		Map<String, Object> user = Map.of("username", username, "email", email, "firstName", displayName, "lastName",
 				"Tester", "enabled", true, "emailVerified", true, "credentials",
 				List.of(Map.of("type", "password", "value", PASSWORD, "temporary", false)));
 		HttpResponse<String> created = send(HttpRequest.newBuilder(uri("/admin/realms/" + REALM + "/users"))
@@ -77,7 +88,7 @@ public final class KeycloakUsers {
 		require(created, 201, "create user");
 		String location = created.headers().firstValue("Location").orElseThrow();
 		String subject = location.substring(location.lastIndexOf('/') + 1);
-		return new Login(subject, email, accessToken(email));
+		return new Login(subject, email, username.toLowerCase(), accessToken(username));
 	}
 
 	private static String adminToken() {
@@ -103,9 +114,9 @@ public final class KeycloakUsers {
 		clientCreated = true;
 	}
 
-	private static String accessToken(String email) {
+	private static String accessToken(String username) {
 		HttpResponse<String> response = form("/realms/" + REALM + "/protocol/openid-connect/token", Map.of("client_id",
-				TEST_CLIENT, "grant_type", "password", "username", email, "password", PASSWORD, "scope", "openid"));
+				TEST_CLIENT, "grant_type", "password", "username", username, "password", PASSWORD, "scope", "openid"));
 		require(response, 200, "user token");
 		return JSON.readTree(response.body()).path("access_token").asString();
 	}

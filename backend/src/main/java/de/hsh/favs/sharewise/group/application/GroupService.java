@@ -1,8 +1,11 @@
 package de.hsh.favs.sharewise.group.application;
 
+import de.hsh.favs.sharewise.account.api.UserProfile;
+import de.hsh.favs.sharewise.account.api.UserProfiles;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.group.api.GroupRole;
 import de.hsh.favs.sharewise.group.api.GroupStatus;
+import de.hsh.favs.sharewise.group.api.InvitationId;
 import de.hsh.favs.sharewise.group.domain.Group;
 import de.hsh.favs.sharewise.group.domain.GroupName;
 import de.hsh.favs.sharewise.group.domain.Invitation;
@@ -12,10 +15,8 @@ import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.UserId;
-import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
@@ -33,9 +34,6 @@ public class GroupService {
 	/** The currency of every group in Ex4. */
 	static final Currency EUR = Currency.getInstance("EUR");
 
-	/** 32 random bytes = 256 bits, above the 128 bit minimum for an unguessable link. */
-	private static final int TOKEN_BYTES = 32;
-
 	/**
 	 * A read snapshot taken inside the transaction, so callers never touch lazy state.
 	 */
@@ -47,7 +45,7 @@ public class GroupService {
 
 		static GroupView of(Group group) {
 			return new GroupView(group.groupId(), group.name(), group.status(),
-					group.memberships().stream().filter(Membership::isActiveMember).map(MembershipView::of).toList());
+					group.activeMemberships().stream().map(MembershipView::of).toList());
 		}
 
 	}
@@ -60,28 +58,36 @@ public class GroupService {
 
 	}
 
-	/** The link token and when it stops working. */
-	public record InvitationView(String token, Instant expiresAt) {
+	/** A new invitation: who it is for and when it stops working. */
+	public record InvitationView(InvitationId id, UserProfile invitee, Instant expiresAt) {
 
-		static InvitationView of(Invitation invitation) {
-			return new InvitationView(invitation.token(), invitation.expiresAt());
+		static InvitationView of(Invitation invitation, UserProfile invitee) {
+			return new InvitationView(invitation.id(), invitee, invitation.expiresAt());
 		}
 
 	}
 
-	private final SecureRandom random = new SecureRandom();
+	/** An open invitation of the caller, with the name of the group it is for. */
+	public record PendingInvitationView(InvitationId id, GroupId groupId, String groupName, UserId invitedBy,
+			Instant expiresAt) {
+
+	}
 
 	private final GroupRepository groups;
 
 	private final GroupMembership membership;
 
+	private final UserProfiles profiles;
+
 	private final ApplicationEventPublisher events;
 
 	private final Clock clock;
 
-	GroupService(GroupRepository groups, GroupMembership membership, ApplicationEventPublisher events, Clock clock) {
+	GroupService(GroupRepository groups, GroupMembership membership, UserProfiles profiles,
+			ApplicationEventPublisher events, Clock clock) {
 		this.groups = groups;
 		this.membership = membership;
+		this.profiles = profiles;
 		this.events = events;
 		this.clock = clock;
 	}
@@ -116,42 +122,76 @@ public class GroupService {
 	}
 
 	/**
-	 * Creates a link invitation to the group.
-	 * @throws DomainException GROUP_NOT_FOUND, or NOT_A_MEMBER when the caller is not in
-	 * the group
+	 * Invites the account that {@code identifier} (exact username or email) names. The
+	 * group row is locked, so two members inviting the same person together are
+	 * serialized and the second gets ALREADY_INVITED. The inviter's membership is checked
+	 * before the account is looked up, so a non-member learns nothing about which
+	 * accounts exist.
+	 * @throws DomainException GROUP_NOT_FOUND, NOT_A_MEMBER, ACCOUNT_NOT_FOUND,
+	 * ALREADY_MEMBER or ALREADY_INVITED
 	 */
 	@Transactional
-	public InvitationView inviteMember(GroupId groupId, UserId inviter) {
-		Group group = groups.findById(groupId.value())
-			.orElseThrow(() -> new DomainException(ErrorCode.GROUP_NOT_FOUND, "Group not found"));
-		Group.Invited invited = group.inviteMember(null, inviter, newToken(), clock.instant());
+	public InvitationView inviteMember(GroupId groupId, UserId inviter, String identifier) {
+		Group group = lockedGroup(groupId.value());
+		group.requireActiveMember(inviter);
+		UserProfile invitee = profiles.findByIdentifier(identifier)
+			.orElseThrow(() -> new DomainException(ErrorCode.ACCOUNT_NOT_FOUND, "No account found"));
+		Group.Invited invited = group.inviteMember(invitee.userId(), inviter, clock.instant());
 		events.publishEvent(invited.event());
-		return InvitationView.of(invited.invitation());
+		return InvitationView.of(invited.invitation(), invitee);
 	}
 
 	/**
-	 * Joins the caller to the group the link token belongs to. The group row is locked
-	 * while the rules run, so two simultaneous accepts by the same person cannot both
-	 * pass the already-a-member check.
-	 * @throws DomainException INVITATION_NOT_FOUND, INVITATION_EXPIRED or ALREADY_MEMBER
+	 * Joins the caller to the group the invitation belongs to. The group row is locked
+	 * while the rules run, so two simultaneous answers to the same invitation cannot both
+	 * pass.
+	 * @throws DomainException INVITATION_NOT_FOUND (also for somebody else's invitation),
+	 * INVITATION_EXPIRED or ALREADY_MEMBER
 	 */
 	@Transactional
-	public GroupView acceptInvitation(String token, UserId caller) {
-		UUID groupId = groups.findIdByInvitationToken(token)
-			.orElseThrow(() -> new DomainException(ErrorCode.INVITATION_NOT_FOUND, "Invitation not found"));
-		Group group = groups.findByIdForUpdate(groupId)
-			.orElseThrow(() -> new DomainException(ErrorCode.GROUP_NOT_FOUND, "Group not found"));
-		Invitation invitation = group.invitationWithToken(token);
-		var joined = group.acceptInvitation(invitation.id(), caller, clock.instant());
+	public GroupView acceptInvitation(InvitationId invitationId, UserId caller) {
+		Group group = lockedGroupOfInvitation(invitationId);
+		var joined = group.acceptInvitation(invitationId, caller, clock.instant());
 		groups.saveAndFlush(group);
 		events.publishEvent(joined);
 		return GroupView.of(group);
 	}
 
-	private String newToken() {
-		byte[] bytes = new byte[TOKEN_BYTES];
-		random.nextBytes(bytes);
-		return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+	/**
+	 * Turns the caller's invitation down.
+	 * @throws DomainException INVITATION_NOT_FOUND (also for somebody else's invitation),
+	 * INVITATION_EXPIRED
+	 */
+	@Transactional
+	public void declineInvitation(InvitationId invitationId, UserId caller) {
+		Group group = lockedGroupOfInvitation(invitationId);
+		var declined = group.declineInvitation(invitationId, caller, clock.instant());
+		groups.saveAndFlush(group);
+		events.publishEvent(declined);
+	}
+
+	/**
+	 * The caller's open invitations, newest first. A read use case: one query that
+	 * returns plain rows, so no group is loaded and no lazy collection is touched.
+	 */
+	@Transactional(readOnly = true)
+	public List<PendingInvitationView> listPendingInvitations(UserId caller) {
+		return groups.findPendingInvitationsFor(caller.value(), clock.instant())
+			.stream()
+			.map(row -> new PendingInvitationView(new InvitationId(row.invitationId()), new GroupId(row.groupId()),
+					row.groupName(), new UserId(row.invitedBy()), row.expiresAt()))
+			.toList();
+	}
+
+	private Group lockedGroup(UUID groupId) {
+		return groups.findByIdForUpdate(groupId)
+			.orElseThrow(() -> new DomainException(ErrorCode.GROUP_NOT_FOUND, "Group not found"));
+	}
+
+	private Group lockedGroupOfInvitation(InvitationId invitationId) {
+		UUID groupId = groups.findIdByInvitationId(invitationId.value())
+			.orElseThrow(() -> new DomainException(ErrorCode.INVITATION_NOT_FOUND, "Invitation not found"));
+		return lockedGroup(groupId);
 	}
 
 }

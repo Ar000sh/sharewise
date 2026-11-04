@@ -4,9 +4,12 @@ const MESSAGES: Record<string, string> = {
   UNAUTHENTICATED: "You are not signed in. Please sign in.",
   NOT_A_MEMBER: "You are not a member of this group.",
   GROUP_NOT_FOUND: "This group does not exist.",
-  INVITATION_NOT_FOUND: "This invitation link is not valid.",
+  INVITATION_NOT_FOUND: "This invitation is no longer valid.",
   ALREADY_MEMBER: "You are already a member of this group.",
-  INVITATION_EXPIRED: "This invitation has expired. Ask for a new link.",
+  INVITATION_EXPIRED: "This invitation has expired. Ask for a new one.",
+  ACCOUNT_NOT_FOUND: "No account found. The person must have signed in to ShareWise once.",
+  ALREADY_INVITED: "This person already has an open invitation.",
+  NOTIFICATION_NOT_FOUND: "This entry no longer exists.",
   AMOUNT_NOT_POSITIVE: "The amount must be greater than zero.",
   PAYER_NOT_IN_GROUP: "The payer is not a member of this group.",
   PARTICIPANT_NOT_IN_GROUP: "A participant is not a member of this group.",
@@ -17,8 +20,12 @@ const MESSAGES: Record<string, string> = {
   NETWORK_ERROR: "Could not reach the server. Check your connection and try again.",
 };
 
-/** A readable message for an error: known problem code first, then the server's detail. */
+/**
+ * A readable message for an error: a plain text (a validation message of a form) as it is, else the known problem
+ * code, then the server's detail.
+ */
 export function messageFor(error: unknown): string {
+  if (typeof error === "string") return error;
   if (!(error instanceof ApiError)) return "Something went wrong.";
   return MESSAGES[error.code] ?? error.detail ?? "Something went wrong.";
 }

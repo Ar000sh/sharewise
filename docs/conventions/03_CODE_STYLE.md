@@ -57,9 +57,23 @@ Write documents in English, with headings that can be linked to, tables for comp
 - **Branches:** `main` is always green. Work happens on `feature/<what>`, `fix/<what>`, `refactor/<what>` or `chore/<what>` and is merged with `git merge --no-ff` and a merge commit `merge: <branch> (<one line>)`. No direct commits to `main` except documentation fixes.
 - **Commit format:** `<type>(<scope>): <imperative subject, lowercase, no full stop, at most 72 characters>`.
   - Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `contract` (a change to `openapi.yaml`, always on its own).
-  - Scopes: `account`, `group`, `expense`, `settlement`, `shared`, `frontend`, `e2e`, `build`, `devsetup` (the `.claude/` and `.githooks/` setup).
+  - Scopes: `account`, `group`, `expense`, `settlement`, `notification`, `shared`, `frontend`, `e2e`, `build`, `devsetup` (the `.claude/` and `.githooks/` setup).
   - Body (optional): why, not what. Trailer on assisted commits: `Co-Authored-By: Claude <model> <noreply@anthropic.com>`, naming the model that did the work (e.g. `Claude Opus 5.5`).
 - **Gates:** `.githooks/pre-commit` and `pre-push` (see `docs/devsetup/README.md`) run on every commit and push once enabled with `git config core.hooksPath .githooks`. Never `--no-verify`; change the gate in its own commit if it is wrong.
 - **One concern per commit.** A rename and a behaviour change are two commits. Every commit builds and passes its own tests.
 - Never commit secrets, `.env.local`, build output, `node_modules`, or generated reports (`test-results/`, `playwright-report/`). `.env.example` is committed.
 - Tags mark hand-ins: `ex4`, `ex5`, … on the commit that was submitted. A tag is never moved after submission.
+- Keep existing line endings: the repo mixes CRLF and LF, each file keeps the one it was created with. The commit gate refuses a commit that flips an existing file (`.githooks/line-endings.mjs`); `sed -i` and some editors strip carriage returns, so make edits with the edit tools and check `git diff --stat`.
+
+## 7. Keep it simple (clean code, not clever code)
+
+The aim is code a reader follows in one pass, with each rule in one place. This is a study project with a few users per group: do not build for what cannot happen, and do not abstract for what has two uses.
+
+- **One place per rule.** A business rule lives once, in the domain. A filter or condition written in three places becomes one method (`Group.activeMemberships()`). A rule that really is checked in two layers needs a one-line comment saying why (the SQL of the open-invitation list repeats `Invitation.statusAt` so a list does not load whole groups, and a test pins the boundary).
+- **Rule of three.** Extract when the same logic appears a third time or when two copies must always change together. Two similar lines, a one-line route handler, a `vi.mock(...)` line: leave them. An abstraction used once is a cost, not a gain.
+- **Do not build for cases that cannot happen.** No check for a state an earlier step already guarantees, no defence or test for an operation that does not exist yet (park it with the trigger that brings it back, see `/edge-case-probe`). Edge cases only when they can really happen in the app.
+- **The simplest mechanism that holds.** Prefer the lock, constraint or rule we already have over a new table, index, job, retry or layer. A mechanism is justified by the harm it prevents, not by how thorough it looks.
+- **Use what exists.** Errors go through `ErrorBanner` and `messageFor`, loading through `useApi`, backend calls through `api<T>()` and `proxyToBackend`; do not write the same markup or handling again next to them.
+- **Clear beats short.** Steps in the order they run, each named for what it does; one reason to change per method; comments say why. A refactor that makes the code harder to follow is not a gain.
+- **Tests follow the same rule.** Each rule is tested once, at the lowest level that can show it (document 02); set-up that repeats three times becomes a helper, declarative boilerplate stays.
+- **The review question:** would a reader stumble, or would a change have to be made in two places? If neither, leave it.

@@ -19,13 +19,13 @@ Optional, personal, not committed: `.claude/settings.local.json`, e.g.
 | Layer | File(s) | Loads / runs | Holds |
 |---|---|---|---|
 | Repo-wide | `CLAUDE.md` (+ `docs/conventions/README.md`) | always | sources of truth, how we work, workflow by stage, definition of done |
-| Backend | `backend/CLAUDE.md` (+ conventions 01, 03) | when Claude works in `backend/` | module layout, commands, pitfalls |
+| Backend | `backend/CLAUDE.md` (+ conventions 01, 02, 03) | when Claude works in `backend/` | module layout, commands, pitfalls |
 | Frontend | `frontend/CLAUDE.md` (+ `AGENTS.md`, conventions 04) | when Claude works in `frontend/` | Next.js 16 warning, commands, money/errors/API rules |
-| File-type rules | `.claude/rules/*.md` (`paths:` frontmatter) | when Claude touches matching files | domain packages, backend tests (+ conventions 02), migrations, the contract, frontend tests |
+| File-type rules | `.claude/rules/*.md` (`paths:` frontmatter) | when Claude touches matching files | domain packages, backend tests, migrations, the contract, frontend tests. Never `@`-import a convention here: imports in a path-scoped rule are read at session start (measured 2026-11-04), so put them in the folder's `CLAUDE.md` |
 | Guard hook | `.claude/hooks/guard.mjs` | before every Write/Edit/Bash by Claude | blocks secrets files, `schema.d.ts`, migrations already on `main`, API keys, `--no-verify` |
 | Sound hook | `.claude/hooks/sound.mjs` + `.claude/sounds/` | when Claude stops or needs attention | on by default; off with `SHAREWISE_SOUNDS=0` |
 | Git gates | `.githooks/pre-commit`, `pre-push` → `gate.mjs` | every commit / push, people and Claude | see the header of `gate.mjs` |
-| Skills (repo) | `.claude/skills/*` | on demand (`/name`) | `edge-case-probe`, `design-review`, `review-branch`, `contract-change`, `retro`*, `hand-in`* |
+| Skills (repo) | `.claude/skills/*` | on demand (`/name`) | `edge-case-probe`, `design-review`, `review-branch`, `review-doc`, `contract-change`, `retro`*, `hand-in`* |
 | Skills (backend) | `backend/.claude/skills/*` | on demand (`/backend:name`) | `domain-operation` |
 | Subagent prompts | `<skill>/*-prompt.md` | the skill dispatches a fresh `general-purpose` subagent with it | `edge-case-probe/attacker-prompt.md` (Opus, writes only gitignored probes), `design-review/reviewer-prompt.md` (Opus, read-only), `review-branch/reviewer-prompt.md` (Sonnet, read-only) |
 | Permissions | `.claude/settings.json` | always | routine commands allowed without a prompt; force push denied |
@@ -37,5 +37,5 @@ Use the table in `.claude/skills/retro/SKILL.md` (step 2). In short: a rule for 
 
 ## Testing the setup
 ```sh
-node --test .claude/hooks/guard.test.mjs   # the guard hook (also run by the gates when hooks change)
+node --test .claude/hooks/guard.test.mjs .githooks/line-endings.test.mjs   # the guard hook and the line-ending check of the gate (also run by the gates when hooks change)
 ```

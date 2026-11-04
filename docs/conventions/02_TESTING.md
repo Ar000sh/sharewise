@@ -54,7 +54,7 @@ Where a rule lives decides where it is tested: a rule in an aggregate is tested 
 
 ## 6. What the architecture tests check
 
-`ConventionTests` fails when: `domain` imports Spring, web or another layer of its module; a class in `api` is not an interface, record or enumeration; a `*Controller` lies outside `web`, a `*Repository` outside `persistence`, a `*Service` outside `application`; `application`, `persistence` or `web` types are used by another module; a class is called `MemberId`, `*Dto`, `*Manager`, `*Util` or `*Helper`; a domain event does not live in `api`. When you add a rule to document 01, add it to `ConventionTests` in the same commit.
+`ConventionTests` fails when: `domain` imports Spring, web or another layer of its module; a class in `api` is not an interface, record or enumeration; a `*Controller` lies outside `web`, a `*Repository` outside `persistence`, a `*Service` outside `application`; `application`, `persistence` or `web` types are used by another module; a class is called `MemberId`, `*Dto`, `*Manager`, `*Util` or `*Helper`; a domain event does not live in `api`; any class outside `notification` depends on it (`nothingDependsOnTheNotificationModule`). A listener annotated `@ApplicationModuleListener` is asynchronous: its logic lives in a service method that tests call directly, and the asynchronous wiring is proven by a controller test with Awaitility. When you add a rule to document 01, add it to `ConventionTests` in the same commit.
 
 ## 7. Frontend tests
 See document 04: Vitest + Testing Library beside the component, Playwright for the user journeys.
