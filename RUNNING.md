@@ -82,9 +82,10 @@ cookie is per browser.
    expense by a moment.
 5. **Carol:** Settle up tab, "You owe" shows 360,00 € to Alice; **I paid**, **Send payment**. The row now says
    "360,00 € awaiting confirmation"; no balance has changed yet.
-6. **Alice:** the Settle up tab label and the home page show a badge. In the Settle up tab the box "Waiting for your
-   answer" (above the plan) lists Carol's payment: **Confirm** (or **Reject** with a reason). After a moment the plan
-   shows only "Bob Tester owes 180,00 €" and the Balances tab Alice +180,00 €, Bob -180,00 €, Carol 0,00 €.
+6. **Alice:** the bell (**Inbox**) shows a badge and lists "Carol Tester marked 360,00 € as paid to you": **Confirm**
+   (or **Reject** with a reason). Carol's bell then reads "Alice Tester confirmed your payment in Mallorca 2027". After
+   a moment the plan shows only "Bob Tester owes 180,00 €" and the Balances tab Alice +180,00 €, Bob -180,00 €, Carol
+   0,00 €.
 7. **Alice:** **Waive** on Bob's row fills the "Waive manually" form below the plan; give a reason and **Waive debt**.
    Bob's debt is forgiven at once, no confirmation needed, and the plan says "Everybody is settled."
 
@@ -103,7 +104,7 @@ test run.
 
 ### End-to-end test in a real browser (Playwright)
 Three people register on Keycloak's registration page in three browsers, share a group, check the balances and settle
-up (Carol reports a payment, Alice confirms it in her inbox, the plan shrinks to Bob's debt); a second test covers a
+up (Carol reports a payment, Alice confirms it in her bell, the plan shrinks to Bob's debt); a second test covers a
 wrong password, sign-out and the redirect to sign-in.
 ```sh
 docker compose up -d db keycloak                # the realm allows http://localhost:3100, the port of the e2e frontend
