@@ -263,7 +263,7 @@ export interface paths {
         put?: never;
         /**
          * The caller (the debtor) reports a payment to a creditor. Status starts PENDING until the creditor confirms.
-         * @description The amount reserves that much of the open debt to the creditor, so it may not exceed the open debt minus other PENDING payments (422 PAYMENT_EXCEEDS_OPEN_DEBT). A group that is archived answers 422 GROUP_NOT_OPEN.
+         * @description The amount reserves that much of the open debt to the creditor, so it may not exceed the open debt of the pair, which already excludes what other payments reserve (see payableAmount of the plan; 422 PAYMENT_EXCEEDS_OPEN_DEBT). A group that is archived answers 422 GROUP_NOT_OPEN.
          */
         post: operations["recordSettlementPayment"];
         delete?: never;
@@ -720,7 +720,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description The amount is larger than the open debt (minus other PENDING payments). code is PAYMENT_EXCEEDS_OPEN_DEBT, or AMOUNT_NOT_POSITIVE, PARTICIPANT_NOT_IN_GROUP or GROUP_NOT_OPEN (group is archived). */
+        /** @description The amount is larger than the open debt of the pair (payableAmount of the plan). code is PAYMENT_EXCEEDS_OPEN_DEBT, or AMOUNT_NOT_POSITIVE, PARTICIPANT_NOT_IN_GROUP or GROUP_NOT_OPEN (group is archived). */
         PaymentExceedsOpenDebt: {
             headers: {
                 [name: string]: unknown;
@@ -1714,10 +1714,7 @@ export interface operations {
                     "application/json": components["schemas"]["SettlementPayment"][];
                 };
             };
-            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthenticated"];
-            403: components["responses"]["NotAMember"];
-            404: components["responses"]["GroupNotFound"];
         };
     };
 }
