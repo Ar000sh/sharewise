@@ -1,5 +1,7 @@
 # Settlements: design
 
+> **Superseded in parts (04.11.26):** the settle-up inbox and badge (D10), the filters of `GET /me/settlement-payments` and the idea that confirm re-checks the open debt were replaced. See `2026-11-04-settlements-inbox-design.md` for the decisions and `2026-11-04-money-flow.md` for how the money works today. This document stays as the record of the first design.
+
 Status: draft for approval. Branch `feature/settlements`. Date 2026-11-02.
 
 ## 1. Intent

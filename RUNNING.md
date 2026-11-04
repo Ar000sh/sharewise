@@ -132,6 +132,6 @@ volumes.
 - `docs/api/openapi.yaml` the API contract (change it first, then code)
 - `docs/2026-10-24-sharewise-modulith-ex4-design.md` design decisions, `docs/...-ex4.md` the plan
 - `docs/2026-10-30-keycloak-auth-design.md` sign-in with Keycloak (decisions, failure modes)
-- `docs/2026-11-02-settlements-design.md` settling up (plan, payments, waivers, balance status events)
+- `docs/2026-11-04-money-flow.md` how expenses, balances, the plan and settlement payments work (with diagrams); `docs/2026-11-02-settlements-design.md` is the first design, `docs/2026-11-04-settlements-inbox-design.md` what changed
 - `docs/diagram-deltas.md` where the code differs from the domain diagram, and why
 - `backend/src/main/java/de/hsh/favs/sharewise/{account,group,expense,settlement,shared}` the modules

@@ -189,7 +189,7 @@ Once Alice answers, the picture clears: confirmed gives Alice −50.00, Bob 0.00
 | R14 ledger entries per expense/payment | `GroupLedger.append*` | `GroupLedgerTest` |
 | R15 fewest transfers | `SettlementPlan` | `SettlementPlanTest` (the A+3, B+3, C−6, D+5, E−5 case separates exact from greedy) |
 | R16 payment counts only after confirm | `SettlementPayment` states + booking only in the listener | `SettlementPaymentTest`, `MallorcaSliceTest` |
-| R17 amount ≤ open debt, no double report | `SettlementPayment.record/waive` with the value from `OpenDebtPolicy`, under the ledger lock | domain unit test; `SettlementPaymentServiceDbTest` (two records in a row) |
+| R17 amount ≤ open debt, no double report | `SettlementPayment.record/waive` with the value from `OpenDebtPolicy`, under the ledger lock | domain unit test; `SettlementPaymentServiceDbTest.twoConcurrentRecordsOfTheSameDebtorCannotTogetherExceedTheDebt` |
 | Idempotent booking | `isBooked` + unique constraint on (reference, person, entry type) | `GroupLedgerServiceTest` |
 | One answer per payment | `@Version`, status check | `SettlementPaymentTest`, API test |
 

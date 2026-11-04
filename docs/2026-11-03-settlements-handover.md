@@ -1,5 +1,7 @@
 # Settlements: handover after the build, the attack and the review (2026-11-03)
 
+> **Resolved on 04.11.26:** A1 was withdrawn (confirm records a fact, R16; the check was wrong), A2 dropped, A3 fixed with `payableAmount`, most of sections 4 and 5 fixed or parked. The decisions and reasons are in `2026-11-04-settlements-inbox-design.md`; the money rules are explained in `2026-11-04-money-flow.md`. The text below is the state before.
+
 Branch `feature/settlements` (HEAD at the time of writing: the commit that adds this file). Not merged. Spec: `docs/2026-11-02-settlements-design.md`, plan: `docs/2026-11-02-settlements.md`.
 
 ## 1. What the branch does

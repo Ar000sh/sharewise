@@ -1,5 +1,7 @@
 # Settlements (package 1) Implementation Plan
 
+> **Historical (04.11.26):** the settle-up inbox and badge this plan builds were replaced by the bell; see `2026-11-04-settlements-inbox-design.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Members can see a minimum-payments settlement plan, record a settlement payment, have the creditor confirm or reject it, and have the creditor waive a debt; only confirmed payments and waivers change balances.
