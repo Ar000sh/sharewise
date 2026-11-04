@@ -93,11 +93,10 @@ public class SettlementRequests {
 	}
 
 	/**
-	 * {@code GET /me/settlement-payments} with a raw query string such as "role=debtor".
+	 * {@code GET /me/settlement-payments}: the payments waiting for the caller's answer.
 	 */
-	public ResultActions mine(AccountFixture caller, String query) throws Exception {
-		return mvc.perform(get("/me/settlement-payments" + (query.isEmpty() ? "" : "?" + query)).header(AUTHORIZATION,
-				caller.bearer()));
+	public ResultActions mine(AccountFixture caller) throws Exception {
+		return mvc.perform(get("/me/settlement-payments").header(AUTHORIZATION, caller.bearer()));
 	}
 
 	/**

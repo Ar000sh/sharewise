@@ -14,7 +14,7 @@ public interface SettlementPaymentRepository extends JpaRepository<SettlementPay
 
 	List<SettlementPayment> findByGroupIdOrderByCreatedAtDesc(UUID groupId);
 
-	List<SettlementPayment> findByToCreditorAndStatus(UUID toCreditor, PaymentStatus status);
+	List<SettlementPayment> findByToCreditorAndStatusOrderByCreatedAtDesc(UUID toCreditor, PaymentStatus status);
 
 	/**
 	 * The amount of this group's payments that is reserved and not yet in the balances:

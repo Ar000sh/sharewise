@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -27,9 +26,7 @@ import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.Money;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.ZoneOffset;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -185,43 +182,6 @@ class SettlementPaymentServiceTest {
 		assertThat(pending.status()).isEqualTo(PaymentStatus.PENDING);
 		verify(payments, never()).saveAndFlush(any());
 		verifyNoInteractions(events);
-	}
-
-	@Test
-	void awaitingMyAnswerKeepsOnlyOpenOrClosedGroupsWhereTheCallerIsStillAMember() {
-		// given four PENDING payments to Alice, one hour apart
-		GroupId open = new GroupId(UUID.randomUUID());
-		GroupId closed = new GroupId(UUID.randomUUID());
-		GroupId archived = new GroupId(UUID.randomUUID());
-		GroupId left = new GroupId(UUID.randomUUID());
-		SettlementPayment inOpen = pendingToAlice(open, 1);
-		SettlementPayment inClosed = pendingToAlice(closed, 2);
-		SettlementPayment inArchived = pendingToAlice(archived, 3);
-		SettlementPayment inLeft = pendingToAlice(left, 4);
-		when(payments.findByToCreditorAndStatus(ALICE.value(), PaymentStatus.PENDING))
-			.thenReturn(List.of(inOpen, inArchived, inLeft, inClosed));
-		when(groups.status(open)).thenReturn(GroupStatus.OPEN);
-		when(groups.status(closed)).thenReturn(GroupStatus.CLOSED_FOR_SETTLEMENT);
-		when(groups.status(archived)).thenReturn(GroupStatus.ARCHIVED);
-		when(groups.status(left)).thenReturn(GroupStatus.OPEN);
-		when(groups.isMember(open, ALICE)).thenReturn(true);
-		when(groups.isMember(closed, ALICE)).thenReturn(true);
-		// Alice is still in the archived group, so only the status filter drops it
-		lenient().when(groups.isMember(archived, ALICE)).thenReturn(true);
-		when(groups.isMember(left, ALICE)).thenReturn(false);
-
-		// when
-		List<SettlementPayment> inbox = service.awaitingMyAnswer(ALICE);
-
-		// then newest first, without the archived group and the group Alice left
-		assertThat(inbox).containsExactly(inClosed, inOpen);
-	}
-
-	private static SettlementPayment pendingToAlice(GroupId group, int hoursAfterStart) {
-		return SettlementPayment
-			.record(group, BOB, ALICE, Money.eur("10.00"), Money.eur("100.00"), null,
-					MutableClock.START.plus(Duration.ofHours(hoursAfterStart)))
-			.payment();
 	}
 
 	private void openGroupWithBobOwingAlice(String open) {

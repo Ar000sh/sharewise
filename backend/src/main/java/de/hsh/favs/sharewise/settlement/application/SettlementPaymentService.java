@@ -13,7 +13,6 @@ import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.Money;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Clock;
-import java.util.Comparator;
 import java.util.List;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -135,17 +134,13 @@ public class SettlementPaymentService {
 	}
 
 	/**
-	 * The PENDING payments the caller still has to answer (D10), newest first: only in
-	 * groups that are not archived and in which the caller is still a member.
+	 * The PENDING payments the caller still has to answer as creditor (D10, I1), newest
+	 * first. No archive or former-member filter: no operation produces those states yet
+	 * (A4, parked until {@code archiveGroup} or {@code leaveGroup} is built).
 	 */
 	@Transactional(readOnly = true)
 	public List<SettlementPayment> awaitingMyAnswer(UserId caller) {
-		return payments.findByToCreditorAndStatus(caller.value(), PaymentStatus.PENDING)
-			.stream()
-			.filter(payment -> groups.status(payment.groupId()) != GroupStatus.ARCHIVED)
-			.filter(payment -> groups.isMember(payment.groupId(), caller))
-			.sorted(Comparator.comparing(SettlementPayment::createdAt).reversed())
-			.toList();
+		return payments.findByToCreditorAndStatusOrderByCreatedAtDesc(caller.value(), PaymentStatus.PENDING);
 	}
 
 	private void requireOpenGroupWithBoth(GroupId group, UserId caller, UserId otherParty) {
