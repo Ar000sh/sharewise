@@ -11,6 +11,8 @@ describe("messageFor", () => {
   it.each([
     ["ACCOUNT_NOT_FOUND", "No account found. The person must have signed in to ShareWise once."],
     ["ALREADY_INVITED", "This person already has an open invitation."],
+    ["ALREADY_MEMBER", "You are already a member of this group."],
+    ["NOT_A_MEMBER", "You are not a member of this group."],
     ["NOTIFICATION_NOT_FOUND", "This entry no longer exists."],
     ["INVITATION_NOT_FOUND", "This invitation is no longer valid."],
     ["INVITATION_EXPIRED", "This invitation has expired. Ask for a new one."],

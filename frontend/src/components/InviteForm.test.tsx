@@ -32,19 +32,15 @@ describe("InviteForm", () => {
     expect(field).toHaveValue("");
   });
 
-  it.each([
-    ["ACCOUNT_NOT_FOUND", /no account found/i],
-    ["ALREADY_MEMBER", /already a member/i],
-    ["ALREADY_INVITED", /already has an open invitation/i],
-    ["NOT_A_MEMBER", /not a member of this group/i],
-  ])("showsAMessageFor%s", async (code, message) => {
-    apiMock.mockRejectedValue(new ApiError(409, code));
+  it("showsTheMessageWhenTheInviteIsRefusedAndNoSuccess", async () => {
+    // the wording of every code is tested once, in errors.test.ts; this proves the form shows it
+    apiMock.mockRejectedValue(new ApiError(404, "ACCOUNT_NOT_FOUND"));
 
     render(<InviteForm groupId="g1" />);
     await userEvent.type(screen.getByLabelText("Username or email"), "someone");
     await userEvent.click(screen.getByRole("button", { name: "Invite" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(message);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/no account found/i);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 

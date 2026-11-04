@@ -40,6 +40,13 @@ async function openBell() {
   await userEvent.click(await screen.findByRole("button", { name: /inbox/i }));
 }
 
+/** Renders the bell and opens its dropdown, the set-up of most tests. */
+async function renderOpened() {
+  const view = render(<InboxBell />);
+  await openBell();
+  return view;
+}
+
 beforeEach(() => {
   push.mockReset();
   inbox = { invitations: [invitation], notifications: { unreadCount: 1, items: [entry] } };
@@ -61,8 +68,7 @@ describe("InboxBell", () => {
   it("listsInvitationsBeforeEntriesWithAcceptAndDecline", async () => {
     backend();
 
-    render(<InboxBell />);
-    await openBell();
+    await renderOpened();
 
     const items = screen.getAllByRole("listitem");
     expect(items[0]).toHaveTextContent("Alice Tester invited you to Mallorca 2027");
@@ -81,8 +87,7 @@ describe("InboxBell", () => {
     };
     backend();
 
-    render(<InboxBell />);
-    await openBell();
+    await renderOpened();
 
     expect(screen.getByText("Someone declined your invitation to a group")).toBeInTheDocument();
   });
@@ -91,8 +96,7 @@ describe("InboxBell", () => {
     let finish: (value: unknown) => void = () => {};
     backend((path) => (path === "/invitations/i1/accept" ? new Promise((resolve) => (finish = resolve)) : undefined));
 
-    render(<InboxBell />);
-    await openBell();
+    await renderOpened();
     await userEvent.click(screen.getByRole("button", { name: /accept/i }));
 
     expect(screen.getByRole("button", { name: /accept/i })).toBeDisabled();
@@ -109,8 +113,7 @@ describe("InboxBell", () => {
       }
     });
 
-    render(<InboxBell />);
-    await openBell();
+    await renderOpened();
     await userEvent.click(screen.getByRole("button", { name: /accept/i }));
 
     await waitFor(() => expect(screen.queryByText(/invited you to/)).not.toBeInTheDocument());
@@ -123,8 +126,7 @@ describe("InboxBell", () => {
       if (path === "/invitations/i1/accept") throw new ApiError(410, "INVITATION_EXPIRED");
     });
 
-    render(<InboxBell />);
-    await openBell();
+    await renderOpened();
     await userEvent.click(screen.getByRole("button", { name: /accept/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/has expired/i);
@@ -136,8 +138,7 @@ describe("InboxBell", () => {
       if (path === "/invitations/i1/decline") inbox = { ...inbox, invitations: [] };
     });
 
-    render(<InboxBell />);
-    await openBell();
+    await renderOpened();
     await userEvent.click(screen.getByRole("button", { name: /decline/i }));
 
     await waitFor(() => expect(screen.queryByText(/invited you to/)).not.toBeInTheDocument());
@@ -147,8 +148,7 @@ describe("InboxBell", () => {
   it("clickingAnUnreadEntryMarksItRead", async () => {
     backend();
 
-    render(<InboxBell />);
-    await openBell();
+    await renderOpened();
     await userEvent.click(screen.getByRole("button", { name: /bob tester joined/i }));
 
     expect(apiMock).toHaveBeenCalledWith("/notifications/n1/read", { method: "POST" });
@@ -161,8 +161,7 @@ describe("InboxBell", () => {
       }
     });
 
-    render(<InboxBell />);
-    await openBell();
+    await renderOpened();
     await userEvent.click(screen.getByRole("button", { name: /mark all as read/i }));
 
     expect(apiMock).toHaveBeenCalledWith("/notifications/read-all", { method: "POST" });
@@ -174,8 +173,7 @@ describe("InboxBell", () => {
     inbox = { invitations: null, notifications: { unreadCount: 1, items: [entry] } };
     backend();
 
-    render(<InboxBell />);
-    await openBell();
+    await renderOpened();
 
     expect(screen.getByText(/invitations could not be loaded/i)).toBeInTheDocument();
     expect(screen.getByText("Bob Tester joined Mallorca 2027")).toBeInTheDocument();
@@ -185,8 +183,7 @@ describe("InboxBell", () => {
     inbox = { invitations: [invitation], notifications: null };
     backend();
 
-    render(<InboxBell />);
-    await openBell();
+    await renderOpened();
 
     expect(screen.getByText(/entries could not be loaded/i)).toBeInTheDocument();
     expect(screen.getByText("Alice Tester invited you to Mallorca 2027")).toBeInTheDocument();
@@ -200,8 +197,7 @@ describe("InboxBell", () => {
     };
     backend();
 
-    const { container } = render(<InboxBell />);
-    await openBell();
+    const { container } = await renderOpened();
 
     expect(container.querySelector("img")).toBeNull();
     expect(screen.getByText(`Alice Tester invited you to ${evil}`)).toBeInTheDocument();
