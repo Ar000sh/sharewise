@@ -3,7 +3,6 @@
 import { useCallback, useRef, useState } from "react";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
-import { SettlementInbox } from "@/components/SettlementInbox";
 import { Toast } from "@/components/Toast";
 import { WaiveDebtForm, openCents } from "@/components/WaiveDebtForm";
 import { api } from "@/lib/api";
@@ -126,7 +125,7 @@ function Section({ title, quiet, children }: { title: string; quiet?: boolean; c
  * The settle-up plan of a group (R15 to R17): who pays whom how much. Everybody sees the whole plan; the rows that
  * involve the current user come first. "I paid" reports a payment, which the creditor still has to confirm.
  */
-export function SettleUpTab({ groupId, onAnswered }: { groupId: string; onAnswered?: () => void }) {
+export function SettleUpTab({ groupId }: { groupId: string }) {
   const me = useCurrentUser();
   const { data: plan, error, reload } = useApi<PlanEdge[]>(`/groups/${groupId}/settlement-plan`);
   const [paidAt, setPaidAt] = useState<number>();
@@ -148,15 +147,6 @@ export function SettleUpTab({ groupId, onAnswered }: { groupId: string; onAnswer
   return (
     <div className="flex flex-col gap-4">
       <ErrorBanner error={error} />
-      <SettlementInbox
-        groupId={groupId}
-        onAnswered={() => {
-          // The ledger books a confirmation asynchronously, so the plan is looked at again for a while.
-          void reload();
-          setPaidAt(Date.now());
-          onAnswered?.();
-        }}
-      />
       {plan.length === 0 && <p>Everybody is settled.</p>}
       {owe.length > 0 && (
         <Section title="You owe">

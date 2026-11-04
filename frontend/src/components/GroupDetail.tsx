@@ -8,7 +8,6 @@ import { ExpenseForm } from "@/components/ExpenseForm";
 import { ExpenseList } from "@/components/ExpenseList";
 import { InviteForm } from "@/components/InviteForm";
 import { MemberList } from "@/components/MemberList";
-import { PendingBadge } from "@/components/PendingBadge";
 import { SettleUpTab } from "@/components/SettleUpTab";
 import { Toast } from "@/components/Toast";
 import { useCurrentUser } from "@/lib/currentUser";
@@ -28,7 +27,6 @@ export function GroupDetail({ groupId }: { groupId: string }) {
   );
   const [tab, setTab] = useState<Tab>("Expenses");
   const [lastRecordedAt, setLastRecordedAt] = useState<number>();
-  const [answers, setAnswers] = useState(0);
   const [notice, setNotice] = useState<string>();
   const dismissNotice = useCallback(() => setNotice(undefined), []);
 
@@ -49,7 +47,6 @@ export function GroupDetail({ groupId }: { groupId: string }) {
             className={`px-3 py-2 ${tab === t ? "border-b-2 border-foreground font-medium" : "text-foreground/70"}`}
           >
             {t}
-            {t === "Settle up" && <PendingBadge groupId={group.id} refreshKey={answers} />}
           </button>
         ))}
       </div>
@@ -76,7 +73,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
         </div>
       )}
       {tab === "Balances" && <BalancesTab groupId={group.id} lastRecordedAt={lastRecordedAt} />}
-      {tab === "Settle up" && <SettleUpTab groupId={group.id} onAnswered={() => setAnswers((n) => n + 1)} />}
+      {tab === "Settle up" && <SettleUpTab groupId={group.id} />}
       {tab === "Members" && (
         <section className="flex flex-col gap-3">
           <MemberList members={group.members} currentUserId={me?.userId} />

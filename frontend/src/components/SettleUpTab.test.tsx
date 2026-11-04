@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api } from "@/lib/api";
@@ -24,20 +24,16 @@ function edge(from: string, fromName: string, amount: string, pendingAmount = "0
 /** The Mallorca plan: Alice is owed by all three. */
 const mallorca = [edge(CAROL, "Carol", "270.00"), edge(DAVID, "David", "270.00"), edge(BOB, "Bob", "90.00")];
 
-const INBOX = "/me/settlement-payments?status=PENDING&role=creditor";
-
-/** Answers "who am I", the plan and the inbox (empty unless given); every other call is answered by `other` (the payment POST). */
+/** Answers "who am I" and the plan; every other call is answered by `other` (the payment POST). */
 function serve(
   me: { userId: string; displayName: string },
   plan: Edge[][] | Edge[],
   other?: () => Promise<unknown>,
-  inbox: unknown[] = [],
 ) {
   const plans = Array.isArray(plan[0]) ? (plan as Edge[][]) : [plan as Edge[]];
   let planCalls = 0;
   apiMock.mockImplementation(async (path: string) => {
     if (path === "/me") return me;
-    if (path === INBOX) return inbox;
     if (path === "/groups/g1/settlement-plan") return plans[Math.min(planCalls++, plans.length - 1)];
     if (other) return other();
     throw new Error(`unexpected call ${path}`);
@@ -198,21 +194,6 @@ describe("SettleUpTab", () => {
     } finally {
       vi.useRealTimers();
     }
-  });
-
-  it("answeringAPaymentInTheInboxLooksAtThePlanAgain", async () => {
-    // given Alice has a payment from Carol to answer; the plan after the confirmation is shorter
-    const reported = { id: "p1", groupId: "g1", fromDebtor: CAROL, fromDebtorName: "Carol", amount: "30.00", status: "PENDING" };
-    serve({ userId: ALICE, displayName: "Alice" }, [mallorca, mallorca.slice(1)], async () => ({}), [reported]);
-    renderTab();
-    expect(await screen.findByText("Carol owes 270,00 €")).toBeInTheDocument();
-
-    // when she confirms it
-    await userEvent.click(await screen.findByRole("button", { name: "Confirm payment from Carol" }));
-
-    // then the plan is fetched again and no longer shows Carol's debt
-    await waitFor(() => expect(screen.queryByText("Carol owes 270,00 €")).not.toBeInTheDocument());
-    expect(apiMock).toHaveBeenCalledWith("/settlement-payments/p1/confirm", expect.objectContaining({ method: "POST" }));
   });
 
   it("twoSubmitsInTheSameTickSendOnlyOnePayment", async () => {
