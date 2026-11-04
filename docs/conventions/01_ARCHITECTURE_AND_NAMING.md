@@ -46,7 +46,7 @@ Dependency direction inside a module: `web → application → domain` and `appl
 ### 2.3 Aggregate rules (from DDD slide 67)
 1. Only the **aggregate root** has a repository. Entities inside an aggregate (`Membership`, `Invitation`, `LedgerEntry`) have none.
 2. Every state change and every business rule is a method on the root. A service or controller never constructs or mutates a child.
-3. A root method is named after the **operation in the diagram** (`acceptInvitation`, `record`, `closeForSettlement`) and **returns the domain event it produces** (or a small result record when it produces several). It never publishes; it never calls another module.
+3. A root method is named after the **operation in the diagram** (`acceptInvitation`, `record`, `closeForSettlement`) and **returns the domain event it produces** (or a small result record when it produces several). An operation that reacts to another context's event and produces no event of its own returns nothing (`Group.updateBalanceStatus` is `void`; the diagram draws no event for it). It never publishes; it never calls another module.
 4. Other aggregates and other modules are referenced **by id** (`GroupId`, `UserId`) only.
 5. The application service is thin and always has this shape: load the root (lock it where a race matters) → call one root method → save → publish the returned event(s) → return a result.
 6. Time comes in as a parameter (`Instant now` from the injected `Clock`), never from `Instant.now()` inside the domain.
@@ -75,7 +75,7 @@ Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCam
 
 ### 3.1 Group context
 - Aggregate root `Group`: fields `id: GroupId`, `name: GroupName`, `currency: Currency`, `status: GroupStatus`; entities `Membership` (`userId`, `role: GroupRole`, `status: MembershipStatus`, `hasZeroBalance`, `joinedAt`; plus `balanceStatusAt`, not in the diagram, see 5.1) and `Invitation` (`id: InvitationId`, `invitee: UserId`, `status: InvitationStatus`, `expiresAt`). An invitation belongs to one existing account and only that account can answer it; `EXPIRED` is derived from `expiresAt`, never stored.
-- Operations (each returns its event): `createGroup`, `inviteMember`, `acceptInvitation`, `declineInvitation`, `promoteToAdmin`, `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, `updateBalanceStatus`.
+- Operations (each returns its event, except `updateBalanceStatus`, which reacts to `MemberBalanceStatusChanged` and returns nothing, see 2.3): `createGroup`, `inviteMember`, `acceptInvitation`, `declineInvitation`, `promoteToAdmin`, `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, `updateBalanceStatus`.
 - Enumerations `GroupStatus {OPEN, CLOSED_FOR_SETTLEMENT, ARCHIVED}`, `GroupRole {ADMIN, MEMBER}`, `MembershipStatus {ACTIVE, FORMER_MEMBER}`, `InvitationStatus {PENDING, ACCEPTED, DECLINED, EXPIRED}`.
 - Events: `GroupCreated`, `MemberInvited`, `MemberJoined`, `MemberLeft`, `MemberRemoved`, `MemberPromoted`, `InvitationDeclined`, `GroupClosedForSettlement`, `GroupReopened`, `GroupArchived`.
 - Read model `GroupMembershipView`.

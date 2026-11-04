@@ -21,6 +21,12 @@ public interface SettlementPaymentRepository extends JpaRepository<SettlementPay
 	 * PENDING ones, and CONFIRMED or WAIVED ones the ledger has not booked yet, that is
 	 * with no ledger entry referencing the payment (D5). A null party means "anyone".
 	 * Zero when nothing matches.
+	 * <p>
+	 * The deliberate exception to "one aggregate per repository": the query reads
+	 * {@code LedgerEntry}, a child of the {@code GroupLedger} aggregate in the same
+	 * module, to tell whether a confirmed or waived payment is booked yet (D5). Splitting
+	 * it into two queries would cost more than the exception (settlements inbox design,
+	 * section 4).
 	 */
 	@Query("select coalesce(sum(p.amount), 0) from SettlementPayment p where p.groupId = :groupId"
 			+ " and (:fromDebtor is null or p.fromDebtor = :fromDebtor)"
