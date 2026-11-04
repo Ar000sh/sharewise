@@ -1,6 +1,7 @@
 package de.hsh.favs.sharewise.group.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import de.hsh.favs.sharewise.MutableClock;
@@ -19,6 +20,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Currency;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * The rules of the Group aggregate: creation, inviting, joining and declining. No Spring,
@@ -81,10 +83,14 @@ class GroupTest {
 	}
 
 	@Test
-	void aNonMemberCannotInvite() {
-		assertThatThrownBy(() -> group.inviteMember(carol, bob, NOW)).isInstanceOfSatisfying(DomainException.class,
+	void requireActiveMemberPassesForAnActiveMember() {
+		assertThatCode(() -> group.requireActiveMember(alice)).doesNotThrowAnyException();
+	}
+
+	@Test
+	void requireActiveMemberRefusesANonMember() {
+		assertThatThrownBy(() -> group.requireActiveMember(bob)).isInstanceOfSatisfying(DomainException.class,
 				e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
-		assertThat(group.pendingInvitationsFor(carol, NOW)).isEmpty();
 	}
 
 	@Test
@@ -267,6 +273,26 @@ class GroupTest {
 		assertThat(view.admins()).containsExactly(alice);
 		assertThat(view.isActiveMember(bob)).isTrue();
 		assertThat(view.isAdmin(bob)).isFalse();
+	}
+
+	@Test
+	void aFormerMemberIsNeitherActiveNorCountedNorInTheMembershipView() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+		Membership bobsMembership = trip.activeMemberships()
+			.stream()
+			.filter(m -> m.userId().equals(bob))
+			.findFirst()
+			.orElseThrow();
+		ReflectionTestUtils.setField(bobsMembership, "status", MembershipStatus.FORMER_MEMBER);
+
+		// when / then
+		assertThat(trip.activeMemberships()).extracting(Membership::userId).containsExactly(alice);
+		assertThat(trip.hasActiveMember(bob)).isFalse();
+		assertThat(trip.memberCount()).isEqualTo(1);
+		assertThat(trip.membershipView().activeMembers()).containsExactly(alice);
+		assertThatThrownBy(() -> trip.requireActiveMember(bob)).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
 	}
 
 }

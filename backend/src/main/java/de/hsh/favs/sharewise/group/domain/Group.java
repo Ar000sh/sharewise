@@ -107,13 +107,15 @@ public class Group {
 	 * Invites an existing account; valid for 7 days (R9). Any active member may invite.
 	 * An earlier invitation of the same person that is still open blocks it, one that
 	 * expired or was answered does not.
+	 * <p>
+	 * The inviter's membership is <em>not</em> checked here: the service calls
+	 * {@link #requireActiveMember} first, as its own step, before it looks up the
+	 * invitee.
 	 * @return the invitation and the {@link MemberInvited} event
-	 * @throws DomainException NOT_A_MEMBER when the inviter is not an active member,
-	 * ALREADY_MEMBER when the invitee already is one, ALREADY_INVITED when the invitee
-	 * has an open invitation to this group
+	 * @throws DomainException ALREADY_MEMBER when the invitee already is a member,
+	 * ALREADY_INVITED when the invitee has an open invitation to this group
 	 */
 	public Invited inviteMember(UserId invitee, UserId inviter, Instant now) {
-		requireActiveMember(inviter);
 		if (hasActiveMember(invitee)) {
 			throw new DomainException(ErrorCode.ALREADY_MEMBER, "This person is already a member of this group");
 		}
@@ -175,7 +177,12 @@ public class Group {
 	}
 
 	public boolean hasActiveMember(UserId user) {
-		return memberships.stream().anyMatch(m -> m.isActiveMember() && m.userId().equals(user));
+		return activeMemberships().stream().anyMatch(m -> m.userId().equals(user));
+	}
+
+	/** The memberships of people who are currently in the group. */
+	public List<Membership> activeMemberships() {
+		return memberships.stream().filter(Membership::isActiveMember).toList();
 	}
 
 	/**
@@ -183,12 +190,9 @@ public class Group {
 	 * rules.
 	 */
 	public GroupMembershipView membershipView() {
-		Set<UserId> active = memberships.stream()
-			.filter(Membership::isActiveMember)
-			.map(Membership::userId)
-			.collect(Collectors.toSet());
-		Set<UserId> admins = memberships.stream()
-			.filter(m -> m.isActiveMember() && m.role() == GroupRole.ADMIN)
+		Set<UserId> active = activeMemberships().stream().map(Membership::userId).collect(Collectors.toSet());
+		Set<UserId> admins = activeMemberships().stream()
+			.filter(m -> m.role() == GroupRole.ADMIN)
 			.map(Membership::userId)
 			.collect(Collectors.toSet());
 		return new GroupMembershipView(groupId(), status == GroupStatus.OPEN, active, admins);
@@ -215,7 +219,7 @@ public class Group {
 	}
 
 	public int memberCount() {
-		return (int) memberships.stream().filter(Membership::isActiveMember).count();
+		return activeMemberships().size();
 	}
 
 }

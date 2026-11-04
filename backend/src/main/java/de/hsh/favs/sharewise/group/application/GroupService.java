@@ -45,7 +45,7 @@ public class GroupService {
 
 		static GroupView of(Group group) {
 			return new GroupView(group.groupId(), group.name(), group.status(),
-					group.memberships().stream().filter(Membership::isActiveMember).map(MembershipView::of).toList());
+					group.activeMemberships().stream().map(MembershipView::of).toList());
 		}
 
 	}
