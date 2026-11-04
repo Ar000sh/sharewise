@@ -22,22 +22,20 @@ type Edge = {
   toCreditorName: string;
   amount: string;
   pendingAmount: string;
+  payableAmount: string;
 };
 
-function edge(from: string, fromName: string, amount: string, pendingAmount = "0.00", to = ALICE, toName = "Alice"): Edge {
-  return { fromDebtor: from, fromDebtorName: fromName, toCreditor: to, toCreditorName: toName, amount, pendingAmount };
+function edge(from: string, fromName: string, amount: string, pendingAmount = "0.00", to = ALICE, toName = "Alice", payableAmount = amount): Edge {
+  return { fromDebtor: from, fromDebtorName: fromName, toCreditor: to, toCreditorName: toName, amount, pendingAmount, payableAmount };
 }
 
 /** Alice is owed by Carol, David and Bob; Carol owes Bob nothing, but Bob owes David (not Alice's business). */
-const plan = [edge(CAROL, "Carol", "270.00", "30.00"), edge(DAVID, "David", "270.00"), edge(BOB, "Bob", "90.00")];
-
-const INBOX = "/me/settlement-payments?status=PENDING&role=creditor";
+const plan = [edge(CAROL, "Carol", "270.00", "30.00", ALICE, "Alice", "240.00"), edge(DAVID, "David", "270.00"), edge(BOB, "Bob", "90.00")];
 
 function serve(me: { userId: string; displayName: string }, plans: Edge[][], other?: () => Promise<unknown>) {
   let planCalls = 0;
   apiMock.mockImplementation(async (path: string) => {
     if (path === "/me") return me;
-    if (path === INBOX) return [];
     if (path === "/groups/g1/settlement-plan") return plans[Math.min(planCalls++, plans.length - 1)];
     if (other) return other();
     throw new Error(`unexpected call ${path}`);

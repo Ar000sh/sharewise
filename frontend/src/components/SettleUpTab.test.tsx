@@ -15,10 +15,10 @@ const BOB = "u2";
 const CAROL = "u3";
 const DAVID = "u4";
 
-type Edge = { fromDebtor: string; fromDebtorName: string; toCreditor: string; toCreditorName: string; amount: string; pendingAmount: string };
+type Edge = { fromDebtor: string; fromDebtorName: string; toCreditor: string; toCreditorName: string; amount: string; pendingAmount: string; payableAmount: string };
 
-function edge(from: string, fromName: string, amount: string, pendingAmount = "0.00"): Edge {
-  return { fromDebtor: from, fromDebtorName: fromName, toCreditor: ALICE, toCreditorName: "Alice", amount, pendingAmount };
+function edge(from: string, fromName: string, amount: string, pendingAmount = "0.00", payableAmount = amount): Edge {
+  return { fromDebtor: from, fromDebtorName: fromName, toCreditor: ALICE, toCreditorName: "Alice", amount, pendingAmount, payableAmount };
 }
 
 /** The Mallorca plan: Alice is owed by all three. */
@@ -103,12 +103,12 @@ describe("SettleUpTab", () => {
 
   it("showsPendingAmountOnTheRow", async () => {
     // given Carol already reported 30,00 that Alice has not confirmed yet
-    serve({ userId: CAROL, displayName: "Carol" }, [edge(CAROL, "Carol", "270.00", "30.00")]);
+    serve({ userId: CAROL, displayName: "Carol" }, [edge(CAROL, "Carol", "270.00", "30.00", "240.00")]);
 
     // when
     renderTab();
 
-    // then the row says so, and the form offers only what is still open
+    // then the row says so, and the form is prefilled with the payable amount
     expect(await screen.findByText("30,00 € awaiting confirmation")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "I paid" }));
     expect(screen.getByLabelText("Amount (€)")).toHaveValue("240.00");
@@ -129,6 +129,31 @@ describe("SettleUpTab", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/only pay up to/i);
     expect(screen.getByLabelText("Amount (€)")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Send payment" })).toBeEnabled();
+  });
+
+  it("noIPaidButtonAndAnExplanationWhenNothingIsPayableAndNothingIsPending", async () => {
+    // given the server says nothing can be paid on this pair right now
+    serve({ userId: CAROL, displayName: "Carol" }, [edge(CAROL, "Carol", "270.00", "0.00", "0.00")]);
+
+    // when
+    renderTab();
+
+    // then
+    expect(await screen.findByText("Not payable yet: another payment of yours is waiting for an answer.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "I paid" })).not.toBeInTheDocument();
+  });
+
+  it("noIPaidButtonButThePendingAmountWhenTheWholeDebtIsAlreadyReported", async () => {
+    // given everything open is already reported
+    serve({ userId: CAROL, displayName: "Carol" }, [edge(CAROL, "Carol", "270.00", "270.00", "0.00")]);
+
+    // when
+    renderTab();
+
+    // then
+    expect(await screen.findByText("270,00 € awaiting confirmation")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "I paid" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/not payable yet/i)).not.toBeInTheDocument();
   });
 
   it("emptyPlanSaysEverybodyIsSettled", async () => {
@@ -158,7 +183,7 @@ describe("SettleUpTab", () => {
 
   it("reloadsThePlanAfterASuccessfulPayment", async () => {
     // given the plan after the payment shows the amount as pending
-    serve({ userId: CAROL, displayName: "Carol" }, [mallorca, [edge(CAROL, "Carol", "270.00", "100.00"), ...mallorca.slice(1)]], async () => ({}));
+    serve({ userId: CAROL, displayName: "Carol" }, [mallorca, [edge(CAROL, "Carol", "270.00", "100.00", "170.00"), ...mallorca.slice(1)]], async () => ({}));
     renderTab();
     await userEvent.click(await screen.findByRole("button", { name: "I paid" }));
     const amount = screen.getByLabelText("Amount (€)");

@@ -8,14 +8,14 @@ import { amountToCents, centsToAmount, eurosToCents, formatEuro } from "@/lib/mo
 
 type PlanEdge = components["schemas"]["SettlementPlanEdge"];
 
-/** What is still open on a plan entry: the amount minus what is already reported and waiting for an answer. */
-export function openCents(edge: PlanEdge): number {
-  return amountToCents(edge.amount) - amountToCents(edge.pendingAmount);
+/** What the server accepts as a payment or waiver on a plan entry right now (`payableAmount`). */
+export function payableCents(edge: PlanEdge): number {
+  return amountToCents(edge.payableAmount);
 }
 
 /**
  * The creditor forgives (part of) a debt. `debtors` are the plan entries toward the current user; the amount starts at
- * what is still open. A waiver needs a reason and takes effect at once, so there is no confirmation step.
+ * what can be waived now. A waiver needs a reason and takes effect at once, so there is no confirmation step.
  */
 export function WaiveDebtForm({
   groupId,
@@ -40,7 +40,7 @@ export function WaiveDebtForm({
 
   const selected = debtors.find((d) => d.fromDebtor === chosen) ?? debtors[0];
   const fromDebtor = selected?.fromDebtor ?? "";
-  const amount = typedAmount ?? (selected ? centsToAmount(openCents(selected)) : "");
+  const amount = typedAmount ?? (selected ? centsToAmount(payableCents(selected)) : "");
 
   function pick(id: string) {
     setChosen(id);
@@ -53,7 +53,7 @@ export function WaiveDebtForm({
     const cents = eurosToCents(amount);
     if (!selected) return setError("Please choose who owes you.");
     if (cents === null || cents <= 0) return setError("Please enter a valid amount, e.g. 19,99.");
-    if (cents > openCents(selected)) return setError(`You can waive up to ${formatEuro(openCents(selected))} here.`);
+    if (cents > payableCents(selected)) return setError(`You can waive up to ${formatEuro(payableCents(selected))} here.`);
     if (!note.trim()) return setError("Please give a reason for waiving.");
     sending.current = true;
     setBusy(true);

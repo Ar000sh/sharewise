@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { Toast } from "@/components/Toast";
-import { WaiveDebtForm, openCents } from "@/components/WaiveDebtForm";
+import { WaiveDebtForm, payableCents } from "@/components/WaiveDebtForm";
 import { api } from "@/lib/api";
 import { useCurrentUser } from "@/lib/currentUser";
 import { messageFor } from "@/lib/errors";
@@ -20,9 +20,9 @@ function Pending({ edge }: { edge: PlanEdge }) {
   return <p className="text-sm text-foreground/70">{formatEuro(pending)} awaiting confirmation</p>;
 }
 
-/** The inline form of one "You owe" row. The amount starts at what is still open and can only go down. */
+/** The inline form of one "You owe" row. The amount starts at what the server accepts right now (`payableAmount`) and can only go down. */
 function PaymentForm({ groupId, edge, onPaid }: { groupId: string; edge: PlanEdge; onPaid: () => void }) {
-  const open = openCents(edge);
+  const open = payableCents(edge);
   const [amount, setAmount] = useState(centsToAmount(open));
   const [note, setNote] = useState("");
   const [error, setError] = useState<string>();
@@ -91,13 +91,16 @@ function OweRow({ groupId, edge, onPaid }: { groupId: string; edge: PlanEdge; on
     <li className="px-3 py-2">
       <div className="flex items-center justify-between gap-2">
         <span>{`${formatEuro(amountToCents(edge.amount))} to ${edge.toCreditorName}`}</span>
-        {openCents(edge) > 0 && !formOpen && (
+        {payableCents(edge) > 0 && !formOpen && (
           <button type="button" onClick={() => setFormOpen(true)} className="rounded border px-3 py-1">
             I paid
           </button>
         )}
       </div>
       <Pending edge={edge} />
+      {payableCents(edge) <= 0 && amountToCents(edge.pendingAmount) <= 0 && (
+        <p className="text-sm text-foreground/70">Not payable yet: another payment of yours is waiting for an answer.</p>
+      )}
       {formOpen && (
         <PaymentForm
           groupId={groupId}
@@ -141,7 +144,7 @@ export function SettleUpTab({ groupId }: { groupId: string }) {
 
   const owe = plan.filter((e) => e.fromDebtor === me.userId);
   const owed = plan.filter((e) => e.toCreditor === me.userId);
-  const waivable = owed.filter((e) => openCents(e) > 0);
+  const waivable = owed.filter((e) => payableCents(e) > 0);
   const others = plan.filter((e) => e.fromDebtor !== me.userId && e.toCreditor !== me.userId);
 
   return (
@@ -170,7 +173,7 @@ export function SettleUpTab({ groupId }: { groupId: string }) {
             <li key={e.fromDebtor} className="px-3 py-2">
               <div className="flex items-center justify-between gap-2">
                 <span>{`${e.fromDebtorName} owes ${formatEuro(amountToCents(e.amount))}`}</span>
-                {openCents(e) > 0 && (
+                {payableCents(e) > 0 && (
                   <button
                     type="button"
                     onClick={() => setWaivePrefill({ fromDebtor: e.fromDebtor, n: (waivePrefill?.n ?? 0) + 1 })}
