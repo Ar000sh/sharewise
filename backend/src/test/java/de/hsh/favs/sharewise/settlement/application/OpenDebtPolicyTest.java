@@ -2,10 +2,14 @@ package de.hsh.favs.sharewise.settlement.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import de.hsh.favs.sharewise.settlement.api.MemberBalance;
+import de.hsh.favs.sharewise.settlement.application.OpenDebtPolicy.PayableEdge;
+import de.hsh.favs.sharewise.settlement.domain.DirectedDebt;
 import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
 import de.hsh.favs.sharewise.settlement.persistence.SettlementPaymentRepository;
 import de.hsh.favs.sharewise.shared.GroupId;
@@ -179,6 +183,36 @@ class OpenDebtPolicyTest {
 
 		// then
 		assertThat(open).isEqualTo(Money.eur("0.00"));
+	}
+
+	@Test
+	void anEdgeWhoseDebtorIsReservedTowardsAnotherCreditorIsNotPayable() {
+		// given (F7, money flow 9) Bob's 50.00 to Alice is PENDING, then Carol paid 50.00
+		// that only Alice owes: the plan moved Bob's edge to Carol
+		balances(total(ALICE, "0.00"), total(BOB, "-50.00"), total(CAROL, "50.00"));
+		reserved(BOB, null, "50.00");
+
+		// when
+		List<PayableEdge> edges = policy.payableEdges(GROUP);
+
+		// then nothing is reserved on Bob to Carol, yet nothing is payable either
+		assertThat(edges).containsExactly(new PayableEdge(new DirectedDebt(BOB, CAROL, Money.eur("50.00")),
+				Money.eur("0.00"), Money.eur("0.00")));
+		assertThat(edges.get(0).payableAmount()).isEqualTo(policy.openDebt(GROUP, BOB, CAROL));
+	}
+
+	@Test
+	void payableEdgesReadTheBalancesOnceForTheWholePlan() {
+		// given
+		mallorca();
+
+		// when
+		List<PayableEdge> edges = policy.payableEdges(GROUP);
+
+		// then three edges, each fully payable, from one read of the balances (F8)
+		assertThat(edges).extracting(PayableEdge::payableAmount)
+			.containsExactlyInAnyOrder(Money.eur("90.00"), Money.eur("270.00"), Money.eur("270.00"));
+		verify(ledgers, times(1)).balances(GROUP);
 	}
 
 	private void mallorca() {

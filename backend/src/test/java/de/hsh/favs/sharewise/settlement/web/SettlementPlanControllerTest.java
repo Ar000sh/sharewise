@@ -66,9 +66,10 @@ class SettlementPlanControllerTest {
 				assertThat(edge.get("toCreditor").asString()).isEqualTo(alice.idString());
 				assertThat(edge.get("toCreditorName").asString()).isEqualTo(alice.displayName());
 				assertThat(edge.get("pendingAmount").asString()).isEqualTo("0.00");
-				assertThat(edge.size()).isEqualTo(6);
+				assertThat(edge.size()).isEqualTo(7);
 				String expected = edge.get("fromDebtor").asString().equals(bob.idString()) ? "90.00" : "270.00";
 				assertThat(edge.get("amount").asString()).isEqualTo(expected);
+				assertThat(edge.get("payableAmount").asString()).isEqualTo(expected);
 			}
 			assertThat(plan.findValuesAsString("fromDebtor")).containsExactlyInAnyOrder(bob.idString(),
 					carol.idString(), david.idString());
@@ -95,7 +96,8 @@ class SettlementPlanControllerTest {
 			.andExpect(jsonPath("$[0].fromDebtorName").value(bob.displayName()))
 			.andExpect(jsonPath("$[0].toCreditor").value(alice.idString()))
 			.andExpect(jsonPath("$[0].amount").value("90.00"))
-			.andExpect(jsonPath("$[0].pendingAmount").value("40.00"));
+			.andExpect(jsonPath("$[0].pendingAmount").value("40.00"))
+			.andExpect(jsonPath("$[0].payableAmount").value("50.00"));
 	}
 
 	@Test

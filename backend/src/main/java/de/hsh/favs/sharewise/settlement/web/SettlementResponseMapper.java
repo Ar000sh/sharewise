@@ -58,7 +58,8 @@ class SettlementResponseMapper {
 		return entries.stream()
 			.map(entry -> new SettlementPlanEntryResponse(entry.fromDebtor().value(), name(names, entry.fromDebtor()),
 					entry.toCreditor().value(), name(names, entry.toCreditor()),
-					entry.amount().amount().toPlainString(), entry.pendingAmount().amount().toPlainString()))
+					entry.amount().amount().toPlainString(), entry.pendingAmount().amount().toPlainString(),
+					entry.payableAmount().amount().toPlainString()))
 			.toList();
 	}
 

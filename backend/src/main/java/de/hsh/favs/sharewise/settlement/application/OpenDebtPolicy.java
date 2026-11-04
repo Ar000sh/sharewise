@@ -1,6 +1,7 @@
 package de.hsh.favs.sharewise.settlement.application;
 
 import de.hsh.favs.sharewise.settlement.api.MemberBalance;
+import de.hsh.favs.sharewise.settlement.domain.DirectedDebt;
 import de.hsh.favs.sharewise.settlement.domain.SettlementPlan;
 import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
 import de.hsh.favs.sharewise.settlement.persistence.SettlementPaymentRepository;
@@ -33,17 +34,44 @@ class OpenDebtPolicy {
 	}
 
 	/**
+	 * One edge of the plan with what is reserved on its pair ({@code pendingAmount}) and
+	 * the open debt of the pair ({@code payableAmount}, what {@code record} would accept
+	 * now, A3).
+	 */
+	record PayableEdge(DirectedDebt debt, Money pendingAmount, Money payableAmount) {
+
+	}
+
+	/**
 	 * The open debt of {@code debtor} to {@code creditor} in EUR, zero when the pair has
 	 * no plan edge or the group has no ledger entries.
 	 */
 	Money openDebt(GroupId group, UserId debtor, UserId creditor) {
 		List<MemberBalance> balances = ledgers.balances(group);
-		Money edge = SettlementPlan.of(balances)
-			.edge(debtor, creditor)
-			.minus(reserved(group, debtor.value(), creditor.value()));
+		Money edge = SettlementPlan.of(balances).edge(debtor, creditor);
+		return open(group, balances, debtor, creditor, edge, reserved(group, debtor.value(), creditor.value()));
+	}
+
+	/**
+	 * Every edge of the group's plan in plan order, each with its open debt computed by
+	 * the same rule as {@link #openDebt}, from one read of the balances (F8).
+	 */
+	List<PayableEdge> payableEdges(GroupId group) {
+		List<MemberBalance> balances = ledgers.balances(group);
+		return SettlementPlan.of(balances).simplifiedDebts().stream().map(debt -> {
+			Money pending = reserved(group, debt.fromDebtor().value(), debt.toCreditor().value());
+			return new PayableEdge(debt, pending,
+					open(group, balances, debt.fromDebtor(), debt.toCreditor(), debt.amount(), pending));
+		}).toList();
+	}
+
+	/** The one formula: the smallest of the three caps, never below zero. */
+	private Money open(GroupId group, List<MemberBalance> balances, UserId debtor, UserId creditor, Money edge,
+			Money reservedOnPair) {
+		Money pairCap = edge.minus(reservedOnPair);
 		Money debtorDebt = balanceOf(balances, debtor).negate().minus(reserved(group, debtor.value(), null));
 		Money creditorCredit = balanceOf(balances, creditor).minus(reserved(group, null, creditor.value()));
-		Money open = smallest(edge, smallest(debtorDebt, creditorCredit));
+		Money open = smallest(pairCap, smallest(debtorDebt, creditorCredit));
 		return open.isNegative() ? Money.eur(BigDecimal.ZERO) : open;
 	}
 

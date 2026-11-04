@@ -1,9 +1,6 @@
 package de.hsh.favs.sharewise.settlement.application;
 
 import de.hsh.favs.sharewise.group.api.GroupMembership;
-import de.hsh.favs.sharewise.settlement.domain.SettlementPlan;
-import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
-import de.hsh.favs.sharewise.settlement.persistence.SettlementPaymentRepository;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.Money;
 import de.hsh.favs.sharewise.shared.UserId;
@@ -14,29 +11,32 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * The read model behind {@code GET /groups/{groupId}/settlement-plan}: the simplified
  * plan of the booked balances (R15), each edge with the amount already reserved on its
- * pair. Nothing is stored; it is computed per request, so it is as current as the ledger.
+ * pair and the amount the server would accept on {@code record} now (A3). Nothing is
+ * stored; it is computed per request, so it is as current as the ledger.
  */
 @Service
 public class SettlementPlanService {
 
 	private final GroupMembership groups;
 
-	private final GroupLedgerRepository ledgers;
+	private final OpenDebtPolicy openDebt;
 
-	private final SettlementPaymentRepository payments;
-
-	SettlementPlanService(GroupMembership groups, GroupLedgerRepository ledgers, SettlementPaymentRepository payments) {
+	SettlementPlanService(GroupMembership groups, OpenDebtPolicy openDebt) {
 		this.groups = groups;
-		this.ledgers = ledgers;
-		this.payments = payments;
+		this.openDebt = openDebt;
 	}
 
 	/**
 	 * One plan edge: {@code fromDebtor} pays {@code amount} to {@code toCreditor};
 	 * {@code pendingAmount} is the part of the pair already reserved by payments that are
-	 * PENDING or not yet booked (D5).
+	 * PENDING or not yet booked (D5); {@code payableAmount} is the open debt of the pair,
+	 * computed by {@link OpenDebtPolicy} exactly as {@code record} computes it, so the
+	 * screen and the server cannot disagree (A3, R17). It can be below
+	 * {@code amount - pendingAmount} when the debtor's debt is reserved towards another
+	 * creditor.
 	 */
-	public record PlanEntry(UserId fromDebtor, UserId toCreditor, Money amount, Money pendingAmount) {
+	public record PlanEntry(UserId fromDebtor, UserId toCreditor, Money amount, Money pendingAmount,
+			Money payableAmount) {
 
 	}
 
@@ -49,11 +49,10 @@ public class SettlementPlanService {
 	@Transactional(readOnly = true)
 	public List<PlanEntry> planFor(GroupId group, UserId caller) {
 		groups.requireMember(group, caller);
-		return SettlementPlan.of(ledgers.balances(group))
-			.simplifiedDebts()
+		return openDebt.payableEdges(group)
 			.stream()
-			.map(debt -> new PlanEntry(debt.fromDebtor(), debt.toCreditor(), debt.amount(),
-					Money.eur(payments.reserved(group.value(), debt.fromDebtor().value(), debt.toCreditor().value()))))
+			.map(edge -> new PlanEntry(edge.debt().fromDebtor(), edge.debt().toCreditor(), edge.debt().amount(),
+					edge.pendingAmount(), edge.payableAmount()))
 			.toList();
 	}
 

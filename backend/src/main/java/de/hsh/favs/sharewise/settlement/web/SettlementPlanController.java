@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * {@code GET /groups/{groupId}/settlement-plan}: who pays whom to settle the group (R15),
- * with the amount already reserved on each pair.
+ * with the amount already reserved on each pair and the amount payable now.
  */
 @RestController
 class SettlementPlanController {

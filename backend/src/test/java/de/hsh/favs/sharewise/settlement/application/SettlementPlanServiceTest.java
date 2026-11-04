@@ -20,15 +20,16 @@ import de.hsh.favs.sharewise.shared.UserId;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Orchestration of the plan read model: the caller is checked first, the plan comes from
- * the ledger totals, and each edge carries what is reserved on exactly its pair.
+ * the ledger balances, and each edge carries what is reserved on exactly its pair and
+ * what the open debt policy would accept on it.
  */
 @ExtendWith(MockitoExtension.class)
 class SettlementPlanServiceTest {
@@ -48,20 +49,28 @@ class SettlementPlanServiceTest {
 	@Mock
 	SettlementPaymentRepository payments;
 
-	@InjectMocks
 	SettlementPlanService service;
 
+	@BeforeEach
+	void setUp() {
+		// the real policy over mocked repositories: the plan must use its formula
+		service = new SettlementPlanService(groups, new OpenDebtPolicy(ledgers, payments));
+	}
+
 	@Test
-	void planForOwesEntriesWithTheReservedAmountOfTheirPair() {
+	void planForOwesEntriesWithTheReservedAndThePayableAmountOfTheirPair() {
 		// given bob owes alice 90.00 and has 40.00 reserved on that pair
 		when(ledgers.balances(GROUP)).thenReturn(List.of(total(ALICE, "90.00"), total(BOB, "-90.00")));
 		when(payments.reserved(GROUP.value(), BOB.value(), ALICE.value())).thenReturn(new BigDecimal("40.00"));
+		when(payments.reserved(GROUP.value(), BOB.value(), null)).thenReturn(new BigDecimal("40.00"));
+		when(payments.reserved(GROUP.value(), null, ALICE.value())).thenReturn(new BigDecimal("40.00"));
 
 		// when
 		List<PlanEntry> plan = service.planFor(GROUP, ALICE);
 
-		// then
-		assertThat(plan).containsExactly(new PlanEntry(BOB, ALICE, Money.eur("90.00"), Money.eur("40.00")));
+		// then an ordinary edge can still be paid by amount minus pendingAmount
+		assertThat(plan)
+			.containsExactly(new PlanEntry(BOB, ALICE, Money.eur("90.00"), Money.eur("40.00"), Money.eur("50.00")));
 	}
 
 	@Test
