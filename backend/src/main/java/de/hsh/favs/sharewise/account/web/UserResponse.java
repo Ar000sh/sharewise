@@ -4,10 +4,10 @@ import de.hsh.favs.sharewise.account.api.UserProfile;
 import java.util.UUID;
 
 /** Response of {@code GET /me}. */
-record UserResponse(UUID userId, String displayName) {
+record UserResponse(UUID userId, String displayName, String username) {
 
 	static UserResponse of(UserProfile profile) {
-		return new UserResponse(profile.userId().value(), profile.displayName());
+		return new UserResponse(profile.userId().value(), profile.displayName(), profile.username());
 	}
 
 }

@@ -5,8 +5,10 @@
 //   1. no secrets file staged, no Anthropic API key in the added lines
 //   2. docs/api/openapi.yaml is committed on its own (contract first, docs/conventions/03 section 6); a merge commit is exempt
 //   3. package-lock.json did not lose other platforms' entries (npm on Windows drops them, docs/conventions/04 section 7)
-//   4. checks for the staged parts: backend format, frontend lint + typecheck, contract lint, guard hook tests
-//   Docs-only commits (.md) skip step 4.
+//   4. no existing file flips its line endings (CRLF <-> LF): the whole file would show as changed and hide the real
+//      change. An intended normalisation is committed alone with SHAREWISE_ALLOW_EOL_FLIP=1 (see line-endings.mjs)
+//   5. checks for the staged parts: backend format, frontend lint + typecheck, contract lint, guard hook tests
+//   Docs-only commits (.md) skip step 5.
 // pre-push (complete, what `main` must always be): backend verify (needs Docker), frontend lint, typecheck, tests,
 //   build, contract lint. Skipped when every pushed file is .md.
 //
@@ -14,6 +16,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { flipsLineEndings } from './line-endings.mjs';
 
 const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
 const ENV_FILE = /(^|\/)\.env(\.(?!example$)[^/]+)?$/;
@@ -27,6 +30,10 @@ const mvnw = isWindows ? '.\\mvnw.cmd' : './mvnw';
 
 function git(...args) {
 	return execFileSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+}
+
+function gitBuffer(...args) {
+	return execFileSync('git', args, { cwd: root, maxBuffer: 64 * 1024 * 1024 });
 }
 
 function fail(message) {
@@ -74,6 +81,19 @@ function isMergeCommit() {
 	}
 }
 
+// Staged text files that exist at HEAD and now have the other line ending.
+function filesWithFlippedLineEndings() {
+	const modified = git('diff', '--cached', '--name-only', '--diff-filter=M').split('\n').filter(Boolean);
+	return modified.filter((file) => {
+		const before = gitBuffer('show', `HEAD:${file}`);
+		const after = gitBuffer('show', `:${file}`);
+		if (before.includes(0) || after.includes(0)) {
+			return false; // binary
+		}
+		return flipsLineEndings(before.toString('utf8'), after.toString('utf8'));
+	});
+}
+
 function preCommit() {
 	const staged = git('diff', '--cached', '--name-only').split('\n').filter(Boolean);
 	if (staged.length === 0) {
@@ -94,6 +114,14 @@ function preCommit() {
 	if (staged.includes(LOCK_FILE) && lockFileLostPlatforms()) {
 		fail(`${LOCK_FILE} lost entries for other platforms (npm on Windows drops them). Restore it and reinstall: git checkout HEAD -- ${LOCK_FILE} && npm install`);
 	}
+	if (process.env.SHAREWISE_ALLOW_EOL_FLIP !== '1') {
+		const flipped = filesWithFlippedLineEndings();
+		if (flipped.length > 0) {
+			fail(`the line endings (CRLF <-> LF) of existing files changed, so every line shows as changed: ${flipped.join(', ')}. `
+				+ 'Restore them (git checkout HEAD -- <file>) and make the edit with a tool that keeps them (sed -i and some editors strip them). '
+				+ 'If the change is intended, commit it alone with SHAREWISE_ALLOW_EOL_FLIP=1.');
+		}
+	}
 	if (staged.every((file) => file.endsWith('.md'))) {
 		console.log('gate: docs-only commit, checks skipped');
 		return;
@@ -109,7 +137,7 @@ function preCommit() {
 		run('contract lint', `npx --yes @redocly/cli lint ${CONTRACT}`);
 	}
 	if (staged.some((file) => file.startsWith('.claude/hooks/') || file.startsWith('.githooks/'))) {
-		run('guard hook tests', 'node --test .claude/hooks/guard.test.mjs');
+		run('guard hook tests', 'node --test .claude/hooks/guard.test.mjs .githooks/line-endings.test.mjs');
 	}
 }
 
@@ -156,7 +184,7 @@ function prePush() {
 	run('frontend tests', 'npm test --silent', 'frontend');
 	run('frontend build', 'npm run build --silent', 'frontend');
 	run('contract lint', `npx --yes @redocly/cli lint ${CONTRACT}`);
-	run('guard hook tests', 'node --test .claude/hooks/guard.test.mjs');
+	run('guard hook tests', 'node --test .claude/hooks/guard.test.mjs .githooks/line-endings.test.mjs');
 }
 
 if (process.argv[2] === 'pre-commit') {

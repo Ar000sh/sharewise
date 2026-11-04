@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Form controls, scrollbars and default text follow the browser's light or dark setting. */
+  color-scheme: light dark;
 }
 
 @theme inline {

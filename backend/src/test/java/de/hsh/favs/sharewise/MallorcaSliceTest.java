@@ -50,6 +50,8 @@ class MallorcaSliceTest {
 
 	final Map<String, String> tokens = new LinkedHashMap<>();
 
+	final Map<String, String> usernames = new LinkedHashMap<>();
+
 	@BeforeEach
 	void signUpFourFriends() throws Exception {
 		alice = signUp("Alice");
@@ -134,7 +136,11 @@ class MallorcaSliceTest {
 			.content("{\"name\":\"Shape\"}"));
 		JsonNode detail = read(get("/groups/" + group).header("Authorization", auth(alice)));
 		JsonNode expense = read(recordExpense(group, alice, "Taxi", 1000, alice, List.of(alice, bob)));
-		JsonNode invitation = read(post("/groups/" + group + "/invitations").header("Authorization", auth(alice)));
+		JsonNode invitation = read(post("/groups/" + group + "/invitations").header("Authorization", auth(alice))
+			.contentType(APPLICATION_JSON)
+			.content("{\"identifier\":\"" + usernames.get(carol) + "\"}"));
+		JsonNode pending = read(get("/invitations").header("Authorization", auth(carol)));
+		JsonNode me = read(get("/me").header("Authorization", auth(alice)));
 
 		// then the field names are the ones in docs/api/openapi.yaml
 		assertThat(fields(created)).containsExactly("id", "memberCount", "name", "status");
@@ -143,7 +149,12 @@ class MallorcaSliceTest {
 		assertThat(fields(expense)).containsExactly("date", "id", "paidBy", "recordedBy", "shares", "splitStrategy",
 				"status", "title", "totalAmount");
 		assertThat(fields(expense.get("shares").get(0))).containsExactly("owedShare", "participantId");
-		assertThat(fields(invitation)).containsExactly("expiresAt", "token");
+		assertThat(fields(invitation)).containsExactly("expiresAt", "invitationId", "invitee");
+		assertThat(fields(invitation.get("invitee"))).containsExactly("displayName", "userId", "username");
+		assertThat(fields(pending.get(0))).containsExactly("expiresAt", "group", "invitationId", "invitedBy");
+		assertThat(fields(pending.get(0).get("group"))).containsExactly("id", "name");
+		assertThat(fields(pending.get(0).get("invitedBy"))).containsExactly("displayName", "userId", "username");
+		assertThat(fields(me)).containsExactly("displayName", "userId", "username");
 		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
 			JsonNode balances = read(get("/groups/" + group + "/balances").header("Authorization", auth(alice)));
 			assertThat(fields(balances.get(0))).containsExactly("displayName", "netBalance", "userId");
@@ -209,13 +220,13 @@ class MallorcaSliceTest {
 	}
 
 	@Test
-	void joiningTwiceIsAConflict() throws Exception {
+	void invitingAMemberAgainIsAConflictAndAnUnknownInvitationIsNotFound() throws Exception {
 		UUID group = groupWith(alice, bob);
-		String token = invite(group, alice);
 
-		mvc.perform(post("/invitations/" + token + "/accept").header("Authorization", auth(bob)))
-			.andExpect(status().isConflict());
-		mvc.perform(post("/invitations/" + "x".repeat(43) + "/accept").header("Authorization", auth(carol)))
+		mvc.perform(post("/groups/" + group + "/invitations").header("Authorization", auth(alice))
+			.contentType(APPLICATION_JSON)
+			.content("{\"identifier\":\"" + usernames.get(bob) + "\"}")).andExpect(status().isConflict());
+		mvc.perform(post("/invitations/" + UUID.randomUUID() + "/accept").header("Authorization", auth(carol)))
 			.andExpect(status().isNotFound());
 	}
 
@@ -225,6 +236,7 @@ class MallorcaSliceTest {
 	private String signUp(String name) throws Exception {
 		AccountFixture user = AccountFixture.signUp(mvc, json, name);
 		tokens.put(user.idString(), user.bearer());
+		usernames.put(user.idString(), user.username());
 		return user.idString();
 	}
 
@@ -246,13 +258,16 @@ class MallorcaSliceTest {
 	}
 
 	private void join(UUID group, String inviter, String joiner) throws Exception {
-		mvc.perform(post("/invitations/" + invite(group, inviter) + "/accept").header("Authorization", auth(joiner)))
+		mvc.perform(post("/invitations/" + invite(group, inviter, joiner) + "/accept").header("Authorization",
+				auth(joiner)))
 			.andExpect(status().isOk());
 	}
 
-	private String invite(UUID group, String caller) throws Exception {
-		return read(post("/groups/" + group + "/invitations").header("Authorization", auth(caller))).get("token")
-			.asString();
+	/** Invites the invitee by username and returns the invitation id. */
+	private String invite(UUID group, String caller, String invitee) throws Exception {
+		return read(post("/groups/" + group + "/invitations").header("Authorization", auth(caller))
+			.contentType(APPLICATION_JSON)
+			.content("{\"identifier\":\"" + usernames.get(invitee) + "\"}")).get("invitationId").asString();
 	}
 
 	private ResultActions recordExpense(UUID group, String caller, String title, long cents, String payer,

@@ -3,15 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { components } from "@/api/schema";
+import { ErrorBanner } from "@/components/ErrorBanner";
 import { api } from "@/lib/api";
-import { messageFor } from "@/lib/errors";
 
 type Group = components["schemas"]["Group"];
 
 export function CreateGroupForm() {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [error, setError] = useState<string>();
+  const [error, setError] = useState<unknown>();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +28,7 @@ export function CreateGroupForm() {
       });
       router.push(`/groups/${group.id}`);
     } catch (err) {
-      setError(messageFor(err));
+      setError(err);
     }
   }
 
@@ -43,8 +43,8 @@ export function CreateGroupForm() {
           onChange={(e) => setName(e.target.value)}
         />
       </label>
-      {error && <p role="alert" className="text-red-700">{error}</p>}
-      <button type="submit" className="rounded bg-black px-3 py-2 text-white">
+      <ErrorBanner error={error} />
+      <button type="submit" className="rounded bg-foreground px-3 py-2 text-background">
         Create group
       </button>
     </form>

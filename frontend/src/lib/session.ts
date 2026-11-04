@@ -78,7 +78,7 @@ export function readLoginFlow(req: Request): LoginFlow | undefined {
 const SITE = "http://same-site.invalid";
 
 /**
- * Only same-site paths (F5): "/join/abc" yes; "//evil.example", "https://..." and "/\evil.example" no. Browsers read
+ * Only same-site paths (F5): "/groups/abc" yes; "//evil.example", "https://..." and "/\evil.example" no. Browsers read
  * a backslash like a slash and ignore tabs and newlines inside a URL, so those are refused, and the result must
  * still be on our own origin once the URL is parsed the way a browser does it. Everything else becomes "/".
  */

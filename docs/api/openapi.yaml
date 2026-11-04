@@ -21,6 +21,7 @@ tags:
   - name: group
   - name: expense
   - name: settlement
+  - name: notification
 
 paths:
   /me:
@@ -34,7 +35,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/User" }
-              example: { userId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice }
+              example: { userId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice, username: alice }
         "401": { $ref: "#/components/responses/Unauthenticated" }
 
   /groups:
@@ -105,29 +106,78 @@ paths:
     post:
       tags: [group]
       operationId: createInvitation
-      summary: Create an invite link token (valid 7 days). The caller must be a member.
+      summary: >
+        Invite an existing account by exact username or exact email (valid 7 days, R9). The caller must be a
+        member. The invitation belongs to that account; there is no link anyone can use.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InviteMemberRequest" }
+            example: { identifier: bob }
       responses:
         "201":
           description: Created
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Invitation" }
-              example: { token: "k3Xq9v2mT8aLw0pZr7YdNc4HbJf1UeS5", expiresAt: "2027-06-08T10:00:00Z" }
+              example:
+                invitationId: "dddddddd-0000-0000-0000-000000000001"
+                invitee: { userId: "aaaaaaaa-0000-0000-0000-000000000002", displayName: Bob, username: bob }
+                expiresAt: "2027-06-08T10:00:00Z"
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/NotAMember" }
-        "404": { $ref: "#/components/responses/GroupNotFound" }
+        "404":
+          description: Unknown group, or no account for the username or email
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                groupNotFound:
+                  value: { type: "about:blank", title: Not Found, status: 404, code: GROUP_NOT_FOUND, detail: "Group not found" }
+                accountNotFound:
+                  value: { type: "about:blank", title: Not Found, status: 404, code: ACCOUNT_NOT_FOUND, detail: "No account found" }
+        "409":
+          description: The person is already a member, or already has an open invitation to this group
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                alreadyMember:
+                  value: { type: "about:blank", title: Conflict, status: 409, code: ALREADY_MEMBER, detail: "This person is already a member of this group" }
+                alreadyInvited:
+                  value: { type: "about:blank", title: Conflict, status: 409, code: ALREADY_INVITED, detail: "This person already has an open invitation" }
 
-  /invitations/{token}/accept:
+  /invitations:
+    get:
+      tags: [group]
+      operationId: listPendingInvitations
+      summary: The caller's own open invitations (not accepted, declined or older than 7 days), newest first.
+      responses:
+        "200":
+          description: Pending invitations
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PendingInvitation" }
+              example:
+                - invitationId: "dddddddd-0000-0000-0000-000000000001"
+                  group: { id: "bbbbbbbb-0000-0000-0000-000000000001", name: "Mallorca 2027" }
+                  invitedBy: { userId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice, username: alice }
+                  expiresAt: "2027-06-08T10:00:00Z"
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+
+  /invitations/{invitationId}/accept:
     parameters:
-      - name: token
-        in: path
-        required: true
-        schema: { type: string, minLength: 16 }
+      - { $ref: "#/components/parameters/InvitationId" }
     post:
       tags: [group]
       operationId: acceptInvitation
-      summary: Join the group the token belongs to. The caller becomes a MEMBER.
+      summary: >
+        Join the group. Only the invited account can accept; an invitation meant for somebody else is
+        INVITATION_NOT_FOUND. The caller becomes a MEMBER.
       responses:
         "200":
           description: Joined
@@ -139,6 +189,80 @@ paths:
         "404": { $ref: "#/components/responses/InvitationNotFound" }
         "409": { $ref: "#/components/responses/AlreadyMember" }
         "410": { $ref: "#/components/responses/InvitationExpired" }
+
+  /invitations/{invitationId}/decline:
+    parameters:
+      - { $ref: "#/components/parameters/InvitationId" }
+    post:
+      tags: [group]
+      operationId: declineInvitation
+      summary: Decline the invitation. Only the invited account can decline; nobody joins.
+      responses:
+        "204": { description: Declined }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/InvitationNotFound" }
+        "410": { $ref: "#/components/responses/InvitationExpired" }
+
+  /notifications:
+    get:
+      tags: [notification]
+      operationId: listNotifications
+      summary: >
+        The caller's inbox entries about things that happened (somebody joined, somebody declined), newest
+        first, plus the number of unread ones. An invitation that waits for an answer is not an entry: it is in
+        GET /invitations.
+      parameters:
+        - name: unread
+          in: query
+          required: false
+          schema: { type: boolean, default: false }
+          description: Only unread entries.
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+      responses:
+        "200":
+          description: The entries and the unread count
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationList" }
+              example:
+                unreadCount: 1
+                items:
+                  - id: "eeeeeeee-0000-0000-0000-000000000001"
+                    type: MEMBER_JOINED
+                    occurredAt: "2027-06-02T09:30:00Z"
+                    readAt: null
+                    actor: { userId: "aaaaaaaa-0000-0000-0000-000000000002", displayName: Bob, username: bob }
+                    group: { id: "bbbbbbbb-0000-0000-0000-000000000001", name: "Mallorca 2027" }
+                    reference: "aaaaaaaa-0000-0000-0000-000000000002"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+
+  /notifications/read-all:
+    post:
+      tags: [notification]
+      operationId: markAllNotificationsRead
+      summary: Marks all of the caller's entries as read.
+      responses:
+        "204": { description: Done }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+
+  /notifications/{notificationId}/read:
+    parameters:
+      - name: notificationId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [notification]
+      operationId: markNotificationRead
+      summary: Marks one of the caller's entries as read. Another person's entry is NOTIFICATION_NOT_FOUND.
+      responses:
+        "204": { description: Done }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "404": { $ref: "#/components/responses/NotificationNotFound" }
 
   /groups/{groupId}/expenses:
     parameters:
@@ -522,6 +646,11 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
+    InvitationId:
+      name: invitationId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
 
   responses:
     BadRequest:
@@ -549,11 +678,19 @@ components:
           schema: { $ref: "#/components/schemas/Problem" }
           example: { type: "about:blank", title: Not Found, status: 404, code: GROUP_NOT_FOUND, detail: "Group not found" }
     InvitationNotFound:
-      description: Unknown invitation token
+      description: >
+        Unknown invitation, already answered, or meant for somebody else (the three look the same, so ids
+        cannot be probed)
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
           example: { type: "about:blank", title: Not Found, status: 404, code: INVITATION_NOT_FOUND, detail: "Invitation not found" }
+    NotificationNotFound:
+      description: Unknown entry, or an entry of another person
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          example: { type: "about:blank", title: Not Found, status: 404, code: NOTIFICATION_NOT_FOUND, detail: "Notification not found" }
     AlreadyMember:
       description: The caller is already a member
       content:
@@ -630,14 +767,33 @@ components:
             - SETTLEMENT_PAYMENT_NOT_FOUND
             - PAYMENT_NOT_PENDING
             - NOT_THE_CREDITOR
+            - ACCOUNT_NOT_FOUND
+            - ALREADY_INVITED
+            - NOTIFICATION_NOT_FOUND
         detail: { type: string }
 
     User:
       type: object
-      required: [userId, displayName]
+      required: [userId, displayName, username]
       properties:
         userId: { type: string, format: uuid }
         displayName: { type: string }
+        username: { type: string, description: "Lower case, 3 to 30 characters of a-z 0-9 . _ -, chosen at sign-up." }
+
+    UserSummary:
+      type: object
+      required: [userId, displayName, username]
+      properties:
+        userId: { type: string, format: uuid }
+        displayName: { type: string }
+        username: { type: string }
+
+    GroupRef:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
 
     CreateGroupRequest:
       type: object
@@ -672,12 +828,71 @@ components:
               type: array
               items: { $ref: "#/components/schemas/Member" }
 
+    InviteMemberRequest:
+      type: object
+      required: [identifier]
+      properties:
+        identifier:
+          type: string
+          minLength: 1
+          maxLength: 254
+          description: >
+            Exact username or exact email of an existing account (an identifier with "@" is an email).
+            Trimmed and compared case-insensitively; no partial matching.
+
     Invitation:
       type: object
-      required: [token, expiresAt]
+      required: [invitationId, invitee, expiresAt]
       properties:
-        token: { type: string }
+        invitationId: { type: string, format: uuid }
+        invitee: { $ref: "#/components/schemas/UserSummary" }
         expiresAt: { type: string, format: date-time }
+
+    PendingInvitation:
+      type: object
+      required: [invitationId, group, invitedBy, expiresAt]
+      properties:
+        invitationId: { type: string, format: uuid }
+        group: { $ref: "#/components/schemas/GroupRef" }
+        invitedBy: { $ref: "#/components/schemas/UserSummary" }
+        expiresAt: { type: string, format: date-time }
+
+    NotificationType:
+      type: string
+      enum: [MEMBER_JOINED, INVITATION_DECLINED]
+      description: More types arrive with later features (payments, waived debts, removal).
+
+    Notification:
+      type: object
+      required: [id, type, occurredAt, readAt, actor, group, reference]
+      properties:
+        id: { type: string, format: uuid }
+        type: { $ref: "#/components/schemas/NotificationType" }
+        occurredAt: { type: string, format: date-time }
+        readAt: { type: [string, "null"], format: date-time }
+        actor:
+          description: Who did it (the person who joined or declined); null when the account cannot be resolved.
+          oneOf:
+            - { $ref: "#/components/schemas/UserSummary" }
+            - { type: "null" }
+        group:
+          description: The group it is about; null when the group cannot be resolved.
+          oneOf:
+            - { $ref: "#/components/schemas/GroupRef" }
+            - { type: "null" }
+        reference:
+          type: string
+          format: uuid
+          description: What the entry points at (the person who joined, or the declined invitation).
+
+    NotificationList:
+      type: object
+      required: [unreadCount, items]
+      properties:
+        unreadCount: { type: integer, minimum: 0 }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Notification" }
 
     Amount:
       type: string

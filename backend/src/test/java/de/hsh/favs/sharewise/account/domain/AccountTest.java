@@ -19,12 +19,13 @@ class AccountTest {
 
 		// when
 		Account account = Account.registerFromIdentityProvider(subject, new Email("alice@example.com"),
-				new DisplayName("Alice"), NOW);
+				new Username("alice"), new DisplayName("Alice"), NOW);
 
 		// then
 		assertThat(account.userId()).isEqualTo(subject);
 		assertThat(account.status()).isEqualTo(AccountStatus.ACTIVE);
 		assertThat(account.email()).isEqualTo(new Email("alice@example.com"));
+		assertThat(account.username()).isEqualTo(new Username("alice"));
 		assertThat(account.displayName()).isEqualTo(new DisplayName("Alice"));
 		assertThat(account.registeredAt()).isEqualTo(NOW);
 	}

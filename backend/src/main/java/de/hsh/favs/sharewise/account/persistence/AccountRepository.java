@@ -2,6 +2,7 @@ package de.hsh.favs.sharewise.account.persistence;
 
 import de.hsh.favs.sharewise.account.domain.Account;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -18,16 +19,23 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
 	 * @return true when this call inserted the row
 	 */
 	default boolean insertIfAbsent(Account account) {
-		return insertIfAbsent(account.userId().value(), account.email().value(), account.displayName().value(),
-				account.status().name(), account.registeredAt()) == 1;
+		return insertIfAbsent(account.userId().value(), account.email().value(), account.username().value(),
+				account.displayName().value(), account.status().name(), account.registeredAt()) == 1;
 	}
 
 	@Modifying
 	@Query(value = """
-			INSERT INTO accounts (id, email, display_name, status, registered_at)
-			VALUES (:id, :email, :displayName, :status, :registeredAt)
+			INSERT INTO accounts (id, email, username, display_name, status, registered_at)
+			VALUES (:id, :email, :username, :displayName, :status, :registeredAt)
 			ON CONFLICT DO NOTHING""", nativeQuery = true)
-	int insertIfAbsent(@Param("id") UUID id, @Param("email") String email, @Param("displayName") String displayName,
-			@Param("status") String status, @Param("registeredAt") Instant registeredAt);
+	int insertIfAbsent(@Param("id") UUID id, @Param("email") String email, @Param("username") String username,
+			@Param("displayName") String displayName, @Param("status") String status,
+			@Param("registeredAt") Instant registeredAt);
+
+	/** Exact match on the stored (lower case) username. */
+	Optional<Account> findByUsername(String username);
+
+	/** Exact match on the stored (lower case) email. */
+	Optional<Account> findByEmail(String email);
 
 }

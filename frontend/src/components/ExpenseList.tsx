@@ -15,7 +15,7 @@ export function ExpenseList({ expenses, members }: { expenses: Expense[]; member
         <li key={e.id} className="flex items-start justify-between gap-2 px-3 py-2">
           <div>
             <div className="font-medium">{e.title}</div>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-foreground/70">
               {nameOf(e.paidBy)} paid · {e.date}
             </div>
           </div>

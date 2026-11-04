@@ -106,11 +106,11 @@ export function WaiveDebtForm({
         <input className="rounded border px-2 py-2" value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} />
       </label>
       {error && (
-        <p role="alert" className="text-red-700">
+        <p role="alert" className="text-red-700 dark:text-red-400">
           {error}
         </p>
       )}
-      <button type="submit" disabled={busy} className="rounded bg-black px-3 py-2 text-white disabled:opacity-50">
+      <button type="submit" disabled={busy} className="rounded bg-foreground px-3 py-2 text-background disabled:opacity-50">
         Waive debt
       </button>
     </form>

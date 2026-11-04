@@ -8,7 +8,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <div className="mx-auto flex max-w-sm flex-col gap-4">
       <h1 className="text-xl font-semibold">Sign in</h1>
-      <a href={`/api/auth/login?returnTo=${returnTo}`} className="rounded bg-black px-3 py-2 text-center text-white">
+      <a href={`/api/auth/login?returnTo=${returnTo}`} className="rounded bg-foreground px-3 py-2 text-center text-background">
         Sign in
       </a>
       <p className="text-sm">

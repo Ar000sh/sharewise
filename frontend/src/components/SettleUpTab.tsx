@@ -18,7 +18,7 @@ type PlanEdge = components["schemas"]["SettlementPlanEdge"];
 function Pending({ edge }: { edge: PlanEdge }) {
   const pending = amountToCents(edge.pendingAmount);
   if (pending <= 0) return null;
-  return <p className="text-sm text-gray-600">{formatEuro(pending)} awaiting confirmation</p>;
+  return <p className="text-sm text-foreground/70">{formatEuro(pending)} awaiting confirmation</p>;
 }
 
 /** The inline form of one "You owe" row. The amount starts at what is still open and can only go down. */
@@ -75,11 +75,11 @@ function PaymentForm({ groupId, edge, onPaid }: { groupId: string; edge: PlanEdg
         <input className="rounded border px-2 py-2" value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} />
       </label>
       {error && (
-        <p role="alert" className="text-red-700">
+        <p role="alert" className="text-red-700 dark:text-red-400">
           {error}
         </p>
       )}
-      <button type="submit" disabled={busy} className="rounded bg-black px-3 py-2 text-white disabled:opacity-50">
+      <button type="submit" disabled={busy} className="rounded bg-foreground px-3 py-2 text-background disabled:opacity-50">
         Send payment
       </button>
     </form>
@@ -115,7 +115,7 @@ function OweRow({ groupId, edge, onPaid }: { groupId: string; edge: PlanEdge; on
 
 function Section({ title, quiet, children }: { title: string; quiet?: boolean; children: React.ReactNode }) {
   return (
-    <section aria-label={title} className={`flex flex-col gap-1 ${quiet ? "text-sm text-gray-600" : ""}`}>
+    <section aria-label={title} className={`flex flex-col gap-1 ${quiet ? "text-sm text-foreground/70" : ""}`}>
       <h2 className="font-medium">{title}</h2>
       <ul className="divide-y rounded border">{children}</ul>
     </section>

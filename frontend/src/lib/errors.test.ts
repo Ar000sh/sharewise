@@ -13,8 +13,15 @@ describe("messageFor", () => {
     ["SETTLEMENT_PAYMENT_NOT_FOUND", "This settlement payment does not exist."],
     ["PAYMENT_NOT_PENDING", "This settlement payment was already answered."],
     ["NOT_THE_CREDITOR", "Only the person who is owed can do this."],
-  ])("mapsTheSettlementCode%sToItsMessage", (code, message) => {
-    expect(messageFor(new ApiError(422, code, "raw detail"))).toBe(message);
+    ["ACCOUNT_NOT_FOUND", "No account found. The person must have signed in to ShareWise once."],
+    ["ALREADY_INVITED", "This person already has an open invitation."],
+    ["ALREADY_MEMBER", "You are already a member of this group."],
+    ["NOT_A_MEMBER", "You are not a member of this group."],
+    ["NOTIFICATION_NOT_FOUND", "This entry no longer exists."],
+    ["INVITATION_NOT_FOUND", "This invitation is no longer valid."],
+    ["INVITATION_EXPIRED", "This invitation has expired. Ask for a new one."],
+  ])("hasAReadableMessageFor%s", (code, message) => {
+    expect(messageFor(new ApiError(404, code, "raw detail"))).toBe(message);
   });
 
   it("fallsBackToServerDetailForUnknownCodes", () => {
@@ -23,6 +30,10 @@ describe("messageFor", () => {
 
   it("fallsBackToGenericMessageWithoutDetail", () => {
     expect(messageFor(new ApiError(500, "UNKNOWN"))).toBe("Something went wrong.");
+  });
+
+  it("showsAPlainTextMessageAsItIs", () => {
+    expect(messageFor("Please enter a title.")).toBe("Please enter a title.");
   });
 
   it("handlesNonApiErrors", () => {

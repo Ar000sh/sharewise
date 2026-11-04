@@ -9,10 +9,10 @@ export function MemberList({ members, currentUserId }: { members: Member[]; curr
         <li key={m.userId} className="flex items-center justify-between gap-2 px-3 py-2">
           <span>
             {m.displayName}
-            {m.userId === currentUserId && <span className="text-gray-600"> (you)</span>}
+            {m.userId === currentUserId && <span className="text-foreground/70"> (you)</span>}
           </span>
           {m.role === "ADMIN" && (
-            <span className="rounded bg-gray-100 px-2 py-0.5 text-xs">Admin</span>
+            <span className="rounded bg-foreground/10 px-2 py-0.5 text-xs">Admin</span>
           )}
         </li>
       ))}

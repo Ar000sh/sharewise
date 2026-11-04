@@ -72,6 +72,7 @@ class GroupControllerTest {
 			.satisfies(e -> {
 				assertThat(e.userId()).isEqualTo(alice.userId());
 				assertThat(e.role()).isEqualTo(GroupRole.ADMIN);
+				assertThat(e.invitedBy()).isNull();
 			});
 		groups.detail(id.value(), alice)
 			.andExpect(jsonPath("$.members[0].userId").value(alice.idString()))

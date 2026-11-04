@@ -46,7 +46,7 @@ function InboxRow({
   return (
     <li className="flex flex-col gap-2 px-3 py-2">
       <span>{`${payment.fromDebtorName} marked ${formatEuro(amountToCents(payment.amount))} as paid to you`}</span>
-      {payment.note && <span className="text-sm text-gray-600">{payment.note}</span>}
+      {payment.note && <span className="text-sm text-foreground/70">{payment.note}</span>}
       {showGroup && (
         <Link href={`/groups/${payment.groupId}`} className="text-sm underline">
           Open group
@@ -59,7 +59,7 @@ function InboxRow({
             disabled={busy}
             aria-label={`Confirm payment from ${payment.fromDebtorName}`}
             onClick={() => void send("confirmed")}
-            className="rounded bg-black px-3 py-1 text-white disabled:opacity-50"
+            className="rounded bg-foreground px-3 py-1 text-background disabled:opacity-50"
           >
             Confirm
           </button>
@@ -90,7 +90,7 @@ function InboxRow({
             <button
               type="submit"
               disabled={busy || !reason.trim()}
-              className="rounded bg-black px-3 py-1 text-white disabled:opacity-50"
+              className="rounded bg-foreground px-3 py-1 text-background disabled:opacity-50"
             >
               Send rejection
             </button>

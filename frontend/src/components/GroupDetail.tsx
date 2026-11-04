@@ -6,7 +6,7 @@ import { BalancesTab } from "@/components/BalancesTab";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { ExpenseForm } from "@/components/ExpenseForm";
 import { ExpenseList } from "@/components/ExpenseList";
-import { InviteButton } from "@/components/InviteButton";
+import { InviteForm } from "@/components/InviteForm";
 import { MemberList } from "@/components/MemberList";
 import { PendingBadge } from "@/components/PendingBadge";
 import { SettleUpTab } from "@/components/SettleUpTab";
@@ -46,7 +46,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
             role="tab"
             aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={`px-3 py-2 ${tab === t ? "border-b-2 border-black font-medium" : "text-gray-600"}`}
+            className={`px-3 py-2 ${tab === t ? "border-b-2 border-foreground font-medium" : "text-foreground/70"}`}
           >
             {t}
             {t === "Settle up" && <PendingBadge groupId={group.id} refreshKey={answers} />}
@@ -80,7 +80,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
       {tab === "Members" && (
         <section className="flex flex-col gap-3">
           <MemberList members={group.members} currentUserId={me?.userId} />
-          <InviteButton groupId={group.id} />
+          <InviteForm groupId={group.id} />
         </section>
       )}
       {notice && <Toast message={notice} onDismiss={dismissNotice} />}

@@ -14,7 +14,7 @@ src/
 e2e/                   Playwright specs (*.spec.ts)
 ```
 - Components: `PascalCase.tsx`, one exported component per file, named like the file. Hooks: `useThing.ts`. Plain modules: `camelCase.ts`.
-- Route handlers mirror the backend path (`/api/groups/{groupId}/expenses` → `src/app/api/groups/[groupId]/expenses/route.ts`), each starts with `await connection()` and forwards through `proxyToBackend`.
+- Route handlers mirror the backend path (`/api/groups/{groupId}/expenses` → `src/app/api/groups/[groupId]/expenses/route.ts`), each starts with `await connection()` and forwards through `proxyToBackend`. One exception: an *aggregating* handler that has no single backend endpoint (`/api/inbox` asks `/invitations` and `/notifications` and merges the answers, so the bell needs one call) is named after what it serves, still calls the backend only through `proxyToBackend`, and passes a 401 on unchanged.
 
 ## 2. API access and types
 
@@ -41,6 +41,12 @@ Amounts in the API are decimal strings (`"900.00"`). All parsing, formatting and
 - State: local `useState`; server data through `useApi`. No global state library.
 - Forms are controlled, labelled (`<label>` text is what Playwright and screen readers use), validate on submit, and disable the submit button while busy.
 - Styling with Tailwind utility classes; a layout must work at phone width.
+- **Colours and dark mode.** The page follows the browser's light or dark setting (`globals.css`: `--background` and `--foreground` switch in `prefers-color-scheme: dark`, and `color-scheme: light dark` lets form controls follow). Everything inside inherits the *foreground* colour, which is light in dark mode. So:
+  - Use the theme tokens, never fixed black, white or grey: surfaces `bg-background` with `text-foreground`, strong buttons `bg-foreground text-background`, quiet text `text-foreground/70` (60 to 80), subtle fills `bg-foreground/10`, active underline `border-foreground`. Borders default to the text colour.
+  - A fixed-palette background (`bg-red-600`, `bg-red-50`) always brings its own text colour in the same class string. A background without a text colour inherits the page's, which is unreadable on a light fill in dark mode (the inbox dropdown had `bg-white` and showed pale text on white).
+  - A coloured text (`text-red-700`, `text-green-700`) needs a `dark:` counterpart (`dark:text-red-400`), unless it sits on its own fixed background.
+  - New UI is looked at in **both** modes before it is called done (browser or OS setting; a Playwright run can use `colorScheme: "dark"`).
+  - Checked by `src/lib/themeRules.test.ts`, which scans every component and page; it fails with the file and the offending class string.
 - Text in the UI is English, sentence case, and uses the glossary: "group", "expense", "paid by", "split equally between", "balance". Not "payer", "bill" or "user" for a group participant.
 - No `console.log`, no commented-out code, no `any` (use `unknown` and narrow), no `// @ts-ignore`.
 

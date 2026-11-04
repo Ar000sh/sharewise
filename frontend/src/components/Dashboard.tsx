@@ -17,7 +17,7 @@ export function Dashboard() {
           <h1 className="text-xl font-semibold">Your groups</h1>
           <PendingBadge refreshKey={answers} />
         </div>
-        <Link href="/groups/new" className="rounded bg-black px-3 py-2 text-white">
+        <Link href="/groups/new" className="rounded bg-foreground px-3 py-2 text-background">
           New group
         </Link>
       </div>

@@ -2,9 +2,11 @@ package de.hsh.favs.sharewise.account.application;
 
 import de.hsh.favs.sharewise.account.api.UserProfile;
 import de.hsh.favs.sharewise.account.api.UserProfiles;
+import de.hsh.favs.sharewise.account.domain.Account;
 import de.hsh.favs.sharewise.account.persistence.AccountRepository;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,17 @@ class UserProfilesImpl implements UserProfiles {
 	@Transactional(readOnly = true)
 	public Optional<UserProfile> find(UserId userId) {
 		return accounts.findById(userId.value()).map(AccountService::toProfile);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Optional<UserProfile> findByIdentifier(String identifier) {
+		String text = identifier == null ? "" : identifier.strip().toLowerCase(Locale.ROOT);
+		if (text.isEmpty()) {
+			return Optional.empty();
+		}
+		Optional<Account> account = text.contains("@") ? accounts.findByEmail(text) : accounts.findByUsername(text);
+		return account.filter(Account::isActive).map(AccountService::toProfile);
 	}
 
 	@Override

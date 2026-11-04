@@ -27,6 +27,9 @@ public class Account {
 	@Column(nullable = false, unique = true)
 	private String email;
 
+	@Column(nullable = false, unique = true)
+	private String username;
+
 	@Column(name = "display_name", nullable = false)
 	private String displayName;
 
@@ -43,14 +46,16 @@ public class Account {
 	/**
 	 * Creates the ACTIVE account of a person who signed in at the identity provider for
 	 * the first time. The id is the provider's subject, so the same person always maps to
-	 * the same {@link UserId} (D4); email and display name are taken once and owned by
-	 * ShareWise afterwards (D10, C2).
+	 * the same {@link UserId} (D4); email, username and display name are taken once and
+	 * owned by ShareWise afterwards (D10, C2).
 	 * @return the new account; the Account context draws no events in the diagram
 	 */
-	public static Account registerFromIdentityProvider(UserId id, Email email, DisplayName displayName, Instant now) {
+	public static Account registerFromIdentityProvider(UserId id, Email email, Username username,
+			DisplayName displayName, Instant now) {
 		Account account = new Account();
 		account.id = id.value();
 		account.email = email.value();
+		account.username = username.value();
 		account.displayName = displayName.value();
 		account.status = AccountStatus.ACTIVE;
 		account.registeredAt = now;
@@ -63,6 +68,10 @@ public class Account {
 
 	public Email email() {
 		return new Email(email);
+	}
+
+	public Username username() {
+		return new Username(username);
 	}
 
 	public DisplayName displayName() {
