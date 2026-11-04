@@ -25,7 +25,25 @@ const entry = {
   reference: "u2",
 };
 
-type Inbox = { invitations: unknown[] | null; notifications: { unreadCount: number; items: unknown[] } | null };
+const payment = {
+  id: "p1",
+  groupId: "g1",
+  fromDebtor: "u3",
+  fromDebtorName: "Carol Tester",
+  toCreditor: "u1",
+  toCreditorName: "Alice Tester",
+  amount: "360.00",
+  status: "PENDING",
+  note: "Cash at the airport",
+  createdAt: "2027-06-02T09:00:00Z",
+  resolvedAt: null,
+};
+
+type Inbox = {
+  invitations: unknown[] | null;
+  notifications: { unreadCount: number; items: unknown[] } | null;
+  payments: unknown[] | null;
+};
 let inbox: Inbox;
 
 /** Answers `/inbox` with the current `inbox` and everything else with `others`. */
@@ -49,7 +67,7 @@ async function renderOpened() {
 
 beforeEach(() => {
   push.mockReset();
-  inbox = { invitations: [invitation], notifications: { unreadCount: 1, items: [entry] } };
+  inbox = { invitations: [invitation], notifications: { unreadCount: 1, items: [entry] }, payments: [] };
 });
 afterEach(() => {
   vi.resetAllMocks();
@@ -57,12 +75,135 @@ afterEach(() => {
 });
 
 describe("InboxBell", () => {
-  it("badgeIsPendingInvitationsPlusUnreadEntries", async () => {
+  it("badgeIsOpenInvitationsPlusWaitingPaymentsPlusUnreadEntries", async () => {
+    // given one invitation, one payment waiting and one unread entry
+    inbox = { ...inbox, payments: [payment] };
     backend();
 
+    // when
     render(<InboxBell />);
 
-    expect(await screen.findByRole("button", { name: /inbox/i })).toHaveTextContent("2");
+    // then
+    expect(await screen.findByRole("button", { name: /inbox/i })).toHaveTextContent("3");
+  });
+
+  it("showsAPaymentWaitingForMyAnswerBeforeTheEntries", async () => {
+    // given
+    inbox = { ...inbox, invitations: [], payments: [payment] };
+    backend();
+
+    // when
+    await renderOpened();
+
+    // then the sentence, the note and a link to the group come first, then the entry
+    const items = screen.getAllByRole("listitem");
+    expect(items[0]).toHaveTextContent("Carol Tester marked 360,00 € as paid to you");
+    expect(items[0]).toHaveTextContent("Cash at the airport");
+    expect(within(items[0]).getByRole("link", { name: "Open group" })).toHaveAttribute("href", "/groups/g1");
+    expect(items[1]).toHaveTextContent("Bob Tester joined Mallorca 2027");
+  });
+
+  it("confirmingAPaymentPostsToConfirmAndAsksAgain", async () => {
+    // given
+    inbox = { ...inbox, payments: [payment] };
+    backend((path) => {
+      if (path === "/settlement-payments/p1/confirm") inbox = { ...inbox, payments: [] };
+    });
+    await renderOpened();
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: "Confirm payment from Carol Tester" }));
+
+    // then
+    expect(apiMock).toHaveBeenCalledWith("/settlement-payments/p1/confirm", { method: "POST" });
+    await waitFor(() => expect(screen.queryByText(/marked 360,00/)).not.toBeInTheDocument());
+  });
+
+  it("rejectingAPaymentNeedsAReasonAndSendsItAsTheNote", async () => {
+    // given
+    inbox = { ...inbox, payments: [payment] };
+    backend((path) => {
+      if (path === "/settlement-payments/p1/reject") inbox = { ...inbox, payments: [] };
+    });
+    await renderOpened();
+    await userEvent.click(screen.getByRole("button", { name: "Reject payment from Carol Tester" }));
+
+    // when she has not typed a reason, nothing can be sent
+    const send = screen.getByRole("button", { name: "Send rejection" });
+    expect(send).toBeDisabled();
+    await userEvent.type(screen.getByLabelText("Reason"), "Not received");
+    await userEvent.click(send);
+
+    // then the reason goes out as the note
+    const [, init] = apiMock.mock.calls.find(([path]) => path === "/settlement-payments/p1/reject")!;
+    expect(init?.method).toBe("POST");
+    expect(JSON.parse(String(init?.body))).toEqual({ note: "Not received" });
+    await waitFor(() => expect(screen.queryByText(/marked 360,00/)).not.toBeInTheDocument());
+  });
+
+  it("noRejectionIsSentWhileTheReasonIsEmpty", async () => {
+    // given
+    inbox = { ...inbox, payments: [payment] };
+    backend();
+    await renderOpened();
+    await userEvent.click(screen.getByRole("button", { name: "Reject payment from Carol Tester" }));
+
+    // when the empty form is submitted
+    await userEvent.type(screen.getByLabelText("Reason"), "   {Enter}");
+
+    // then
+    expect(apiMock.mock.calls.filter(([path]) => String(path).includes("/reject"))).toHaveLength(0);
+  });
+
+  it("a404AfterConfirmCountsAsDoneAndShowsNoError", async () => {
+    // given the payment was answered in another tab
+    inbox = { ...inbox, payments: [payment] };
+    backend((path) => {
+      if (path === "/settlement-payments/p1/confirm") {
+        inbox = { ...inbox, payments: [] };
+        throw new ApiError(404, "PAYMENT_NOT_FOUND");
+      }
+    });
+    await renderOpened();
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: "Confirm payment from Carol Tester" }));
+
+    // then
+    await waitFor(() => expect(screen.queryByText(/marked 360,00/)).not.toBeInTheDocument());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("describesTheThreeSettlementEntries", async () => {
+    // given
+    const item = (id: string, type: string) => ({ ...entry, id, type });
+    inbox = {
+      invitations: [],
+      payments: [],
+      notifications: {
+        unreadCount: 3,
+        items: [item("n1", "PAYMENT_CONFIRMED"), item("n2", "PAYMENT_REJECTED"), item("n3", "DEBT_WAIVED")],
+      },
+    };
+    backend();
+
+    // when
+    await renderOpened();
+
+    // then
+    expect(screen.getByText("Bob Tester confirmed your payment in Mallorca 2027")).toBeInTheDocument();
+    expect(screen.getByText("Bob Tester rejected your payment in Mallorca 2027")).toBeInTheDocument();
+    expect(screen.getByText("Bob Tester waived part of your debt in Mallorca 2027")).toBeInTheDocument();
+  });
+
+  it("showsWhatLoadedWhenThePaymentsCouldNotBeLoaded", async () => {
+    inbox = { ...inbox, payments: null };
+    backend();
+
+    await renderOpened();
+
+    expect(screen.getByText("Payments could not be loaded.")).toBeInTheDocument();
+    expect(screen.getByText("Alice Tester invited you to Mallorca 2027")).toBeInTheDocument();
   });
 
   it("listsInvitationsBeforeEntriesWithAcceptAndDecline", async () => {
@@ -84,6 +225,7 @@ describe("InboxBell", () => {
         unreadCount: 1,
         items: [{ ...entry, id: "n2", type: "INVITATION_DECLINED", actor: null, group: null }],
       },
+      payments: [],
     };
     backend();
 
@@ -170,7 +312,7 @@ describe("InboxBell", () => {
   });
 
   it("showsWhatLoadedWhenTheInvitationsCouldNotBeLoaded", async () => {
-    inbox = { invitations: null, notifications: { unreadCount: 1, items: [entry] } };
+    inbox = { invitations: null, notifications: { unreadCount: 1, items: [entry] }, payments: [] };
     backend();
 
     await renderOpened();
@@ -180,7 +322,7 @@ describe("InboxBell", () => {
   });
 
   it("showsWhatLoadedWhenTheEntriesCouldNotBeLoaded", async () => {
-    inbox = { invitations: [invitation], notifications: null };
+    inbox = { invitations: [invitation], notifications: null, payments: [] };
     backend();
 
     await renderOpened();
@@ -194,6 +336,7 @@ describe("InboxBell", () => {
     inbox = {
       invitations: [{ ...invitation, group: { id: "g9", name: evil } }],
       notifications: { unreadCount: 1, items: [{ ...entry, actor: { ...entry.actor, displayName: evil } }] },
+      payments: [],
     };
     backend();
 

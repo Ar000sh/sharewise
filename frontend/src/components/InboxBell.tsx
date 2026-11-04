@@ -1,16 +1,23 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { ApiError, api } from "@/lib/api";
+import { amountToCents, formatEuro } from "@/lib/money";
 
 type PendingInvitation = components["schemas"]["PendingInvitation"];
 type NotificationList = components["schemas"]["NotificationList"];
 type Notification = components["schemas"]["Notification"];
+type SettlementPayment = components["schemas"]["SettlementPayment"];
 type Group = components["schemas"]["Group"];
-type Inbox = { invitations: PendingInvitation[] | null; notifications: NotificationList | null };
+type Inbox = {
+  invitations: PendingInvitation[] | null;
+  notifications: NotificationList | null;
+  payments: SettlementPayment[] | null;
+};
 
 /** How often the bell asks again, in milliseconds. It also asks when the tab becomes visible. */
 const POLL_MS = 30_000;
@@ -19,12 +26,100 @@ const POLL_MS = 30_000;
 function describe(entry: Notification): string {
   const who = entry.actor?.displayName ?? "Someone";
   const group = entry.group?.name ?? "a group";
-  return entry.type === "MEMBER_JOINED" ? `${who} joined ${group}` : `${who} declined your invitation to ${group}`;
+  switch (entry.type) {
+    case "MEMBER_JOINED":
+      return `${who} joined ${group}`;
+    case "INVITATION_DECLINED":
+      return `${who} declined your invitation to ${group}`;
+    case "PAYMENT_CONFIRMED":
+      return `${who} confirmed your payment in ${group}`;
+    case "PAYMENT_REJECTED":
+      return `${who} rejected your payment in ${group}`;
+    case "DEBT_WAIVED":
+      return `${who} waived part of your debt in ${group}`;
+  }
 }
 
 /**
- * The bell in the header: open invitations (state, to accept or decline) first, then what happened (entries). The
- * badge counts both. One call to `/api/inbox` returns the two parts; either may be null when its source failed.
+ * One payment waiting for my answer (R12): confirm, or reject with a reason. The caller sends the answer and reloads
+ * the bell; `busy` disables the buttons meanwhile, so a double click sends one request.
+ */
+function PaymentRow({
+  payment,
+  busy,
+  onConfirm,
+  onReject,
+}: {
+  payment: SettlementPayment;
+  busy: boolean;
+  onConfirm: () => void;
+  onReject: (reason: string) => void;
+}) {
+  const [rejecting, setRejecting] = useState(false);
+  const [reason, setReason] = useState("");
+  return (
+    <li className="flex flex-col gap-1 border-l-4 border-green-600 pl-2">
+      <span>{`${payment.fromDebtorName} marked ${formatEuro(amountToCents(payment.amount))} as paid to you`}</span>
+      {payment.note && <span className="text-foreground/70">{payment.note}</span>}
+      <Link href={`/groups/${payment.groupId}`} className="underline">
+        Open group
+      </Link>
+      {!rejecting && (
+        <span className="flex gap-2">
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy}
+            aria-label={`Confirm payment from ${payment.fromDebtorName}`}
+            className="rounded bg-foreground px-2 py-1 text-background disabled:opacity-50"
+          >
+            Confirm
+          </button>
+          <button
+            type="button"
+            onClick={() => setRejecting(true)}
+            disabled={busy}
+            aria-label={`Reject payment from ${payment.fromDebtorName}`}
+            className="rounded border px-2 py-1 disabled:opacity-50"
+          >
+            Reject
+          </button>
+        </span>
+      )}
+      {rejecting && (
+        <form
+          className="flex flex-col gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (reason.trim()) onReject(reason.trim());
+          }}
+        >
+          <label className="flex flex-col gap-1">
+            Reason
+            <input className="rounded border px-2 py-1" value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />
+          </label>
+          <span className="flex gap-2">
+            <button
+              type="submit"
+              disabled={busy || !reason.trim()}
+              className="rounded bg-foreground px-2 py-1 text-background disabled:opacity-50"
+            >
+              Send rejection
+            </button>
+            <button type="button" disabled={busy} onClick={() => setRejecting(false)} className="rounded border px-2 py-1">
+              Cancel
+            </button>
+          </span>
+        </form>
+      )}
+    </li>
+  );
+}
+
+/**
+ * The bell in the header: what waits for my answer (state: open invitations to accept or decline, payments to confirm
+ * or reject) first, then what happened (entries). The badge counts open invitations, waiting payments and unread
+ * entries. One call to `/api/inbox` returns the three parts; each may be null when its source failed.
  */
 export function InboxBell() {
   const router = useRouter();
@@ -85,16 +180,32 @@ export function InboxBell() {
   const decline = (invitation: PendingInvitation) =>
     perform(() => api(`/invitations/${invitation.invitationId}/decline`, { method: "POST" }), invitation.invitationId);
 
+  const confirmPayment = (payment: SettlementPayment) =>
+    perform(() => api(`/settlement-payments/${payment.id}/confirm`, { method: "POST" }), payment.id);
+
+  const rejectPayment = (payment: SettlementPayment, note: string) =>
+    perform(
+      () =>
+        api(`/settlement-payments/${payment.id}/reject`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ note }),
+        }),
+      payment.id,
+    );
+
   const markRead = (entry: Notification) => perform(() => api(`/notifications/${entry.id}/read`, { method: "POST" }));
 
   const markAllRead = () => perform(() => api("/notifications/read-all", { method: "POST" }));
 
   const invitations = inbox?.invitations;
   const notifications = inbox?.notifications;
+  const payments = inbox?.payments;
   const openInvitations = invitations ?? [];
+  const waitingPayments = payments ?? [];
   const entries = notifications?.items ?? [];
-  const count = openInvitations.length + (notifications?.unreadCount ?? 0);
-  const empty = openInvitations.length === 0 && entries.length === 0;
+  const count = openInvitations.length + waitingPayments.length + (notifications?.unreadCount ?? 0);
+  const empty = openInvitations.length === 0 && waitingPayments.length === 0 && entries.length === 0;
 
   return (
     <div className="relative">
@@ -114,6 +225,7 @@ export function InboxBell() {
         <div role="region" aria-label="Inbox entries" className="absolute right-0 z-10 mt-2 w-80 max-w-[90vw] flex flex-col gap-2 rounded border bg-background p-3 text-sm text-foreground shadow">
           <ErrorBanner error={error} />
           {invitations === null && <p className="text-foreground/70">Invitations could not be loaded.</p>}
+          {payments === null && <p className="text-foreground/70">Payments could not be loaded.</p>}
           {notifications === null && <p className="text-foreground/70">Entries could not be loaded.</p>}
           <ul className="flex flex-col gap-2">
             {openInvitations.map((invitation) => (
@@ -141,6 +253,15 @@ export function InboxBell() {
                 </span>
               </li>
             ))}
+            {waitingPayments.map((payment) => (
+              <PaymentRow
+                key={payment.id}
+                payment={payment}
+                busy={busyId === payment.id}
+                onConfirm={() => void confirmPayment(payment)}
+                onReject={(note) => void rejectPayment(payment, note)}
+              />
+            ))}
             {entries.map((entry) => (
               <li key={entry.id}>
                 {entry.readAt ? (
@@ -153,7 +274,7 @@ export function InboxBell() {
               </li>
             ))}
           </ul>
-          {empty && invitations !== null && notifications !== null && <p className="text-foreground/70">Nothing new.</p>}
+          {empty && invitations !== null && payments !== null && notifications !== null && <p className="text-foreground/70">Nothing new.</p>}
           {notifications && notifications.unreadCount > 0 && (
             <button type="button" onClick={() => void markAllRead()} className="self-start underline">
               Mark all as read
