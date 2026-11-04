@@ -16,9 +16,19 @@ Concepts this practises (P2/P3): **state versus event** (a payment waiting for m
 | I2 | What happened becomes entries in `notification`: `PAYMENT_CONFIRMED` and `PAYMENT_REJECTED` (to the payer, actor = creditor), `DEBT_WAIVED` (to the debtor, actor = creditor). No entry for "payment recorded": that is the waiting row of I1. | follows I1 and notification design N7/N9 |
 | I3 | `notification` depends on `settlement::api` (module line in `package-info.java`, document 01 sections 1 and 3.6). It stays a leaf: nothing depends on it. | follows I1/I2 |
 | I4 | Removed from the frontend: `SettlementInbox`, `PendingBadge`, their polling, the Dashboard wrapper. The settle-up tab keeps the plan, "I paid" and "Waive". | follows I1 |
-| A1 | **Confirm refuses when the open debt is gone** (422 `PAYMENT_EXCEEDS_OPEN_DEBT`, payment stays PENDING, the creditor can reject). R17 is enforced at both moments the balance can move: when the payment is reported and when it is confirmed. | recommended by us, user asked for the case to be explained, default taken (call) |
-| A2 | `AllBalancesSettled` is only published when no payment of the group is PENDING. | decided |
-| A3 | The plan shows what can really be paid: an edge's `pendingAmount` is the part that cannot be paid now (reserved on the pair or used up by the person's other reservations), computed by the same `OpenDebtPolicy` the server uses on `record`. | decided |
+| A1 | **Confirm does not re-check the open debt.** R17 is enforced when a payment is reported and when a debt is waived, under the ledger lock. Confirm records a fact (the money arrived, R16). *Withdrawn: our first proposal (confirm refuses when the debt is gone) was wrong; see the design review below and `2026-11-04-money-flow.md` section 8.* | decided by the design review and our check of it |
+| A2 | **Dropped.** `AllBalancesSettled` keeps one meaning, "all balances are zero". Auto-archive (L5) must ask for pending payments by query when it runs. Parked with that trigger. | decided |
+| A3 | **Fixed with a new field.** `SettlementPlanEdge.payableAmount` is what the server would accept now, computed by the same `OpenDebtPolicy` as `record`; `pendingAmount` keeps its meaning (reserved on this pair). The "I paid" button shows only when `payableAmount` is above 0. | decided (option A) |
+| A4 | **Dead checks removed.** No operation sets a group ARCHIVED or a member FORMER_MEMBER yet, so the archive and former-member filters in `awaitingMyAnswer` go (one query, the N+1 with them) and confirm/reject get no `GROUP_NOT_OPEN` in the contract. Parked with the trigger "when `archiveGroup` or `leaveGroup` is built". The `isMember` check in `loadForAnswer` stays (it hides payment ids from outsiders). | decided |
+
+### Design review (independent read-only reviewer, Opus, 04.11.26)
+What it found, how we verified it, and what we did. Kept for P2 (limits and change drivers).
+- **A1 recorded a falsehood.** With a third person, refusing Alice's confirm makes her reject money she received, and the ledger never records Bob's transfer. Booking it gives the true picture (Alice owes Carol). The justification "no balance crosses zero at both moments" was wrong: the balance moves at booking, and expenses already cross zero unchecked. We re-derived it with a script (money-flow section 8) and withdrew A1. F9 and the self-reservation trap existed only because of A1.
+- **A2 put a state into an event** and left a hole (a rejected last payment never publishes). Dropped.
+- **Checks for states the app cannot produce** (verified by grep: only the enums mention ARCHIVED and FORMER_MEMBER). Removed (A4).
+- **One field, two meanings** (`pendingAmount`). Fixed with `payableAmount` (A3).
+- **Left as it is, on the reviewer's advice:** the reservation with the ledger lock, the "confirmed but not yet booked still reserved" clause (D5), `@Version`, the idempotent notification insert, `balanceStatusAt` (the migration exists; removing it costs more), the bitmask DP, the direction `notification → settlement::api`.
+- **Change driver for P3:** `MemberBalanceStatusChanged` orders by wall-clock instant; across services with a broker a per-ledger sequence number is more robust.
 
 ## 3. How the parts fit
 ```
@@ -35,24 +45,26 @@ Applies `docs/conventions/03` section 7 to the handover's lists.
 |---|---|---|
 | Booking skeleton three times | already one `book(...)` in `GroupLedgerService`; nothing to do | the handover was written before that extraction |
 | Balance mapping from `ledgers.totals` in three places (`OpenDebtPolicy`, `SettlementPlanService`, `BalancesImpl`) | **extract once** (rule of three holds) | one place for one rule |
-| N+1 in `awaitingMyAnswer` | **fix**: ask once per distinct group, not once per payment | a person has few groups; no new port method |
+| N+1 in `awaitingMyAnswer` and its archive and former-member filters | **remove the filters** (A4), one query | no operation produces those states yet |
 | `reserved` JPQL reads `LedgerEntry` of another aggregate | **document** as the deliberate exception (D5) | splitting the query costs more than the exception |
-| `pendingAmount` wording | **fix in the contract**, together with A3 | it counts reserved payments, not only PENDING |
+| `pendingAmount` vs what the user can do | **new field `payableAmount`** (A3); `pendingAmount` keeps "reserved on this pair" | one field, one meaning |
 | `updateBalanceStatus` returns void | **change the rule text** (backend-domain rule, document 01 section 3.1): an operation that reacts to an event and produces none returns nothing | the diagram's operation has no event to return |
 | `GET /me/settlement-payments` answers 400 for allowed values | **narrow the contract**: no `role`, no `status`; it answers the caller's payments waiting for their answer | nobody needs the other filters |
 | `reject` overwrites the debtor's note | **park** | a lost remark; needs a new column and a contract field |
 | `PaymentForm` lets 0 or negative through | **drop** | the server answers `AMOUNT_NOT_POSITIVE` and the banner shows it |
 | Out-of-order guard with the wall clock (`balance_status_at`) | **keep, named in the report** | see section 6 |
 | A6 emoji length, "greedy above 16 people says nothing", former members, HTTP-level concurrency, listener failing halfway | **park** | cannot happen with the data a student group produces, or no operation exists yet |
-| A7 (422 `GROUP_NOT_OPEN` on confirm/reject), A9 (Amount pattern accepts `010.00`) | **fix in the same contract commit** | cheap, the contract must match the code |
+| A7 (422 `GROUP_NOT_OPEN` on confirm/reject) | **drop**, parked with the trigger of A4 | no archive operation yet |
+| A9 (Amount pattern accepts `010.00`) | **fix in the contract commit** | cheap, the contract must match the code |
 | UI nits: `role="status"` on the badge, duplicate fetch, inbox retry, waive note lost on re-click | **gone with I4** or dropped | the components they live in are removed |
 
 ## 5. Contract changes (own commit, `/contract-change`)
-1. `POST /settlement-payments/{id}/confirm`: add 422 `PAYMENT_EXCEEDS_OPEN_DEBT` (A1) and 422 `GROUP_NOT_OPEN` (A7); the same `GROUP_NOT_OPEN` on reject.
-2. `GET /me/settlement-payments`: remove `role` and `status`; summary and description say "waiting for my answer".
-3. `SettlementPlanEdge.pendingAmount`: new description (A3). Fix the example order.
-4. `Amount` pattern without leading zeros (A9).
-5. `NotificationType` gains `PAYMENT_CONFIRMED`, `PAYMENT_REJECTED`, `DEBT_WAIVED`; the inbox example grows one entry.
+1. `GET /me/settlement-payments`: remove `role` and `status`; summary and description say "waiting for my answer".
+2. `SettlementPlanEdge`: new field `payableAmount` (A3), `pendingAmount` description made exact ("reserved on this pair, including confirmed payments not yet booked"). Fix the example order.
+3. `Amount` pattern without leading zeros (A9).
+4. `NotificationType` gains `PAYMENT_CONFIRMED`, `PAYMENT_REJECTED`, `DEBT_WAIVED`; the inbox example grows one entry.
+
+No new error code and no new status code on confirm/reject (A1 withdrawn, A4).
 
 ## 6. Mechanisms kept on purpose, with their cost (for the user to overrule)
 - **Exact minimum plan up to 16 people (bitmask DP, R15).** About 160 lines against a greedy plan of 30. Harm it prevents: one transfer more than needed in a group of friends. Our choice, not from the slides. Kept: it is the core domain algorithm and the strongest part of the defence. Cost if wrong: a bigger class to explain.
@@ -60,19 +72,18 @@ Applies `docs/conventions/03` section 7 to the handover's lists.
 - **`@Version` on the payment plus the ledger row lock (D6).** The lock serialises record and waive (the reservation rule needs it); `@Version` serialises two answers to one payment. Each guards a different pair, neither is redundant.
 
 ## 7. Failure modes
-`/edge-case-probe` plan mode, 04.11.26, proportionate: only what the real app can produce. Ranked by impact × likelihood.
+`/edge-case-probe` plan mode, 04.11.26, proportionate: only what the real app can produce; revised after the design review. Ranked by impact × likelihood.
 
 | # | Who hits it, how often | What happens | Verdict |
 |---|---|---|---|
-| F1 | A creditor confirms a payment whose debt was cleared by a later expense (A1). Rare, but it is money. | Without a rule: the creditor goes below zero. | **Handled by design (A1)**: the aggregate re-checks the open debt in `confirm`. **Test:** service/domain test that confirm is refused, the payment stays PENDING and nothing is booked. |
-| F2 | The creditor of a pending payment answers while the debt is reduced by a *waiver* the same person made. Rare. | Same shape as F1, same rule. | **Handled by F1.** No second test. |
+| F1 | A creditor confirms a payment after a later expense changed the pair (the old A1). Rare. | Confirm books the fact; the next plan shows the true picture (money-flow section 8). | **Handled by design (A1 withdrawn).** **Test:** one service test that confirm after a later expense books the payment and nobody is refused. |
+| F2 | A reported payment is idle until the creditor answers. Common. | The reservation stays; the debtor cannot report the same debt again. | **Accepted**: no timeout (parked, trigger: users complain). |
 | F3 | A payer is told "confirmed/rejected/waived" twice because the event is redelivered. Happens after a crash, rarely. | A second inbox row. | **Handled by design**: `UNIQUE (recipient, type, reference, occurredAt)` with `insertIfAbsent`, the same for all types. **Test:** one listener test that delivers the same event twice and finds one row. |
 | F4 | A person opens the bell the moment after the creditor answered. Always, for about a second. | The waiting row is gone at once (query), the payer's entry arrives moments later (eventual consistency). | **Handled by design**; the bell polls. No code. |
 | F5 | Confirm and reject of one payment at the same moment (two tabs of one creditor). Rare. | One answer wins. | **Handled by design**: `@Version` makes the second answer fail with a conflict the UI treats as "already done". Existing test. |
-| F6 | Someone confirms in a group that was archived meanwhile. Rare. | `GROUP_NOT_OPEN` 422. | **Handled**; the contract lists it now (A7). |
-| F7 | A payer whose account is inactive or who left the group gets an entry. Rare. | The entry names "Someone" / "a group" when a name cannot be resolved. | **Handled by design** (null-safe lookup already in `NotificationService.list`). |
-| F8 | The plan page computes the payable amount per edge (A3). Every plan view. | Computing the open debt per edge would rebuild the plan once per edge (up to 16 people, bitmask DP). | **Design rule:** `OpenDebtPolicy` gets one method that returns the payable amount of all edges from one read of the totals. **Test:** the plan test from the handover (Bob 50 pending to Alice, Carol pays 50 for Alice, edge Bob→Carol shows pending 50). |
-| F9 | A2 plus A1 together: a payment stays PENDING although everyone is at zero (F1 case); the creditor rejects it later. Rare. | `AllBalancesSettled` is published only at a booking, and a reject books nothing, so it is never published for this group. | **Parked with a trigger (L5).** The event has no consumer yet. When auto-archive is built it must decide how it learns "zero and nothing pending" (publish after a reject too, or check by a query when it runs). Costs nothing now. **Needs the user's nod** (it softens A2 as decided). |
-| F10 | `notification` depends on `settlement::api`: a cycle if settlement ever listens to a notification event. Never today. | `ModularityTests` refuses it. | **Handled by the existing architecture test** (`nothingDependsOnTheNotificationModule` stays). |
+| F6 | A payer whose account is inactive or who left the group gets an entry. Rare. | The entry names "Someone" / "a group" when a name cannot be resolved. | **Handled by design** (null-safe lookup already in `NotificationService.list`). |
+| F7 | The plan shows an edge the debtor cannot pay (A3). After any reshuffle while a payment is pending. | The button used to fail with 422. | **Fixed by `payableAmount`.** **Test:** the handover case (Bob 50.00 PENDING to Alice, Carol pays 50.00 for Alice, edge Bob to Carol has `payableAmount` 0.00). |
+| F8 | The plan computes the payable amount for every edge. Every plan view. | Rebuilding the plan once per edge would be wasteful. | **Design rule:** one method on `OpenDebtPolicy` that returns the payable amount of all edges from one read of the balances; it is also the single place that maps `ledgers.totals`. |
+| F9 | `notification` depends on `settlement::api`: a cycle if settlement ever listens to a notification event. Never today. | `ModularityTests` refuses it. | **Handled by the existing architecture test** (`nothingDependsOnTheNotificationModule` stays). |
 
-Not listed: a listener failing halfway (parked in the first settlements design, F4 there), former members (no leave operation yet), HTTP-level concurrency of the bell (read only).
+Parked with a trigger: **L5 must ask for pending payments by query when it archives** (A2 dropped). Not listed: a listener failing halfway (parked in the first settlements design), former members and archived groups (no operation yet, A4), HTTP-level concurrency of the bell (read only).
