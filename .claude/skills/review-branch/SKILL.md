@@ -13,6 +13,6 @@ Two reviews, two questions: **does it follow our rules** (a fresh subagent with 
 3. **Dispatch in parallel:**
    - a fresh `general-purpose` subagent on `sonnet` with `reviewer-prompt.md` (this folder), brief filled in: branch, base, the changed files;
    - `/code-review` on the same diff when the branch changes behaviour (backend `main` or frontend `src`), not for docs or tests only.
-4. **Triage in the main session:** open every cited file:line and confirm it; drop findings the code contradicts. Merge duplicates. Sort into must (blocks the merge), should, nit.
+4. **Triage in the main session:** open every cited file:line and confirm it; drop findings the code contradicts. Merge duplicates. Apply the same **proportion** as `/edge-case-probe`: a finding that cannot happen through the real app, or whose fix is a new mechanism for a small harm, is accepted or noted, not fixed; a duplication finding needs both places and a smaller way. Sort into must (blocks the merge), should, nit.
 5. **Present:** a short overview first (what the branch does, how the parts fit), then the findings table, then a recommendation (merge / fix first). The user decides which to fix.
-6. After the fixes: `git switch main && git merge --no-ff <branch> -m "merge: <branch> (<one line>)"` only when the user says so.
+6. After the fixes: run `/review-doc` so the user has the jump-start guide for their own review, then `git switch main && git merge --no-ff <branch> -m "merge: <branch> (<one line>)"` only when the user says so.

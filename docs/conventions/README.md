@@ -23,7 +23,7 @@ These rules exist because the parallel build produced four slightly different co
 | ESLint + `tsc` | `npm run lint`, `npm run typecheck` | frontend rules of document 04 are broken |
 | Theme rules (dark mode) | `frontend/src/lib/themeRules.test.ts` (in `npm test`) | a component or page uses a fixed black, white or grey, a fixed background without its own text colour, or a coloured text without its `dark:` counterpart (document 04, section 5) |
 | Contract lint | `npx @redocly/cli lint docs/api/openapi.yaml` | the contract is invalid |
-| Commit gate | `.githooks/pre-commit` | a secret or key is staged, the contract is mixed with code, the lock file lost platforms, or the staged part fails format/lint/typecheck |
+| Commit gate | `.githooks/pre-commit` | a secret or key is staged, the contract is mixed with code, the lock file lost platforms, an existing file flips its line endings (CRLF <-> LF), or the staged part fails format/lint/typecheck |
 | Push gate | `.githooks/pre-push` | any check above fails (full backend `verify`, Docker required) |
 | Guard hook (Claude only) | `.claude/hooks/guard.mjs` | Claude edits a secrets file, `schema.d.ts`, a migration on `main`, or uses `--no-verify` |
 
@@ -40,6 +40,7 @@ npx @redocly/cli lint docs/api/openapi.yaml
 - [ ] Contract changed first (if the HTTP interface changed), types regenerated (`npm run gen:api`).
 - [ ] New behaviour has a test at the right level (document 02); a rejected call is tested to leave nothing behind.
 - [ ] Public types and operations have the Javadoc described in document 03.
+- [ ] No duplicated logic and nothing built for a case that cannot happen (document 03, section 7).
 - [ ] All checks above are green.
 - [ ] `RUNNING.md` and the diagram are updated if setup or the model changed.
 - [ ] One concern per commit, message in the format of document 03.

@@ -25,7 +25,7 @@ Optional, personal, not committed: `.claude/settings.local.json`, e.g.
 | Guard hook | `.claude/hooks/guard.mjs` | before every Write/Edit/Bash by Claude | blocks secrets files, `schema.d.ts`, migrations already on `main`, API keys, `--no-verify` |
 | Sound hook | `.claude/hooks/sound.mjs` + `.claude/sounds/` | when Claude stops or needs attention | on by default; off with `SHAREWISE_SOUNDS=0` |
 | Git gates | `.githooks/pre-commit`, `pre-push` → `gate.mjs` | every commit / push, people and Claude | see the header of `gate.mjs` |
-| Skills (repo) | `.claude/skills/*` | on demand (`/name`) | `edge-case-probe`, `design-review`, `review-branch`, `contract-change`, `retro`*, `hand-in`* |
+| Skills (repo) | `.claude/skills/*` | on demand (`/name`) | `edge-case-probe`, `design-review`, `review-branch`, `review-doc`, `contract-change`, `retro`*, `hand-in`* |
 | Skills (backend) | `backend/.claude/skills/*` | on demand (`/backend:name`) | `domain-operation` |
 | Subagent prompts | `<skill>/*-prompt.md` | the skill dispatches a fresh `general-purpose` subagent with it | `edge-case-probe/attacker-prompt.md` (Opus, writes only gitignored probes), `design-review/reviewer-prompt.md` (Opus, read-only), `review-branch/reviewer-prompt.md` (Sonnet, read-only) |
 | Permissions | `.claude/settings.json` | always | routine commands allowed without a prompt; force push denied |
@@ -37,5 +37,5 @@ Use the table in `.claude/skills/retro/SKILL.md` (step 2). In short: a rule for 
 
 ## Testing the setup
 ```sh
-node --test .claude/hooks/guard.test.mjs   # the guard hook (also run by the gates when hooks change)
+node --test .claude/hooks/guard.test.mjs .githooks/line-endings.test.mjs   # the guard hook and the line-ending check of the gate (also run by the gates when hooks change)
 ```

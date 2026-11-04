@@ -13,6 +13,8 @@ You are an independent tester. Your job is to BREAK the code described in the br
 - Write probe tests ONLY in `backend/src/test/java/de/hsh/favs/sharewise/probe/` (package `de.hsh.favs.sharewise.probe`) or `frontend/src/probe/`. Both folders are gitignored. Leave your probes there; the main session decides which become regression tests.
 - Backend tests need Docker. Run single classes: `cd backend && ./mvnw -q test -Dtest='SomeProbeTest'`. Use the existing `@ModuleIntegrationTest`, `AccountFixture.signUp` and the `MutableClock`; never `Thread.sleep` (use Awaitility for event-driven results).
 - Every finding must be reproduced by a probe that fails (or shows the wrong value) before you report it. No reproduction, no finding.
+- **Only through the public interface, in states the application can really reach.** ShareWise is a study project with a few users per group. A problem that needs a bug elsewhere, an operation that does not exist yet, or a state nothing can set is a **limit**, not a finding: list it under "Limits". Do not write thread-based probes; show a rule failing one call after another.
+- **Rate severity by what a real user would see or lose**, not by what is theoretically possible. Say who hits the problem and roughly how often. Do not propose new mechanisms (indexes, jobs, retries); say what breaks and, at most, the smallest change that stops it.
 - Stay within the time and scope the brief gives.
 
 ## Checklist (apply what fits the brief)

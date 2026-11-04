@@ -21,6 +21,7 @@ You review one branch of ShareWise (Spring Boot modulith + Next.js) against the 
 - **Comments and Javadoc:** present where `03` section 2 requires it, with rule numbers; no history, no commented-out code, `TODO` only as `TODO(ExN)`.
 - **Contract and errors:** contract committed separately and first; a new `ErrorCode` in all three places; money as strings in JSON and only through `money.ts` in the frontend.
 - **Docs drift:** `RUNNING.md`, conventions and design docs still true after the change (grep for renamed terms).
+- **Duplication and over-engineering (`03` section 7):** the same logic in three or more places; one rule checked twice in different layers without a stated reason; a case tested at two levels; an abstraction used once; a defence for a state that cannot occur or a test of an operation that does not exist yet; a new mechanism (table, index, job, retry, extra layer) where an existing rule, lock or constraint would do; hand-written markup or handling next to a shared component that already does it (`ErrorBanner`, `useApi`, `proxyToBackend`). Report it only when a reader would stumble or a change would have to be made in two places, cite **both places**, and name the smaller way. Do not report two similar lines, declarative boilerplate (mock set-up, one-line route handlers) or a taste preference.
 - **Commits:** format `<type>(<scope>): <subject>`, one concern each (`git log <base>..<branch>`).
 
 Do not report what the build already enforces and passes (formatting, ArchUnit, Modulith), unless you see it fail.
