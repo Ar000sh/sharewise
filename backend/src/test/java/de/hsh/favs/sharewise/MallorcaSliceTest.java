@@ -28,9 +28,9 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * The Mallorca slice with every real bean and no stubs: sign up, create a group, invite,
  * accept, record equal-split expenses, read balances, then settle up with a confirmed
- * payment, a rejected one and a waiver. Balances arrive through the
- * {@code ExpenseRecorded}, {@code SettlementPaymentConfirmed} and {@code DebtWaived}
- * events, so they are awaited.
+ * payment, a rejected one and a waiver, and a confirm after a later expense moved the
+ * debts. Balances arrive through the {@code ExpenseRecorded},
+ * {@code SettlementPaymentConfirmed} and {@code DebtWaived} events, so they are awaited.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -123,6 +123,35 @@ class MallorcaSliceTest {
 		recordPayment(group, david, alice, "270.00");
 		assertThat(balances(group, alice))
 			.containsExactlyInAnyOrderEntriesOf(Map.of(alice, 63000L, bob, -9000L, carol, -27000L, david, -27000L));
+	}
+
+	@Test
+	void aConfirmAfterALaterExpenseBooksTheFactAndNobodyIsRefused() throws Exception {
+		// given (money flow, sections 8 and 9) Alice pays 100.00 for Alice and Bob
+		UUID group = groupWith(alice, bob, carol);
+		recordExpense(group, alice, "Hotel", 10000, alice, List.of(alice, bob)).andExpect(status().isCreated());
+		await().atMost(Duration.ofSeconds(10))
+			.untilAsserted(() -> assertThat(balances(group, alice))
+				.containsExactlyInAnyOrderEntriesOf(Map.of(alice, 5000L, bob, -5000L, carol, 0L)));
+
+		// and Bob reports 50.00 to Alice, which is PENDING and moves no balance (R16)
+		UUID payment = recordPayment(group, bob, alice, "50.00");
+
+		// and Carol then pays 50.00 that only Alice owes
+		recordExpense(group, carol, "Taxi", 5000, carol, List.of(alice)).andExpect(status().isCreated());
+		await().atMost(Duration.ofSeconds(10))
+			.untilAsserted(() -> assertThat(balances(group, alice))
+				.containsExactlyInAnyOrderEntriesOf(Map.of(alice, 0L, bob, -5000L, carol, 5000L)));
+
+		// when Alice confirms that Bob's money arrived
+		mvc.perform(post("/settlement-payments/" + payment + "/confirm").header("Authorization", auth(alice)))
+			.andExpect(status().isOk());
+
+		// then the fact is booked: Alice now owes Carol, Bob is settled, the sum is zero
+		await().atMost(Duration.ofSeconds(10))
+			.untilAsserted(() -> assertThat(balances(group, alice))
+				.containsExactlyInAnyOrderEntriesOf(Map.of(alice, -5000L, bob, 0L, carol, 5000L)));
+		assertThat(balances(group, alice).values().stream().mapToLong(Long::longValue).sum()).isZero();
 	}
 
 	@Test
