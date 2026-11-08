@@ -1,5 +1,24 @@
-# Local development database and identity provider. Start with: docker compose up -d db keycloak
+# Local database and identity provider, plus an optional backend (--profile app). See RUNNING.md for port overrides.
 services:
+  # Optional Java 21 backend for machines without a local JDK. Enable with --profile app.
+  backend:
+    profiles: [app]
+    build: ./backend
+    ports:
+      - "127.0.0.1:${SHAREWISE_BACKEND_PORT:-8080}:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/sharewise
+      SPRING_DATASOURCE_USERNAME: sharewise
+      SPRING_DATASOURCE_PASSWORD: sharewise
+      # Validate the browser-visible issuer; fetch signing keys over the internal Docker network.
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8180/realms/sharewise
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/sharewise/protocol/openid-connect/certs
+    depends_on:
+      db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+
   # Identity provider. Start with: docker compose up -d keycloak
   # Admin console http://localhost:8180 (admin/admin is for local development ONLY).
   keycloak:
@@ -11,7 +30,7 @@ services:
       KC_HOSTNAME: http://localhost:8180
       KC_HEALTH_ENABLED: "true"
     ports:
-      - "8180:8080"
+      - "127.0.0.1:8180:8080"
     volumes:
       # Users and realm settings (start-dev keeps its H2 database in data/h2). The whole data directory
       # is the volume, because a volume on data/h2 alone is root-owned and Keycloak cannot write to it.
@@ -27,9 +46,14 @@ services:
       POSTGRES_USER: sharewise
       POSTGRES_PASSWORD: sharewise
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${SHAREWISE_DB_PORT:-5432}:5432"
     volumes:
       - sharewise-db:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U sharewise -d sharewise"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
 volumes:
   sharewise-db:

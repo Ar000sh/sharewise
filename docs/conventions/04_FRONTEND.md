@@ -32,6 +32,9 @@ Amounts in the API are decimal strings (`"900.00"`). All parsing, formatting and
 
 - Every failed call ends in `ApiError`. Display text comes from `messageFor(error)` (`lib/errors.ts`), which maps each contract `code` (plus `BACKEND_UNREACHABLE`, `NETWORK_ERROR`) to a sentence and falls back to the server `detail`. Adding a contract `ErrorCode` means adding its message there.
 - A page never renders blank on failure: errors show the `ErrorBanner`. Loading shows "Loading…".
+- An HTTP error with a non-JSON body still becomes `ApiError` with its HTTP status; do not display a raw HTML error
+  page. An unreadable success response is an unconfirmed action: explain that the user should refresh to check the
+  result. A failed identity load shows a retry action instead of protected content without a known account.
 - A `401` anywhere sends the visitor to `/login?next=<path>`; `next` and `returnTo` are only ever used through `safeReturnTo` (`lib/session.ts`).
 - Balances are eventually consistent: after recording an expense the balances view re-fetches and re-checks for a short, bounded time. Never assume the new balance is there immediately.
 
@@ -41,6 +44,10 @@ Amounts in the API are decimal strings (`"900.00"`). All parsing, formatting and
 - State: local `useState`; server data through `useApi`. No global state library.
 - Forms are controlled, labelled (`<label>` text is what Playwright and screen readers use), validate on submit, and disable the submit button while busy.
 - Styling with Tailwind utility classes; a layout must work at phone width.
+- Shared visual primitives live in `globals.css`: `panel`, `button-primary`, `button-secondary`, `field`, and `field-label`.
+  Use semantic tokens (`surface`, `accent`, `accent-foreground`, `soft`, `muted`, `line`) for neutral surfaces, controls
+  and hierarchy. They follow the light/dark setting alongside `background` and `foreground`. Use the Geist font already
+  loaded by the layout, with consistent spacing and alignment. Reserve status colours for meaning.
 - **Colours and dark mode.** The page follows the browser's light or dark setting (`globals.css`: `--background` and `--foreground` switch in `prefers-color-scheme: dark`, and `color-scheme: light dark` lets form controls follow). Everything inside inherits the *foreground* colour, which is light in dark mode. So:
   - Use the theme tokens, never fixed black, white or grey: surfaces `bg-background` with `text-foreground`, strong buttons `bg-foreground text-background`, quiet text `text-foreground/70` (60 to 80), subtle fills `bg-foreground/10`, active underline `border-foreground`. Borders default to the text colour.
   - A fixed-palette background (`bg-red-600`, `bg-red-50`) always brings its own text colour in the same class string. A background without a text colour inherits the page's, which is unreadable on a light fill in dark mode (the inbox dropdown had `bg-white` and showed pale text on white).

@@ -20,8 +20,18 @@ describe("/api/auth/callback route", () => {
     const res = await GET(callback("code=abc&state=forged"));
 
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("http://localhost:3000/login");
+    expect(res.headers.get("location")).toBe("http://localhost:3000/login?reason=expired&next=%2Fgroups");
     expect(res.headers.getSetCookie().some((c) => c.startsWith("sw_session=") && !c.includes("Max-Age=0"))).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("aCancelledSignInExplainsTheOutcomeAndKeepsTheDestinationForRetry", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+
+    const res = await GET(callback("error=access_denied&state=s-1"));
+
+    expect(res.headers.get("location")).toBe("http://localhost:3000/login?reason=cancelled&next=%2Fgroups");
+    expect(res.headers.getSetCookie()).toEqual([expect.stringContaining("sw_login=; Path=/api/auth; HttpOnly; SameSite=Lax; Max-Age=0")]);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

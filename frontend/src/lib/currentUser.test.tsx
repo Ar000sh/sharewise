@@ -64,4 +64,16 @@ describe("CurrentUserProvider", () => {
 
     expect(apiMock).not.toHaveBeenCalled();
   });
+
+  it("explainsAFailedIdentityRequestInsteadOfShowingProtectedContentWithoutAnAccount", async () => {
+    stubLocation("/groups/new");
+    apiMock.mockRejectedValue(new ApiError(502, "BACKEND_UNREACHABLE"));
+
+    render(<CurrentUserProvider><button>Create group</button></CurrentUserProvider>);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/server is not reachable/i);
+    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Create group" })).not.toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalled();
+  });
 });

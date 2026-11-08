@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { Icon } from "@/components/Icon";
 import { ApiError, api } from "@/lib/api";
 
 type PendingInvitation = components["schemas"]["PendingInvitation"];
@@ -33,6 +34,26 @@ export function InboxBell() {
   const [busyId, setBusyId] = useState<string>();
   const [error, setError] = useState<unknown>();
   const stopped = useRef(false);
+  const container = useRef<HTMLDivElement>(null);
+  const toggle = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const dismissOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !container.current?.contains(event.target)) setOpen(false);
+    };
+    const dismissOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      toggle.current?.focus();
+    };
+    document.addEventListener("pointerdown", dismissOutside);
+    document.addEventListener("keydown", dismissOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", dismissOutside);
+      document.removeEventListener("keydown", dismissOnEscape);
+    };
+  }, [open]);
 
   const load = useCallback(async () => {
     if (stopped.current) return;
@@ -97,27 +118,30 @@ export function InboxBell() {
   const empty = openInvitations.length === 0 && entries.length === 0;
 
   return (
-    <div className="relative">
+    <div ref={container} className="relative">
       <button
+        ref={toggle}
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-label={count > 0 ? `Inbox, ${count} new` : "Inbox"}
         aria-expanded={open}
-        className="relative rounded border px-2 py-1"
+        aria-controls="inbox-entries"
+        className="button-secondary relative size-11 p-2"
       >
-        <span aria-hidden="true">&#128276;</span>
+        <Icon name="bell" />
         {count > 0 && (
-          <span className="ml-1 rounded-full bg-red-600 px-1.5 text-xs text-white">{count}</span>
+          <span className="absolute -top-1 -right-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] text-accent-foreground">{count}</span>
         )}
       </button>
       {open && (
-        <div role="region" aria-label="Inbox entries" className="absolute right-0 z-10 mt-2 w-80 max-w-[90vw] flex flex-col gap-2 rounded border bg-background p-3 text-sm text-foreground shadow">
+        <div id="inbox-entries" role="region" aria-label="Inbox entries" className="panel fixed inset-x-4 top-36 z-30 flex max-h-[70vh] flex-col gap-4 overflow-y-auto p-5 text-sm shadow-xl sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-3 sm:w-96 sm:max-w-[90vw]">
+          <div className="flex items-center justify-between"><h2 className="font-semibold">Your inbox</h2><button type="button" aria-label="Close inbox" onClick={() => { setOpen(false); toggle.current?.focus(); }} className="rounded-lg p-2 text-muted hover:bg-soft"><Icon name="close" /></button></div>
           <ErrorBanner error={error} />
           {invitations === null && <p className="text-foreground/70">Invitations could not be loaded.</p>}
           {notifications === null && <p className="text-foreground/70">Entries could not be loaded.</p>}
           <ul className="flex flex-col gap-2">
             {openInvitations.map((invitation) => (
-              <li key={invitation.invitationId} className="flex flex-col gap-1 border-l-4 border-blue-500 pl-2">
+              <li key={invitation.invitationId} className="flex flex-col gap-3 rounded-xl bg-soft p-4 text-foreground">
                 <span>{`${invitation.invitedBy.displayName} invited you to ${invitation.group.name}`}</span>
                 <span className="flex gap-2">
                   <button
@@ -125,7 +149,7 @@ export function InboxBell() {
                     onClick={() => void accept(invitation)}
                     disabled={busyId === invitation.invitationId}
                     aria-label={`Accept invitation to ${invitation.group.name}`}
-                    className="rounded bg-foreground px-2 py-1 text-background disabled:opacity-50"
+                    className="button-primary min-h-9 px-3 py-2 text-xs"
                   >
                     Accept
                   </button>
@@ -134,7 +158,7 @@ export function InboxBell() {
                     onClick={() => void decline(invitation)}
                     disabled={busyId === invitation.invitationId}
                     aria-label={`Decline invitation to ${invitation.group.name}`}
-                    className="rounded border px-2 py-1 disabled:opacity-50"
+                    className="button-secondary min-h-9 px-3 py-2 text-xs"
                   >
                     Decline
                   </button>
@@ -142,7 +166,7 @@ export function InboxBell() {
               </li>
             ))}
             {entries.map((entry) => (
-              <li key={entry.id}>
+              <li key={entry.id} className="border-t border-line py-3 leading-relaxed">
                 {entry.readAt ? (
                   <span className="text-foreground/60">{describe(entry)}</span>
                 ) : (

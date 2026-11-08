@@ -166,7 +166,7 @@ describe("InboxBell", () => {
 
     expect(apiMock).toHaveBeenCalledWith("/notifications/read-all", { method: "POST" });
     await waitFor(() => expect(screen.queryByRole("button", { name: /mark all as read/i })).not.toBeInTheDocument());
-    expect(screen.getByRole("button", { name: /inbox/i })).toHaveTextContent("1");
+    expect(screen.getByRole("button", { name: /^inbox/i })).toHaveTextContent("1");
   });
 
   it("showsWhatLoadedWhenTheInvitationsCouldNotBeLoaded", async () => {

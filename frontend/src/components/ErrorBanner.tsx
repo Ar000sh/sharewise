@@ -4,7 +4,7 @@ import { messageFor } from "@/lib/errors";
 export function ErrorBanner({ error }: { error: unknown }) {
   if (!error) return null;
   return (
-    <p role="alert" className="rounded border border-red-300 bg-red-50 px-3 py-2 text-red-800">
+    <p role="alert" className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-800">
       {messageFor(error)}
     </p>
   );

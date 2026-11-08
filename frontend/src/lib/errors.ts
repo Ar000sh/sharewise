@@ -18,6 +18,7 @@ const MESSAGES: Record<string, string> = {
   SPLIT_NOT_SUPPORTED: "Only equal splits are supported for now.",
   BACKEND_UNREACHABLE: "The server is not reachable right now. Please try again later.",
   NETWORK_ERROR: "Could not reach the server. Check your connection and try again.",
+  INVALID_RESPONSE: "The server returned an unexpected response. Refresh the page to check whether your action completed.",
 };
 
 /**
@@ -27,5 +28,11 @@ const MESSAGES: Record<string, string> = {
 export function messageFor(error: unknown): string {
   if (typeof error === "string") return error;
   if (!(error instanceof ApiError)) return "Something went wrong.";
-  return MESSAGES[error.code] ?? error.detail ?? "Something went wrong.";
+  const message = MESSAGES[error.code] ?? error.detail;
+  if (message) return message;
+  if (error.status === 401) return MESSAGES.UNAUTHENTICATED;
+  if (error.status === 403) return "This request could not be verified. Refresh the page and try again.";
+  if (error.status === 404) return "The requested service could not be found. Please check that the ShareWise backend is running at the configured address.";
+  if (error.status >= 500) return "The server could not complete this request. Please try again in a moment.";
+  return "The request could not be completed. Please check your entries and try again.";
 }

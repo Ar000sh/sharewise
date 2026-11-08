@@ -70,4 +70,21 @@ describe("GroupDetail", () => {
     // then
     expect(await screen.findByRole("status")).toHaveTextContent(/expense saved.*balances/i);
   });
+
+  it("letsKeyboardUsersMoveBetweenGroupTabsAndTheirPanels", async () => {
+    serve({ userId: "u2", displayName: "Bob" });
+    renderPage();
+    const expenses = await screen.findByRole("tab", { name: "Expenses" });
+
+    expenses.focus();
+    await userEvent.keyboard("{ArrowRight}");
+    const balances = screen.getByRole("tab", { name: "Balances" });
+    expect(balances).toHaveFocus();
+    expect(balances).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tabpanel", { name: "Balances" })).toBeInTheDocument();
+
+    await userEvent.keyboard("{End}");
+    expect(screen.getByRole("tab", { name: "Members" })).toHaveFocus();
+    expect(screen.getByRole("tabpanel", { name: "Members" })).toBeInTheDocument();
+  });
 });
