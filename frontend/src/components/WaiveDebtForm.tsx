@@ -14,23 +14,23 @@ export function payableCents(edge: PlanEdge): number {
 }
 
 /**
- * The creditor forgives (part of) a debt. `debtors` are the plan entries toward the current user; the amount starts at
+ * The creditor forgives (part of) a debt. `waivableEdges` are the plan entries toward the current user; the amount starts at
  * what can be waived now. A waiver needs a reason and takes effect at once, so there is no confirmation step.
  */
 export function WaiveDebtForm({
   groupId,
-  debtors,
+  waivableEdges,
   prefill,
   onWaived,
 }: {
   groupId: string;
-  debtors: PlanEdge[];
+  waivableEdges: PlanEdge[];
   prefill?: { fromDebtor: string };
   onWaived?: () => void;
 }) {
-  // The choice and the typed amount are only what the user did; what is shown is derived from the current `debtors`,
+  // The choice and the typed amount are only what the user did; what is shown is derived from the current `waivableEdges`,
   // so a plan that reloads (a debtor gone, a smaller open amount) never leaves the form on stale values.
-  const [chosen, setChosen] = useState(prefill?.fromDebtor);
+  const [chosenDebtorId, setChosenDebtorId] = useState(prefill?.fromDebtor);
   const [typedAmount, setTypedAmount] = useState<string>();
   const [note, setNote] = useState("");
   const [error, setError] = useState<string>();
@@ -38,12 +38,12 @@ export function WaiveDebtForm({
   // State updates are not visible to a second submit in the same tick; the ref is.
   const sending = useRef(false);
 
-  const selected = debtors.find((d) => d.fromDebtor === chosen) ?? debtors[0];
-  const fromDebtor = selected?.fromDebtor ?? "";
-  const amount = typedAmount ?? (selected ? centsToAmount(payableCents(selected)) : "");
+  const selectedEdge = waivableEdges.find((edge) => edge.fromDebtor === chosenDebtorId) ?? waivableEdges[0];
+  const fromDebtor = selectedEdge?.fromDebtor ?? "";
+  const amount = typedAmount ?? (selectedEdge ? centsToAmount(payableCents(selectedEdge)) : "");
 
-  function pick(id: string) {
-    setChosen(id);
+  function chooseDebtor(id: string) {
+    setChosenDebtorId(id);
     setTypedAmount(undefined);
   }
 
@@ -51,9 +51,10 @@ export function WaiveDebtForm({
     e.preventDefault();
     if (sending.current) return;
     const cents = eurosToCents(amount);
-    if (!selected) return setError("Please choose who owes you.");
+    if (!selectedEdge) return setError("Please choose who owes you.");
     if (cents === null || cents <= 0) return setError("Please enter a valid amount, e.g. 19,99.");
-    if (cents > payableCents(selected)) return setError(`You can waive up to ${formatEuro(payableCents(selected))} here.`);
+    if (cents > payableCents(selectedEdge))
+      return setError(`You can waive up to ${formatEuro(payableCents(selectedEdge))} here.`);
     if (!note.trim()) return setError("Please give a reason for waiving.");
     sending.current = true;
     setBusy(true);
@@ -84,10 +85,10 @@ export function WaiveDebtForm({
     <form onSubmit={submit} className="flex flex-col gap-2 rounded border p-3">
       <label className="flex flex-col gap-1">
         Debtor
-        <select className="rounded border px-2 py-2" value={fromDebtor} onChange={(e) => pick(e.target.value)}>
-          {debtors.map((d) => (
-            <option key={d.fromDebtor} value={d.fromDebtor}>
-              {d.fromDebtorName}
+        <select className="rounded border px-2 py-2" value={fromDebtor} onChange={(e) => chooseDebtor(e.target.value)}>
+          {waivableEdges.map((edge) => (
+            <option key={edge.fromDebtor} value={edge.fromDebtor}>
+              {edge.fromDebtorName}
             </option>
           ))}
         </select>

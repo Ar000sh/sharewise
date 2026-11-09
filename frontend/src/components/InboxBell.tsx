@@ -161,8 +161,8 @@ export function InboxBell() {
    * pending, means the thing is already done (answered in a second tab, a double click): nothing to report, just
    * refresh.
    */
-  async function perform(action: () => Promise<unknown>, busy?: string) {
-    setBusyId(busy);
+  async function perform(action: () => Promise<unknown>, rowId?: string) {
+    setBusyId(rowId);
     setError(undefined);
     try {
       await action();
