@@ -341,7 +341,14 @@ paths:
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/NotAMember" }
         "404": { $ref: "#/components/responses/GroupNotFound" }
-        "422": { $ref: "#/components/responses/DomainRule" }
+        "422":
+          description: >
+            A domain rule was violated (see the DomainRule response for the codes). RECORDER_NOT_PARTICIPANT:
+            the member who records the expense must be one of its participants (R18).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example: { type: "about:blank", title: Unprocessable Entity, status: 422, code: RECORDER_NOT_PARTICIPANT, detail: "The recorder must be one of the participants" }
 
   /groups/{groupId}/balances:
     parameters:
@@ -443,7 +450,7 @@ components:
     DomainRule:
       description: >
         A domain rule was violated. code is one of AMOUNT_NOT_POSITIVE, PAYER_NOT_IN_GROUP,
-        PARTICIPANT_NOT_IN_GROUP, NO_PARTICIPANTS, GROUP_NOT_OPEN, SPLIT_NOT_SUPPORTED.
+        PARTICIPANT_NOT_IN_GROUP, NO_PARTICIPANTS, RECORDER_NOT_PARTICIPANT, GROUP_NOT_OPEN, SPLIT_NOT_SUPPORTED.
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
@@ -471,6 +478,7 @@ components:
             - PAYER_NOT_IN_GROUP
             - PARTICIPANT_NOT_IN_GROUP
             - NO_PARTICIPANTS
+            - RECORDER_NOT_PARTICIPANT
             - GROUP_NOT_OPEN
             - SPLIT_NOT_SUPPORTED
             - ACCOUNT_NOT_FOUND
