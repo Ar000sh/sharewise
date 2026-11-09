@@ -69,7 +69,7 @@ public class GroupService {
 
 	/** An open invitation of the caller, with the name of the group it is for. */
 	public record PendingInvitationView(InvitationId id, GroupId groupId, String groupName, UserId invitedBy,
-			Instant expiresAt) {
+			GroupRole role, Instant expiresAt) {
 
 	}
 
@@ -122,23 +122,37 @@ public class GroupService {
 	}
 
 	/**
-	 * Invites the account that {@code identifier} (exact username or email) names. The
-	 * group row is locked, so two members inviting the same person together are
-	 * serialized and the second gets ALREADY_INVITED. The inviter's membership is checked
-	 * before the account is looked up, so a non-member learns nothing about which
-	 * accounts exist.
-	 * @throws DomainException GROUP_NOT_FOUND, NOT_A_MEMBER, ACCOUNT_NOT_FOUND,
-	 * ALREADY_MEMBER or ALREADY_INVITED
+	 * Invites the account that {@code identifier} (exact username or email) names, to
+	 * join with {@code role}. The group row is locked, so two admins inviting the same
+	 * person together are serialized and the second gets ALREADY_INVITED. The inviter's
+	 * role is checked before the account is looked up, so a non-member learns nothing
+	 * about which accounts exist.
+	 * @throws DomainException GROUP_NOT_FOUND, NOT_A_MEMBER, NOT_AN_ADMIN,
+	 * ACCOUNT_NOT_FOUND, ALREADY_MEMBER or ALREADY_INVITED
 	 */
 	@Transactional
-	public InvitationView inviteMember(GroupId groupId, UserId inviter, String identifier) {
+	public InvitationView inviteMember(GroupId groupId, UserId inviter, String identifier, GroupRole role) {
 		Group group = lockedGroup(groupId.value());
-		group.requireActiveMember(inviter);
+		group.requireAdmin(inviter);
 		UserProfile invitee = profiles.findByIdentifier(identifier)
 			.orElseThrow(() -> new DomainException(ErrorCode.ACCOUNT_NOT_FOUND, "No account found"));
-		Group.Invited invited = group.inviteMember(invitee.userId(), inviter, clock.instant());
+		Group.Invited invited = group.inviteMember(invitee.userId(), inviter, role, clock.instant());
 		events.publishEvent(invited.event());
 		return InvitationView.of(invited.invitation(), invitee);
+	}
+
+	/**
+	 * Makes {@code user} an admin. The group row is locked, so two admins promoting the
+	 * same person together are serialized and the second gets ALREADY_ADMIN.
+	 * @throws DomainException GROUP_NOT_FOUND, NOT_A_MEMBER, NOT_AN_ADMIN,
+	 * MEMBER_NOT_FOUND or ALREADY_ADMIN
+	 */
+	@Transactional
+	public MembershipView promoteToAdmin(GroupId groupId, UserId caller, UserId user) {
+		Group group = lockedGroup(groupId.value());
+		var promoted = group.promoteToAdmin(user, caller, clock.instant());
+		events.publishEvent(promoted);
+		return new MembershipView(user, GroupRole.ADMIN);
 	}
 
 	/**
@@ -179,7 +193,7 @@ public class GroupService {
 		return groups.findPendingInvitationsFor(caller.value(), clock.instant())
 			.stream()
 			.map(row -> new PendingInvitationView(new InvitationId(row.invitationId()), new GroupId(row.groupId()),
-					row.groupName(), new UserId(row.invitedBy()), row.expiresAt()))
+					row.groupName(), new UserId(row.invitedBy()), row.role(), row.expiresAt()))
 			.toList();
 	}
 

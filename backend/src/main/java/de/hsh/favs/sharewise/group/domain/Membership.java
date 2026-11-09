@@ -55,6 +55,10 @@ public class Membership {
 		this.joinedAt = joinedAt;
 	}
 
+	void promoteToAdmin() {
+		this.role = GroupRole.ADMIN;
+	}
+
 	public UserId userId() {
 		return new UserId(userId);
 	}

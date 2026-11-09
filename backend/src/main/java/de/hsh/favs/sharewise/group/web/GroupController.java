@@ -69,7 +69,20 @@ class GroupController {
 	@PostMapping("/groups/{groupId}/invitations")
 	@ResponseStatus(HttpStatus.CREATED)
 	InvitationResponse inviteMember(@PathVariable UUID groupId, @Valid @RequestBody InviteMemberRequest request) {
-		return InvitationResponse.of(groups.inviteMember(new GroupId(groupId), caller(), request.identifier()));
+		return InvitationResponse
+			.of(groups.inviteMember(new GroupId(groupId), caller(), request.identifier(), request.roleOrDefault()));
+	}
+
+	@PostMapping("/groups/{groupId}/members/{userId}/promote")
+	GroupDetailResponse.MemberResponse promoteToAdmin(@PathVariable UUID groupId, @PathVariable UUID userId) {
+		GroupService.MembershipView promoted = groups.promoteToAdmin(new GroupId(groupId), caller(),
+				new UserId(userId));
+		String name = profiles.findProfiles(Set.of(promoted.userId()))
+			.stream()
+			.findFirst()
+			.map(UserProfile::displayName)
+			.orElse(UNKNOWN_NAME);
+		return new GroupDetailResponse.MemberResponse(userId, name, promoted.role());
 	}
 
 	@GetMapping("/invitations")

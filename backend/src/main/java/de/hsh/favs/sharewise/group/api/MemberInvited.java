@@ -5,10 +5,10 @@ import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Instant;
 
 /**
- * A member invited an existing account to the group. Nothing consumes it yet; a later
- * email channel would.
+ * An admin invited an existing account to the group, to join with {@code role}. Nothing
+ * consumes it yet; a later email channel would.
  */
 public record MemberInvited(GroupId groupId, InvitationId invitationId, UserId invitee, UserId invitedBy,
-		Instant occurredAt) {
+		GroupRole role, Instant occurredAt) {
 
 }
