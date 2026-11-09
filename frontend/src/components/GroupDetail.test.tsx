@@ -57,6 +57,29 @@ describe("GroupDetail", () => {
     expect(await screen.findByLabelText(/paid by/i)).toHaveValue("u2");
   });
 
+  it("showsTheInviteFormAndMakeAdminButtonsOnlyToAnAdmin", async () => {
+    // given Alice is an admin
+    serve({ userId: "u1", displayName: "Alice" });
+    renderPage();
+    await userEvent.click(await screen.findByRole("tab", { name: "Members" }));
+
+    // then
+    expect(await screen.findByLabelText("Username or email")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Make Bob an admin" })).toBeInTheDocument();
+  });
+
+  it("hidesTheInviteFormAndMakeAdminButtonsFromAMemberWhoIsNotAdmin", async () => {
+    // given Bob is a plain member
+    serve({ userId: "u2", displayName: "Bob" });
+    renderPage();
+    await userEvent.click(await screen.findByRole("tab", { name: "Members" }));
+
+    // then the members are listed, but nothing to invite or promote with
+    expect(await screen.findByText("Carol")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Username or email")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /make .* admin/i })).not.toBeInTheDocument();
+  });
+
   it("tellsTheUserThatBalancesFollowAfterAnExpenseWasRecorded", async () => {
     // given
     serve({ userId: "u2", displayName: "Bob" });

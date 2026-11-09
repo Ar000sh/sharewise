@@ -19,7 +19,14 @@ const POLL_MS = 30_000;
 function describe(entry: Notification): string {
   const who = entry.actor?.displayName ?? "Someone";
   const group = entry.group?.name ?? "a group";
-  return entry.type === "MEMBER_JOINED" ? `${who} joined ${group}` : `${who} declined your invitation to ${group}`;
+  switch (entry.type) {
+    case "MEMBER_JOINED":
+      return `${who} joined ${group}`;
+    case "MEMBER_PROMOTED":
+      return `${who} made you an admin of ${group}`;
+    default:
+      return `${who} declined your invitation to ${group}`;
+  }
 }
 
 /**
@@ -118,7 +125,7 @@ export function InboxBell() {
           <ul className="flex flex-col gap-2">
             {openInvitations.map((invitation) => (
               <li key={invitation.invitationId} className="flex flex-col gap-1 border-l-4 border-blue-500 pl-2">
-                <span>{`${invitation.invitedBy.displayName} invited you to ${invitation.group.name}`}</span>
+                <span>{`${invitation.invitedBy.displayName} invited you to ${invitation.group.name}${invitation.role === "ADMIN" ? " as an admin" : ""}`}</span>
                 <span className="flex gap-2">
                   <button
                     type="button"
