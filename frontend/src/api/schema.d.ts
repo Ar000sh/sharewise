@@ -238,7 +238,7 @@ export interface paths {
         };
         /**
          * Who should pay whom to settle the group (one edge per debtor and creditor pair)
-         * @description Computed from the booked balances (eventually consistent), in the order creditor, then debtor id. pendingAmount is the part of amount already reserved on that pair by payments that are PENDING or confirmed but not yet booked. payableAmount is what the server would accept as a new payment (or waiver) on that pair right now; it can be lower than amount minus pendingAmount when the debtor's other reservations, or the creditor's, use up the rest.
+         * @description Computed from the booked balances (eventually consistent), in the order creditor, then debtor id. pendingAmount is the part of amount already reserved on that pair by payments that are PENDING or confirmed but not yet booked. payableAmount is what the screen should offer as a new payment (or waiver) on that pair right now: amount minus pendingAmount, but never more than the open debt the server accepts (the debtor's remaining debt and the creditor's remaining credit, after reservations). It can be lower than amount minus pendingAmount when the debtor's other reservations, or the creditor's, use up the rest.
          */
         get: operations["getSettlementPlan"];
         put?: never;
@@ -263,7 +263,7 @@ export interface paths {
         put?: never;
         /**
          * The caller (the debtor) reports a payment to a creditor. Status starts PENDING until the creditor confirms.
-         * @description The amount reserves that much of the open debt to the creditor, so it may not exceed the open debt of the pair, which already excludes what other payments reserve (see payableAmount of the plan; 422 PAYMENT_EXCEEDS_OPEN_DEBT). A group that is archived answers 422 GROUP_NOT_OPEN.
+         * @description The amount reserves that much of the debtor's debt and of the creditor's credit, so it may not exceed the open debt: the smaller of what the debtor still owes and what the creditor is still owed, after what other payments reserve (422 PAYMENT_EXCEEDS_OPEN_DEBT). The pair does not have to be an edge of the plan; the plan only limits what the screen offers (payableAmount). A group that is archived answers 422 GROUP_NOT_OPEN.
          */
         post: operations["recordSettlementPayment"];
         delete?: never;
@@ -507,11 +507,11 @@ export interface components {
             /** Format: uuid */
             toCreditor: string;
             toCreditorName: string;
-            /** @description Open debt of fromDebtor to toCreditor. */
+            /** @description What the plan asks fromDebtor to pay toCreditor. */
             amount: components["schemas"]["Amount"];
             /** @description Part of amount reserved on this pair by payments that are PENDING or confirmed but not yet booked. */
             pendingAmount: components["schemas"]["Amount"];
-            /** @description What the server accepts as a new payment or waiver on this pair right now (the open debt). Show the "I paid" action only when it is above zero. */
+            /** @description What the screen offers as a new payment or waiver on this pair right now (amount minus pendingAmount, never more than the open debt the server accepts). Show the "I paid" action only when it is above zero. */
             payableAmount: components["schemas"]["Amount"];
         };
         /** @enum {string} */
@@ -720,7 +720,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description The amount is larger than the open debt of the pair (payableAmount of the plan). code is PAYMENT_EXCEEDS_OPEN_DEBT, or AMOUNT_NOT_POSITIVE, PARTICIPANT_NOT_IN_GROUP or GROUP_NOT_OPEN (group is archived). */
+        /** @description The amount is larger than the open debt (what the debtor still owes or the creditor is still owed, whichever is smaller, after reservations). code is PAYMENT_EXCEEDS_OPEN_DEBT, or AMOUNT_NOT_POSITIVE, PARTICIPANT_NOT_IN_GROUP or GROUP_NOT_OPEN (group is archived). */
         PaymentExceedsOpenDebt: {
             headers: {
                 [name: string]: unknown;
