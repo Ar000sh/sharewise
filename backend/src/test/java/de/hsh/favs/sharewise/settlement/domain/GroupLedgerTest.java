@@ -146,9 +146,9 @@ class GroupLedgerTest {
 
 		// then
 		assertThat(plan.simplifiedDebts()).hasSize(3);
-		assertThat(plan.edge(carol, alice)).isEqualTo(Money.eur("270.00"));
-		assertThat(plan.edge(david, alice)).isEqualTo(Money.eur("270.00"));
-		assertThat(plan.edge(bob, alice)).isEqualTo(Money.eur("90.00"));
+		assertThat(plan.plannedAmount(carol, alice)).isEqualTo(Money.eur("270.00"));
+		assertThat(plan.plannedAmount(david, alice)).isEqualTo(Money.eur("270.00"));
+		assertThat(plan.plannedAmount(bob, alice)).isEqualTo(Money.eur("90.00"));
 	}
 
 	@Test

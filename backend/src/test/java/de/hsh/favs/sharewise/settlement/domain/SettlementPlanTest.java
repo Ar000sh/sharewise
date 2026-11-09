@@ -38,8 +38,8 @@ class SettlementPlanTest {
 		return new UserId(new UUID(0, n));
 	}
 
-	private static MemberBalance balance(UserId user, long cents) {
-		return new MemberBalance(user, Money.ofMinorUnits(cents, EUR));
+	private static MemberBalance balance(UserId user, long minorUnits) {
+		return new MemberBalance(user, Money.ofMinorUnits(minorUnits, EUR));
 	}
 
 	private static Money sumOfEdges(SettlementPlan plan) {
@@ -60,9 +60,9 @@ class SettlementPlanTest {
 
 		// then
 		assertThat(plan.simplifiedDebts()).hasSize(3);
-		assertThat(plan.edge(carol, alice)).isEqualTo(Money.eur("270.00"));
-		assertThat(plan.edge(david, alice)).isEqualTo(Money.eur("270.00"));
-		assertThat(plan.edge(bob, alice)).isEqualTo(Money.eur("90.00"));
+		assertThat(plan.plannedAmount(carol, alice)).isEqualTo(Money.eur("270.00"));
+		assertThat(plan.plannedAmount(david, alice)).isEqualTo(Money.eur("270.00"));
+		assertThat(plan.plannedAmount(bob, alice)).isEqualTo(Money.eur("90.00"));
 		assertThat(sumOfEdges(plan)).isEqualTo(Money.eur("630.00"));
 	}
 
@@ -74,8 +74,8 @@ class SettlementPlanTest {
 
 		// then
 		assertThat(plan.simplifiedDebts()).hasSize(2);
-		assertThat(plan.edge(b, a)).isEqualTo(Money.eur("10.00"));
-		assertThat(plan.edge(d, c)).isEqualTo(Money.eur("20.00"));
+		assertThat(plan.plannedAmount(b, a)).isEqualTo(Money.eur("10.00"));
+		assertThat(plan.plannedAmount(d, c)).isEqualTo(Money.eur("20.00"));
 	}
 
 	@Test
@@ -177,14 +177,14 @@ class SettlementPlanTest {
 	}
 
 	@Test
-	void edgeIsZeroForAPairThatIsNotInThePlan() {
+	void plannedAmountIsZeroForAPairThatIsNotInThePlan() {
 		// given
 		SettlementPlan plan = SettlementPlan.of(List.of(balance(a, 500), balance(b, -500)));
 
 		// when / then
-		assertThat(plan.edge(b, a)).isEqualTo(Money.eur("5.00"));
-		assertThat(plan.edge(a, b)).isEqualTo(Money.eur("0.00"));
-		assertThat(plan.edge(c, a)).isEqualTo(Money.eur("0.00"));
+		assertThat(plan.plannedAmount(b, a)).isEqualTo(Money.eur("5.00"));
+		assertThat(plan.plannedAmount(a, b)).isEqualTo(Money.eur("0.00"));
+		assertThat(plan.plannedAmount(c, a)).isEqualTo(Money.eur("0.00"));
 	}
 
 	/**
@@ -192,11 +192,11 @@ class SettlementPlanTest {
 	 * person.
 	 */
 	private static int mostZeroSumGroups(List<MemberBalance> balances) {
-		long[] cents = balances.stream().mapToLong(x -> x.netBalance().minorUnits()).filter(x -> x != 0).toArray();
-		return mostGroups(cents, (1 << cents.length) - 1);
+		long[] minorUnits = balances.stream().mapToLong(x -> x.netBalance().minorUnits()).filter(x -> x != 0).toArray();
+		return mostGroups(minorUnits, (1 << minorUnits.length) - 1);
 	}
 
-	private static int mostGroups(long[] cents, int mask) {
+	private static int mostGroups(long[] minorUnits, int mask) {
 		if (mask == 0) {
 			return 0;
 		}
@@ -207,13 +207,13 @@ class SettlementPlanTest {
 				continue;
 			}
 			long sum = 0;
-			for (int i = 0; i < cents.length; i++) {
+			for (int i = 0; i < minorUnits.length; i++) {
 				if ((sub & (1 << i)) != 0) {
-					sum += cents[i];
+					sum += minorUnits[i];
 				}
 			}
 			if (sum == 0) {
-				int rest = mostGroups(cents, mask & ~sub);
+				int rest = mostGroups(minorUnits, mask & ~sub);
 				if (rest >= 0) {
 					best = Math.max(best, 1 + rest);
 				}
@@ -226,13 +226,13 @@ class SettlementPlanTest {
 		List<MemberBalance> balances = new ArrayList<>();
 		long sum = 0;
 		for (int i = 0; i < people - 1; i++) {
-			long cents = random.nextInt(21) - 10;
-			if (cents == 0) {
-				cents = 1 + i % 3;
+			long minorUnits = random.nextInt(21) - 10;
+			if (minorUnits == 0) {
+				minorUnits = 1 + i % 3;
 			}
-			cents = cents * 100;
-			sum += cents;
-			balances.add(balance(id(100 + i), cents));
+			minorUnits = minorUnits * 100;
+			sum += minorUnits;
+			balances.add(balance(id(100 + i), minorUnits));
 		}
 		balances.add(balance(id(100 + people - 1), -sum));
 		return balances;

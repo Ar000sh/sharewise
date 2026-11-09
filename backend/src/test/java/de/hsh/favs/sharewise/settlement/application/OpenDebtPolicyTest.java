@@ -66,41 +66,41 @@ class OpenDebtPolicyTest {
 		mallorca();
 
 		// when
-		Money open = policy.openDebt(GROUP, CAROL, ALICE);
+		Money openDebt = policy.openDebt(GROUP, CAROL, ALICE);
 
 		// then
-		assertThat(open).isEqualTo(Money.eur("270.00"));
+		assertThat(openDebt).isEqualTo(Money.eur("270.00"));
 	}
 
 	@Test
 	void pendingPaymentsReserveTheDebtOfThatPair() {
 		// given Dora owes Alice 50.00 and Bob 40.00; 30.00 to Alice is PENDING
 		UserId dora = new UserId(UUID.randomUUID());
-		balances(total(ALICE, "50.00"), total(BOB, "40.00"), total(dora, "-90.00"));
+		balances(memberBalance(ALICE, "50.00"), memberBalance(BOB, "40.00"), memberBalance(dora, "-90.00"));
 		reserved(dora, ALICE, "30.00");
 		reserved(dora, null, "30.00");
 		reserved(null, ALICE, "30.00");
 
 		// when
-		Money open = policy.openDebt(GROUP, dora, ALICE);
+		Money openDebt = policy.openDebt(GROUP, dora, ALICE);
 
 		// then 20.00 is left, so a second 30.00 to Alice is above the open debt
-		assertThat(open).isEqualTo(Money.eur("20.00"));
-		assertThat(Money.eur("30.00").minus(open).isPositive()).isTrue();
+		assertThat(openDebt).isEqualTo(Money.eur("20.00"));
+		assertThat(Money.eur("30.00").minus(openDebt).isPositive()).isTrue();
 	}
 
 	@Test
-	void payingBTheOtherCreditorIsStillPossible() {
+	void payingTheOtherCreditorIsStillPossible() {
 		// given the same group: 30.00 of Dora's 50.00 to Alice is PENDING
 		UserId dora = new UserId(UUID.randomUUID());
-		balances(total(ALICE, "50.00"), total(BOB, "40.00"), total(dora, "-90.00"));
+		balances(memberBalance(ALICE, "50.00"), memberBalance(BOB, "40.00"), memberBalance(dora, "-90.00"));
 		reserved(dora, null, "30.00");
 
 		// when
-		Money open = policy.openDebt(GROUP, dora, BOB);
+		Money openDebt = policy.openDebt(GROUP, dora, BOB);
 
 		// then the debt to Bob is untouched: min(40.00, 90.00 - 30.00, 40.00)
-		assertThat(open).isEqualTo(Money.eur("40.00"));
+		assertThat(openDebt).isEqualTo(Money.eur("40.00"));
 	}
 
 	@Test
@@ -110,25 +110,26 @@ class OpenDebtPolicyTest {
 		mallorca();
 
 		// when
-		Money open = policy.openDebt(GROUP, CAROL, ALICE);
+		Money openDebt = policy.openDebt(GROUP, CAROL, ALICE);
 
 		// then
-		assertThat(open).isEqualTo(Money.eur("270.00"));
+		assertThat(openDebt).isEqualTo(Money.eur("270.00"));
 	}
 
 	@Test
 	void aVanishedPlanEdgeClampsToZero() {
 		// given Carol is at zero after a new expense, but 270.00 of hers is still PENDING
-		balances(total(ALICE, "360.00"), total(BOB, "-90.00"), total(CAROL, "0.00"), total(DAVID, "-270.00"));
+		balances(memberBalance(ALICE, "360.00"), memberBalance(BOB, "-90.00"), memberBalance(CAROL, "0.00"),
+				memberBalance(DAVID, "-270.00"));
 		reserved(CAROL, ALICE, "270.00");
 		reserved(CAROL, null, "270.00");
 		reserved(null, ALICE, "270.00");
 
 		// when
-		Money open = policy.openDebt(GROUP, CAROL, ALICE);
+		Money openDebt = policy.openDebt(GROUP, CAROL, ALICE);
 
 		// then zero, never a negative open debt
-		assertThat(open).isEqualTo(Money.eur("0.00"));
+		assertThat(openDebt).isEqualTo(Money.eur("0.00"));
 	}
 
 	@Test
@@ -137,10 +138,10 @@ class OpenDebtPolicyTest {
 		mallorca();
 
 		// when
-		Money open = policy.openDebt(GROUP, DAVID, CAROL);
+		Money openDebt = policy.openDebt(GROUP, DAVID, CAROL);
 
 		// then
-		assertThat(open).isEqualTo(Money.eur("0.00"));
+		assertThat(openDebt).isEqualTo(Money.eur("0.00"));
 	}
 
 	@Test
@@ -151,10 +152,10 @@ class OpenDebtPolicyTest {
 		reserved(null, ALICE, "500.00");
 
 		// when
-		Money open = policy.openDebt(GROUP, DAVID, ALICE);
+		Money openDebt = policy.openDebt(GROUP, DAVID, ALICE);
 
 		// then min(270.00, 270.00, 630.00 - 500.00)
-		assertThat(open).isEqualTo(Money.eur("130.00"));
+		assertThat(openDebt).isEqualTo(Money.eur("130.00"));
 	}
 
 	@Test
@@ -167,10 +168,10 @@ class OpenDebtPolicyTest {
 		reserved(null, ALICE, "270.00");
 
 		// when
-		Money open = policy.openDebt(GROUP, CAROL, ALICE);
+		Money openDebt = policy.openDebt(GROUP, CAROL, ALICE);
 
 		// then paying again before the booking is impossible
-		assertThat(open).isEqualTo(Money.eur("0.00"));
+		assertThat(openDebt).isEqualTo(Money.eur("0.00"));
 	}
 
 	@Test
@@ -179,17 +180,17 @@ class OpenDebtPolicyTest {
 		balances();
 
 		// when
-		Money open = policy.openDebt(GROUP, CAROL, ALICE);
+		Money openDebt = policy.openDebt(GROUP, CAROL, ALICE);
 
 		// then
-		assertThat(open).isEqualTo(Money.eur("0.00"));
+		assertThat(openDebt).isEqualTo(Money.eur("0.00"));
 	}
 
 	@Test
 	void anEdgeWhoseDebtorIsReservedTowardsAnotherCreditorIsNotPayable() {
 		// given (F7, money flow 9) Bob's 50.00 to Alice is PENDING, then Carol paid 50.00
 		// that only Alice owes: the plan moved Bob's edge to Carol
-		balances(total(ALICE, "0.00"), total(BOB, "-50.00"), total(CAROL, "50.00"));
+		balances(memberBalance(ALICE, "0.00"), memberBalance(BOB, "-50.00"), memberBalance(CAROL, "50.00"));
 		reserved(BOB, null, "50.00");
 
 		// when
@@ -216,7 +217,8 @@ class OpenDebtPolicyTest {
 	}
 
 	private void mallorca() {
-		balances(total(ALICE, "630.00"), total(BOB, "-90.00"), total(CAROL, "-270.00"), total(DAVID, "-270.00"));
+		balances(memberBalance(ALICE, "630.00"), memberBalance(BOB, "-90.00"), memberBalance(CAROL, "-270.00"),
+				memberBalance(DAVID, "-270.00"));
 	}
 
 	private void balances(MemberBalance... balances) {
@@ -229,7 +231,7 @@ class OpenDebtPolicyTest {
 			.thenReturn(new BigDecimal(amount));
 	}
 
-	private static MemberBalance total(UserId user, String amount) {
+	private static MemberBalance memberBalance(UserId user, String amount) {
 		return new MemberBalance(user, Money.eur(amount));
 	}
 

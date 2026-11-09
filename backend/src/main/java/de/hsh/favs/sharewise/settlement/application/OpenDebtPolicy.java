@@ -48,8 +48,9 @@ class OpenDebtPolicy {
 	 */
 	Money openDebt(GroupId group, UserId debtor, UserId creditor) {
 		List<MemberBalance> balances = ledgers.balances(group);
-		Money edge = SettlementPlan.of(balances).edge(debtor, creditor);
-		return open(group, balances, debtor, creditor, edge, reserved(group, debtor.value(), creditor.value()));
+		Money plannedAmount = SettlementPlan.of(balances).plannedAmount(debtor, creditor);
+		return openDebtFromCaps(group, balances, debtor, creditor, plannedAmount,
+				reserved(group, debtor.value(), creditor.value()));
 	}
 
 	/**
@@ -59,20 +60,20 @@ class OpenDebtPolicy {
 	List<PayableEdge> payableEdges(GroupId group) {
 		List<MemberBalance> balances = ledgers.balances(group);
 		return SettlementPlan.of(balances).simplifiedDebts().stream().map(debt -> {
-			Money pending = reserved(group, debt.fromDebtor().value(), debt.toCreditor().value());
-			return new PayableEdge(debt, pending,
-					open(group, balances, debt.fromDebtor(), debt.toCreditor(), debt.amount(), pending));
+			Money reservedOnPair = reserved(group, debt.fromDebtor().value(), debt.toCreditor().value());
+			return new PayableEdge(debt, reservedOnPair, openDebtFromCaps(group, balances, debt.fromDebtor(),
+					debt.toCreditor(), debt.amount(), reservedOnPair));
 		}).toList();
 	}
 
 	/** The one formula: the smallest of the three caps, never below zero. */
-	private Money open(GroupId group, List<MemberBalance> balances, UserId debtor, UserId creditor, Money edge,
-			Money reservedOnPair) {
-		Money pairCap = edge.minus(reservedOnPair);
-		Money debtorDebt = balanceOf(balances, debtor).negate().minus(reserved(group, debtor.value(), null));
-		Money creditorCredit = balanceOf(balances, creditor).minus(reserved(group, null, creditor.value()));
-		Money open = smallest(pairCap, smallest(debtorDebt, creditorCredit));
-		return open.isNegative() ? Money.eur(BigDecimal.ZERO) : open;
+	private Money openDebtFromCaps(GroupId group, List<MemberBalance> balances, UserId debtor, UserId creditor,
+			Money plannedAmount, Money reservedOnPair) {
+		Money pairCap = plannedAmount.minus(reservedOnPair);
+		Money debtorCap = balanceOf(balances, debtor).negate().minus(reserved(group, debtor.value(), null));
+		Money creditorCap = balanceOf(balances, creditor).minus(reserved(group, null, creditor.value()));
+		Money smallestCap = smallerOf(pairCap, smallerOf(debtorCap, creditorCap));
+		return smallestCap.isNegative() ? Money.eur(BigDecimal.ZERO) : smallestCap;
 	}
 
 	private Money reserved(GroupId group, UUID debtor, UUID creditor) {
@@ -87,8 +88,8 @@ class OpenDebtPolicy {
 			.orElse(Money.eur(BigDecimal.ZERO));
 	}
 
-	private static Money smallest(Money a, Money b) {
-		return a.minus(b).isPositive() ? b : a;
+	private static Money smallerOf(Money first, Money second) {
+		return first.minus(second).isPositive() ? second : first;
 	}
 
 }

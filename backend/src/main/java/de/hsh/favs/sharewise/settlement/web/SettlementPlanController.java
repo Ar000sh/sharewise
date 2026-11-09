@@ -30,7 +30,7 @@ class SettlementPlanController {
 
 	@GetMapping("/groups/{groupId}/settlement-plan")
 	List<SettlementPlanEntryResponse> getSettlementPlan(@PathVariable UUID groupId) {
-		return mapper.toPlanResponses(plans.planFor(new GroupId(groupId), currentUser.get().userId()));
+		return mapper.toPlanResponses(plans.listPlanEntries(new GroupId(groupId), currentUser.get().userId()));
 	}
 
 }

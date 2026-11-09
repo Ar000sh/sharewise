@@ -19,11 +19,11 @@ public class SettlementPlanService {
 
 	private final GroupMembership groups;
 
-	private final OpenDebtPolicy openDebt;
+	private final OpenDebtPolicy openDebtPolicy;
 
-	SettlementPlanService(GroupMembership groups, OpenDebtPolicy openDebt) {
+	SettlementPlanService(GroupMembership groups, OpenDebtPolicy openDebtPolicy) {
 		this.groups = groups;
-		this.openDebt = openDebt;
+		this.openDebtPolicy = openDebtPolicy;
 	}
 
 	/**
@@ -47,9 +47,9 @@ public class SettlementPlanService {
 	 * NOT_A_MEMBER
 	 */
 	@Transactional(readOnly = true)
-	public List<PlanEntry> planFor(GroupId group, UserId caller) {
+	public List<PlanEntry> listPlanEntries(GroupId group, UserId caller) {
 		groups.requireMember(group, caller);
-		return openDebt.payableEdges(group)
+		return openDebtPolicy.payableEdges(group)
 			.stream()
 			.map(edge -> new PlanEntry(edge.debt().fromDebtor(), edge.debt().toCreditor(), edge.debt().amount(),
 					edge.pendingAmount(), edge.payableAmount()))

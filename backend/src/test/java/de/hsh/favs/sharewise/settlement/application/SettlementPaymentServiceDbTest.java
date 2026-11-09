@@ -120,7 +120,7 @@ class SettlementPaymentServiceDbTest {
 		assertThat(outcomes).filteredOn(DomainException.class::isInstance)
 			.singleElement()
 			.satisfies(e -> assertThat(((DomainException) e).code()).isEqualTo(ErrorCode.PAYMENT_EXCEEDS_OPEN_DEBT));
-		assertThat(service.history(trip, alice.userId())).singleElement()
+		assertThat(service.listPayments(trip, alice.userId())).singleElement()
 			.satisfies(p -> assertThat(p.amount()).isEqualTo(Money.eur("60.00")));
 	}
 
@@ -130,17 +130,17 @@ class SettlementPaymentServiceDbTest {
 		// debt is WAIVED
 		// (built with the aggregate and saved directly: through the service the real
 		// listener would book them at once; that path is SettlementBookingTest)
-		SettlementPayment bobs = saved(SettlementPayment
+		SettlementPayment bobs = save(SettlementPayment
 			.record(trip, bob.userId(), alice.userId(), Money.eur("40.00"), Money.eur("100.00"), null,
 					MutableClock.START)
 			.payment());
-		SettlementPayment carols = saved(SettlementPayment
+		SettlementPayment carols = save(SettlementPayment
 			.record(trip, carol.userId(), alice.userId(), Money.eur("30.00"), Money.eur("100.00"), null,
 					MutableClock.START)
 			.payment());
 		carols.reject(alice.userId(), "Not arrived", MutableClock.START);
 		payments.save(carols);
-		saved(SettlementPayment
+		save(SettlementPayment
 			.waive(trip, alice.userId(), carol.userId(), Money.eur("20.00"), Money.eur("100.00"), "Gift",
 					MutableClock.START)
 			.payment());
@@ -200,8 +200,8 @@ class SettlementPaymentServiceDbTest {
 		SettlementPayment recorded = service.record(bobPaysAlice("40.00"));
 
 		// when read from here, outside any transaction, like a controller does
-		List<SettlementPayment> history = service.history(trip, carol.userId());
-		List<SettlementPayment> inbox = service.awaitingMyAnswer(alice.userId());
+		List<SettlementPayment> history = service.listPayments(trip, carol.userId());
+		List<SettlementPayment> inbox = service.listAwaitingMyAnswer(alice.userId());
 
 		// then every field is a plain value
 		assertThat(history).singleElement().satisfies(p -> {
@@ -216,7 +216,7 @@ class SettlementPaymentServiceDbTest {
 			assertThat(p.resolvedAt()).isNull();
 		});
 		assertThat(inbox).extracting(SettlementPayment::paymentId).containsExactly(recorded.paymentId());
-		assertThat(service.awaitingMyAnswer(bob.userId())).isEmpty();
+		assertThat(service.listAwaitingMyAnswer(bob.userId())).isEmpty();
 	}
 
 	@Test
@@ -243,7 +243,7 @@ class SettlementPaymentServiceDbTest {
 				"Bank transfer");
 	}
 
-	private SettlementPayment saved(SettlementPayment payment) {
+	private SettlementPayment save(SettlementPayment payment) {
 		return payments.save(payment);
 	}
 

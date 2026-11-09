@@ -155,8 +155,8 @@ class GroupLedgerServiceTest {
 		// given nobody has entries yet; after Alice's 900.00 split by four everyone is
 		// non-zero
 		when(ledgers.isBooked(event.groupId().value(), event.expenseId().value())).thenReturn(false);
-		when(ledgers.balances(event.groupId())).thenReturn(List.of(), List.of(total(alice, "675.00"),
-				total(bob, "-225.00"), total(carol, "-225.00"), total(david, "-225.00")));
+		when(ledgers.balances(event.groupId())).thenReturn(List.of(), List.of(memberBalance(alice, "675.00"),
+				memberBalance(bob, "-225.00"), memberBalance(carol, "-225.00"), memberBalance(david, "-225.00")));
 
 		// when
 		service.bookExpense(event);
@@ -172,8 +172,8 @@ class GroupLedgerServiceTest {
 		var confirmed = bobPaysAlice("10.00");
 		when(ledgers.isBooked(event.groupId().value(), confirmed.paymentId().value())).thenReturn(false);
 		when(ledgers.balances(event.groupId())).thenReturn(
-				List.of(total(alice, "10.00"), total(bob, "-10.00"), total(carol, "0.00")),
-				List.of(total(alice, "0.00"), total(bob, "0.00"), total(carol, "0.00")));
+				List.of(memberBalance(alice, "10.00"), memberBalance(bob, "-10.00"), memberBalance(carol, "0.00")),
+				List.of(memberBalance(alice, "0.00"), memberBalance(bob, "0.00"), memberBalance(carol, "0.00")));
 
 		// when
 		service.bookSettlementPayment(confirmed);
@@ -188,8 +188,9 @@ class GroupLedgerServiceTest {
 		// given Bob pays only half of the 10.00 he owes
 		var confirmed = bobPaysAlice("5.00");
 		when(ledgers.isBooked(event.groupId().value(), confirmed.paymentId().value())).thenReturn(false);
-		when(ledgers.balances(event.groupId())).thenReturn(List.of(total(alice, "10.00"), total(bob, "-10.00")),
-				List.of(total(alice, "5.00"), total(bob, "-5.00")));
+		when(ledgers.balances(event.groupId())).thenReturn(
+				List.of(memberBalance(alice, "10.00"), memberBalance(bob, "-10.00")),
+				List.of(memberBalance(alice, "5.00"), memberBalance(bob, "-5.00")));
 
 		// when
 		service.bookSettlementPayment(confirmed);
@@ -228,7 +229,7 @@ class GroupLedgerServiceTest {
 		return captor.getAllValues();
 	}
 
-	private static MemberBalance total(UserId user, String amount) {
+	private static MemberBalance memberBalance(UserId user, String amount) {
 		return new MemberBalance(user, Money.eur(amount));
 	}
 

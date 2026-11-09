@@ -63,7 +63,7 @@ class SettlementPaymentServiceTest {
 	GroupLedgerRepository ledgers;
 
 	@Mock
-	OpenDebtPolicy openDebt;
+	OpenDebtPolicy openDebtPolicy;
 
 	@Mock
 	ApplicationEventPublisher events;
@@ -72,7 +72,7 @@ class SettlementPaymentServiceTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new SettlementPaymentService(groups, payments, ledgers, openDebt, events,
+		service = new SettlementPaymentService(groups, payments, ledgers, openDebtPolicy, events,
 				Clock.fixed(MutableClock.START, ZoneOffset.UTC));
 	}
 
@@ -85,11 +85,11 @@ class SettlementPaymentServiceTest {
 		service.record(bobPaysAlice("270.00"));
 
 		// then
-		var order = inOrder(groups, ledgers, openDebt, payments, events);
-		order.verify(groups).requireMember(GROUP, BOB);
+		var order = inOrder(groups, ledgers, openDebtPolicy, payments, events);
+		order.verify(groups).isMember(GROUP, ALICE);
 		order.verify(ledgers).createIfAbsent(GROUP.value());
 		order.verify(ledgers).findForUpdate(GROUP.value());
-		order.verify(openDebt).openDebt(GROUP, BOB, ALICE);
+		order.verify(openDebtPolicy).openDebt(GROUP, BOB, ALICE);
 		order.verify(payments).save(any(SettlementPayment.class));
 		order.verify(events).publishEvent(any(SettlementPaymentRecorded.class));
 	}
@@ -129,17 +129,32 @@ class SettlementPaymentServiceTest {
 	@Test
 	void recordToSomeoneOutsideTheGroupIsRefusedBeforeTheLock() {
 		// given
+		when(groups.exists(GROUP)).thenReturn(true);
 		when(groups.status(GROUP)).thenReturn(GroupStatus.OPEN);
+		when(groups.isMember(GROUP, BOB)).thenReturn(true);
 		when(groups.isMember(GROUP, ALICE)).thenReturn(false);
 
 		// when / then
 		assertCode(() -> service.record(bobPaysAlice("270.00")), ErrorCode.PARTICIPANT_NOT_IN_GROUP);
-		verifyNoInteractions(ledgers, openDebt, payments, events);
+		verifyNoInteractions(ledgers, openDebtPolicy, payments, events);
+	}
+
+	@Test
+	void recordByANonMemberIsRefusedBeforeTheLock() {
+		// given
+		when(groups.exists(GROUP)).thenReturn(true);
+		when(groups.status(GROUP)).thenReturn(GroupStatus.OPEN);
+		when(groups.isMember(GROUP, BOB)).thenReturn(false);
+
+		// when / then
+		assertCode(() -> service.record(bobPaysAlice("270.00")), ErrorCode.NOT_A_MEMBER);
+		verifyNoInteractions(ledgers, openDebtPolicy, payments, events);
 	}
 
 	@Test
 	void archivedGroupRefusesANewPaymentAndANewWaiver() {
 		// given
+		when(groups.exists(GROUP)).thenReturn(true);
 		when(groups.status(GROUP)).thenReturn(GroupStatus.ARCHIVED);
 
 		// when / then
@@ -148,7 +163,7 @@ class SettlementPaymentServiceTest {
 				ErrorCode.GROUP_NOT_OPEN);
 		verify(payments, never()).save(any());
 		verify(payments, never()).saveAndFlush(any());
-		verifyNoInteractions(ledgers, openDebt, events);
+		verifyNoInteractions(ledgers, openDebtPolicy, events);
 	}
 
 	@Test
@@ -178,11 +193,13 @@ class SettlementPaymentServiceTest {
 		verifyNoInteractions(events);
 	}
 
-	private void openGroupWithBobOwingAlice(String open) {
+	private void openGroupWithBobOwingAlice(String openDebtAmount) {
+		when(groups.exists(GROUP)).thenReturn(true);
 		when(groups.status(GROUP)).thenReturn(GroupStatus.OPEN);
+		when(groups.isMember(GROUP, BOB)).thenReturn(true);
 		when(groups.isMember(GROUP, ALICE)).thenReturn(true);
 		when(ledgers.findForUpdate(GROUP.value())).thenReturn(Optional.of(new GroupLedger(GROUP)));
-		when(openDebt.openDebt(GROUP, BOB, ALICE)).thenReturn(Money.eur(open));
+		when(openDebtPolicy.openDebt(GROUP, BOB, ALICE)).thenReturn(Money.eur(openDebtAmount));
 	}
 
 	private static RecordSettlementPaymentCommand bobPaysAlice(String amount) {

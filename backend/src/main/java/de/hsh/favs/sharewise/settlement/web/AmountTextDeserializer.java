@@ -12,7 +12,7 @@ import tools.jackson.databind.deser.std.StdDeserializer;
  * never pass through a number (document 01, section 7). Anything but a string is a 400
  * BAD_REQUEST.
  */
-class AmountText extends StdDeserializer<String> {
+class AmountTextDeserializer extends StdDeserializer<String> {
 
 	/**
 	 * The contract's Amount pattern, tightened to no leading zeros: an optional minus,
@@ -21,7 +21,7 @@ class AmountText extends StdDeserializer<String> {
 	 */
 	private static final Pattern TWO_DECIMALS = Pattern.compile("-?(0|[1-9][0-9]*)\\.[0-9]{2}");
 
-	AmountText() {
+	AmountTextDeserializer() {
 		super(String.class);
 	}
 

@@ -11,7 +11,8 @@ import tools.jackson.databind.annotation.JsonDeserialize;
  * Body of {@code POST /groups/{groupId}/debt-waivers}. {@code amount} is a decimal string
  * such as {@code "90.00"}; the reason ({@code note}) is required.
  */
-record WaiveDebtRequest(@NotNull UUID fromDebtor, @NotBlank @JsonDeserialize(using = AmountText.class) String amount,
+record WaiveDebtRequest(@NotNull UUID fromDebtor,
+		@NotBlank @JsonDeserialize(using = AmountTextDeserializer.class) String amount,
 		@NotBlank @Size(max = 500) @Pattern(regexp = NoteRule.NO_NUL) String note) {
 
 }

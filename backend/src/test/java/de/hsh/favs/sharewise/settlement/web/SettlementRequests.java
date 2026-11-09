@@ -95,7 +95,7 @@ public class SettlementRequests {
 	/**
 	 * {@code GET /me/settlement-payments}: the payments waiting for the caller's answer.
 	 */
-	public ResultActions mine(AccountFixture caller) throws Exception {
+	public ResultActions awaitingMyAnswer(AccountFixture caller) throws Exception {
 		return mvc.perform(get("/me/settlement-payments").header(AUTHORIZATION, caller.bearer()));
 	}
 

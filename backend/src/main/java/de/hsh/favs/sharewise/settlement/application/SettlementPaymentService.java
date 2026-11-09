@@ -34,28 +34,29 @@ public class SettlementPaymentService {
 
 	private final GroupLedgerRepository ledgers;
 
-	private final OpenDebtPolicy openDebt;
+	private final OpenDebtPolicy openDebtPolicy;
 
 	private final ApplicationEventPublisher events;
 
 	private final Clock clock;
 
 	SettlementPaymentService(GroupMembership groups, SettlementPaymentRepository payments,
-			GroupLedgerRepository ledgers, OpenDebtPolicy openDebt, ApplicationEventPublisher events, Clock clock) {
+			GroupLedgerRepository ledgers, OpenDebtPolicy openDebtPolicy, ApplicationEventPublisher events,
+			Clock clock) {
 		this.groups = groups;
 		this.payments = payments;
 		this.ledgers = ledgers;
-		this.openDebt = openDebt;
+		this.openDebtPolicy = openDebtPolicy;
 		this.events = events;
 		this.clock = clock;
 	}
 
 	/**
 	 * The caller (the debtor) reports a payment to a creditor; it stays PENDING until the
-	 * creditor answers (R16). The order of the checks: the caller is a member
-	 * (GROUP_NOT_FOUND, NOT_A_MEMBER), the group is not archived (GROUP_NOT_OPEN), the
-	 * creditor is a member (PARTICIPANT_NOT_IN_GROUP), then, under the ledger lock, the
-	 * open debt and the rules of {@link SettlementPayment#record}.
+	 * creditor answers (R16). The order of the checks: the group exists and is not
+	 * archived (GROUP_NOT_FOUND, GROUP_NOT_OPEN), the caller is a member (NOT_A_MEMBER),
+	 * the creditor is a member (PARTICIPANT_NOT_IN_GROUP), then, under the ledger lock,
+	 * the open debt and the rules of {@link SettlementPayment#record}.
 	 * @throws DomainException with one of the codes above, or those of
 	 * {@link SettlementPayment#record} (PAYMENT_EXCEEDS_OPEN_DEBT, AMOUNT_NOT_POSITIVE,
 	 * BAD_REQUEST)
@@ -63,10 +64,10 @@ public class SettlementPaymentService {
 	@Transactional
 	public SettlementPayment record(RecordSettlementPaymentCommand command) {
 		GroupId group = command.groupId();
-		requireOpenGroupWithBoth(group, command.caller(), command.toCreditor());
-		Money open = lockAndComputeOpenDebt(group, command.caller(), command.toCreditor());
-		var recorded = SettlementPayment.record(group, command.caller(), command.toCreditor(), command.amount(), open,
-				command.note(), clock.instant());
+		requireGroupAcceptsSettlementBetween(group, command.caller(), command.toCreditor());
+		Money openDebt = lockAndComputeOpenDebt(group, command.caller(), command.toCreditor());
+		var recorded = SettlementPayment.record(group, command.caller(), command.toCreditor(), command.amount(),
+				openDebt, command.note(), clock.instant());
 		payments.save(recorded.payment());
 		events.publishEvent(recorded.event());
 		return recorded.payment();
@@ -83,9 +84,9 @@ public class SettlementPaymentService {
 	@Transactional
 	public SettlementPayment waive(WaiveDebtCommand command) {
 		GroupId group = command.groupId();
-		requireOpenGroupWithBoth(group, command.caller(), command.fromDebtor());
-		Money open = lockAndComputeOpenDebt(group, command.fromDebtor(), command.caller());
-		var waived = SettlementPayment.waive(group, command.caller(), command.fromDebtor(), command.amount(), open,
+		requireGroupAcceptsSettlementBetween(group, command.caller(), command.fromDebtor());
+		Money openDebt = lockAndComputeOpenDebt(group, command.fromDebtor(), command.caller());
+		var waived = SettlementPayment.waive(group, command.caller(), command.fromDebtor(), command.amount(), openDebt,
 				command.note(), clock.instant());
 		payments.save(waived.payment());
 		events.publishEvent(waived.event());
@@ -127,7 +128,7 @@ public class SettlementPaymentService {
 	 * @throws DomainException with GROUP_NOT_FOUND or NOT_A_MEMBER
 	 */
 	@Transactional(readOnly = true)
-	public List<SettlementPayment> history(GroupId groupId, UserId caller) {
+	public List<SettlementPayment> listPayments(GroupId groupId, UserId caller) {
 		groups.requireMember(groupId, caller);
 		return payments.findByGroupIdOrderByCreatedAtDesc(groupId.value());
 	}
@@ -138,13 +139,26 @@ public class SettlementPaymentService {
 	 * (A4, parked until {@code archiveGroup} or {@code leaveGroup} is built).
 	 */
 	@Transactional(readOnly = true)
-	public List<SettlementPayment> awaitingMyAnswer(UserId caller) {
+	public List<SettlementPayment> listAwaitingMyAnswer(UserId caller) {
 		return payments.findByToCreditorAndStatusOrderByCreatedAtDesc(caller.value(), PaymentStatus.PENDING);
 	}
 
-	private void requireOpenGroupWithBoth(GroupId group, UserId caller, UserId otherParty) {
-		groups.requireMember(group, caller);
-		requireNotArchived(group);
+	/**
+	 * The checks before a payment or waiver between two people, in this order: the group
+	 * exists, it is not archived, the caller is a member, the other person is a member.
+	 * @throws DomainException with GROUP_NOT_FOUND, GROUP_NOT_OPEN, NOT_A_MEMBER or
+	 * PARTICIPANT_NOT_IN_GROUP
+	 */
+	private void requireGroupAcceptsSettlementBetween(GroupId group, UserId caller, UserId otherParty) {
+		if (!groups.exists(group)) {
+			throw new DomainException(ErrorCode.GROUP_NOT_FOUND, "Group not found");
+		}
+		if (groups.status(group) == GroupStatus.ARCHIVED) {
+			throw new DomainException(ErrorCode.GROUP_NOT_OPEN, "The group is archived");
+		}
+		if (!groups.isMember(group, caller)) {
+			throw new DomainException(ErrorCode.NOT_A_MEMBER, "You are not a member of this group");
+		}
 		if (!groups.isMember(group, otherParty)) {
 			throw new DomainException(ErrorCode.PARTICIPANT_NOT_IN_GROUP, "The other person is not in this group");
 		}
@@ -158,7 +172,7 @@ public class SettlementPaymentService {
 	private Money lockAndComputeOpenDebt(GroupId group, UserId debtor, UserId creditor) {
 		ledgers.createIfAbsent(group.value());
 		ledgers.findForUpdate(group.value()).orElseThrow();
-		return openDebt.openDebt(group, debtor, creditor);
+		return openDebtPolicy.openDebt(group, debtor, creditor);
 	}
 
 	private SettlementPayment loadForAnswer(UserId caller, SettlementPaymentId paymentId) {
@@ -180,12 +194,6 @@ public class SettlementPaymentService {
 		}
 		catch (OptimisticLockingFailureException concurrentAnswer) {
 			throw new DomainException(ErrorCode.PAYMENT_NOT_PENDING, "This payment was already answered");
-		}
-	}
-
-	private void requireNotArchived(GroupId group) {
-		if (groups.status(group) == GroupStatus.ARCHIVED) {
-			throw new DomainException(ErrorCode.GROUP_NOT_OPEN, "The group is archived");
 		}
 	}
 

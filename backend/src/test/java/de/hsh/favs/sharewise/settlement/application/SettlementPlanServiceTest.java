@@ -58,15 +58,15 @@ class SettlementPlanServiceTest {
 	}
 
 	@Test
-	void planForOwesEntriesWithTheReservedAndThePayableAmountOfTheirPair() {
+	void planGivesEachEntryTheReservedAndThePayableAmountOfItsPair() {
 		// given bob owes alice 90.00 and has 40.00 reserved on that pair
-		when(ledgers.balances(GROUP)).thenReturn(List.of(total(ALICE, "90.00"), total(BOB, "-90.00")));
+		when(ledgers.balances(GROUP)).thenReturn(List.of(memberBalance(ALICE, "90.00"), memberBalance(BOB, "-90.00")));
 		when(payments.reserved(GROUP.value(), BOB.value(), ALICE.value())).thenReturn(new BigDecimal("40.00"));
 		when(payments.reserved(GROUP.value(), BOB.value(), null)).thenReturn(new BigDecimal("40.00"));
 		when(payments.reserved(GROUP.value(), null, ALICE.value())).thenReturn(new BigDecimal("40.00"));
 
 		// when
-		List<PlanEntry> plan = service.planFor(GROUP, ALICE);
+		List<PlanEntry> plan = service.listPlanEntries(GROUP, ALICE);
 
 		// then an ordinary edge can still be paid by amount minus pendingAmount
 		assertThat(plan)
@@ -77,7 +77,7 @@ class SettlementPlanServiceTest {
 	void anEmptyLedgerGivesAnEmptyPlan() {
 		when(ledgers.balances(GROUP)).thenReturn(List.of());
 
-		assertThat(service.planFor(GROUP, ALICE)).isEmpty();
+		assertThat(service.listPlanEntries(GROUP, ALICE)).isEmpty();
 	}
 
 	@Test
@@ -86,12 +86,12 @@ class SettlementPlanServiceTest {
 		doThrow(new DomainException(ErrorCode.NOT_A_MEMBER, "no")).when(groups).requireMember(GROUP, BOB);
 
 		// when / then
-		assertThatThrownBy(() -> service.planFor(GROUP, BOB)).isInstanceOfSatisfying(DomainException.class,
+		assertThatThrownBy(() -> service.listPlanEntries(GROUP, BOB)).isInstanceOfSatisfying(DomainException.class,
 				e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
 		verifyNoInteractions(ledgers, payments);
 	}
 
-	private static MemberBalance total(UserId user, String amount) {
+	private static MemberBalance memberBalance(UserId user, String amount) {
 		return new MemberBalance(user, Money.eur(amount));
 	}
 

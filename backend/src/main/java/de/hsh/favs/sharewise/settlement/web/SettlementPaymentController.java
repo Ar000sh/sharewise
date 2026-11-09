@@ -49,7 +49,7 @@ class SettlementPaymentController {
 
 	@GetMapping("/groups/{groupId}/settlement-payments")
 	List<SettlementPaymentResponse> listSettlementPayments(@PathVariable UUID groupId) {
-		return mapper.toResponses(payments.history(new GroupId(groupId), caller()));
+		return mapper.toResponses(payments.listPayments(new GroupId(groupId), caller()));
 	}
 
 	@PostMapping("/settlement-payments/{paymentId}/confirm")

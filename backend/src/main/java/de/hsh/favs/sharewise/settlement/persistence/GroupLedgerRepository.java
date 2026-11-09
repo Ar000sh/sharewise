@@ -32,7 +32,10 @@ public interface GroupLedgerRepository extends JpaRepository<GroupLedger, UUID> 
 			nativeQuery = true)
 	void createIfAbsent(@Param("groupId") UUID groupId);
 
-	/** Whether this expense already has entries; asked after the lock is taken. */
+	/**
+	 * Whether anything with this reference id (expense, payment or waiver) is already
+	 * booked; asked after the lock is taken.
+	 */
 	@Query("select count(e) > 0 from LedgerEntry e where e.ledger.groupId = :groupId and e.referenceId = :referenceId")
 	boolean isBooked(@Param("groupId") UUID groupId, @Param("referenceId") UUID referenceId);
 

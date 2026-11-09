@@ -56,7 +56,7 @@ class MySettlementPaymentsControllerTest {
 			.andExpect(jsonPath("$.status").value("PENDING"));
 
 		// when / then the creditor sees it, the debtor does not
-		settlement.mine(alice)
+		settlement.awaitingMyAnswer(alice)
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.length()").value(1))
 			.andExpect(jsonPath("$[0].groupId").value(group.toString()))
@@ -64,7 +64,7 @@ class MySettlementPaymentsControllerTest {
 			.andExpect(jsonPath("$[0].toCreditorName").value(alice.displayName()))
 			.andExpect(jsonPath("$[0].amount").value("50.00"))
 			.andExpect(jsonPath("$[0].status").value("PENDING"));
-		settlement.mine(bob).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+		settlement.awaitingMyAnswer(bob).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
 	}
 
 	@Test
@@ -82,12 +82,12 @@ class MySettlementPaymentsControllerTest {
 		UUID newer = settlement.recordedPayment(second, bob, alice, "40.00");
 
 		// when / then
-		JsonNode inbox = json.readTree(settlement.body(settlement.mine(alice).andExpect(status().isOk())));
+		JsonNode inbox = json.readTree(settlement.body(settlement.awaitingMyAnswer(alice).andExpect(status().isOk())));
 		assertThat(inbox.size()).isEqualTo(2);
 		assertThat(inbox.get(0).get("id").asString()).isEqualTo(newer.toString());
 		assertThat(inbox.get(1).get("id").asString()).isEqualTo(older.toString());
 		settlement.confirm(newer, alice).andExpect(status().isOk());
-		settlement.mine(alice)
+		settlement.awaitingMyAnswer(alice)
 			.andExpect(jsonPath("$.length()").value(1))
 			.andExpect(jsonPath("$[0].id").value(older.toString()));
 	}

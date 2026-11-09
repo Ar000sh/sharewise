@@ -22,7 +22,7 @@ import java.util.List;
  * greedy over everyone (largest debtor pays largest creditor); R15 then holds only as "at
  * most n - 1 payments". Ties are broken by user id so the same balances always give the
  * same plan; "ascending user id" means {@link java.util.UUID#compareTo} order, not the
- * order of the hex text. {@link #edge} on an empty plan returns zero in EUR.
+ * order of the hex text. {@link #plannedAmount} on an empty plan returns zero in EUR.
  */
 public record SettlementPlan(List<DirectedDebt> simplifiedDebts) {
 
@@ -50,17 +50,17 @@ public record SettlementPlan(List<DirectedDebt> simplifiedDebts) {
 			.toList();
 		int n = people.size();
 		UserId[] ids = new UserId[n];
-		long[] cents = new long[n];
+		long[] minorUnits = new long[n];
 		for (int i = 0; i < n; i++) {
 			ids[i] = people.get(i).userId();
-			cents[i] = people.get(i).netBalance().minorUnits();
+			minorUnits[i] = people.get(i).netBalance().minorUnits();
 		}
 
-		List<List<Integer>> groups = (n <= EXACT_LIMIT) ? zeroSumGroups(cents) : List.of(allIndexes(n));
+		List<List<Integer>> groups = (n <= EXACT_LIMIT) ? zeroSumGroups(minorUnits) : List.of(allIndexes(n));
 
 		List<DirectedDebt> edges = new ArrayList<>();
 		for (List<Integer> group : groups) {
-			settleGreedily(group, ids, cents.clone(), currency, edges);
+			settleGreedily(group, ids, minorUnits.clone(), currency, edges);
 		}
 		edges
 			.sort(Comparator.comparing(DirectedDebt::toCreditor, BY_ID).thenComparing(DirectedDebt::fromDebtor, BY_ID));
@@ -70,7 +70,7 @@ public record SettlementPlan(List<DirectedDebt> simplifiedDebts) {
 	/**
 	 * The amount debtor pays creditor in this plan, or zero when the pair has no edge.
 	 */
-	public Money edge(UserId debtor, UserId creditor) {
+	public Money plannedAmount(UserId debtor, UserId creditor) {
 		return simplifiedDebts.stream()
 			.filter(debt -> debt.fromDebtor().equals(debtor) && debt.toCreditor().equals(creditor))
 			.map(DirectedDebt::amount)
@@ -93,8 +93,8 @@ public record SettlementPlan(List<DirectedDebt> simplifiedDebts) {
 	 * following the chosen last person from the full set downwards yields one such
 	 * ordering, whose zero-sum prefixes are the group boundaries.
 	 */
-	private static List<List<Integer>> zeroSumGroups(long[] cents) {
-		int n = cents.length;
+	private static List<List<Integer>> zeroSumGroups(long[] minorUnits) {
+		int n = minorUnits.length;
 		if (n == 0) {
 			return List.of();
 		}
@@ -104,7 +104,7 @@ public record SettlementPlan(List<DirectedDebt> simplifiedDebts) {
 		int[] choice = new int[full + 1];
 		for (int mask = 1; mask <= full; mask++) {
 			int low = Integer.numberOfTrailingZeros(mask);
-			sum[mask] = sum[mask & (mask - 1)] + cents[low];
+			sum[mask] = sum[mask & (mask - 1)] + minorUnits[low];
 			int bestValue = -1;
 			for (int i = 0; i < n; i++) {
 				if ((mask & (1 << i)) != 0 && best[mask & ~(1 << i)] > bestValue) {
@@ -134,24 +134,24 @@ public record SettlementPlan(List<DirectedDebt> simplifiedDebts) {
 	/**
 	 * Largest debtor pays largest creditor until the group is at zero; ties by user id.
 	 */
-	private static void settleGreedily(List<Integer> group, UserId[] ids, long[] cents, Currency currency,
+	private static void settleGreedily(List<Integer> group, UserId[] ids, long[] minorUnits, Currency currency,
 			List<DirectedDebt> edges) {
 		Comparator<Integer> byIdAsc = Comparator.comparing(i -> ids[i], BY_ID);
 		while (true) {
 			Integer debtor = group.stream()
-				.filter(i -> cents[i] < 0)
-				.min(Comparator.<Integer>comparingLong(i -> cents[i]).thenComparing(byIdAsc))
+				.filter(i -> minorUnits[i] < 0)
+				.min(Comparator.<Integer>comparingLong(i -> minorUnits[i]).thenComparing(byIdAsc))
 				.orElse(null);
 			Integer creditor = group.stream()
-				.filter(i -> cents[i] > 0)
-				.min(Comparator.<Integer>comparingLong(i -> -cents[i]).thenComparing(byIdAsc))
+				.filter(i -> minorUnits[i] > 0)
+				.min(Comparator.<Integer>comparingLong(i -> -minorUnits[i]).thenComparing(byIdAsc))
 				.orElse(null);
 			if (debtor == null || creditor == null) {
 				return;
 			}
-			long amount = Math.min(-cents[debtor], cents[creditor]);
-			cents[debtor] += amount;
-			cents[creditor] -= amount;
+			long amount = Math.min(-minorUnits[debtor], minorUnits[creditor]);
+			minorUnits[debtor] += amount;
+			minorUnits[creditor] -= amount;
 			edges.add(new DirectedDebt(ids[debtor], ids[creditor], Money.ofMinorUnits(amount, currency)));
 		}
 	}

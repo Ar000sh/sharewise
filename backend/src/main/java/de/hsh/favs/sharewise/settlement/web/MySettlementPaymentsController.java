@@ -28,7 +28,7 @@ class MySettlementPaymentsController {
 
 	@GetMapping("/me/settlement-payments")
 	List<SettlementPaymentResponse> listMySettlementPayments() {
-		return mapper.toResponses(payments.awaitingMyAnswer(currentUser.get().userId()));
+		return mapper.toResponses(payments.listAwaitingMyAnswer(currentUser.get().userId()));
 	}
 
 }

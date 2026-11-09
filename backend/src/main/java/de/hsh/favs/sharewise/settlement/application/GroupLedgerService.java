@@ -73,8 +73,9 @@ public class GroupLedgerService {
 	}
 
 	/**
-	 * Lock, check, append, save; then compare every person's total before and after and
-	 * publish the zero-state flips. A redelivery books nothing and so publishes nothing.
+	 * Lock, check, append, save; then compare every person's net balance before and after
+	 * and publish the zero-state flips. A redelivery books nothing and so publishes
+	 * nothing.
 	 */
 	private void book(GroupId groupId, UUID referenceId, BiConsumer<GroupLedger, Instant> append) {
 		var group = groupId.value();
@@ -83,13 +84,13 @@ public class GroupLedgerService {
 		if (ledgers.isBooked(group, referenceId)) {
 			return;
 		}
-		Map<UUID, BigDecimal> before = totals(group);
+		Map<UUID, BigDecimal> balancesBefore = netBalancesByPerson(group);
 		Instant now = clock.instant();
 		append.accept(ledger, now);
 		ledgers.save(ledger);
-		// the totals query must see the entries just appended
+		// the balances query must see the entries just appended
 		ledgers.flush();
-		publishZeroStateFlips(groupId, before, totals(group), now);
+		publishZeroStateFlips(groupId, balancesBefore, netBalancesByPerson(group), now);
 	}
 
 	/**
@@ -98,25 +99,25 @@ public class GroupLedgerService {
 	 * everybody is zero now and somebody was not before. Sorted by user id, so the order
 	 * is stable.
 	 */
-	private void publishZeroStateFlips(GroupId groupId, Map<UUID, BigDecimal> before, Map<UUID, BigDecimal> after,
-			Instant now) {
-		var people = new TreeSet<UUID>(before.keySet());
-		people.addAll(after.keySet());
+	private void publishZeroStateFlips(GroupId groupId, Map<UUID, BigDecimal> balancesBefore,
+			Map<UUID, BigDecimal> balancesAfter, Instant now) {
+		var people = new TreeSet<UUID>(balancesBefore.keySet());
+		people.addAll(balancesAfter.keySet());
 		for (UUID person : people) {
-			boolean wasZero = isZero(before.get(person));
-			boolean isZero = isZero(after.get(person));
-			if (wasZero != isZero) {
-				events.publishEvent(new MemberBalanceStatusChanged(groupId, new UserId(person), isZero, now));
+			boolean wasZero = isZero(balancesBefore.get(person));
+			boolean isZeroNow = isZero(balancesAfter.get(person));
+			if (wasZero != isZeroNow) {
+				events.publishEvent(new MemberBalanceStatusChanged(groupId, new UserId(person), isZeroNow, now));
 			}
 		}
-		boolean everybodyZeroNow = after.values().stream().allMatch(GroupLedgerService::isZero);
-		boolean somebodyWasNot = !before.values().stream().allMatch(GroupLedgerService::isZero);
+		boolean everybodyZeroNow = balancesAfter.values().stream().allMatch(GroupLedgerService::isZero);
+		boolean somebodyWasNot = !balancesBefore.values().stream().allMatch(GroupLedgerService::isZero);
 		if (everybodyZeroNow && somebodyWasNot) {
 			events.publishEvent(new AllBalancesSettled(groupId, now));
 		}
 	}
 
-	private Map<UUID, BigDecimal> totals(UUID group) {
+	private Map<UUID, BigDecimal> netBalancesByPerson(UUID group) {
 		return ledgers.balances(new GroupId(group))
 			.stream()
 			.collect(Collectors.toMap(balance -> balance.userId().value(), balance -> balance.netBalance().amount(),
