@@ -8,7 +8,7 @@
 1. **The domain diagram** (`docs/domain/ShareWise_Domain_Model.drawio`, in this repository) decides the names of aggregates, entities, value objects, events and operations. A code name the diagram lacks is a defect in one of the two.
 2. **`docs/api/openapi.yaml`** decides the HTTP interface. It changes first, in its own commit.
 3. **`docs/conventions/`** decides everything else. If a rule is wrong, change the rule in the same commit as the code.
-4. Business rules are numbered R1 to R17 and L1 to L6 (`work/ShareWise_Requirements.md` in the FAVS folder). Code and Javadoc cite them: `(R4)`.
+4. Business rules are numbered R1 to R18 and L1 to L6 (`work/ShareWise_Requirements.md` in the FAVS folder). Code and Javadoc cite them: `(R4)`.
 
 @docs/conventions/README.md
 
