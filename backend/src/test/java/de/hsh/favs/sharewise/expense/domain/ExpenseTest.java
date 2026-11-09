@@ -46,8 +46,11 @@ class ExpenseTest {
 
 	@Test
 	void thePayerNeedNotTakePartInTheSplit() {
-		// when alice pays for bob and carol only
-		Expense expense = new ExpenseFixture().withParticipants(BOB, CAROL).withTotalAmount("90.00").build();
+		// when alice pays for bob and carol only, and bob (a participant) records it
+		Expense expense = new ExpenseFixture().withRecordedBy(BOB)
+			.withParticipants(BOB, CAROL)
+			.withTotalAmount("90.00")
+			.build();
 
 		// then
 		assertThat(expense.shares()).extracting(ExpenseShare::participantId).containsExactly(BOB, CAROL);
@@ -106,8 +109,17 @@ class ExpenseTest {
 	}
 
 	@Test
+	void theRecorderMustBeOneOfTheParticipants() {
+		// given Alice records an expense that only Bob and Carol take part in
+		var fixture = new ExpenseFixture().withRecordedBy(ALICE).withParticipants(BOB, CAROL);
+
+		// when / then
+		assertRefusedWith(fixture::record, ErrorCode.RECORDER_NOT_PARTICIPANT);
+	}
+
+	@Test
 	void theTotalMustBePositive() {
-		List<ExpenseShare> share = List.of(new ExpenseShare(BOB, Money.eur("0.00")));
+		List<ExpenseShare> share = List.of(new ExpenseShare(ALICE, Money.eur("0.00")));
 
 		assertRefusedWith(() -> Expense.record(new ExpenseFixture().groupView(), new ExpenseTitle("x"), ALICE, ALICE,
 				Money.eur("0.00"), LocalDate.parse("2027-06-01"), share, SplitStrategy.EQUAL, MutableClock.START),
@@ -116,7 +128,7 @@ class ExpenseTest {
 
 	@Test
 	void sharesThatDoNotAddUpToTheTotalAreAProgrammingError() {
-		List<ExpenseShare> wrong = List.of(new ExpenseShare(BOB, Money.eur("4.99")));
+		List<ExpenseShare> wrong = List.of(new ExpenseShare(ALICE, Money.eur("4.99")));
 
 		assertThatThrownBy(() -> Expense.record(new ExpenseFixture().groupView(), new ExpenseTitle("x"), ALICE, ALICE,
 				Money.eur("5.00"), LocalDate.parse("2027-06-01"), wrong, SplitStrategy.EQUAL, MutableClock.START))

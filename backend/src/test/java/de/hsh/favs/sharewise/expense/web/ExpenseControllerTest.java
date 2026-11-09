@@ -158,6 +158,16 @@ class ExpenseControllerTest {
 	}
 
 	@Test
+	void aRecorderWhoIsNotAParticipantIs422AndNothingIsRecorded() throws Exception {
+		expenses.paidBy(alice)
+			.splitBetween(bob)
+			.record(alice)
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.code").value("RECORDER_NOT_PARTICIPANT"));
+		expenses.list(alice).andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+	}
+
+	@Test
 	void noParticipantsAndAnAmountOfZeroAre422() throws Exception {
 		expenses.paidBy(alice)
 			.record(alice)
