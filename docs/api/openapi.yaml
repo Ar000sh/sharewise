@@ -107,14 +107,15 @@ paths:
       tags: [group]
       operationId: createInvitation
       summary: >
-        Invite an existing account by exact username or exact email (valid 7 days, R9). The caller must be a
-        member. The invitation belongs to that account; there is no link anyone can use.
+        Invite an existing account by exact username or exact email (valid 7 days, R9). The caller must be an
+        admin of the group. The invitation belongs to that account; there is no link anyone can use. The
+        invitee joins with the given role (MEMBER when omitted).
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: "#/components/schemas/InviteMemberRequest" }
-            example: { identifier: bob }
+            example: { identifier: bob, role: MEMBER }
       responses:
         "201":
           description: Created
@@ -127,7 +128,16 @@ paths:
                 expiresAt: "2027-06-08T10:00:00Z"
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
-        "403": { $ref: "#/components/responses/NotAMember" }
+        "403":
+          description: The caller is not a member of the group, or is a member but not an admin
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notAMember:
+                  value: { type: "about:blank", title: Forbidden, status: 403, code: NOT_A_MEMBER, detail: "You are not a member of this group" }
+                notAnAdmin:
+                  value: { type: "about:blank", title: Forbidden, status: 403, code: NOT_AN_ADMIN, detail: "Only an admin can do this" }
         "404":
           description: Unknown group, or no account for the username or email
           content:
@@ -149,6 +159,51 @@ paths:
                 alreadyInvited:
                   value: { type: "about:blank", title: Conflict, status: 409, code: ALREADY_INVITED, detail: "This person already has an open invitation" }
 
+  /groups/{groupId}/members/{userId}/promote:
+    parameters:
+      - { $ref: "#/components/parameters/GroupId" }
+      - { $ref: "#/components/parameters/UserId" }
+    post:
+      tags: [group]
+      operationId: promoteToAdmin
+      summary: >
+        Make an active member an ADMIN. The caller must be an admin. Promotion is one way: there is no
+        demotion.
+      responses:
+        "200":
+          description: The member, now with role ADMIN
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Member" }
+              example: { userId: "aaaaaaaa-0000-0000-0000-000000000002", displayName: Bob, role: ADMIN }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403":
+          description: The caller is not a member of the group, or is a member but not an admin
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notAMember:
+                  value: { type: "about:blank", title: Forbidden, status: 403, code: NOT_A_MEMBER, detail: "You are not a member of this group" }
+                notAnAdmin:
+                  value: { type: "about:blank", title: Forbidden, status: 403, code: NOT_AN_ADMIN, detail: "Only an admin can do this" }
+        "404":
+          description: Unknown group, or the person is not an active member of it
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                groupNotFound:
+                  value: { type: "about:blank", title: Not Found, status: 404, code: GROUP_NOT_FOUND, detail: "Group not found" }
+                memberNotFound:
+                  value: { type: "about:blank", title: Not Found, status: 404, code: MEMBER_NOT_FOUND, detail: "This person is not a member of this group" }
+        "409":
+          description: The member already is an admin
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example: { type: "about:blank", title: Conflict, status: 409, code: ALREADY_ADMIN, detail: "This member is already an admin" }
+
   /invitations:
     get:
       tags: [group]
@@ -166,6 +221,7 @@ paths:
                 - invitationId: "dddddddd-0000-0000-0000-000000000001"
                   group: { id: "bbbbbbbb-0000-0000-0000-000000000001", name: "Mallorca 2027" }
                   invitedBy: { userId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice, username: alice }
+                  role: MEMBER
                   expiresAt: "2027-06-08T10:00:00Z"
         "401": { $ref: "#/components/responses/Unauthenticated" }
 
@@ -388,6 +444,11 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
 
   responses:
     BadRequest:
@@ -476,6 +537,9 @@ components:
             - ACCOUNT_NOT_FOUND
             - ALREADY_INVITED
             - NOTIFICATION_NOT_FOUND
+            - NOT_AN_ADMIN
+            - MEMBER_NOT_FOUND
+            - ALREADY_ADMIN
         detail: { type: string }
 
     User:
@@ -545,6 +609,11 @@ components:
           description: >
             Exact username or exact email of an existing account (an identifier with "@" is an email).
             Trimmed and compared case-insensitively; no partial matching.
+        role:
+          type: string
+          enum: [ADMIN, MEMBER]
+          default: MEMBER
+          description: The role the invitee gets when they accept.
 
     Invitation:
       type: object
@@ -556,16 +625,17 @@ components:
 
     PendingInvitation:
       type: object
-      required: [invitationId, group, invitedBy, expiresAt]
+      required: [invitationId, group, invitedBy, role, expiresAt]
       properties:
         invitationId: { type: string, format: uuid }
         group: { $ref: "#/components/schemas/GroupRef" }
         invitedBy: { $ref: "#/components/schemas/UserSummary" }
+        role: { type: string, enum: [ADMIN, MEMBER], description: What the invitee becomes on accepting. }
         expiresAt: { type: string, format: date-time }
 
     NotificationType:
       type: string
-      enum: [MEMBER_JOINED, INVITATION_DECLINED]
+      enum: [MEMBER_JOINED, INVITATION_DECLINED, MEMBER_PROMOTED]
       description: More types arrive with later features (payments, waived debts, removal).
 
     Notification:
@@ -589,7 +659,7 @@ components:
         reference:
           type: string
           format: uuid
-          description: What the entry points at (the person who joined, or the declined invitation).
+          description: What the entry points at (the person who joined or was made admin, or the declined invitation).
 
     NotificationList:
       type: object
