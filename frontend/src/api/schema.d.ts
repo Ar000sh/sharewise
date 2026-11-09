@@ -236,7 +236,7 @@ export interface components {
             title?: string;
             status: number;
             /** @enum {string} */
-            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "GROUP_NOT_OPEN" | "SPLIT_NOT_SUPPORTED" | "ACCOUNT_NOT_FOUND" | "ALREADY_INVITED" | "NOTIFICATION_NOT_FOUND";
+            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "RECORDER_NOT_PARTICIPANT" | "GROUP_NOT_OPEN" | "SPLIT_NOT_SUPPORTED" | "ACCOUNT_NOT_FOUND" | "ALREADY_INVITED" | "NOTIFICATION_NOT_FOUND";
             detail?: string;
         };
         User: {
@@ -521,7 +521,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description A domain rule was violated. code is one of AMOUNT_NOT_POSITIVE, PAYER_NOT_IN_GROUP, PARTICIPANT_NOT_IN_GROUP, NO_PARTICIPANTS, GROUP_NOT_OPEN, SPLIT_NOT_SUPPORTED. */
+        /** @description A domain rule was violated. code is one of AMOUNT_NOT_POSITIVE, PAYER_NOT_IN_GROUP, PARTICIPANT_NOT_IN_GROUP, NO_PARTICIPANTS, RECORDER_NOT_PARTICIPANT, GROUP_NOT_OPEN, SPLIT_NOT_SUPPORTED. */
         DomainRule: {
             headers: {
                 [name: string]: unknown;
@@ -1073,7 +1073,24 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["NotAMember"];
             404: components["responses"]["GroupNotFound"];
-            422: components["responses"]["DomainRule"];
+            /** @description A domain rule was violated (see the DomainRule response for the codes). RECORDER_NOT_PARTICIPANT: the member who records the expense must be one of its participants (R18). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Unprocessable Entity",
+                     *       "status": 422,
+                     *       "code": "RECORDER_NOT_PARTICIPANT",
+                     *       "detail": "The recorder must be one of the participants"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     getBalances: {
