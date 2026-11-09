@@ -15,11 +15,12 @@ import org.springframework.stereotype.Component;
 
 /**
  * How much a debtor may still pay (or a creditor waive) in one pair (D3, D5, R17): the
- * smallest of the plan edge of the pair, the debt of the debtor and the credit of the
- * creditor, each reduced by what is already reserved, and never below zero. The pair cap
- * matches the plan the user sees; the person caps make sure no balance crosses zero even
- * when the plan changes later. Callers hold the ledger lock (D6), otherwise two callers
- * can both see the same open debt.
+ * smaller of the debt of the debtor and the credit of the creditor, each reduced by what
+ * is already reserved, and never below zero. The plan is not asked: balances are pooled,
+ * so the plan is only a suggestion of who pays whom, and a payment is a fact the server
+ * records up to what the two people owe and are owed. The screen offers less, the plan
+ * edge of the pair minus what is reserved on it ({@link #payableEdges}, A3). Callers hold
+ * the ledger lock (D6), otherwise two callers can both see the same open debt.
  */
 @Component
 class OpenDebtPolicy {
@@ -35,44 +36,46 @@ class OpenDebtPolicy {
 
 	/**
 	 * One edge of the plan with what is reserved on its pair ({@code pendingAmount}) and
-	 * the open debt of the pair ({@code payableAmount}, what {@code record} would accept
-	 * now, A3).
+	 * what the screen offers on it ({@code payableAmount}: the edge minus the reserved
+	 * part, never more than what {@code record} would accept now, A3).
 	 */
 	record PayableEdge(DirectedDebt debt, Money pendingAmount, Money payableAmount) {
 
 	}
 
 	/**
-	 * The open debt of {@code debtor} to {@code creditor} in EUR, zero when the pair has
-	 * no plan edge or the group has no ledger entries.
+	 * The open debt of {@code debtor} to {@code creditor} in EUR, what {@code record} and
+	 * {@code waive} accept: zero when the debtor owes nothing, the creditor is owed
+	 * nothing, or the group has no ledger entries.
 	 */
 	Money openDebt(GroupId group, UserId debtor, UserId creditor) {
-		List<MemberBalance> balances = ledgers.balances(group);
-		Money plannedAmount = SettlementPlan.of(balances).plannedAmount(debtor, creditor);
-		return openDebtFromCaps(group, balances, debtor, creditor, plannedAmount,
-				reserved(group, debtor.value(), creditor.value()));
+		return openDebtFromPersonCaps(group, ledgers.balances(group), debtor, creditor);
 	}
 
 	/**
-	 * Every edge of the group's plan in plan order, each with its open debt computed by
-	 * the same rule as {@link #openDebt}, from one read of the balances (F8).
+	 * Every edge of the group's plan in plan order, each with what the screen offers on
+	 * it: the plan edge minus what is reserved on the pair, but never more than the open
+	 * debt (F8: one read of the balances for the whole plan).
 	 */
 	List<PayableEdge> payableEdges(GroupId group) {
 		List<MemberBalance> balances = ledgers.balances(group);
 		return SettlementPlan.of(balances).simplifiedDebts().stream().map(debt -> {
 			Money reservedOnPair = reserved(group, debt.fromDebtor().value(), debt.toCreditor().value());
-			return new PayableEdge(debt, reservedOnPair, openDebtFromCaps(group, balances, debt.fromDebtor(),
-					debt.toCreditor(), debt.amount(), reservedOnPair));
+			Money pairCap = debt.amount().minus(reservedOnPair);
+			Money payable = smallerOf(pairCap,
+					openDebtFromPersonCaps(group, balances, debt.fromDebtor(), debt.toCreditor()));
+			return new PayableEdge(debt, reservedOnPair, payable.isNegative() ? Money.eur(BigDecimal.ZERO) : payable);
 		}).toList();
 	}
 
-	/** The one formula: the smallest of the three caps, never below zero. */
-	private Money openDebtFromCaps(GroupId group, List<MemberBalance> balances, UserId debtor, UserId creditor,
-			Money plannedAmount, Money reservedOnPair) {
-		Money pairCap = plannedAmount.minus(reservedOnPair);
+	/**
+	 * The smaller of the debtor's and the creditor's remaining amount, never below zero
+	 * (R17).
+	 */
+	private Money openDebtFromPersonCaps(GroupId group, List<MemberBalance> balances, UserId debtor, UserId creditor) {
 		Money debtorCap = balanceOf(balances, debtor).negate().minus(reserved(group, debtor.value(), null));
 		Money creditorCap = balanceOf(balances, creditor).minus(reserved(group, null, creditor.value()));
-		Money smallestCap = smallerOf(pairCap, smallerOf(debtorCap, creditorCap));
+		Money smallestCap = smallerOf(debtorCap, creditorCap);
 		return smallestCap.isNegative() ? Money.eur(BigDecimal.ZERO) : smallestCap;
 	}
 

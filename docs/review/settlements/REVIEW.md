@@ -38,7 +38,7 @@ sequenceDiagram
 
 - **Confirm does not re-check the open debt.** R17 is checked on report and waive; confirm records a fact (the first handover's A1 was withdrawn, `money-flow` section 8).
 - **A PENDING payment reserves the open debt** under the ledger lock (D5, D6), so one debt cannot be reported twice; `@Version` only serialises two answers to one payment.
-- **The plan is never stored**; `payableAmount` is what the server would accept now, from the same formula as `record` (`OpenDebtPolicy.open`).
+- **The plan is never stored**; `payableAmount` is what the screen offers on a plan edge: the edge minus what is reserved, never more than the open debt `record` accepts (`OpenDebtPolicy`). The server does not cap by the plan edge (money-flow section 6.2).
 - **`shared.events` is the one exception** to "events live in the publisher's `api`" (group would otherwise depend on settlement, a cycle); `ConventionTests` pins it.
 - **State is a query, history is an event:** payments waiting for me come from `GET /me/settlement-payments`, outcomes are notification entries; `notification` now depends on `settlement::api` and stays a leaf.
 - **Exact minimum plan up to 16 people, greedy above** (R15; our choice, not from the slides); `Membership.balanceStatusAt` ignores an older zero-flag event (D12).

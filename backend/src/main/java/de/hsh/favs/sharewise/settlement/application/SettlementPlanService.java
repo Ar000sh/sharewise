@@ -29,11 +29,11 @@ public class SettlementPlanService {
 	/**
 	 * One plan edge: {@code fromDebtor} pays {@code amount} to {@code toCreditor};
 	 * {@code pendingAmount} is the part of the pair already reserved by payments that are
-	 * PENDING or not yet booked (D5); {@code payableAmount} is the open debt of the pair,
-	 * computed by {@link OpenDebtPolicy} exactly as {@code record} computes it, so the
-	 * screen and the server cannot disagree (A3, R17). It can be below
-	 * {@code amount - pendingAmount} when the debtor's debt is reserved towards another
-	 * creditor.
+	 * PENDING or not yet booked (D5); {@code payableAmount} is what the screen offers on
+	 * this edge: {@code amount - pendingAmount}, but never more than the open debt that
+	 * {@code record} accepts ({@link OpenDebtPolicy}), so the screen never offers more
+	 * than the server accepts (A3, R17). It can be below {@code amount - pendingAmount}
+	 * when the debtor's debt is reserved towards another creditor.
 	 */
 	public record PlanEntry(UserId fromDebtor, UserId toCreditor, Money amount, Money pendingAmount,
 			Money payableAmount) {
