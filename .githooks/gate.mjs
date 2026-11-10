@@ -11,6 +11,7 @@
 //   Docs-only commits (.md) skip step 5.
 // pre-push (complete, what `main` must always be): backend verify (needs Docker), frontend lint, typecheck, tests,
 //   build, contract lint. Skipped when every pushed file is .md.
+// ci <backend|frontend|repo> (GitHub Actions, one job per group): one group of the pre-push checks, never skipped.
 //
 // If a gate is wrong or too slow, change this file in its own commit. Never bypass it with --no-verify.
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -178,13 +179,33 @@ function prePush() {
 	if (spawnSync('docker info', { shell: true, stdio: 'ignore' }).status !== 0) {
 		fail('Docker is not running. The backend tests need it: start Docker Desktop and push again.');
 	}
-	run('backend verify (all backend tests, Docker)', `${mvnw} -q verify`, 'backend');
-	run('frontend lint', 'npm run lint --silent', 'frontend');
-	run('frontend typecheck', 'npm run typecheck --silent', 'frontend');
-	run('frontend tests', 'npm test --silent', 'frontend');
-	run('frontend build', 'npm run build --silent', 'frontend');
-	run('contract lint', `npx --yes @redocly/cli lint ${CONTRACT}`);
-	run('guard hook tests', 'node --test .claude/hooks/guard.test.mjs .githooks/line-endings.test.mjs');
+	for (const group of Object.keys(CHECKS)) {
+		runGroup(group);
+	}
+}
+
+// The checks of the complete gate, in groups. pre-push runs all groups in this order; GitHub Actions runs one group
+// per job (`ci <group>`), so the list of checks exists only here.
+const CHECKS = {
+	backend: [
+		['backend verify (all backend tests, Docker)', `${mvnw} -q verify`, 'backend'],
+	],
+	frontend: [
+		['frontend lint', 'npm run lint --silent', 'frontend'],
+		['frontend typecheck', 'npm run typecheck --silent', 'frontend'],
+		['frontend tests', 'npm test --silent', 'frontend'],
+		['frontend build', 'npm run build --silent', 'frontend'],
+	],
+	repo: [
+		['contract lint', `npx --yes @redocly/cli lint ${CONTRACT}`],
+		['guard hook tests', 'node --test .claude/hooks/guard.test.mjs .githooks/line-endings.test.mjs'],
+	],
+};
+
+function runGroup(group) {
+	for (const [label, command, cwd] of CHECKS[group]) {
+		run(label, command, cwd);
+	}
 }
 
 if (process.argv[2] === 'pre-commit') {
@@ -193,6 +214,9 @@ if (process.argv[2] === 'pre-commit') {
 else if (process.argv[2] === 'pre-push') {
 	prePush();
 }
+else if (process.argv[2] === 'ci' && Object.hasOwn(CHECKS, process.argv[3])) {
+	runGroup(process.argv[3]);
+}
 else {
-	fail('usage: node .githooks/gate.mjs pre-commit|pre-push');
+	fail(`usage: node .githooks/gate.mjs pre-commit|pre-push|ci <${Object.keys(CHECKS).join('|')}>`);
 }
