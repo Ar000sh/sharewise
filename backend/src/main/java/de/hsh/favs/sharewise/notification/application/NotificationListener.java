@@ -1,5 +1,6 @@
 package de.hsh.favs.sharewise.notification.application;
 
+import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
 import de.hsh.favs.sharewise.settlement.api.DebtWaived;
@@ -9,10 +10,10 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 /**
- * The events of the group and settlement contexts that create an inbox entry (I2), each
- * handed to the notification service. Every method is asynchronous, runs after the commit
- * in its own transaction, has its own entry in the event publication registry, takes
- * everything from the event and uses no request state.
+ * The events of the group, expense and settlement contexts that create an inbox entry
+ * (I2), each handed to the notification service. Every method is asynchronous, runs after
+ * the commit in its own transaction, has its own entry in the event publication registry,
+ * takes everything from the event and uses no request state.
  */
 @Component
 class NotificationListener {
@@ -26,6 +27,11 @@ class NotificationListener {
 	@ApplicationModuleListener
 	void on(MemberJoined event) {
 		notifications.recordMemberJoined(event);
+	}
+
+	@ApplicationModuleListener
+	void on(ExpenseRecorded event) {
+		notifications.recordExpenseRecorded(event);
 	}
 
 	@ApplicationModuleListener

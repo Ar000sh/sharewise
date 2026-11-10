@@ -4,5 +4,5 @@
  * {@code api} package. Layout: domain, application, persistence, web.
  */
 @org.springframework.modulith.ApplicationModule(
-		allowedDependencies = { "account::api", "group::api", "settlement::api", "shared" })
+		allowedDependencies = { "account::api", "expense::api", "group::api", "settlement::api", "shared" })
 package de.hsh.favs.sharewise.notification;

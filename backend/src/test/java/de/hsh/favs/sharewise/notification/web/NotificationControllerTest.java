@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import de.hsh.favs.sharewise.ModuleIntegrationTest;
 import de.hsh.favs.sharewise.MutableClock;
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
+import de.hsh.favs.sharewise.expense.web.ExpenseRequests;
 import de.hsh.favs.sharewise.group.web.GroupRequests;
 import de.hsh.favs.sharewise.notification.application.NotificationService;
 import de.hsh.favs.sharewise.notification.domain.Notification;
@@ -125,6 +126,29 @@ class NotificationControllerTest {
 		assertThat(entry.get("actor").get("userId").asString()).isEqualTo(alice.idString());
 		assertThat(entry.get("group").get("id").asString()).isEqualTo(group.toString());
 		assertThat(entry.get("reference").asString()).isEqualTo(payment.toString());
+	}
+
+	@Test
+	void aRecordedExpenseShowsAnEntryForEveryoneInvolvedButNotForTheRecorder() throws Exception {
+		// given a group of three
+		UUID group = groups.groupWith(alice, "Trip", bob, carol);
+
+		// when alice records the hotel, pays it and shares it with both
+		new ExpenseRequests(mvc, json).inGroup(group)
+			.paidBy(alice)
+			.splitBetween(alice, bob, carol)
+			.record(alice)
+			.andExpect(status().isCreated());
+
+		// then bob and carol hear about it through the expense event, naming alice
+		for (AccountFixture other : new AccountFixture[] { bob, carol }) {
+			JsonNode entry = awaitEntries(other, 1).get("items").get(0);
+			assertThat(entry.get("type").asString()).isEqualTo("EXPENSE_RECORDED");
+			assertThat(entry.get("actor").get("userId").asString()).isEqualTo(alice.idString());
+			assertThat(entry.get("group").get("id").asString()).isEqualTo(group.toString());
+		}
+		// and alice, who recorded it, has only the entries for the two people who joined
+		inbox(alice, "").andExpect(jsonPath("$.items[?(@.type=='EXPENSE_RECORDED')]").isEmpty());
 	}
 
 	@Test

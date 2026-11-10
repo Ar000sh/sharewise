@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import de.hsh.favs.sharewise.ModuleIntegrationTest;
 import de.hsh.favs.sharewise.MutableClock;
+import de.hsh.favs.sharewise.expense.api.ExpenseId;
+import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.expense.api.ExpenseShare;
 import de.hsh.favs.sharewise.group.api.GroupRole;
 import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.InvitationId;
@@ -16,6 +19,7 @@ import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.Money;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -150,6 +154,55 @@ class NotificationEventsTest {
 
 		// then
 		assertOneEntryForTheDebtor("DEBT_WAIVED");
+	}
+
+	@Test
+	void anExpenseTellsEveryoneInvolvedExceptTheRecorderOnce() {
+		// given alice records and pays; bob and carol share it with her
+		UserId alice = new UserId(UUID.randomUUID());
+		UserId bob = new UserId(UUID.randomUUID());
+		UserId carol = new UserId(UUID.randomUUID());
+		var event = expense(alice, alice, alice, bob, carol);
+
+		// when delivered twice
+		notifications.recordExpenseRecorded(event);
+		notifications.recordExpenseRecorded(event);
+
+		// then bob and carol have one entry each, alice none
+		assertThat(count("recipient_id", alice)).isZero();
+		for (UserId recipient : new UserId[] { bob, carol }) {
+			assertThat(count("recipient_id", recipient)).isEqualTo(1);
+			var row = jdbc.queryForMap("select * from notifications where recipient_id = ?", recipient.value());
+			assertThat(row).containsEntry("type", "EXPENSE_RECORDED")
+				.containsEntry("actor_id", alice.value())
+				.containsEntry("group_id", group.value())
+				.containsEntry("reference", event.expenseId().value());
+		}
+	}
+
+	@Test
+	void aPayerWhoDidNotRecordTheExpenseIsToldToo() {
+		// given carol records an expense that bob paid and only carol and dave share
+		UserId bob = new UserId(UUID.randomUUID());
+		UserId carol = new UserId(UUID.randomUUID());
+		UserId dave = new UserId(UUID.randomUUID());
+
+		// when
+		notifications.recordExpenseRecorded(expense(bob, carol, carol, dave));
+
+		// then the payer and the other participant hear about it, the recorder does not
+		assertThat(count("recipient_id", bob)).isEqualTo(1);
+		assertThat(count("recipient_id", dave)).isEqualTo(1);
+		assertThat(count("recipient_id", carol)).isZero();
+	}
+
+	private ExpenseRecorded expense(UserId paidBy, UserId recordedBy, UserId... participants) {
+		List<ExpenseShare> shares = List.of(participants)
+			.stream()
+			.map(participant -> new ExpenseShare(participant, Money.eur("10.00")))
+			.toList();
+		return new ExpenseRecorded(new ExpenseId(UUID.randomUUID()), group, paidBy, recordedBy,
+				Money.eur(shares.size() * 10 + ".00"), shares, NOW);
 	}
 
 	private void assertOneEntryForTheDebtor(String type) {

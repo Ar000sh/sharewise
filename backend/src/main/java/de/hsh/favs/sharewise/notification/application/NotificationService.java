@@ -2,6 +2,7 @@ package de.hsh.favs.sharewise.notification.application;
 
 import de.hsh.favs.sharewise.account.api.UserProfile;
 import de.hsh.favs.sharewise.account.api.UserProfiles;
+import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import de.hsh.favs.sharewise.group.api.GroupDirectory;
 import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
@@ -18,6 +19,7 @@ import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -114,6 +116,23 @@ public class NotificationService {
 	public void recordDebtWaived(DebtWaived event) {
 		record(Notification.notify(event.fromDebtor(), NotificationType.DEBT_WAIVED, event.groupId(),
 				event.toCreditor(), event.paymentId().value(), event.occurredAt()));
+	}
+
+	/**
+	 * Tells everybody involved in an expense that somebody recorded it: the participants
+	 * and the payer, but not the recorder, who knows. One entry per person; a repeated
+	 * event adds none.
+	 */
+	@Transactional
+	public void recordExpenseRecorded(ExpenseRecorded event) {
+		Set<UserId> involved = new LinkedHashSet<>();
+		event.shares().forEach(share -> involved.add(share.participantId()));
+		involved.add(event.paidBy());
+		involved.remove(event.recordedBy());
+		for (UserId recipient : involved) {
+			record(Notification.notify(recipient, NotificationType.EXPENSE_RECORDED, event.groupId(),
+					event.recordedBy(), event.expenseId().value(), event.occurredAt()));
+		}
 	}
 
 	/**

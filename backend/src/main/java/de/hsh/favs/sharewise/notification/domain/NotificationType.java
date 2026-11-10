@@ -21,6 +21,12 @@ public enum NotificationType {
 	PAYMENT_REJECTED,
 
 	/** The creditor forgave part of the recipient's debt (R17, I2). */
-	DEBT_WAIVED
+	DEBT_WAIVED,
+
+	/**
+	 * Somebody else recorded an expense in which the recipient owes a share or which the
+	 * recipient paid (J4).
+	 */
+	EXPENSE_RECORDED
 
 }
