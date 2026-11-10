@@ -264,6 +264,22 @@ describe("InboxBell", () => {
     expect(screen.getByText("Bob Tester waived part of your debt in Mallorca 2027")).toBeInTheDocument();
   });
 
+  it("describesAnExpenseEntryWithWhoRecordedItAndWhere", async () => {
+    // given
+    inbox = {
+      invitations: [],
+      payments: [],
+      notifications: { unreadCount: 1, items: [{ ...entry, id: "n1", type: "EXPENSE_RECORDED" }] },
+    };
+    backend();
+
+    // when
+    await renderOpened();
+
+    // then
+    expect(screen.getByText("Bob Tester recorded an expense in Mallorca 2027")).toBeInTheDocument();
+  });
+
   it("showsWhatLoadedWhenThePaymentsCouldNotBeLoaded", async () => {
     inbox = { ...inbox, payments: null };
     backend();

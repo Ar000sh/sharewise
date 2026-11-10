@@ -38,6 +38,8 @@ function describe(entry: Notification): string {
       return `${who} rejected your payment in ${group}`;
     case "DEBT_WAIVED":
       return `${who} waived part of your debt in ${group}`;
+    case "EXPENSE_RECORDED":
+      return `${who} recorded an expense in ${group}`;
   }
 }
 
