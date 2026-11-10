@@ -8,7 +8,7 @@ description: Review a ShareWise branch before it is merged into main. Runs the g
 Two reviews, two questions: **does it follow our rules** (a fresh subagent with `reviewer-prompt.md`) and **is it correct** (`/code-review`). The build already checks formatting, module boundaries and ArchUnit rules; the reviews cover what it cannot.
 
 ## Steps
-1. **Scope:** the branch (default: the current one) and its base (`git merge-base main <branch>`). List the commits and the changed files grouped by backend, frontend, contract, migrations, docs. If the branch touches nothing but `.md`, skip to step 4 and review it yourself.
+1. **Scope:** the branch (default: the current one) and its base (`git fetch origin main` then `git merge-base origin/main <branch>` (merges happen on GitHub, so the local `main` can be stale)). List the commits and the changed files grouped by backend, frontend, contract, migrations, docs. If the branch touches nothing but `.md`, skip to step 4 and review it yourself.
 2. **Gates first:** run the push gate's checks (`node .githooks/gate.mjs pre-push < /dev/null` from the repo root; Docker must run). A red gate ends the review: report what failed.
 3. **Dispatch in parallel:**
    - a fresh `general-purpose` subagent on `sonnet` with `reviewer-prompt.md` (this folder), brief filled in: branch, base, the changed files;
