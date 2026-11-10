@@ -74,6 +74,8 @@ cookie is per browser.
 1. **Bob / Carol:** sign up first (choose a username). Only people with an account can be invited.
 2. **Alice:** sign up, create the group "Mallorca 2027", open the Members tab, type Bob's username (or Carol's email)
    into **Username or email** and press **Invite**. "No account found" means that person has not signed in yet.
+   Only an admin sees this form (the creator is the first admin); pick **Joins as** Admin to invite someone as an
+   admin. Later, an admin can press **Make admin** next to a member; that member's bell shows "… made you an admin".
 3. **Bob / Carol:** reload, open the bell (**Inbox**), read "Alice … invited you to Mallorca 2027" and press **Accept**
    (or **Decline**). Alice's bell shows "… joined Mallorca 2027" a moment later (it arrives through an event).
 4. **Alice:** add "Hotel", 900 €, paid by Alice, everyone. **Bob:** "Dinner", 180 €, paid by Bob, everyone.

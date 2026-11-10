@@ -23,10 +23,12 @@ The code follows the diagram `docs/domain/ShareWise_Domain_Model.drawio` for eve
 | 15 | `Account`, `UserProfile` | no username | `Account.username: Username` (set from the Keycloak `preferred_username` on first login, unique, never contains `@`); `UserProfile.username`; the port `UserProfiles` gains `findByIdentifier(String)` | invitations find an existing account by exact username or email (design 2026-11-03, N3/N4); the diagram was updated with this change |
 | 16 | Notification context | no such context | new context `Notification`: aggregate root `Notification` (ids only), enumeration `NotificationType`; consumes `MemberJoined` and `InvitationDeclined`; the diagram was updated with this change | design 2026-11-03 N1/N7: the inbox shows things that happened; a pending invitation is asked from the group context instead |
 | 17 | `GroupDirectory` | no such port | read model port in `group.api`: `findNames(Set<GroupId>)` | the inbox shows group names without copying them |
+| 18 | `Invitation`, `MemberInvited`, `MemberPromoted` | `Invitation` has no role; `MemberInvited` has no role | `Invitation.role: GroupRole` (MEMBER by default) is applied when the invitee accepts; `MemberInvited.role`; `Group.inviteMember(invitee, inviter, role, now)`; only an admin may invite; `promoteToAdmin(user, promotedBy, now)` returns `MemberPromoted(groupId, userId, promotedBy, occurredAt)`; promotion is one way | design 2026-11-09: admins decide who joins and with which role; the diagram needs the field and the event's fields |
+| 19 | `NotificationType` | `MEMBER_JOINED`, `INVITATION_DECLINED` | adds `MEMBER_PROMOTED` (consumes `MemberPromoted`, recipient the promoted person) | design 2026-11-09, A6 |
 
 ## Known gaps (diagram is right, code comes later)
 
-- Group: `promoteToAdmin`, `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, `updateBalanceStatus`, and their events; the enums already have all their values.
+- Group: `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, `updateBalanceStatus`, and their events; the enums already have all their values.
 - Expense: `correct`, `remove`, the `EXACT` and `PERCENTAGE` split strategies, `ExpenseCorrected`, `ExpenseRemoved`.
 - Settlement: `appendCorrectionReversal`, `appendRemovalReversal`, `appendSettlementPayment`, `appendDebtWaiver`, `projectSimplifiedPlan`, the `SettlementPayment` aggregate and its events, `MemberBalanceStatusChanged`, `AllBalancesSettled`.
 - Account: `changeDisplayName`, `deactivate` (email verification, password reset and lock-out are Keycloak's).

@@ -74,10 +74,10 @@ Value objects wrap every id and every concept the diagram draws as a value objec
 Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCamelCase` for types, `lowerCamelCase` for fields and methods, `UPPER_SNAKE_CASE` for enumeration constants, `snake_case` for SQL.
 
 ### 3.1 Group context
-- Aggregate root `Group`: fields `id: GroupId`, `name: GroupName`, `currency: Currency`, `status: GroupStatus`; entities `Membership` (`userId`, `role: GroupRole`, `status: MembershipStatus`, `hasZeroBalance`, `joinedAt`) and `Invitation` (`id: InvitationId`, `invitee: UserId`, `status: InvitationStatus`, `expiresAt`). An invitation belongs to one existing account and only that account can answer it; `EXPIRED` is derived from `expiresAt`, never stored.
+- Aggregate root `Group`: fields `id: GroupId`, `name: GroupName`, `currency: Currency`, `status: GroupStatus`; entities `Membership` (`userId`, `role: GroupRole`, `status: MembershipStatus`, `hasZeroBalance`, `joinedAt`) and `Invitation` (`id: InvitationId`, `invitee: UserId`, `role: GroupRole`, `status: InvitationStatus`, `expiresAt`). An invitation belongs to one existing account and only that account can answer it; `EXPIRED` is derived from `expiresAt`, never stored. Only an **admin** invites (`NOT_AN_ADMIN` otherwise) and chooses the `role` the invitee gets on accepting (`MEMBER` unless stated). `promoteToAdmin` is admin-only and one way: there is no demotion (design 2026-11-09).
 - Operations (each returns its event): `createGroup`, `inviteMember`, `acceptInvitation`, `declineInvitation`, `promoteToAdmin`, `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, `updateBalanceStatus`.
 - Enumerations `GroupStatus {OPEN, CLOSED_FOR_SETTLEMENT, ARCHIVED}`, `GroupRole {ADMIN, MEMBER}`, `MembershipStatus {ACTIVE, FORMER_MEMBER}`, `InvitationStatus {PENDING, ACCEPTED, DECLINED, EXPIRED}`.
-- Events: `GroupCreated`, `MemberInvited`, `MemberJoined`, `MemberLeft`, `MemberRemoved`, `MemberPromoted`, `InvitationDeclined`, `GroupClosedForSettlement`, `GroupReopened`, `GroupArchived`.
+- Events (`MemberInvited` carries `role`, `MemberPromoted` is `groupId, userId, promotedBy, occurredAt`): `GroupCreated`, `MemberInvited`, `MemberJoined`, `MemberLeft`, `MemberRemoved`, `MemberPromoted`, `InvitationDeclined`, `GroupClosedForSettlement`, `GroupReopened`, `GroupArchived`.
 - Read model `GroupMembershipView`.
 
 ### 3.2 Expense context
@@ -102,8 +102,8 @@ Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCam
 
 ### 3.6 Notification context
 - Aggregate root `Notification`: `id: NotificationId`, `recipient: UserId`, `type: NotificationType`, `groupId: GroupId`, `actor: UserId` (who did it), `reference: UUID` (what it points at), `occurredAt`, `readAt` (null = unread); operations `notify` (factory) and `markRead`. It stores ids only; names and texts are looked up when the inbox is read.
-- Enumeration `NotificationType {MEMBER_JOINED, INVITATION_DECLINED}`; later `PAYMENT_TO_CONFIRM`, `PAYMENT_CONFIRMED`, `PAYMENT_REJECTED`, `DEBT_WAIVED`, `MEMBER_REMOVED`. A received invitation is not an entry: it is state, asked from the group context (`GET /invitations`).
-- Consumes `MemberJoined` and `InvitationDeclined` (listeners are asynchronous and delegate to `NotificationService`). Uses the ports `UserProfiles` and `GroupDirectory`.
+- Enumeration `NotificationType {MEMBER_JOINED, INVITATION_DECLINED, MEMBER_PROMOTED}` (`MEMBER_PROMOTED`: recipient the promoted person, actor the promoting admin, reference the promoted person's id); later `PAYMENT_TO_CONFIRM`, `PAYMENT_CONFIRMED`, `PAYMENT_REJECTED`, `DEBT_WAIVED`, `MEMBER_REMOVED`. A received invitation is not an entry: it is state, asked from the group context (`GET /invitations`).
+- Consumes `MemberJoined` and `InvitationDeclined` (to the inviter) and `MemberPromoted` (to the promoted person) (listeners are asynchronous and delegate to `NotificationService`). Uses the ports `UserProfiles` and `GroupDirectory`.
 
 ## 4. Class naming by role (checked by `ConventionTests`)
 
