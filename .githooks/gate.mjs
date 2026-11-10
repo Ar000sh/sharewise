@@ -9,14 +9,17 @@
 //      change. An intended normalisation is committed alone with SHAREWISE_ALLOW_EOL_FLIP=1 (see line-endings.mjs)
 //   5. checks for the staged parts: backend format, frontend lint + typecheck, contract lint, guard hook tests
 //   Docs-only commits (.md) skip step 5.
-// pre-push (complete, what `main` must always be): backend verify (needs Docker), frontend lint, typecheck, tests,
-//   build, contract lint. Skipped when every pushed file is .md.
-// ci <backend|frontend|repo> (GitHub Actions, one job per group): one group of the pre-push checks, never skipped.
+// pre-push (what `main` must always be): the groups backend (verify, needs Docker), frontend (lint, typecheck, tests,
+//   build) and repo (contract lint, hook tests) run at the same time, and a group this push cannot affect is skipped
+//   (gate-groups.mjs: a frontend-only push skips the backend tests). Skipped entirely when every pushed file is .md.
+//   CI runs every group on every pull request, so a skipped group is still checked before it reaches main.
+// ci <backend|frontend|repo> (GitHub Actions, one job per group): one group of the checks, never skipped.
 //
 // If a gate is wrong or too slow, change this file in its own commit. Never bypass it with --no-verify.
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { groupsToRun } from './gate-groups.mjs';
 import { flipsLineEndings } from './line-endings.mjs';
 
 const root = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
@@ -42,6 +45,10 @@ function fail(message) {
 	process.exit(1);
 }
 
+function lastLines(output) {
+	return output.trim().split('\n').slice(-40).join('\n');
+}
+
 // Runs one check and stops the gate when it fails. shell: true so mvnw.cmd and npm resolve on Windows.
 function run(label, command, cwd = '.') {
 	const started = Date.now();
@@ -50,11 +57,46 @@ function run(label, command, cwd = '.') {
 	const seconds = ((Date.now() - started) / 1000).toFixed(0);
 	if (result.status !== 0) {
 		process.stdout.write(`FAILED (${seconds}s)\n`);
-		const output = `${result.stdout ?? ''}${result.stderr ?? ''}`.trim().split('\n').slice(-40).join('\n');
-		process.stderr.write(`${output}\n`);
+		process.stderr.write(`${lastLines(`${result.stdout ?? ''}${result.stderr ?? ''}`)}\n`);
 		fail(`${label} failed. Fix it and commit again (command: ${command}, in ${cwd}).`);
 	}
 	process.stdout.write(`ok (${seconds}s)\n`);
+}
+
+// The checks of pre-push and CI run as a group in a process of their own, so several groups can run at the same time.
+// The output of a check is kept until it ends, so lines of parallel groups never interleave.
+const running = new Set();
+
+function runAsync(command, cwd) {
+	return new Promise((resolve) => {
+		const started = Date.now();
+		// detached on Linux: the check gets its own process group, so stopAll can end mvnw, java and npm together
+		const child = spawn(command, { cwd: path.join(root, cwd), shell: true, detached: !isWindows });
+		running.add(child);
+		let output = '';
+		child.stdout.on('data', (chunk) => {
+			output += chunk;
+		});
+		child.stderr.on('data', (chunk) => {
+			output += chunk;
+		});
+		child.on('close', (code) => {
+			running.delete(child);
+			resolve({ ok: code === 0, output, seconds: ((Date.now() - started) / 1000).toFixed(0) });
+		});
+	});
+}
+
+// Ends every running check and its child processes (taskkill /T on Windows, the process group elsewhere).
+function stopAll() {
+	for (const child of running) {
+		if (isWindows) {
+			spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+		}
+		else {
+			process.kill(-child.pid, 'SIGKILL');
+		}
+	}
 }
 
 function countPlatformEntries(text) {
@@ -138,7 +180,7 @@ function preCommit() {
 		run('contract lint', `npx --yes @redocly/cli lint ${CONTRACT}`);
 	}
 	if (staged.some((file) => file.startsWith('.claude/hooks/') || file.startsWith('.githooks/'))) {
-		run('guard hook tests', 'node --test .claude/hooks/guard.test.mjs .githooks/line-endings.test.mjs');
+		run('guard hook tests', 'node --test .claude/hooks/guard.test.mjs .githooks/line-endings.test.mjs .githooks/gate-groups.test.mjs');
 	}
 }
 
@@ -170,22 +212,24 @@ function pushedFiles() {
 	return [...files];
 }
 
-function prePush() {
+async function prePush() {
 	const files = pushedFiles();
 	if (files && files.every((file) => file.endsWith('.md'))) {
 		console.log('gate: docs-only push, checks skipped');
 		return;
 	}
-	if (spawnSync('docker info', { shell: true, stdio: 'ignore' }).status !== 0) {
+	const groups = groupsToRun(files);
+	const skipped = Object.keys(CHECKS).filter((group) => !groups.includes(group));
+	console.log(`gate: running ${groups.join(', ')} at the same time${skipped.length > 0 ? `; skipped (not touched by this push, CI runs them): ${skipped.join(', ')}` : ''}`);
+	if (groups.includes('backend') && spawnSync('docker info', { shell: true, stdio: 'ignore' }).status !== 0) {
 		fail('Docker is not running. The backend tests need it: start Docker Desktop and push again.');
 	}
-	for (const group of Object.keys(CHECKS)) {
-		runGroup(group);
-	}
+	await Promise.all(groups.map(runGroup));
 }
 
-// The checks of the complete gate, in groups. pre-push runs all groups in this order; GitHub Actions runs one group
-// per job (`ci <group>`), so the list of checks exists only here.
+// The checks of the complete gate, in groups that do not depend on each other. pre-push runs the groups a push needs at
+// the same time (a failure stops the others); GitHub Actions runs one group per job (`ci <group>`), so the list of
+// checks exists only here.
 const CHECKS = {
 	backend: [
 		['backend verify (all backend tests, Docker)', `${mvnw} -q verify`, 'backend'],
@@ -198,13 +242,21 @@ const CHECKS = {
 	],
 	repo: [
 		['contract lint', `npx --yes @redocly/cli lint ${CONTRACT}`],
-		['guard hook tests', 'node --test .claude/hooks/guard.test.mjs .githooks/line-endings.test.mjs'],
+		['guard hook tests', 'node --test .claude/hooks/guard.test.mjs .githooks/line-endings.test.mjs .githooks/gate-groups.test.mjs'],
 	],
 };
 
-function runGroup(group) {
-	for (const [label, command, cwd] of CHECKS[group]) {
-		run(label, command, cwd);
+// The checks of one group, one after the other. The first failure ends the whole gate, including the other groups.
+async function runGroup(group) {
+	for (const [label, command, cwd = '.'] of CHECKS[group]) {
+		const result = await runAsync(command, cwd);
+		if (!result.ok) {
+			stopAll();
+			process.stdout.write(`gate: ${label} ... FAILED (${result.seconds}s)\n`);
+			process.stderr.write(`${lastLines(result.output)}\n`);
+			fail(`${label} failed. Fix it and push again (command: ${command}, in ${cwd}).`);
+		}
+		process.stdout.write(`gate: ${label} ... ok (${result.seconds}s)\n`);
 	}
 }
 
@@ -212,10 +264,10 @@ if (process.argv[2] === 'pre-commit') {
 	preCommit();
 }
 else if (process.argv[2] === 'pre-push') {
-	prePush();
+	await prePush();
 }
 else if (process.argv[2] === 'ci' && Object.hasOwn(CHECKS, process.argv[3])) {
-	runGroup(process.argv[3]);
+	await runGroup(process.argv[3]);
 }
 else {
 	fail(`usage: node .githooks/gate.mjs pre-commit|pre-push|ci <${Object.keys(CHECKS).join('|')}>`);

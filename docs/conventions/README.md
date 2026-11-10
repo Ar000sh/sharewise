@@ -24,7 +24,7 @@ These rules exist because the parallel build produced four slightly different co
 | Theme rules (dark mode) | `frontend/src/lib/themeRules.test.ts` (in `npm test`) | a component or page uses a fixed black, white or grey, a fixed background without its own text colour, or a coloured text without its `dark:` counterpart (document 04, section 5) |
 | Contract lint | `npx @redocly/cli lint docs/api/openapi.yaml` | the contract is invalid |
 | Commit gate | `.githooks/pre-commit` | a secret or key is staged, the contract is mixed with code, the lock file lost platforms, an existing file flips its line endings (CRLF <-> LF), or the staged part fails format/lint/typecheck |
-| Push gate | `.githooks/pre-push` | any check above fails (full backend `verify`, Docker required) |
+| Push gate | `.githooks/pre-push` | any check above fails. Backend `verify` (Docker required), the frontend checks and the contract lint run at the same time; a group the push cannot affect is skipped (a frontend-only push skips the backend tests). CI runs all of them anyway |
 | CI pipeline | `.github/workflows/ci.yml` (runs `.githooks/gate.mjs ci <group>`) | any group of the push gate, the image build or the e2e test against the built images fails; required for every pull request into `main`, and `main` builds push the images to ghcr.io |
 | Guard hook (Claude only) | `.claude/hooks/guard.mjs` | Claude edits a secrets file, `schema.d.ts`, a migration on `main`, or uses `--no-verify` |
 
