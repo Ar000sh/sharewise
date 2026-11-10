@@ -567,7 +567,7 @@ paths:
       summary: The caller (the creditor) waives part of a debtor's debt. Recorded as a settlement payment with status WAIVED.
       description: >
         Takes effect at once, no confirmation needed. The amount may not exceed the open debt
-        (422 PAYMENT_EXCEEDS_OPEN_DEBT). A reason (note) is required.
+        (422 PAYMENT_EXCEEDS_OPEN_DEBT). A reason (note) is optional.
       requestBody:
         required: true
         content:
@@ -1028,10 +1028,14 @@ components:
 
     WaiveDebtRequest:
       type: object
-      required: [fromDebtor, amount, note]
+      required: [fromDebtor, amount]
       properties:
         fromDebtor: { type: string, format: uuid }
         amount:
           allOf: [{ $ref: "#/components/schemas/Amount" }]
           description: Greater than zero (AMOUNT_NOT_POSITIVE otherwise) and at most the open debt.
-        note: { type: string, minLength: 1, maxLength: 500 }
+        note:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Optional reason for the waiver. Leave the field out when there is none.
