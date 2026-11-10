@@ -1,0 +1,23 @@
+# The built images next to the local database and Keycloak, for the end-to-end test in CI:
+#   BACKEND_IMAGE=... FRONTEND_IMAGE=... docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
+# Host networking on purpose: the Keycloak issuer URL (http://localhost:8180/realms/sharewise) must mean the same
+# to the browser, the frontend server and the backend, and in a container "localhost" otherwise means the container.
+# This works on a Linux host (the CI runner). Docker Desktop needs host networking switched on; the cloud will need
+# its own answer (a public issuer URL).
+services:
+  backend:
+    image: ${BACKEND_IMAGE:?set BACKEND_IMAGE}
+    network_mode: host
+    depends_on:
+      - db
+
+  frontend:
+    image: ${FRONTEND_IMAGE:?set FRONTEND_IMAGE}
+    network_mode: host
+    environment:
+      # 3100 is the port the realm allows as redirect URI next to 3000.
+      PORT: "3100"
+      APP_URL: http://localhost:3100
+      BACKEND_URL: http://localhost:8080
+      KEYCLOAK_ISSUER: http://localhost:8180/realms/sharewise
+      KEYCLOAK_CLIENT_ID: sharewise-web
