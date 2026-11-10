@@ -45,7 +45,7 @@ flowchart LR
     GL2[BalanceStatusListener] --> G[(Group / Membership)]
   end
   subgraph notification
-    N[listeners] --> NO[(Notification)]
+    N[NotificationListener] --> NO[(Notification)]
   end
   ES -- ExpenseRecorded --> L
   SPS -- SettlementPaymentConfirmed / DebtWaived --> L

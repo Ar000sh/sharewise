@@ -17,7 +17,7 @@ Backend paths are under `backend/src/main/java/de/hsh/favs/sharewise/`, frontend
 | **Payments waiting for me** | `SettlementPaymentController.listMySettlementPayments` `GET /me/settlement-payments` → `SettlementPaymentService.listAwaitingMyAnswer` | `app/api/inbox/route.ts` → `InboxBell.tsx` | `MySettlementPaymentsControllerTest`, `app/api/inbox/route.test.ts` |
 | **Booking into the ledger** (event) | `settlement/application/GroupLedgerListener` (`on(ExpenseRecorded)`, `on(SettlementPaymentConfirmed)`, `on(DebtWaived)`) → `GroupLedgerService.book*` → `GroupLedger.append*` | – | `SettlementBookingTest`, `GroupLedgerServiceTest` |
 | **Zero-balance flag** (event) | `group/application/BalanceStatusListener` → `Group.updateBalanceStatus` → `Membership` | – | `GroupTest` |
-| **"Confirmed / rejected / waived" entries** (event) | `notification/application/SettlementPaymentConfirmedListener`, `SettlementPaymentRejectedListener`, `DebtWaivedListener` → `NotificationService` | `InboxBell.tsx` | `NotificationEventsTest` |
+| **"Confirmed / rejected / waived" entries** (event) | `notification/application/NotificationListener` (`on(SettlementPaymentConfirmed)`, `on(SettlementPaymentRejected)`, `on(DebtWaived)`) → `NotificationService` | `InboxBell.tsx` | `NotificationEventsTest` |
 | **The whole journey** | – | – | `MallorcaSliceTest`, `frontend/e2e/mallorca.spec.ts` |
 
 ```mermaid
