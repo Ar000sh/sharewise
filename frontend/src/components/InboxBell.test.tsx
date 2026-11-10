@@ -302,6 +302,21 @@ describe("InboxBell", () => {
     expect(items[1]).toHaveTextContent("Bob Tester joined Mallorca 2027");
   });
 
+  it("saysWhenAnInvitationIsToBecomeAnAdminAndWhenSomebodyMadeYouOne", async () => {
+    inbox = {
+      invitations: [{ ...invitation, role: "ADMIN" }],
+      notifications: { unreadCount: 1, items: [{ ...entry, id: "n3", type: "MEMBER_PROMOTED" }] },
+      payments: [],
+    };
+    backend();
+
+    await renderOpened();
+
+    const items = screen.getAllByRole("listitem");
+    expect(items[0]).toHaveTextContent("Alice Tester invited you to Mallorca 2027 as an admin");
+    expect(items[1]).toHaveTextContent("Bob Tester made you an admin of Mallorca 2027");
+  });
+
   it("describesADeclinedInvitationAndFallsBackWhenNamesAreMissing", async () => {
     inbox = {
       invitations: [],

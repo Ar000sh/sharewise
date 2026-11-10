@@ -180,7 +180,7 @@ class MallorcaSliceTest {
 		assertThat(fields(expense.get("shares").get(0))).containsExactly("owedShare", "participantId");
 		assertThat(fields(invitation)).containsExactly("expiresAt", "invitationId", "invitee");
 		assertThat(fields(invitation.get("invitee"))).containsExactly("displayName", "userId", "username");
-		assertThat(fields(pending.get(0))).containsExactly("expiresAt", "group", "invitationId", "invitedBy");
+		assertThat(fields(pending.get(0))).containsExactly("expiresAt", "group", "invitationId", "invitedBy", "role");
 		assertThat(fields(pending.get(0).get("group"))).containsExactly("id", "name");
 		assertThat(fields(pending.get(0).get("invitedBy"))).containsExactly("displayName", "userId", "username");
 		assertThat(fields(me)).containsExactly("displayName", "userId", "username");

@@ -20,7 +20,7 @@ const TABS = ["Expenses", "Balances", "Settle up", "Members"] as const;
 type Tab = (typeof TABS)[number];
 
 export function GroupDetail({ groupId }: { groupId: string }) {
-  const { data: group, error } = useApi<GroupDetailData>(`/groups/${groupId}`);
+  const { data: group, error, reload: reloadGroup } = useApi<GroupDetailData>(`/groups/${groupId}`);
   const me = useCurrentUser();
   const { data: expenses, error: expensesError, reload: reloadExpenses } = useApi<Expense[]>(
     `/groups/${groupId}/expenses`,
@@ -32,6 +32,9 @@ export function GroupDetail({ groupId }: { groupId: string }) {
 
   if (error) return <ErrorBanner error={error} />;
   if (!group) return <p>Loading…</p>;
+
+  // Only a hint for the screen: the backend refuses non-admins with 403 NOT_AN_ADMIN whatever the UI shows.
+  const isAdmin = group.members.some((m) => m.userId === me?.userId && m.role === "ADMIN");
 
   return (
     <div className="flex flex-col gap-4">
@@ -76,8 +79,12 @@ export function GroupDetail({ groupId }: { groupId: string }) {
       {tab === "Settle up" && <SettleUpTab groupId={group.id} />}
       {tab === "Members" && (
         <section className="flex flex-col gap-3">
-          <MemberList members={group.members} currentUserId={me?.userId} />
-          <InviteForm groupId={group.id} />
+          <MemberList
+            members={group.members}
+            currentUserId={me?.userId}
+            promote={isAdmin ? { groupId: group.id, onPromoted: () => void reloadGroup() } : undefined}
+          />
+          {isAdmin && <InviteForm groupId={group.id} />}
         </section>
       )}
       {notice && <Toast message={notice} onDismiss={dismissNotice} />}

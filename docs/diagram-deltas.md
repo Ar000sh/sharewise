@@ -25,6 +25,8 @@ The code follows the diagram `docs/domain/ShareWise_Domain_Model.drawio` for eve
 | 17 | `GroupDirectory` | no such port | read model port in `group.api`: `findNames(Set<GroupId>)` | the inbox shows group names without copying them |
 | 18 | `GroupLedger.append*` | `appendExpenseEntry`, `appendSettlementPayment`, `appendDebtWaiver` return `MemberBalanceStatusChanged, AllBalancesSettled` | the append operations return nothing; `GroupLedgerService` compares the balance totals (a database query) before and after the booking and publishes one `MemberBalanceStatusChanged` per flipped person and `AllBalancesSettled` when everybody is at zero | the ledger would have to load every entry to know the old and new zero-states; the query reads only the totals (see `GroupLedger.projectBalances` Javadoc) |
 | 19 | `MemberBalanceStatusChanged`, `AllBalancesSettled` | drawn among `SettlementDomainEvents` | published by settlement, but live in `shared.events`, not in `settlement.api` | the one exception to "events live in the publisher's `api`" (D12, convention 01 section 5.1): group consumes the first, and a group listener for a `settlement.api` type would make the module graph cyclic. The diagram keeps them under settlement because it shows who publishes, not the Java package |
+| 20 | `Invitation`, `MemberInvited`, `MemberPromoted` | `Invitation` has no role; `MemberInvited` has no role | `Invitation.role: GroupRole` (MEMBER by default) is applied when the invitee accepts; `MemberInvited.role`; `Group.inviteMember(invitee, inviter, role, now)`; only an admin may invite; `promoteToAdmin(user, promotedBy, now)` returns `MemberPromoted(groupId, userId, promotedBy, occurredAt)`; promotion is one way | design 2026-11-09: admins decide who joins and with which role; the diagram needs the field and the event's fields |
+| 21 | `NotificationType` | `MEMBER_JOINED`, `INVITATION_DECLINED` | adds `MEMBER_PROMOTED` (consumes `MemberPromoted`, recipient the promoted person) | design 2026-11-09, A6 |
 
 ## Deliberate changes made in the diagram (settlements, 03.11.26)
 
@@ -39,7 +41,7 @@ The team version of 17.10.26 drew these differently; the diagram now shows what 
 
 ## Known gaps (diagram is right, code comes later)
 
-- Group: `promoteToAdmin`, `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, and their events; the enums already have all their values.
+- Group: `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, and their events; the enums already have all their values.
 - Expense: `correct`, `remove`, the `EXACT` and `PERCENTAGE` split strategies, `ExpenseCorrected`, `ExpenseRemoved`.
 - Settlement: `appendCorrectionReversal`, `appendRemovalReversal` (they follow `correct` and `remove` of the expense context). `AllBalancesSettled` is published but has no consumer yet (auto-archive L5 is parked).
 - Account: `changeDisplayName`, `deactivate` (email verification, password reset and lock-out are Keycloak's).

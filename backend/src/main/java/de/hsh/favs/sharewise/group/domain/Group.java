@@ -8,6 +8,7 @@ import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.InvitationId;
 import de.hsh.favs.sharewise.group.api.MemberInvited;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
+import de.hsh.favs.sharewise.group.api.MemberPromoted;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;
@@ -93,43 +94,68 @@ public class Group {
 	}
 
 	/**
-	 * Fails unless {@code user} is an active member. The service calls it before it looks
+	 * Fails unless {@code user} is an active admin. The service calls it before it looks
 	 * up the person to invite, so a non-member learns nothing about which accounts exist.
-	 * @throws DomainException NOT_A_MEMBER
+	 * @throws DomainException NOT_A_MEMBER when the user is not in the group,
+	 * NOT_AN_ADMIN when they are in it as a plain member
 	 */
-	public void requireActiveMember(UserId user) {
-		if (!hasActiveMember(user)) {
-			throw new DomainException(ErrorCode.NOT_A_MEMBER, "You are not a member of this group");
+	public void requireAdmin(UserId user) {
+		Membership membership = activeMemberships().stream()
+			.filter(m -> m.userId().equals(user))
+			.findFirst()
+			.orElseThrow(() -> new DomainException(ErrorCode.NOT_A_MEMBER, "You are not a member of this group"));
+		if (membership.role() != GroupRole.ADMIN) {
+			throw new DomainException(ErrorCode.NOT_AN_ADMIN, "Only an admin can do this");
 		}
 	}
 
 	/**
-	 * Invites an existing account; valid for 7 days (R9). Any active member may invite.
-	 * An earlier invitation of the same person that is still open blocks it, one that
-	 * expired or was answered does not.
+	 * Invites an existing account to join with {@code role}; valid for 7 days (R9). Only
+	 * an admin may invite. An earlier invitation of the same person that is still open
+	 * blocks it, one that expired or was answered does not.
 	 * <p>
-	 * The inviter's membership is <em>not</em> checked here: the service calls
-	 * {@link #requireActiveMember} first, as its own step, before it looks up the
-	 * invitee.
+	 * The inviter is <em>not</em> checked here: the service calls {@link #requireAdmin}
+	 * first, as its own step, before it looks up the invitee.
 	 * @return the invitation and the {@link MemberInvited} event
 	 * @throws DomainException ALREADY_MEMBER when the invitee already is a member,
 	 * ALREADY_INVITED when the invitee has an open invitation to this group
 	 */
-	public Invited inviteMember(UserId invitee, UserId inviter, Instant now) {
+	public Invited inviteMember(UserId invitee, UserId inviter, GroupRole role, Instant now) {
 		if (hasActiveMember(invitee)) {
 			throw new DomainException(ErrorCode.ALREADY_MEMBER, "This person is already a member of this group");
 		}
 		if (!pendingInvitationsFor(invitee, now).isEmpty()) {
 			throw new DomainException(ErrorCode.ALREADY_INVITED, "This person already has an open invitation");
 		}
-		Invitation invitation = Invitation.issue(invitee, inviter, now);
+		Invitation invitation = Invitation.issue(invitee, role, inviter, now);
 		invitations.add(invitation);
-		return new Invited(invitation, new MemberInvited(groupId(), invitation.id(), invitee, inviter, now));
+		return new Invited(invitation, new MemberInvited(groupId(), invitation.id(), invitee, inviter, role, now));
 	}
 
 	/**
-	 * Joins the user as MEMBER through an invitation meant for them (R9). The checks run
-	 * in this order: the invitation exists, is for this user and still pending
+	 * Makes an active member an admin; one way, nobody is demoted. Only an admin may
+	 * promote (J10). The checks run in this order: the promoter is an admin
+	 * (NOT_A_MEMBER, NOT_AN_ADMIN), the user is an active member (MEMBER_NOT_FOUND), the
+	 * user is not an admin yet (ALREADY_ADMIN).
+	 * @return the {@link MemberPromoted} event
+	 */
+	public MemberPromoted promoteToAdmin(UserId user, UserId promotedBy, Instant now) {
+		requireAdmin(promotedBy);
+		Membership membership = activeMemberships().stream()
+			.filter(m -> m.userId().equals(user))
+			.findFirst()
+			.orElseThrow(
+					() -> new DomainException(ErrorCode.MEMBER_NOT_FOUND, "This person is not a member of this group"));
+		if (membership.role() == GroupRole.ADMIN) {
+			throw new DomainException(ErrorCode.ALREADY_ADMIN, "This member is already an admin");
+		}
+		membership.promoteToAdmin();
+		return new MemberPromoted(groupId(), user, promotedBy, now);
+	}
+
+	/**
+	 * Joins the user with the role the invitation carries (R9). The checks run in this
+	 * order: the invitation exists, is for this user and still pending
 	 * (INVITATION_NOT_FOUND), is not expired (INVITATION_EXPIRED), and the user is not a
 	 * member yet (ALREADY_MEMBER). The group's status is not checked yet because groups
 	 * cannot be closed before a later exercise.
@@ -142,8 +168,8 @@ public class Group {
 			throw new DomainException(ErrorCode.ALREADY_MEMBER, "You are already a member of this group");
 		}
 		invitation.accept();
-		memberships.add(new Membership(user, GroupRole.MEMBER, now));
-		return new MemberJoined(groupId(), user, GroupRole.MEMBER, invitation.createdBy(), now);
+		memberships.add(new Membership(user, invitation.role(), now));
+		return new MemberJoined(groupId(), user, invitation.role(), invitation.createdBy(), now);
 	}
 
 	/**

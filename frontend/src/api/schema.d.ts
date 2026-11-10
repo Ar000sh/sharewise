@@ -69,8 +69,28 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Invite an existing account by exact username or exact email (valid 7 days, R9). The caller must be a member. The invitation belongs to that account; there is no link anyone can use. */
+        /** Invite an existing account by exact username or exact email (valid 7 days, R9). The caller must be an admin of the group. The invitation belongs to that account; there is no link anyone can use. The invitee joins with the given role (MEMBER when omitted). */
         post: operations["createInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/groups/{groupId}/members/{userId}/promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+                userId: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Make an active member an ADMIN. The caller must be an admin. Promotion is one way: there is no demotion. */
+        post: operations["promoteToAdmin"];
         delete?: never;
         options?: never;
         head?: never;
@@ -361,7 +381,7 @@ export interface components {
             title?: string;
             status: number;
             /** @enum {string} */
-            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "GROUP_NOT_OPEN" | "SPLIT_NOT_SUPPORTED" | "PAYMENT_EXCEEDS_OPEN_DEBT" | "SETTLEMENT_PAYMENT_NOT_FOUND" | "PAYMENT_NOT_PENDING" | "NOT_THE_CREDITOR" | "ACCOUNT_NOT_FOUND" | "ALREADY_INVITED" | "NOTIFICATION_NOT_FOUND";
+            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "GROUP_NOT_OPEN" | "SPLIT_NOT_SUPPORTED" | "PAYMENT_EXCEEDS_OPEN_DEBT" | "SETTLEMENT_PAYMENT_NOT_FOUND" | "PAYMENT_NOT_PENDING" | "NOT_THE_CREDITOR" | "ACCOUNT_NOT_FOUND" | "ALREADY_INVITED" | "NOTIFICATION_NOT_FOUND" | "NOT_AN_ADMIN" | "MEMBER_NOT_FOUND" | "ALREADY_ADMIN";
             detail?: string;
         };
         User: {
@@ -406,6 +426,12 @@ export interface components {
         InviteMemberRequest: {
             /** @description Exact username or exact email of an existing account (an identifier with "@" is an email). Trimmed and compared case-insensitively; no partial matching. */
             identifier: string;
+            /**
+             * @description The role the invitee gets when they accept.
+             * @default MEMBER
+             * @enum {string}
+             */
+            role: "ADMIN" | "MEMBER";
         };
         Invitation: {
             /** Format: uuid */
@@ -419,14 +445,19 @@ export interface components {
             invitationId: string;
             group: components["schemas"]["GroupRef"];
             invitedBy: components["schemas"]["UserSummary"];
+            /**
+             * @description What the invitee becomes on accepting.
+             * @enum {string}
+             */
+            role: "ADMIN" | "MEMBER";
             /** Format: date-time */
             expiresAt: string;
         };
         /**
-         * @description PAYMENT_CONFIRMED and PAYMENT_REJECTED tell the payer how the creditor answered; DEBT_WAIVED tells the debtor that the creditor forgave part of the debt. The actor is the creditor and the reference is the settlement payment. EXPENSE_RECORDED tells everybody involved in an expense (the participants and the payer) that somebody recorded it, except the person who recorded it; the actor is the recorder and the reference is the expense. A payment waiting for an answer is not an entry (see GET /me/settlement-payments). More types arrive with later features (removal).
+         * @description PAYMENT_CONFIRMED and PAYMENT_REJECTED tell the payer how the creditor answered; DEBT_WAIVED tells the debtor that the creditor forgave part of the debt. The actor is the creditor and the reference is the settlement payment. EXPENSE_RECORDED tells everybody involved in an expense (the participants and the payer) that somebody recorded it, except the person who recorded it; the actor is the recorder and the reference is the expense. MEMBER_PROMOTED tells a member that an admin made them an admin; the actor is the promoting admin and the reference is the promoted member. A payment waiting for an answer is not an entry (see GET /me/settlement-payments). More types arrive with later features (removal).
          * @enum {string}
          */
-        NotificationType: "MEMBER_JOINED" | "INVITATION_DECLINED" | "PAYMENT_CONFIRMED" | "PAYMENT_REJECTED" | "DEBT_WAIVED" | "EXPENSE_RECORDED";
+        NotificationType: "MEMBER_JOINED" | "INVITATION_DECLINED" | "MEMBER_PROMOTED" | "PAYMENT_CONFIRMED" | "PAYMENT_REJECTED" | "DEBT_WAIVED" | "EXPENSE_RECORDED";
         Notification: {
             /** Format: uuid */
             id: string;
@@ -441,7 +472,7 @@ export interface components {
             group: components["schemas"]["GroupRef"] | null;
             /**
              * Format: uuid
-             * @description What the entry points at (the person who joined, or the declined invitation).
+             * @description What the entry points at (the person who joined or was made admin, or the declined invitation).
              */
             reference: string;
         };
@@ -798,6 +829,7 @@ export interface components {
         GroupId: string;
         PaymentId: string;
         InvitationId: string;
+        UserId: string;
     };
     requestBodies: never;
     headers: never;
@@ -962,7 +994,8 @@ export interface operations {
             content: {
                 /**
                  * @example {
-                 *       "identifier": "bob"
+                 *       "identifier": "bob",
+                 *       "role": "MEMBER"
                  *     }
                  */
                 "application/json": components["schemas"]["InviteMemberRequest"];
@@ -991,7 +1024,15 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthenticated"];
-            403: components["responses"]["NotAMember"];
+            /** @description The caller is not a member of the group, or is a member but not an admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Unknown group, or no account for the username or email */
             404: {
                 headers: {
@@ -1007,6 +1048,73 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    promoteToAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+                userId: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The member, now with role ADMIN */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "userId": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *       "displayName": "Bob",
+                     *       "role": "ADMIN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Member"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            /** @description The caller is not a member of the group, or is a member but not an admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unknown group, or the person is not an active member of it */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The member already is an admin */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Conflict",
+                     *       "status": 409,
+                     *       "code": "ALREADY_ADMIN",
+                     *       "detail": "This member is already an admin"
+                     *     }
+                     */
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
@@ -1040,6 +1148,7 @@ export interface operations {
                      *           "displayName": "Alice",
                      *           "username": "alice"
                      *         },
+                     *         "role": "MEMBER",
                      *         "expiresAt": "2027-06-08T10:00:00Z"
                      *       }
                      *     ]

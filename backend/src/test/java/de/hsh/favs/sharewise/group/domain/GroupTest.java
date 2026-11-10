@@ -13,6 +13,7 @@ import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.InvitationId;
 import de.hsh.favs.sharewise.group.api.MemberInvited;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
+import de.hsh.favs.sharewise.group.api.MemberPromoted;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.UserId;
@@ -70,27 +71,118 @@ class GroupTest {
 	}
 
 	@Test
-	void aMemberInvitesAnAccountAndTheInvitationIsValidForSevenDays() {
+	void anAdminInvitesAnAccountAndTheInvitationIsValidForSevenDays() {
 		// when
-		Group.Invited invited = group.inviteMember(bob, alice, NOW);
+		Group.Invited invited = group.inviteMember(bob, alice, GroupRole.MEMBER, NOW);
 
 		// then
 		Invitation invitation = invited.invitation();
 		assertThat(invitation.invitee()).isEqualTo(bob);
 		assertThat(invitation.statusAt(NOW)).isEqualTo(InvitationStatus.PENDING);
 		assertThat(invitation.expiresAt()).isEqualTo(EXPIRY);
-		assertThat(invited.event()).isEqualTo(new MemberInvited(group.groupId(), invitation.id(), bob, alice, NOW));
+		assertThat(invited.event())
+			.isEqualTo(new MemberInvited(group.groupId(), invitation.id(), bob, alice, GroupRole.MEMBER, NOW));
 	}
 
 	@Test
-	void requireActiveMemberPassesForAnActiveMember() {
-		assertThatCode(() -> group.requireActiveMember(alice)).doesNotThrowAnyException();
+	void theRoleOfTheInvitationIsWhatTheInviteeBecomesOnAccepting() {
+		// given
+		Invitation invitation = group.inviteMember(bob, alice, GroupRole.ADMIN, NOW).invitation();
+
+		// when
+		MemberJoined joined = group.acceptInvitation(invitation.id(), bob, NOW);
+
+		// then
+		assertThat(joined.role()).isEqualTo(GroupRole.ADMIN);
+		assertThat(group.membershipView().admins()).containsExactlyInAnyOrder(alice, bob);
 	}
 
 	@Test
-	void requireActiveMemberRefusesANonMember() {
-		assertThatThrownBy(() -> group.requireActiveMember(bob)).isInstanceOfSatisfying(DomainException.class,
+	void requireAdminPassesForAnAdmin() {
+		assertThatCode(() -> group.requireAdmin(alice)).doesNotThrowAnyException();
+	}
+
+	@Test
+	void requireAdminRefusesANonMemberWithNotAMember() {
+		assertThatThrownBy(() -> group.requireAdmin(bob)).isInstanceOfSatisfying(DomainException.class,
 				e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
+	}
+
+	@Test
+	void aMemberWhoIsNotAdminCannotInviteAndNoInvitationIsAdded() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+
+		// when / then
+		assertThatThrownBy(() -> trip.requireAdmin(bob)).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_AN_ADMIN));
+		assertThat(trip.pendingInvitationsFor(carol, NOW)).isEmpty();
+	}
+
+	@Test
+	void promotingAMemberMakesThemAdminAndReturnsMemberPromoted() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+
+		// when
+		MemberPromoted promoted = trip.promoteToAdmin(bob, alice, NOW.plusSeconds(5));
+
+		// then
+		assertThat(promoted).isEqualTo(new MemberPromoted(trip.groupId(), bob, alice, NOW.plusSeconds(5)));
+		assertThat(trip.membershipView().admins()).containsExactlyInAnyOrder(alice, bob);
+	}
+
+	@Test
+	void aPromotedMemberMayInvite() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+		trip.promoteToAdmin(bob, alice, NOW);
+
+		// when / then
+		assertThatCode(() -> trip.requireAdmin(bob)).doesNotThrowAnyException();
+	}
+
+	@Test
+	void aMemberWhoIsNotAdminCannotPromoteAndNothingChanges() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).withMember(carol).build();
+
+		// when / then
+		assertThatThrownBy(() -> trip.promoteToAdmin(carol, bob, NOW)).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_AN_ADMIN));
+		assertThat(trip.membershipView().admins()).containsExactly(alice);
+	}
+
+	@Test
+	void aNonMemberCannotPromote() {
+		assertThatThrownBy(() -> group.promoteToAdmin(alice, bob, NOW)).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
+	}
+
+	@Test
+	void promotingSomebodyWhoIsNotAnActiveMemberIsMemberNotFound() {
+		// given bob has only an open invitation, carol never was invited
+		group.inviteMember(bob, alice, GroupRole.MEMBER, NOW);
+
+		// when / then
+		assertThatThrownBy(() -> group.promoteToAdmin(bob, alice, NOW)).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.MEMBER_NOT_FOUND));
+		assertThatThrownBy(() -> group.promoteToAdmin(carol, alice, NOW)).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.MEMBER_NOT_FOUND));
+		assertThat(group.membershipView().admins()).containsExactly(alice);
+	}
+
+	@Test
+	void promotingAnAdminOrOneselfIsAlreadyAdmin() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+		trip.promoteToAdmin(bob, alice, NOW);
+
+		// when / then
+		assertThatThrownBy(() -> trip.promoteToAdmin(bob, alice, NOW)).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.ALREADY_ADMIN));
+		assertThatThrownBy(() -> trip.promoteToAdmin(alice, alice, NOW)).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.ALREADY_ADMIN));
 	}
 
 	@Test
@@ -99,31 +191,32 @@ class GroupTest {
 		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
 
 		// when / then
-		assertThatThrownBy(() -> trip.inviteMember(bob, alice, NOW)).isInstanceOfSatisfying(DomainException.class,
-				e -> assertThat(e.code()).isEqualTo(ErrorCode.ALREADY_MEMBER));
-		assertThatThrownBy(() -> trip.inviteMember(alice, alice, NOW)).isInstanceOfSatisfying(DomainException.class,
-				e -> assertThat(e.code()).isEqualTo(ErrorCode.ALREADY_MEMBER));
+		assertThatThrownBy(() -> trip.inviteMember(bob, alice, GroupRole.MEMBER, NOW)).isInstanceOfSatisfying(
+				DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.ALREADY_MEMBER));
+		assertThatThrownBy(() -> trip.inviteMember(alice, alice, GroupRole.MEMBER, NOW)).isInstanceOfSatisfying(
+				DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.ALREADY_MEMBER));
 	}
 
 	@Test
 	void invitingSomebodyWithAnOpenInvitationIsRefused() {
 		// given
-		group.inviteMember(bob, alice, NOW);
+		group.inviteMember(bob, alice, GroupRole.MEMBER, NOW);
 
 		// when / then
-		assertThatThrownBy(() -> group.inviteMember(bob, alice, NOW.plusSeconds(60))).isInstanceOfSatisfying(
-				DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.ALREADY_INVITED));
+		assertThatThrownBy(() -> group.inviteMember(bob, alice, GroupRole.MEMBER, NOW.plusSeconds(60)))
+			.isInstanceOfSatisfying(DomainException.class,
+					e -> assertThat(e.code()).isEqualTo(ErrorCode.ALREADY_INVITED));
 		assertThat(group.pendingInvitationsFor(bob, NOW.plusSeconds(60))).hasSize(1);
 	}
 
 	@Test
 	void aSecondInvitationIsPossibleOnceTheFirstIsDeclined() {
 		// given
-		Invitation first = group.inviteMember(bob, alice, NOW).invitation();
+		Invitation first = group.inviteMember(bob, alice, GroupRole.MEMBER, NOW).invitation();
 		group.declineInvitation(first.id(), bob, NOW);
 
 		// when
-		Group.Invited second = group.inviteMember(bob, alice, NOW.plusSeconds(60));
+		Group.Invited second = group.inviteMember(bob, alice, GroupRole.MEMBER, NOW.plusSeconds(60));
 
 		// then
 		assertThat(second.invitation().id()).isNotEqualTo(first.id());
@@ -133,11 +226,11 @@ class GroupTest {
 	@Test
 	void anInvitationIsExpiredAfterSevenDaysAndTheSamePersonCanBeInvitedAgain() {
 		// given
-		Invitation old = group.inviteMember(bob, alice, NOW).invitation();
+		Invitation old = group.inviteMember(bob, alice, GroupRole.MEMBER, NOW).invitation();
 		Instant later = EXPIRY.plusSeconds(1);
 
 		// when
-		Group.Invited again = group.inviteMember(bob, alice, later);
+		Group.Invited again = group.inviteMember(bob, alice, GroupRole.MEMBER, later);
 
 		// then
 		assertThat(old.statusAt(later)).isEqualTo(InvitationStatus.EXPIRED);
@@ -148,20 +241,20 @@ class GroupTest {
 	@Test
 	void anInvitationIsStillOpenAtTheExactExpiryInstant() {
 		// given
-		Invitation invitation = group.inviteMember(bob, alice, NOW).invitation();
+		Invitation invitation = group.inviteMember(bob, alice, GroupRole.MEMBER, NOW).invitation();
 
 		// when / then
 		assertThat(invitation.statusAt(EXPIRY)).isEqualTo(InvitationStatus.PENDING);
 		assertThat(group.pendingInvitationsFor(bob, EXPIRY)).containsExactly(invitation);
-		assertThatThrownBy(() -> group.inviteMember(bob, alice, EXPIRY)).isInstanceOfSatisfying(DomainException.class,
-				e -> assertThat(e.code()).isEqualTo(ErrorCode.ALREADY_INVITED));
+		assertThatThrownBy(() -> group.inviteMember(bob, alice, GroupRole.MEMBER, EXPIRY)).isInstanceOfSatisfying(
+				DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.ALREADY_INVITED));
 		assertThat(group.acceptInvitation(invitation.id(), bob, EXPIRY).userId()).isEqualTo(bob);
 	}
 
 	@Test
 	void acceptingAddsTheInviteeAsMemberAndReturnsMemberJoinedWithInvitedBy() {
 		// given
-		Invitation invitation = group.inviteMember(bob, alice, NOW).invitation();
+		Invitation invitation = group.inviteMember(bob, alice, GroupRole.MEMBER, NOW).invitation();
 
 		// when
 		MemberJoined joined = group.acceptInvitation(invitation.id(), bob, NOW.plusSeconds(5));
@@ -177,7 +270,7 @@ class GroupTest {
 	@Test
 	void somebodyElsesInvitationIsNotFoundAndNobodyJoins() {
 		// given
-		Invitation invitation = group.inviteMember(bob, alice, NOW).invitation();
+		Invitation invitation = group.inviteMember(bob, alice, GroupRole.MEMBER, NOW).invitation();
 
 		// when / then
 		assertThatThrownBy(() -> group.acceptInvitation(invitation.id(), carol, NOW)).isInstanceOfSatisfying(
@@ -198,7 +291,7 @@ class GroupTest {
 	@Test
 	void acceptingAnExpiredInvitationIs410AndNobodyJoins() {
 		// given
-		Invitation invitation = group.inviteMember(bob, alice, NOW).invitation();
+		Invitation invitation = group.inviteMember(bob, alice, GroupRole.MEMBER, NOW).invitation();
 
 		// when / then
 		assertThatThrownBy(() -> group.acceptInvitation(invitation.id(), bob, EXPIRY.plusSeconds(1)))
@@ -211,7 +304,7 @@ class GroupTest {
 	@Test
 	void acceptingTwiceIsNotFoundTheSecondTime() {
 		// given
-		Invitation invitation = group.inviteMember(bob, alice, NOW).invitation();
+		Invitation invitation = group.inviteMember(bob, alice, GroupRole.MEMBER, NOW).invitation();
 		group.acceptInvitation(invitation.id(), bob, NOW);
 
 		// when / then
@@ -223,9 +316,9 @@ class GroupTest {
 	@Test
 	void anAnsweredInvitationCannotBeAnsweredAgainWhateverTheAnswerWas() {
 		// given one invitation declined and one accepted
-		Invitation declined = group.inviteMember(bob, alice, NOW).invitation();
+		Invitation declined = group.inviteMember(bob, alice, GroupRole.MEMBER, NOW).invitation();
 		group.declineInvitation(declined.id(), bob, NOW);
-		Invitation accepted = group.inviteMember(bob, alice, NOW).invitation();
+		Invitation accepted = group.inviteMember(bob, alice, GroupRole.MEMBER, NOW).invitation();
 		group.acceptInvitation(accepted.id(), bob, NOW);
 
 		// when / then: all four combinations are "not found", nothing changes
@@ -245,7 +338,7 @@ class GroupTest {
 	@Test
 	void decliningReturnsInvitationDeclinedAndNobodyJoins() {
 		// given
-		Invitation invitation = group.inviteMember(bob, alice, NOW).invitation();
+		Invitation invitation = group.inviteMember(bob, alice, GroupRole.MEMBER, NOW).invitation();
 
 		// when
 		InvitationDeclined declined = group.declineInvitation(invitation.id(), bob, NOW.plusSeconds(5));
@@ -261,7 +354,7 @@ class GroupTest {
 	@Test
 	void decliningAnExpiredInvitationIsExpired() {
 		// given
-		Invitation invitation = group.inviteMember(bob, alice, NOW).invitation();
+		Invitation invitation = group.inviteMember(bob, alice, GroupRole.MEMBER, NOW).invitation();
 
 		// when / then
 		assertThatThrownBy(() -> group.declineInvitation(invitation.id(), bob, EXPIRY.plusSeconds(1)))
@@ -273,8 +366,8 @@ class GroupTest {
 	@Test
 	void pendingInvitationsAreOnlyTheOpenOnesOfThatUser() {
 		// given
-		Invitation forBob = group.inviteMember(bob, alice, NOW).invitation();
-		group.inviteMember(carol, alice, NOW);
+		Invitation forBob = group.inviteMember(bob, alice, GroupRole.MEMBER, NOW).invitation();
+		group.inviteMember(carol, alice, GroupRole.MEMBER, NOW);
 
 		// when / then
 		assertThat(group.pendingInvitationsFor(bob, NOW)).containsExactly(forBob);
@@ -366,8 +459,10 @@ class GroupTest {
 		assertThat(trip.hasActiveMember(bob)).isFalse();
 		assertThat(trip.memberCount()).isEqualTo(1);
 		assertThat(trip.membershipView().activeMembers()).containsExactly(alice);
-		assertThatThrownBy(() -> trip.requireActiveMember(bob)).isInstanceOfSatisfying(DomainException.class,
+		assertThatThrownBy(() -> trip.requireAdmin(bob)).isInstanceOfSatisfying(DomainException.class,
 				e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
+		assertThatThrownBy(() -> trip.promoteToAdmin(bob, alice, NOW)).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.MEMBER_NOT_FOUND));
 	}
 
 	private static boolean hasZeroBalance(Group group, UserId user) {

@@ -32,6 +32,8 @@ function describe(entry: Notification): string {
       return `${who} joined ${group}`;
     case "INVITATION_DECLINED":
       return `${who} declined your invitation to ${group}`;
+    case "MEMBER_PROMOTED":
+      return `${who} made you an admin of ${group}`;
     case "PAYMENT_CONFIRMED":
       return `${who} confirmed your payment in ${group}`;
     case "PAYMENT_REJECTED":
@@ -239,7 +241,7 @@ export function InboxBell() {
           <ul className="flex flex-col gap-2">
             {openInvitations.map((invitation) => (
               <li key={invitation.invitationId} className="flex flex-col gap-1 border-l-4 border-blue-500 pl-2">
-                <span>{`${invitation.invitedBy.displayName} invited you to ${invitation.group.name}`}</span>
+                <span>{`${invitation.invitedBy.displayName} invited you to ${invitation.group.name}${invitation.role === "ADMIN" ? " as an admin" : ""}`}</span>
                 <span className="flex gap-2">
                   <button
                     type="button"

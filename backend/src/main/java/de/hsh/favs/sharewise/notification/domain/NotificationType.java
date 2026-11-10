@@ -27,6 +27,9 @@ public enum NotificationType {
 	 * Somebody else recorded an expense in which the recipient owes a share or which the
 	 * recipient paid (J4).
 	 */
-	EXPENSE_RECORDED
+	EXPENSE_RECORDED,
+
+	/** An admin made the recipient an admin. */
+	MEMBER_PROMOTED
 
 }

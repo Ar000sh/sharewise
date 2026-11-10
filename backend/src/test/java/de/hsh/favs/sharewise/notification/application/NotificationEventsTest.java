@@ -11,6 +11,7 @@ import de.hsh.favs.sharewise.group.api.GroupRole;
 import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.InvitationId;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
+import de.hsh.favs.sharewise.group.api.MemberPromoted;
 import de.hsh.favs.sharewise.settlement.api.DebtWaived;
 import de.hsh.favs.sharewise.settlement.api.SettlementPaymentConfirmed;
 import de.hsh.favs.sharewise.settlement.api.SettlementPaymentId;
@@ -213,6 +214,25 @@ class NotificationEventsTest {
 			.containsEntry("actor_id", creditor.value())
 			.containsEntry("group_id", group.value())
 			.containsEntry("reference", payment.value());
+	}
+
+	@Test
+	void aPromotionCreatesOneEntryForThePromotedPersonPointingAtThemselves() {
+		// given
+		var event = new MemberPromoted(group, joiner, inviter, NOW);
+
+		// when
+		notifications.recordMemberPromoted(event);
+		notifications.recordMemberPromoted(event);
+
+		// then
+		var row = jdbc.queryForMap("select * from notifications where recipient_id = ?", joiner.value());
+		assertThat(row).containsEntry("type", "MEMBER_PROMOTED")
+			.containsEntry("actor_id", inviter.value())
+			.containsEntry("group_id", group.value())
+			.containsEntry("reference", joiner.value());
+		assertThat(count("recipient_id", joiner)).isEqualTo(1);
+		assertThat(count("recipient_id", inviter)).isZero();
 	}
 
 	private int count(String column, UserId user) {
