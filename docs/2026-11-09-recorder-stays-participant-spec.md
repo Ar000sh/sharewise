@@ -1,6 +1,6 @@
 # Spec: the person who records an expense cannot remove themselves from its participants
 
-**Date:** 09.11.26 · **Type:** fix (a missing rule) · **Branch:** `fix/recorder-stays-participant` (from `main` at `fdb5ff2`) · **Status:** specification only, nothing is implemented · **Reported by:** the user, found while using the expense form
+**Date:** 09.11.26 · **Type:** fix (a missing rule) · **Branch:** `fix/recorder-stays-participant` (from `main` at `fdb5ff2`) · **Status:** implemented on this branch (decisions D1 to D3 below were taken on 10.11.26) · **Reported by:** the user, found while using the expense form
 
 This file is the hand-off to the session that implements it. Facts marked *(verified on main)* were read from the code on `main`; everything else is a decision or an open question.
 
@@ -18,8 +18,8 @@ In the "Add expense" form the list "Split equally between" shows every member wi
 ## 3. Wanted behaviour (decided by the user)
 **The signed-in user who records an expense is always one of its participants.** In the form their own checkbox is ticked and cannot be changed. The other members can still be ticked or unticked as before.
 
-## 4. Open decisions (the implementer asks the user before building)
-Per the project rule "who decides what": these change what users can do or the shape of the HTTP interface.
+## 4. Decisions (asked before building)
+Per the project rule "who decides what": these change what users can do or the shape of the HTTP interface. **Decided:** D1 (a) the recorder only, D2 (b) UI and domain, D3 `R18`. The table keeps the options and the reasons.
 
 | # | Question | Options | Recommendation |
 |---|---|---|---|
