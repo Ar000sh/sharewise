@@ -176,6 +176,21 @@ public class Group {
 			.orElseThrow(() -> new DomainException(ErrorCode.INVITATION_NOT_FOUND, "Invitation not found"));
 	}
 
+	/**
+	 * Records whether a member's balance in this group is zero, as the settlement ledger
+	 * reports it (R11: a member may only leave at balance 0; D12). Idempotent; a status
+	 * older than the one stored is ignored, because the ledger's events may arrive out of
+	 * order. A user who is not an active member is ignored without error (the event may
+	 * arrive after they left). Returns no event: the diagram draws none for it.
+	 * @param occurredAt when the ledger booking that changed the balance happened
+	 */
+	public void updateBalanceStatus(UserId member, boolean hasZeroBalance, Instant occurredAt) {
+		memberships.stream()
+			.filter(m -> m.isActiveMember() && m.userId().equals(member))
+			.findFirst()
+			.ifPresent(m -> m.updateBalanceStatus(hasZeroBalance, occurredAt));
+	}
+
 	public boolean hasActiveMember(UserId user) {
 		return activeMemberships().stream().anyMatch(m -> m.userId().equals(user));
 	}

@@ -41,7 +41,7 @@ class ExpenseTest {
 		assertThat(expense.splitStrategy()).isEqualTo(SplitStrategy.EQUAL);
 		assertThat(expense.shares()).hasSize(4).extracting(ExpenseShare::owedShare).containsOnly(Money.eur("225.00"));
 		assertThat(recorded.event()).isEqualTo(new ExpenseRecorded(expense.expenseId(), ExpenseFixture.GROUP, ALICE,
-				Money.eur("900.00"), expense.shares(), MutableClock.START));
+				ALICE, Money.eur("900.00"), expense.shares(), MutableClock.START));
 	}
 
 	@Test

@@ -2,6 +2,7 @@ package de.hsh.favs.sharewise;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -10,9 +11,11 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
 /**
@@ -154,6 +157,23 @@ class ConventionTests {
 			.haveSimpleName("MemberId")
 			.allowEmptyShould(true)
 			.check(own);
+	}
+
+	/**
+	 * Events live in the publisher's api, with one exception (D12): the two balance
+	 * events that flow upstream from settlement to group live in shared.events. A third
+	 * class there would be a new upstream event, which is a design decision, not a
+	 * convenience.
+	 */
+	@Test
+	void sharedEventsAreExactlyTheTwoBalanceEvents() {
+		List<JavaClass> shared = MAIN.stream()
+			.filter(c -> c.getPackageName().equals(ROOT + ".shared.events") && !c.isNestedClass())
+			.toList();
+
+		assertThat(shared).allSatisfy(c -> assertThat(c.isRecord()).as(c.getName() + " is a record").isTrue());
+		assertThat(shared).extracting(JavaClass::getSimpleName)
+			.containsExactlyInAnyOrder("MemberBalanceStatusChanged", "AllBalancesSettled");
 	}
 
 	private static ArchCondition<JavaClass> beInterfaceRecordOrEnum() {

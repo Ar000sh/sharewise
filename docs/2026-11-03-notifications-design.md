@@ -25,7 +25,7 @@ Concepts this practises (for P2/P3): bounded context and context map (a new, ups
 
 **Non-goals (this work)**
 - Email, SMS or push delivery. (The design leaves a seam; see 6.5.)
-- Notifications for expenses (recorded, corrected, removed): too noisy, the expense list shows them. **(decided)**
+- Notifications for expenses (recorded, corrected, removed): too noisy, the expense list shows them. **(decided)** **Changed 09.11.26:** a recorded expense now creates an entry (`EXPENSE_RECORDED`) for everybody involved except the recorder; corrected and removed expenses still do not (the operations do not exist yet).
 - A full inbox page with history and filters (the data model allows it; the first UI is the dropdown). **(decided: dropdown)**
 - Real-time push (WebSocket/SSE); the bell polls. **(call)**
 - Changing the username after sign-up inside ShareWise.

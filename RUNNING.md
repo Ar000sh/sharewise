@@ -1,6 +1,7 @@
-# Running ShareWise (Ex4 slice)
+# Running ShareWise
 
-Sign up, create a group, invite friends, record an equal-split expense, see who owes what. Accounts and passwords
+Sign up, create a group, invite friends, record an equal-split expense, see who owes what, settle up (report a payment,
+the creditor confirms or rejects it, or forgives a debt). Accounts and passwords
 belong to Keycloak (the identity provider); ShareWise never sees a password. The Next.js server keeps the tokens in an
 httpOnly cookie.
 
@@ -79,6 +80,14 @@ cookie is per browser.
 4. **Alice:** add "Hotel", 900 €, paid by Alice, everyone. **Bob:** "Dinner", 180 €, paid by Bob, everyone.
 5. Balances tab: Alice +540,00 €, Bob -180,00 €, Carol -360,00 €. They arrive through an event, so they can lag the
    expense by a moment.
+5. **Carol:** Settle up tab, "You owe" shows 360,00 € to Alice; **I paid**, **Send payment**. The row now says
+   "360,00 € awaiting confirmation"; no balance has changed yet.
+6. **Alice:** the bell (**Inbox**) shows a badge and lists "Carol Tester marked 360,00 € as paid to you": **Confirm**
+   (or **Reject** with a reason). Carol's bell then reads "Alice Tester confirmed your payment in Mallorca 2027". After
+   a moment the plan shows only "Bob Tester owes 180,00 €" and the Balances tab Alice +180,00 €, Bob -180,00 €, Carol
+   0,00 €.
+7. **Alice:** **Waive** on Bob's row fills the "Waive manually" form below the plan; give a reason and **Waive debt**.
+   Bob's debt is forgiven at once, no confirmation needed, and the plan says "Everybody is settled."
 
 ## Tests
 
@@ -89,12 +98,14 @@ npx @redocly/cli lint docs/api/openapi.yaml                              # the A
 ```
 
 `ModularityTests` fails the build if a module reaches into another module's internals.
-`MallorcaSliceTest` runs the whole slice (all four modules, real Postgres, real Keycloak) as one scenario. The Keycloak
-test container takes about 75 s to start, once per test run.
+`MallorcaSliceTest` runs the whole slice (all four modules, real Postgres, real Keycloak) as one scenario: the expenses,
+then a confirmed payment, a rejected one and a waiver. The Keycloak test container takes about 75 s to start, once per
+test run.
 
 ### End-to-end test in a real browser (Playwright)
-Three people register on Keycloak's registration page in three browsers, share a group and check the balances; a
-second test covers a wrong password, sign-out and the redirect to sign-in.
+Three people register on Keycloak's registration page in three browsers, share a group, check the balances and settle
+up (Carol reports a payment, Alice confirms it in her bell, the plan shrinks to Bob's debt); a second test covers a
+wrong password, sign-out and the redirect to sign-in.
 ```sh
 docker compose up -d db keycloak                # the realm allows http://localhost:3100, the port of the e2e frontend
 (cd backend && ./mvnw spring-boot:run)          # leave running
@@ -121,4 +132,6 @@ volumes.
 - `docs/api/openapi.yaml` the API contract (change it first, then code)
 - `docs/2026-10-24-sharewise-modulith-ex4-design.md` design decisions, `docs/...-ex4.md` the plan
 - `docs/2026-10-30-keycloak-auth-design.md` sign-in with Keycloak (decisions, failure modes)
+- `docs/2026-11-04-money-flow.md` how expenses, balances, the plan and settlement payments work (with diagrams); `docs/2026-11-02-settlements-design.md` is the first design, `docs/2026-11-04-settlements-inbox-design.md` what changed
+- `docs/diagram-deltas.md` where the code differs from the domain diagram, and why
 - `backend/src/main/java/de/hsh/favs/sharewise/{account,group,expense,settlement,shared}` the modules

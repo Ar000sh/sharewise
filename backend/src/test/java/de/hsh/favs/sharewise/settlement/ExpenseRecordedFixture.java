@@ -28,6 +28,8 @@ public class ExpenseRecordedFixture {
 
 	private UserId paidBy = AccountFixture.alice().userId();
 
+	private UserId recordedBy = AccountFixture.alice().userId();
+
 	private Money totalAmount = Money.eur("900.00");
 
 	private List<UserId> participants = List.of(AccountFixture.alice().userId(), AccountFixture.bob().userId(),
@@ -50,6 +52,11 @@ public class ExpenseRecordedFixture {
 		return this;
 	}
 
+	public ExpenseRecordedFixture recordedBy(UserId recordedBy) {
+		this.recordedBy = recordedBy;
+		return this;
+	}
+
 	public ExpenseRecordedFixture withTotalAmount(String totalAmount) {
 		this.totalAmount = Money.eur(totalAmount);
 		return this;
@@ -61,8 +68,8 @@ public class ExpenseRecordedFixture {
 	}
 
 	public ExpenseRecorded build() {
-		return new ExpenseRecorded(expenseId, groupId, paidBy, totalAmount, EqualSplit.split(totalAmount, participants),
-				occurredAt);
+		return new ExpenseRecorded(expenseId, groupId, paidBy, recordedBy, totalAmount,
+				EqualSplit.split(totalAmount, participants), occurredAt);
 	}
 
 }

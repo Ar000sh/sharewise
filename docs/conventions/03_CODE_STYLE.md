@@ -24,7 +24,7 @@ The code says *how*; comments say *why* and *which rule*. Language: English, ful
 
 - Reference the sources of a rule instead of restating them: requirement numbers `(R4)`, decision numbers `(D10)`, diagram decisions `(diagram 17.10)`.
 - No commented-out code, no banner comments, no `// getter`, no comment that repeats the name of what it documents.
-- `TODO` is allowed only as `TODO(Ex5): what and why`, and only for work that is already planned. Search for `TODO` before every release.
+- `TODO` is allowed only as `TODO(ExN): what and why` (`N` the exercise that does it), and only for work that is already planned. Search for `TODO` before every release.
 - Test comments: only the `// given // when // then` markers and the occasional `// why` for a surprising setup.
 
 ## 3. Errors

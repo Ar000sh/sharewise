@@ -26,7 +26,7 @@ import tools.jackson.databind.json.JsonMapper;
  * transaction commits.
  */
 @ModuleIntegrationTest
-class ExpenseRecordedListenerTest {
+class ExpenseRecordedEventTest {
 
 	@Autowired
 	ApplicationEventPublisher publisher;

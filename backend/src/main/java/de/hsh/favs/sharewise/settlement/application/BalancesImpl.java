@@ -4,7 +4,6 @@ import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.settlement.api.Balances;
 import de.hsh.favs.sharewise.settlement.api.MemberBalance;
 import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository;
-import de.hsh.favs.sharewise.settlement.persistence.GroupLedgerRepository.UserTotal;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.Money;
 import de.hsh.favs.sharewise.shared.UserId;
@@ -35,12 +34,12 @@ class BalancesImpl implements Balances {
 	@Override
 	@Transactional(readOnly = true)
 	public List<MemberBalance> of(GroupId group) {
-		Map<UserId, BigDecimal> stored = ledgers.totals(group.value())
+		Map<UserId, Money> stored = ledgers.balances(group)
 			.stream()
-			.collect(Collectors.toMap(total -> new UserId(total.getUserId()), UserTotal::getAmount));
+			.collect(Collectors.toMap(MemberBalance::userId, MemberBalance::netBalance));
 		return membership.members(group)
 			.stream()
-			.map(user -> new MemberBalance(user, Money.eur(stored.getOrDefault(user, BigDecimal.ZERO))))
+			.map(user -> new MemberBalance(user, stored.getOrDefault(user, Money.eur(BigDecimal.ZERO))))
 			.toList();
 	}
 

@@ -9,6 +9,10 @@ describe("messageFor", () => {
   });
 
   it.each([
+    ["PAYMENT_EXCEEDS_OPEN_DEBT", "You can only pay up to what you owe."],
+    ["SETTLEMENT_PAYMENT_NOT_FOUND", "This settlement payment does not exist."],
+    ["PAYMENT_NOT_PENDING", "This settlement payment was already answered."],
+    ["NOT_THE_CREDITOR", "Only the person who is owed can do this."],
     ["ACCOUNT_NOT_FOUND", "No account found. The person must have signed in to ShareWise once."],
     ["ALREADY_INVITED", "This person already has an open invitation."],
     ["ALREADY_MEMBER", "You are already a member of this group."],

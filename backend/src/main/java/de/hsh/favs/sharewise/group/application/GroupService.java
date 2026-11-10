@@ -158,6 +158,20 @@ public class GroupService {
 	}
 
 	/**
+	 * Follows the ledger's balance status of one member (R11, D12). The group row is
+	 * locked, so two status events for the same member cannot both pass the "is it newer"
+	 * check. An unknown group is ignored: the event cannot be acted on and redelivering
+	 * it would not help.
+	 */
+	@Transactional
+	public void updateBalanceStatus(GroupId groupId, UserId member, boolean hasZeroBalance, Instant occurredAt) {
+		groups.findByIdForUpdate(groupId.value()).ifPresent(group -> {
+			group.updateBalanceStatus(member, hasZeroBalance, occurredAt);
+			groups.save(group);
+		});
+	}
+
+	/**
 	 * Turns the caller's invitation down.
 	 * @throws DomainException INVITATION_NOT_FOUND (also for somebody else's invitation),
 	 * INVITATION_EXPIRED

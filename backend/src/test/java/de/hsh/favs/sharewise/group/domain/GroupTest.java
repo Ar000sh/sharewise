@@ -298,6 +298,59 @@ class GroupTest {
 	}
 
 	@Test
+	void updateBalanceStatusSetsTheMemberFlagAndIsIdempotent() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+
+		// when the same status arrives twice
+		trip.updateBalanceStatus(bob, false, NOW);
+		trip.updateBalanceStatus(bob, false, NOW);
+
+		// then only Bob's flag changed
+		assertThat(hasZeroBalance(trip, bob)).isFalse();
+		assertThat(hasZeroBalance(trip, alice)).isTrue();
+	}
+
+	@Test
+	void updateBalanceStatusIgnoresAUserWhoIsNotAMember() {
+		// given
+		UserId carol = AccountFixture.carol().userId();
+
+		// when
+		group.updateBalanceStatus(carol, false, NOW);
+
+		// then no membership appeared and nobody's flag changed
+		assertThat(group.memberships()).noneMatch(m -> m.userId().equals(carol));
+		assertThat(group.memberships()).allMatch(Membership::hasZeroBalance);
+	}
+
+	@Test
+	void anOlderStatusEventDoesNotOverrideANewerOne() {
+		// given Bob went non-zero at a later instant
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+		trip.updateBalanceStatus(bob, false, NOW.plusSeconds(10));
+
+		// when the older "zero" event arrives late
+		trip.updateBalanceStatus(bob, true, NOW);
+
+		// then the newer status stays
+		assertThat(hasZeroBalance(trip, bob)).isFalse();
+	}
+
+	@Test
+	void eventsWithTheSameTimestampApply() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+		trip.updateBalanceStatus(bob, false, NOW);
+
+		// when a second event carries the same instant (a frozen clock)
+		trip.updateBalanceStatus(bob, true, NOW);
+
+		// then it is applied
+		assertThat(hasZeroBalance(trip, bob)).isTrue();
+	}
+
+	@Test
 	void aFormerMemberIsNeitherActiveNorCountedNorInTheMembershipView() {
 		// given
 		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
@@ -315,6 +368,15 @@ class GroupTest {
 		assertThat(trip.membershipView().activeMembers()).containsExactly(alice);
 		assertThatThrownBy(() -> trip.requireActiveMember(bob)).isInstanceOfSatisfying(DomainException.class,
 				e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
+	}
+
+	private static boolean hasZeroBalance(Group group, UserId user) {
+		return group.memberships()
+			.stream()
+			.filter(m -> m.userId().equals(user))
+			.findFirst()
+			.orElseThrow()
+			.hasZeroBalance();
 	}
 
 }

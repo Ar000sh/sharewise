@@ -9,11 +9,11 @@ One module per bounded context, plus `shared`. Root package `de.hsh.favs.sharewi
 | `account` | Account | generic | `Account` |
 | `group` | Group | supporting | `Group` (with entities `Membership`, `Invitation`) |
 | `expense` | Expense | core | `Expense` |
-| `settlement` | Settlement | core | `GroupLedger` (with entity `LedgerEntry`), `SettlementPayment` (Ex5) |
-| `notification` | Notification | generic | `Notification` (the inbox: things that happened to a person; a leaf, nothing depends on it, so it has no `api` package) |
-| `shared` | none | none | value objects used by several contexts only (see 2.4) |
+| `settlement` | Settlement | core | `GroupLedger` (with entity `LedgerEntry`), `SettlementPayment` |
+| `notification` | Notification | generic | `Notification` (the inbox: things that happened to a person, fed by events of group and settlement; a leaf, nothing depends on it, so it has no `api` package) |
+| `shared` | none | none | value objects used by several contexts only (see 2.4); the package `shared.events` holds the two upstream balance events and nothing else (see 5.1) |
 
-A module's allowed dependencies are declared once, in its `package-info.java` (`@ApplicationModule(allowedDependencies = ...)`), and checked by `ModularityTests`. Current rules: `account → shared`; `group → account::api, shared`; `expense → account::api, group::api, shared`; `settlement → account::api, group::api, expense::api, shared`; `notification → account::api, group::api, shared` (later also `settlement::api`), and **nothing depends on `notification`** (checked by `ConventionTests.nothingDependsOnTheNotificationModule`). Why a module of its own: payment entries come from `settlement`, which already depends on `group`; entries stored inside `group` would force `group → settlement`, a cycle. Adding a dependency is a design decision: change the line, say why in the commit.
+A module's allowed dependencies are declared once, in its `package-info.java` (`@ApplicationModule(allowedDependencies = ...)`), and checked by `ModularityTests`. Current rules: `account → shared`; `group → account::api, shared`; `expense → account::api, group::api, shared`; `settlement → account::api, group::api, expense::api, shared`; `notification → account::api, expense::api, group::api, settlement::api, shared` (it consumes events of group, expense and settlement; `expense::api` was added for `ExpenseRecorded`, no cycle because `expense` does not depend on `notification`), and **nothing depends on `notification`** (checked by `ConventionTests.nothingDependsOnTheNotificationModule`). Why a module of its own: payment entries come from `settlement`, which already depends on `group`; entries stored inside `group` would force `group → settlement`, a cycle. Adding a dependency is a design decision: change the line, say why in the commit.
 
 ## 2. One layout for every module (no exceptions)
 
@@ -31,9 +31,9 @@ A module's allowed dependencies are declared once, in its `package-info.java` (`
 
 | Package | Contains | Must not contain |
 |---|---|---|
-| `api` | domain events this module publishes; ports (interfaces) other modules call; read-model records those ports return; enumerations that appear in them | entities, repositories, services, Spring beans |
+| `api` | domain events this module publishes (the one exception: 5.1); ports (interfaces) other modules call; read-model records those ports return; enumerations that appear in them | entities, repositories, services, Spring beans |
 | `domain` | the model exactly as in the diagram; business rules; `@Entity`/JPA annotations are allowed on aggregates, entities and embeddables (our one pragmatic deviation from textbook hexagonal) | `org.springframework.*`, `jakarta.servlet.*`, Spring Data, other modules' types except `shared` and other modules' `api` value types, I/O, `Instant.now()` (take the time as a parameter) |
-| `application` | `<Aggregate>Service` (transactions, loading, saving, publishing events), command records, `<Event>Listener` classes for other modules' events, `<Port>Impl` classes that implement this module's `api` ports | HTTP types, JSON, entities returned to other modules |
+| `application` | `<Aggregate>Service` (transactions, loading, saving, publishing events), command records, `<Aggregate>Listener` classes that hand events to a service, `<Port>Impl` classes that implement this module's `api` ports | HTTP types, JSON, entities returned to other modules |
 | `persistence` | `<Aggregate>Repository extends JpaRepository`, custom queries | business rules |
 | `web` | `<Aggregate>Controller`, `<Operation>Request`, `<Thing>Response` records, mapping to and from application types | business rules, repositories, direct use of entities in JSON |
 
@@ -46,7 +46,7 @@ Dependency direction inside a module: `web → application → domain` and `appl
 ### 2.3 Aggregate rules (from DDD slide 67)
 1. Only the **aggregate root** has a repository. Entities inside an aggregate (`Membership`, `Invitation`, `LedgerEntry`) have none.
 2. Every state change and every business rule is a method on the root. A service or controller never constructs or mutates a child.
-3. A root method is named after the **operation in the diagram** (`acceptInvitation`, `record`, `closeForSettlement`) and **returns the domain event it produces** (or a small result record when it produces several). It never publishes; it never calls another module.
+3. A root method is named after the **operation in the diagram** (`acceptInvitation`, `record`, `closeForSettlement`) and **returns the domain event it produces** (or a small result record when it produces several). An operation that reacts to another context's event and produces no event of its own returns nothing (`Group.updateBalanceStatus` is `void`; the diagram draws no event for it). It never publishes; it never calls another module.
 4. Other aggregates and other modules are referenced **by id** (`GroupId`, `UserId`) only.
 5. The application service is thin and always has this shape: load the root (lock it where a race matters) → call one root method → save → publish the returned event(s) → return a result.
 6. Time comes in as a parameter (`Instant now` from the injected `Clock`), never from `Instant.now()` inside the domain.
@@ -74,8 +74,8 @@ Value objects wrap every id and every concept the diagram draws as a value objec
 Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCamelCase` for types, `lowerCamelCase` for fields and methods, `UPPER_SNAKE_CASE` for enumeration constants, `snake_case` for SQL.
 
 ### 3.1 Group context
-- Aggregate root `Group`: fields `id: GroupId`, `name: GroupName`, `currency: Currency`, `status: GroupStatus`; entities `Membership` (`userId`, `role: GroupRole`, `status: MembershipStatus`, `hasZeroBalance`, `joinedAt`) and `Invitation` (`id: InvitationId`, `invitee: UserId`, `status: InvitationStatus`, `expiresAt`). An invitation belongs to one existing account and only that account can answer it; `EXPIRED` is derived from `expiresAt`, never stored.
-- Operations (each returns its event): `createGroup`, `inviteMember`, `acceptInvitation`, `declineInvitation`, `promoteToAdmin`, `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, `updateBalanceStatus`.
+- Aggregate root `Group`: fields `id: GroupId`, `name: GroupName`, `currency: Currency`, `status: GroupStatus`; entities `Membership` (`userId`, `role: GroupRole`, `status: MembershipStatus`, `hasZeroBalance`, `joinedAt`; plus `balanceStatusAt`, not in the diagram, see 5.1) and `Invitation` (`id: InvitationId`, `invitee: UserId`, `status: InvitationStatus`, `expiresAt`). An invitation belongs to one existing account and only that account can answer it; `EXPIRED` is derived from `expiresAt`, never stored.
+- Operations (each returns its event, except `updateBalanceStatus`, which reacts to `MemberBalanceStatusChanged` and returns nothing, see 2.3): `createGroup`, `inviteMember`, `acceptInvitation`, `declineInvitation`, `promoteToAdmin`, `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, `updateBalanceStatus`.
 - Enumerations `GroupStatus {OPEN, CLOSED_FOR_SETTLEMENT, ARCHIVED}`, `GroupRole {ADMIN, MEMBER}`, `MembershipStatus {ACTIVE, FORMER_MEMBER}`, `InvitationStatus {PENDING, ACCEPTED, DECLINED, EXPIRED}`.
 - Events: `GroupCreated`, `MemberInvited`, `MemberJoined`, `MemberLeft`, `MemberRemoved`, `MemberPromoted`, `InvitationDeclined`, `GroupClosedForSettlement`, `GroupReopened`, `GroupArchived`.
 - Read model `GroupMembershipView`.
@@ -88,9 +88,9 @@ Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCam
 
 ### 3.3 Settlement context
 - Aggregate root `GroupLedger` (`groupId`, entries) with append-only entity `LedgerEntry` (`id: EntryId`, `userId`, `deltaAmount: Money`, `type: LedgerEntryType`, `referenceId`, `occurredAt`); operations `appendExpenseEntry`, `appendCorrectionReversal`, `appendRemovalReversal`, `appendSettlementPayment`, `appendDebtWaiver`, `projectBalances`, `projectSimplifiedPlan`.
-- Aggregate root `SettlementPayment` (`record`, `confirm`, `reject`, `waive`), enumeration `PaymentStatus`.
+- Aggregate root `SettlementPayment` (`record`, `confirm`, `reject`, `waive`; `record` and `waive` are factories that create the payment, `waive` already as WAIVED, see `docs/diagram-deltas.md` S1), enumeration `PaymentStatus`.
 - Read models `MemberBalance(userId, netBalance)`, `SettlementPlan(simplifiedDebts)`, value object `DirectedDebt(fromDebtor, toCreditor, amount)`.
-- Events: `SettlementPaymentRecorded`, `SettlementPaymentConfirmed`, `SettlementPaymentRejected`, `DebtWaived`, `MemberBalanceStatusChanged`, `AllBalancesSettled`.
+- Events: `SettlementPaymentRecorded`, `SettlementPaymentConfirmed`, `SettlementPaymentRejected`, `DebtWaived` (in `settlement.api`); `MemberBalanceStatusChanged`, `AllBalancesSettled` (published by settlement, but in `shared.events`, see 5.1).
 
 ### 3.4 Account context
 - Aggregate root `Account`: `id: UserId` (the Keycloak subject), `email`, `username: Username` (lower case, 3 to 30 characters of `a-z 0-9 . _ -`, never an `@`; chosen at sign-up at Keycloak, copied on first login), `displayName: DisplayName`, `status: AccountStatus`, `registeredAt`; operation `registerFromIdentityProvider`, … (the rest of the diagram arrives in later exercises). Passwords, sign-in, lock-out and tokens belong to the identity provider (Keycloak); ShareWise has none of them.
@@ -102,8 +102,8 @@ Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCam
 
 ### 3.6 Notification context
 - Aggregate root `Notification`: `id: NotificationId`, `recipient: UserId`, `type: NotificationType`, `groupId: GroupId`, `actor: UserId` (who did it), `reference: UUID` (what it points at), `occurredAt`, `readAt` (null = unread); operations `notify` (factory) and `markRead`. It stores ids only; names and texts are looked up when the inbox is read.
-- Enumeration `NotificationType {MEMBER_JOINED, INVITATION_DECLINED}`; later `PAYMENT_TO_CONFIRM`, `PAYMENT_CONFIRMED`, `PAYMENT_REJECTED`, `DEBT_WAIVED`, `MEMBER_REMOVED`. A received invitation is not an entry: it is state, asked from the group context (`GET /invitations`).
-- Consumes `MemberJoined` and `InvitationDeclined` (listeners are asynchronous and delegate to `NotificationService`). Uses the ports `UserProfiles` and `GroupDirectory`.
+- Enumeration `NotificationType {MEMBER_JOINED, INVITATION_DECLINED, PAYMENT_CONFIRMED, PAYMENT_REJECTED, DEBT_WAIVED, EXPENSE_RECORDED}`; later `MEMBER_REMOVED`. A received invitation is not an entry: it is state, asked from the group context (`GET /invitations`). A payment waiting for the recipient's answer is not an entry either: it is state, asked from the settlement context (`GET /me/settlement-payments`).
+- Consumes `MemberJoined` and `InvitationDeclined` (to the inviter) and `SettlementPaymentConfirmed`, `SettlementPaymentRejected`, `DebtWaived` (to the debtor, `fromDebtor`; actor the creditor; reference the payment id) and `ExpenseRecorded` (to everybody involved except the recorder, that is the participants and the payer; actor the recorder; reference the expense id; the event carries `recordedBy` for this). `NotificationListener` has one asynchronous `on(Event)` method per event and delegates to `NotificationService`. Uses the ports `UserProfiles` and `GroupDirectory`.
 
 ## 4. Class naming by role (checked by `ConventionTests`)
 
@@ -111,10 +111,10 @@ Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCam
 |---|---|---|---|
 | Aggregate root, entity | the diagram name | `domain` | `Group`, `Membership` |
 | Value object, enumeration | the diagram name | `domain` or `shared` | `GroupName`, `GroupRole` |
-| Domain event | past tense, diagram name, a `record` | `api` | `ExpenseRecorded` |
+| Domain event | past tense, diagram name, a `record` | `api` of the publisher (only exception: `shared.events`, 5.1) | `ExpenseRecorded` |
 | Use-case service | `<Aggregate>Service`, one per aggregate | `application` | `ExpenseService` |
 | Command | `<Operation>Command`, a `record` | `application` | `RecordExpenseCommand` |
-| Listener for another module's event | `<Event>Listener` | `application` | `ExpenseRecordedListener` |
+| Listener for events | `<Aggregate>Listener`, one per module and aggregate, one `on(<Event>)` method per event | `application` | `GroupLedgerListener`, `NotificationListener` |
 | Port other modules call | a noun or noun phrase, an `interface` | `api` | `GroupMembership`, `Balances`, `UserProfiles`, `CurrentUser` |
 | Port implementation | `<Port>Impl` | `application` | `BalancesImpl` |
 | Read model | the diagram name, a `record` | `api` (if returned across modules) else `domain` | `MemberBalance` |
@@ -129,10 +129,20 @@ Method names on services are the operation names (`recordExpense`, `acceptInvita
 ## 5. Communication between modules
 
 - **Synchronous question** ("is this user in the group?"): call an `api` port. Ports are read-only, answer with plain values (never entities), and work without an open transaction.
-- **Event** ("an expense was recorded"): the publishing module's `application` service publishes the event with `ApplicationEventPublisher` inside its transaction; the consuming module reacts in a `<Event>Listener` annotated `@ApplicationModuleListener` (asynchronous, after commit, kept in the event publication registry). Consumers are idempotent (a repeated event changes nothing).
+- **Event** ("an expense was recorded"): the publishing module's `application` service publishes the event with `ApplicationEventPublisher` inside its transaction; the consuming module reacts in a `<Aggregate>Listener` with one `@ApplicationModuleListener` method per event (asynchronous, after commit, each method with its own entry in the event publication registry). Consumers are idempotent (a repeated event changes nothing).
 - Events carry **ids and value objects, never names or entities**. Display names are looked up at read time through the `UserProfiles` port.
 - Balances are therefore eventually consistent with expenses; the frontend and tests are written for that (document 02 and 04).
 - How events are delivered today, why a scheduled redelivery was skipped on purpose, and what to keep in mind for the move to a message broker: `docs/2026-10-27-event-delivery-and-messaging.md`.
+
+### 5.1 The one exception: `shared.events` (D12)
+
+Events live in the `api` of the module that publishes them, **except** `MemberBalanceStatusChanged` and `AllBalancesSettled`, which live in `de.hsh.favs.sharewise.shared.events`. Settlement publishes them after every ledger booking (expense, confirmed payment, waiver) when a zero-state flips; group consumes `MemberBalanceStatusChanged` to keep `Membership.hasZeroBalance` (R11) up to date. `AllBalancesSettled` has no consumer yet (auto-archive L5 is parked).
+
+- **Why:** the module graph stays one-way, `account ← group ← expense ← settlement`. Settlement already depends on `group::api`; a group listener for an event in `settlement.api` would make group depend on settlement, a cycle `ModularityTests` refuses. A survey of all diagram events found these two as the only ones that flow upstream.
+- **Alternatives rejected:** allow `group → settlement` (a cycle, and it blocks the P3 service split); a `canLeave` port in settlement (group would call settlement, the same cycle); settlement keeping its own copy of group data (the biggest change for the least gain).
+- **Order:** the events are asynchronous and may arrive out of order, so a `Membership` stores when its flag was last set (`balance_status_at`) and ignores an older event.
+- **Checked by** `ConventionTests.sharedEventsAreExactlyTheTwoBalanceEvents`: every class in `shared.events` is a record, and the names are exactly these two. Adding a third is a design decision, not a convenience.
+- **Change driver (P2):** if more events need to flow upstream, the split between group and settlement is probably wrong; revisit the boundaries instead of growing this package.
 
 ## 6. Persistence and database
 
