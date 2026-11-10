@@ -137,8 +137,9 @@ class MallorcaSliceTest {
 		// and Bob reports 50.00 to Alice, which is PENDING and moves no balance (R16)
 		UUID payment = recordPayment(group, bob, alice, "50.00");
 
-		// and Carol then pays 50.00 that only Alice owes
-		recordExpense(group, carol, "Taxi", 5000, carol, List.of(alice)).andExpect(status().isCreated());
+		// and Carol then pays 50.00 that only Alice owes (Alice records it: the recorder
+		// takes part, R18)
+		recordExpense(group, alice, "Taxi", 5000, carol, List.of(alice)).andExpect(status().isCreated());
 		await().atMost(Duration.ofSeconds(10))
 			.untilAsserted(() -> assertThat(balances(group, alice))
 				.containsExactlyInAnyOrderEntriesOf(Map.of(alice, 0L, bob, -5000L, carol, 5000L)));
