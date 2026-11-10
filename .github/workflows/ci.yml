@@ -14,9 +14,11 @@ on:
   push:
     branches: [main]
 
-# A newer push to the same pull request cancels the older run. A run on main is never cancelled: it may be publishing.
+# A newer push to the same pull request cancels the older run. A run on main has a group of its own per commit: it may
+# be publishing, and GitHub would otherwise drop a queued run of main when a newer one arrives, so that commit would
+# get no images (the deploy stage needs an image for every main commit).
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
