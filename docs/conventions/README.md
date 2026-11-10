@@ -25,6 +25,7 @@ These rules exist because the parallel build produced four slightly different co
 | Contract lint | `npx @redocly/cli lint docs/api/openapi.yaml` | the contract is invalid |
 | Commit gate | `.githooks/pre-commit` | a secret or key is staged, the contract is mixed with code, the lock file lost platforms, an existing file flips its line endings (CRLF <-> LF), or the staged part fails format/lint/typecheck |
 | Push gate | `.githooks/pre-push` | any check above fails (full backend `verify`, Docker required) |
+| CI pipeline | `.github/workflows/ci.yml` (runs `.githooks/gate.mjs ci <group>`) | any group of the push gate, the image build or the e2e test against the built images fails; required for every pull request into `main`, and `main` builds push the images to ghcr.io |
 | Guard hook (Claude only) | `.claude/hooks/guard.mjs` | Claude edits a secrets file, `schema.d.ts`, a migration on `main`, or uses `--no-verify` |
 
 Everything must be green before a commit lands on `main`:
@@ -33,7 +34,7 @@ cd backend  && ./mvnw verify
 cd frontend && npm run lint && npm run typecheck && npm test && npm run build
 npx @redocly/cli lint docs/api/openapi.yaml
 ```
-(`npm run e2e` before a release or demo; it needs the backend and Postgres running.)
+(`npm run e2e` before a release or demo; it needs the backend and Postgres running. The CI pipeline runs it on every pull request, against the built images, so nobody has to remember.)
 
 ## Definition of done for any change
 - [ ] Names come from the diagram and the glossary, not invented.

@@ -54,7 +54,7 @@ Write documents in English, with headings that can be linked to, tables for comp
 
 ## 6. Git
 
-- **Branches:** `main` is always green. Work happens on `feature/<what>`, `fix/<what>`, `refactor/<what>` or `chore/<what>` and is merged with `git merge --no-ff` and a merge commit `merge: <branch> (<one line>)`. No direct commits to `main` except documentation fixes.
+- **Branches:** `main` is always green. Work happens on `feature/<what>`, `fix/<what>`, `refactor/<what>` or `chore/<what>` and reaches `main` only by pull request: the CI pipeline (`.github/workflows/ci.yml`) must be green (required check `ci-passed`), and the merge method is "Create a merge commit" with the subject `merge: <branch> (<one line>)` (same history shape as `git merge --no-ff`). No direct pushes to `main`, not even documentation fixes and not for the repository owner (branch protection has no bypass). Why: the local gates only run on clones that enabled them; a required CI check cannot be skipped.
 - **Commit format:** `<type>(<scope>): <imperative subject, lowercase, no full stop, at most 72 characters>`.
   - Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `contract` (a change to `openapi.yaml`, always on its own).
   - Scopes: `account`, `group`, `expense`, `settlement`, `notification`, `shared`, `frontend`, `e2e`, `build`, `devsetup` (the `.claude/` and `.githooks/` setup).
