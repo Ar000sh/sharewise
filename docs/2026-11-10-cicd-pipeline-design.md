@@ -53,13 +53,19 @@ The professor gave no stage list for the pipeline; the stages below are our choi
 ## Decided (with the user)
 1. **GitHub Actions + GitHub Container Registry (`ghcr.io`).** Repo is on GitHub and public: no extra accounts, the
    built-in `GITHUB_TOKEN` can push images, minutes and storage are free.
-2. **One pipeline, parallel jobs.** Backend, frontend and contract checks run side by side; the image build waits for
-   them; the e2e stage needs both images; the registry push waits for the e2e stage.
+2. **One pipeline, parallel jobs, fail fast.** Backend, frontend and contract checks run side by side; no image is
+   built before all of them are green; the two images are built in two jobs at the same time; the e2e stage needs
+   both images; the registry push waits for the e2e stage.
    ```
-   PR / push ─┬─ backend:  format check → verify (unit + Testcontainers) ───┐
-              ├─ frontend: lint → typecheck → vitest ───────────────────────┼─ build both images ─ e2e on the images ─ push to ghcr (main only)
-              └─ contract: redocly lint, guard hook tests ──────────────────┘
+   PR / push ─┬─ backend:  format check → verify (unit + Testcontainers) ─┐
+              ├─ frontend: lint → typecheck → vitest → build ─────────────┼─┬─ image-backend ──┐
+              └─ repo:     redocly lint, guard hook tests ────────────────┘ └─ image-frontend ─┴─ e2e on the images ─ push to ghcr (main only)
    ```
+   *Changed 11.11.26 after the first CI run:* the first version built both images in one job, one after the other
+   (90 s and 174 s), so the job took about 5 min. They are now one job each and build at the same time. The images
+   still wait for every check (the user's decision: fail fast, a commit with a red check costs no image build). We
+   considered starting the builds next to the checks, which would have saved about 4 minutes; the cost of the chosen
+   order is those minutes, the gain is that a red commit wastes no runner time on images.
 3. **More than the local gate.** CI runs everything the pre-push gate runs **plus** the image build and the e2e test
    against the built images.
 4. **One image per app, configured at runtime.** The same image runs in CI, locally and later in the cloud; only

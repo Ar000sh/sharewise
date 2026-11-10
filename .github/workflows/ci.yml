@@ -1,8 +1,11 @@
 # The pipeline (design: docs/2026-11-10-cicd-pipeline-design.md).
 #
-#   backend  ┐
-#   frontend ├─ images ─ e2e ─ publish (main only) ─ ci-passed
-#   repo     ┘
+#   backend  ┐                  ┌ image-backend  ┐
+#   frontend ├─ (all green) ───┤                ├─ e2e on the images ─ publish (main only) ─ ci-passed
+#   repo     ┘                  └ image-frontend ┘
+#
+# Fail fast: no image is built before every check is green, so a red commit costs no image minutes. The two images are
+# built at the same time, each in its own job.
 #
 # The checks themselves live in .githooks/gate.mjs (`ci <group>`), so the local push gate and this pipeline run the
 # same list. The images that the e2e job tests are the images the publish job pushes (no rebuild in between).
@@ -72,7 +75,9 @@ jobs:
           node-version: 24
       - run: node .githooks/gate.mjs ci repo
 
-  images:
+  # Each image is its own job, so the two builds run at the same time. Both wait for the checks: a commit with a red
+  # check gets no image build at all.
+  image-backend:
     needs: [backend, frontend, repo]
     runs-on: ubuntu-latest
     steps:
@@ -87,6 +92,23 @@ jobs:
           tags: ${{ env.BACKEND_IMAGE }}
           cache-from: type=gha,scope=backend
           cache-to: type=gha,scope=backend,mode=max
+      - name: Save the image for the next jobs
+        run: |
+          docker image ls --no-trunc --format '{{.Repository}}:{{.Tag}} {{.ID}}' | grep '^sharewise-backend'
+          docker save "$BACKEND_IMAGE" | gzip > backend.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: image-backend
+          path: backend.tar.gz
+          retention-days: 1
+          compression-level: 0
+
+  image-frontend:
+    needs: [backend, frontend, repo]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
       - name: Build the frontend image
         uses: docker/build-push-action@v6
         with:
@@ -96,27 +118,30 @@ jobs:
           tags: ${{ env.FRONTEND_IMAGE }}
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,scope=frontend,mode=max
-      - name: Save both images for the next jobs
+      - name: Save the image for the next jobs
         run: |
-          docker image ls --no-trunc --format '{{.Repository}}:{{.Tag}} {{.ID}}' | grep '^sharewise-'
-          docker save "$BACKEND_IMAGE" "$FRONTEND_IMAGE" | gzip > images.tar.gz
+          docker image ls --no-trunc --format '{{.Repository}}:{{.Tag}} {{.ID}}' | grep '^sharewise-frontend'
+          docker save "$FRONTEND_IMAGE" | gzip > frontend.tar.gz
       - uses: actions/upload-artifact@v4
         with:
-          name: images
-          path: images.tar.gz
+          name: image-frontend
+          path: frontend.tar.gz
           retention-days: 1
           compression-level: 0
 
   e2e:
-    needs: images
+    needs: [image-backend, image-frontend]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: images
+          pattern: image-*
+          merge-multiple: true
       - name: Load the images
-        run: gunzip -c images.tar.gz | docker load
+        run: |
+          gunzip -c backend.tar.gz | docker load
+          gunzip -c frontend.tar.gz | docker load
       - name: Start the database, Keycloak and both images
         run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
       - name: Wait until Keycloak, the backend and the frontend answer
@@ -154,6 +179,7 @@ jobs:
           path: frontend/test-results
           if-no-files-found: ignore
 
+  # The e2e needs the images and the images need the checks, so an image is pushed only when the whole pipeline is green.
   publish:
     needs: e2e
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -166,10 +192,12 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: images
+          pattern: image-*
+          merge-multiple: true
       - name: Load the tested images (never rebuilt here)
         run: |
-          gunzip -c images.tar.gz | docker load
+          gunzip -c backend.tar.gz | docker load
+          gunzip -c frontend.tar.gz | docker load
           docker image ls --no-trunc --format '{{.Repository}}:{{.Tag}} {{.ID}}' | grep '^sharewise-'
       - uses: docker/login-action@v3
         with:
@@ -187,7 +215,7 @@ jobs:
 
   # The one required check: red when any job failed or was cancelled. `publish` is skipped on pull requests, which is fine.
   ci-passed:
-    needs: [backend, frontend, repo, images, e2e, publish]
+    needs: [backend, frontend, repo, image-backend, image-frontend, e2e, publish]
     if: always()
     runs-on: ubuntu-latest
     steps:

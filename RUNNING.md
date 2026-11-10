@@ -121,10 +121,10 @@ Every run registers fresh users (unique emails), so it can be repeated against t
 Every pull request and every push to `main` runs `.github/workflows/ci.yml`:
 
 ```
-backend, frontend, repo (parallel) -> images -> e2e on the images -> publish (main only) -> ci-passed
+backend, frontend, repo (checks) -> image-backend + image-frontend (parallel) -> e2e on the images -> publish (main only) -> ci-passed
 ```
 
-The three first jobs run `node .githooks/gate.mjs ci <backend|frontend|repo>`, the same checks as the push gate, so
+No image is built before the checks are green; the two images are then built at the same time, one job per image. The three check jobs run `node .githooks/gate.mjs ci <backend|frontend|repo>`, the same checks as the push gate, so
 the list exists once. `ci-passed` is the check that branch protection requires on `main`. A `main` build pushes
 `ghcr.io/ar000sh/sharewise-backend` and `ghcr.io/ar000sh/sharewise-frontend` with the commit SHA and `latest` as tags;
 the images are the ones the e2e job tested, not a rebuild. A failed e2e run keeps its traces, screenshots and container
