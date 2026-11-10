@@ -5,11 +5,21 @@
 # This works on a Linux host (the CI runner). Docker Desktop needs host networking switched on; the cloud will need
 # its own answer (a public issuer URL).
 services:
+  # Postgres runs initdb on a fresh volume and only then listens on TCP. The backend fails fast when it cannot connect,
+  # so it must wait until the database is ready, not only started.
+  db:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sharewise -d sharewise"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
   backend:
     image: ${BACKEND_IMAGE:?set BACKEND_IMAGE}
     network_mode: host
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   frontend:
     image: ${FRONTEND_IMAGE:?set FRONTEND_IMAGE}
