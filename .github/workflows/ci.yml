@@ -1,0 +1,225 @@
+# The pipeline (design: docs/2026-11-10-cicd-pipeline-design.md).
+#
+#   backend  ┐                  ┌ image-backend  ┐
+#   frontend ├─ (all green) ───┤                ├─ e2e on the images ─ publish (main only) ─ ci-passed
+#   repo     ┘                  └ image-frontend ┘
+#
+# Fail fast: no image is built before every check is green, so a red commit costs no image minutes. The two images are
+# built at the same time, each in its own job.
+#
+# The checks themselves live in .githooks/gate.mjs (`ci <group>`), so the local push gate and this pipeline run the
+# same list. The images that the e2e job tests are the images the publish job pushes (no rebuild in between).
+# `ci-passed` is the one status check that branch protection requires on main.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A newer push to the same pull request cancels the older run. A run on main has a group of its own per commit: it may
+# be publishing, and GitHub would otherwise drop a queued run of main when a newer one arrives, so that commit would
+# get no images (the deploy stage needs an image for every main commit).
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  BACKEND_IMAGE: sharewise-backend:${{ github.sha }}
+  FRONTEND_IMAGE: sharewise-frontend:${{ github.sha }}
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node .githooks/gate.mjs ci backend
+      - name: Keep the test reports of a failed run
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports
+          path: backend/target/*-reports
+          if-no-files-found: ignore
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: node .githooks/gate.mjs ci frontend
+
+  repo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node .githooks/gate.mjs ci repo
+
+  # Each image is its own job, so the two builds run at the same time. Both wait for the checks: a commit with a red
+  # check gets no image build at all.
+  image-backend:
+    needs: [backend, frontend, repo]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          load: true
+          push: false
+          tags: ${{ env.BACKEND_IMAGE }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+      - name: Save the image for the next jobs
+        run: |
+          docker image ls --no-trunc --format '{{.Repository}}:{{.Tag}} {{.ID}}' | grep '^sharewise-backend'
+          docker save "$BACKEND_IMAGE" | gzip > backend.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: image-backend
+          path: backend.tar.gz
+          retention-days: 1
+          compression-level: 0
+
+  image-frontend:
+    needs: [backend, frontend, repo]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          load: true
+          push: false
+          tags: ${{ env.FRONTEND_IMAGE }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+      - name: Save the image for the next jobs
+        run: |
+          docker image ls --no-trunc --format '{{.Repository}}:{{.Tag}} {{.ID}}' | grep '^sharewise-frontend'
+          docker save "$FRONTEND_IMAGE" | gzip > frontend.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: image-frontend
+          path: frontend.tar.gz
+          retention-days: 1
+          compression-level: 0
+
+  e2e:
+    needs: [image-backend, image-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: image-*
+          merge-multiple: true
+      - name: Load the images
+        run: |
+          gunzip -c backend.tar.gz | docker load
+          gunzip -c frontend.tar.gz | docker load
+      - name: Start the database, Keycloak and both images
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
+      - name: Wait until Keycloak, the backend and the frontend answer
+        run: |
+          for url in http://localhost:8180/realms/sharewise http://localhost:8080/actuator/health http://localhost:3100/login; do
+            for i in $(seq 1 90); do
+              if curl -fs -o /dev/null "$url"; then echo "up: $url"; break; fi
+              if [ "$i" = 90 ]; then echo "not answering after 180 s: $url"; exit 1; fi
+              sleep 2
+            done
+          done
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npm run e2e
+        working-directory: frontend
+        env:
+          E2E_BASE_URL: http://localhost:3100
+      - name: Keep traces, screenshots and container logs of a failed run
+        if: failure()
+        run: |
+          mkdir -p frontend/test-results
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml logs --no-color > frontend/test-results/containers.log || true
+      - name: Upload them
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-failure
+          path: frontend/test-results
+          if-no-files-found: ignore
+
+  # The e2e needs the images and the images need the checks, so an image is pushed only when the whole pipeline is green.
+  publish:
+    needs: e2e
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      REGISTRY: ghcr.io/ar000sh
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: image-*
+          merge-multiple: true
+      - name: Load the tested images (never rebuilt here)
+        run: |
+          gunzip -c backend.tar.gz | docker load
+          gunzip -c frontend.tar.gz | docker load
+          docker image ls --no-trunc --format '{{.Repository}}:{{.Tag}} {{.ID}}' | grep '^sharewise-'
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag and push
+        run: |
+          for app in backend frontend; do
+            for tag in "${{ github.sha }}" latest; do
+              docker tag "sharewise-$app:${{ github.sha }}" "$REGISTRY/sharewise-$app:$tag"
+              docker push "$REGISTRY/sharewise-$app:$tag"
+            done
+          done
+
+  # The one required check: red when any job failed or was cancelled. `publish` is skipped on pull requests, which is fine.
+  ci-passed:
+    needs: [backend, frontend, repo, image-backend, image-frontend, e2e, publish]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail when a job did not pass
+        run: |
+          echo '${{ toJSON(needs) }}'
+          if echo '${{ join(needs.*.result, ' ') }}' | grep -Eq 'failure|cancelled'; then exit 1; fi

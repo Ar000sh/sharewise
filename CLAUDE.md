@@ -29,10 +29,10 @@
 | New feature (an exercise, a journey) | superpowers brainstorming → design doc `docs/YYYY-MM-DD-<topic>-design.md` → `/edge-case-probe` plan mode; `/design-review` when it touches statuses, money or several writers → plan |
 | HTTP interface changes | `/contract-change` |
 | New aggregate operation | `/backend:domain-operation` |
-| Before merging a branch | `/review-branch` (conventions, duplication, diagram names, fresh reviewer), then `/review-doc` (the short jump-start guide `docs/review/<feature>/REVIEW.md` for the user's own review) |
+| Before merging a branch | `/review-branch` (conventions, duplication, diagram names, fresh reviewer), then `/review-doc` (the short jump-start guide `docs/review/<feature>/REVIEW.md` for the user's own review), then the pull request |
 | A module or exercise is done | `/edge-case-probe` attack mode, then `/hand-in exN` |
 | End of an exercise, or something went badly | `/retro` (manual) |
 
-Branches: `feature/`, `fix/`, `refactor/`, `chore/`, merged with `--no-ff`. Commits: `<type>(<scope>): <subject>`, one concern each, trailer `Co-Authored-By: Claude <model> <noreply@anthropic.com>` naming the model that did the work.
+Branches: `feature/`, `fix/`, `refactor/`, `chore/`. A branch reaches `main` only by pull request: Claude opens it with `gh pr create`, the CI pipeline (`.github/workflows/ci.yml`, required check `ci-passed`) must be green, and the user (GitHub) or Claude (`gh pr merge --merge`) merges it with a merge commit. No direct pushes to `main`, not even for the owner. Commits: `<type>(<scope>): <subject>`, one concern each, trailer `Co-Authored-By: Claude <model> <noreply@anthropic.com>` naming the model that did the work.
 
 Commands: `RUNNING.md`. Docker Desktop must run for backend tests.

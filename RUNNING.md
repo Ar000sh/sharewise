@@ -9,6 +9,7 @@ httpOnly cookie.
 - Java 21 (Maven is bundled as `./mvnw`)
 - Node.js 22+ and npm
 - Docker Desktop **running** (database, Keycloak, backend tests)
+- The GitHub CLI `gh`, logged in with `gh auth login` (pull requests; `main` accepts no direct pushes)
 - Once per clone, before the first commit: `git config core.hooksPath .githooks` (commit and push gates; see
   `docs/devsetup/README.md`)
 
@@ -116,6 +117,39 @@ npx playwright install chromium                 # once
 npm run e2e                                     # starts the frontend itself on :3100
 ```
 Every run registers fresh users (unique emails), so it can be repeated against the same database.
+
+## Images and the CI pipeline
+
+Every pull request and every push to `main` runs `.github/workflows/ci.yml`:
+
+```
+backend, frontend, repo (checks) -> image-backend + image-frontend (parallel) -> e2e on the images -> publish (main only) -> ci-passed
+```
+
+No image is built before the checks are green; the two images are then built at the same time, one job per image. The three check jobs run `node .githooks/gate.mjs ci <backend|frontend|repo>`, the same checks as the push gate, so
+the list exists once. `ci-passed` is the check that branch protection requires on `main`. A `main` build pushes
+`ghcr.io/ar000sh/sharewise-backend` and `ghcr.io/ar000sh/sharewise-frontend` with the commit SHA and `latest` as tags;
+the images are the ones the e2e job tested, not a rebuild. A failed e2e run keeps its traces, screenshots and container
+logs as the build artifact `e2e-failure`.
+
+Build and run the images yourself (the settings come from environment variables, the images hold none):
+```sh
+docker build -t sharewise-backend backend
+docker build -t sharewise-frontend frontend
+docker compose up -d db keycloak
+docker run --rm -d --network host sharewise-backend              # :8080, defaults of application.yml
+docker run --rm -d --network host -e PORT=3100 -e APP_URL=http://localhost:3100 -e BACKEND_URL=http://localhost:8080 \
+  -e KEYCLOAK_ISSUER=http://localhost:8180/realms/sharewise -e KEYCLOAK_CLIENT_ID=sharewise-web sharewise-frontend
+```
+`--network host` makes `localhost` mean the same to browser, frontend and backend (the Keycloak issuer URL must be the
+same for all three). On Docker Desktop switch it on first (Settings, Resources, Network, "Enable host networking");
+otherwise the ports are not reachable from your machine. The CI runner is Linux and needs no setting. The same stack
+as in CI: `BACKEND_IMAGE=sharewise-backend FRONTEND_IMAGE=sharewise-frontend docker compose -f docker-compose.yml -f
+docker-compose.ci.yml up -d`, then `cd frontend && E2E_BASE_URL=http://localhost:3100 npm run e2e` (tests that URL
+instead of starting its own dev server).
+
+Pull requests: `gh pr create`, wait for the checks (`gh pr checks`), merge with a merge commit (GitHub or
+`gh pr merge --merge`).
 
 ## Frontend without a backend
 The Prism mock serves the examples of the contract, which has no sign-in endpoints any more, so the sign-in redirect to
