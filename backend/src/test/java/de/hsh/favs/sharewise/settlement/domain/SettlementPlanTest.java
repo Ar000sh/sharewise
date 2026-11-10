@@ -93,8 +93,8 @@ class SettlementPlanTest {
 	}
 
 	@Test
-	void exactPlanBeatsGreedyWhenTwoSubgroupsExist() {
-		// given A +3, B +3, C -6, D +5, E -5: {A,B,C} and {D,E} are zero-sum groups, so 3
+	void exactPlanBeatsGreedyWhenTwoZeroSumSetsExist() {
+		// given A +3, B +3, C -6, D +5, E -5: {A,B,C} and {D,E} are zero-sum sets, so 3
 		// payments suffice; plain greedy (C->D 5, E->A 3, E->B 2, C->B 1) needs 4
 		// when
 		SettlementPlan plan = SettlementPlan
@@ -106,7 +106,7 @@ class SettlementPlanTest {
 	}
 
 	@Test
-	void theNumberOfPaymentsIsExactlyPeopleMinusTheMostZeroSumSubgroups() {
+	void theNumberOfPaymentsIsExactlyPeopleMinusTheMostZeroSumSets() {
 		// given random zero-sum balances of up to 8 people, fixed seed
 		Random random = new Random(20261102);
 		for (int round = 0; round < 300; round++) {
@@ -118,7 +118,7 @@ class SettlementPlanTest {
 			SettlementPlan plan = SettlementPlan.of(balances);
 
 			// then
-			assertThat(plan.simplifiedDebts()).hasSize((int) nonZero - mostZeroSumGroups(balances));
+			assertThat(plan.simplifiedDebts()).hasSize((int) nonZero - mostZeroSumSets(balances));
 			assertSettles(balances, plan);
 		}
 	}
@@ -188,15 +188,15 @@ class SettlementPlanTest {
 	}
 
 	/**
-	 * Brute force, independent of the production search: split by the group of the lowest
-	 * person.
+	 * Brute force, independent of the production search: split by the zero-sum set of the
+	 * lowest person.
 	 */
-	private static int mostZeroSumGroups(List<MemberBalance> balances) {
+	private static int mostZeroSumSets(List<MemberBalance> balances) {
 		long[] minorUnits = balances.stream().mapToLong(x -> x.netBalance().minorUnits()).filter(x -> x != 0).toArray();
-		return mostGroups(minorUnits, (1 << minorUnits.length) - 1);
+		return mostSets(minorUnits, (1 << minorUnits.length) - 1);
 	}
 
-	private static int mostGroups(long[] minorUnits, int mask) {
+	private static int mostSets(long[] minorUnits, int mask) {
 		if (mask == 0) {
 			return 0;
 		}
@@ -213,7 +213,7 @@ class SettlementPlanTest {
 				}
 			}
 			if (sum == 0) {
-				int rest = mostGroups(minorUnits, mask & ~sub);
+				int rest = mostSets(minorUnits, mask & ~sub);
 				if (rest >= 0) {
 					best = Math.max(best, 1 + rest);
 				}

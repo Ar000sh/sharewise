@@ -93,7 +93,7 @@ sequenceDiagram
 ## 5. Flow 2: the settlement plan
 `GET /groups/{id}/settlement-plan` loads the balances (one query) and runs `SettlementPlan.of`:
 - only people with a non-zero balance take part;
-- **up to 16 such people:** exact minimum (R15). The people are split into the largest possible number *k* of disjoint groups that each add up to zero (bitmask dynamic programming over subsets). A zero-sum group of *m* people settles among itself with *m − 1* transfers, so the total is *n − k*, the minimum;
+- **up to 16 such people:** exact minimum (R15). The people are split into the largest possible number *k* of disjoint zero-sum sets (sets of people whose balances add up to zero; bitmask dynamic programming over subsets). A zero-sum set of *m* people settles among itself with *m − 1* transfers, so the total is *n − k*, the minimum;
 - **above 16:** one greedy pass over everyone (largest debtor pays largest creditor), at most *n − 1* transfers, not guaranteed minimal (our choice, not from the slides; nothing tells the caller).
 - ties are broken by user id, so the same balances always give the same plan.
 
@@ -268,13 +268,13 @@ Balances (paid − owed, section 4): **Alice +30.00, Bob +30.00, Carol −60.00,
 Look at the shape: Alice, Bob and Carol only ever dealt with each other (30 + 30 − 60 = 0), and so did David and Eva (50 − 50 = 0). A fair plan should never ask Carol to pay David. That is exactly what the search discovers.
 
 ### 13.2 What the search looks for
-*Idea.* A set of people whose balances add up to 0 can settle among themselves. If the people can be cut into *k* such sets, a set of *m* people needs *m − 1* transfers (each transfer clears at least one person, and the last one clears two). The total is **n − k**, so the fewest transfers = the **most** zero-sum sets. Here the zero-sum sets are {A,B,C} (3000 + 3000 − 6000), {D,E} (5000 − 5000) and the whole group. Best cut: k = 2, transfers = 5 − 2 = **3**.
+*Idea.* A set of people whose balances add up to 0 can settle among themselves. If the people can be cut into *k* such sets, a set of *m* people needs *m − 1* transfers (each transfer clears at least one person, and the last one clears two). The total is **n − k**, so the fewest transfers = the **most** zero-sum sets. Here the zero-sum sets are {A,B,C} (3000 + 3000 − 6000), {D,E} (5000 − 5000) and everybody. Best cut: k = 2, transfers = 5 − 2 = **3**.
 
 Finding the best cut is a search over subsets: with n people there are 2^n subsets to look at. The code does it as a **dynamic programme over bitmasks**: bit *i* of a number means "person *i* is in the set". Mask `00111` is {A,B,C}; `11000` is {D,E}; `11111` is everybody.
 
 For every mask, in increasing order, it stores three things:
 - `sum[mask]`: the balances of the set added up. Cheap: take the sum of the mask without its lowest person and add that person (`sum[mask & (mask-1)] + cents[low]`).
-- `best[mask]`: the **largest number of zero-sum prefixes** that any ordering of the people in this mask can have. Think of lining the people up and adding their balances left to right; every time the running sum hits 0, a group is complete.
+- `best[mask]`: the **largest number of zero-sum prefixes** that any ordering of the people in this mask can have. Think of lining the people up and adding their balances left to right; every time the running sum hits 0, a set is complete.
 - `choice[mask]`: which person stands **last** in that best ordering.
 
 The rule: try every person *i* in the mask as the last one; the best you can do is `best[mask without i]`, plus 1 if the whole mask sums to 0. Take the *i* with the highest value (ties: the lowest index).
@@ -284,7 +284,7 @@ Bits are written E D C B A (A is the rightmost). Rows where `best` is 1 or more 
 
 | mask | set | sum | best | last | Reading |
 |---|---|---|---|---|---|
-| `00111` | {A,B,C} | 0 | 1 | A | first zero-sum set: one group complete |
+| `00111` | {A,B,C} | 0 | 1 | A | first zero-sum set: one set complete |
 | `11000` | {D,E} | 0 | 1 | D | second zero-sum set |
 | `11100` | {C,D,E} | −6000 | 1 | C | contains {D,E} as a complete prefix, C is left over |
 | `11111` | everyone | 0 | **2** | A | order E, D, C, B, A has two zero prefixes: so k = 2 |
@@ -311,23 +311,23 @@ mask  set            sum   best last      mask  set            sum   best last
 ```
 </details>
 
-### 13.4 Reading the groups back
-Start at the full mask and repeatedly remove the stored `last` person. Whenever the remaining set sums to 0 (and a group is under way), the group is closed:
+### 13.4 Reading the sets back
+Start at the full mask and repeatedly remove the stored `last` person. Whenever the remaining set sums to 0 (and a set is under way), that set is closed:
 
 | Step | Remaining set | its sum | person taken out (`last`) | Action |
 |---|---|---|---|---|
-| 1 | {A,B,C,D,E} | 0 | A | the group is empty, so nothing to close; A goes into the current group |
+| 1 | {A,B,C,D,E} | 0 | A | the current set is empty, so nothing to close; A goes into it |
 | 2 | {B,C,D,E} | −3000 | B | B joins |
 | 3 | {C,D,E} | −6000 | C | C joins |
-| 4 | {D,E} | **0** | D | sum is 0 and the group has people: **close group 1 = {A,B,C}**; D starts group 2 |
-| 5 | {E} | −5000 | E | E joins; the end closes group 2 = {D,E} |
+| 4 | {D,E} | **0** | D | sum is 0 and the current set has people: **close set 1 = {A,B,C}**; D starts set 2 |
+| 5 | {E} | −5000 | E | E joins; the end closes set 2 = {D,E} |
 
-Result: groups {A,B,C} and {D,E}, k = 2.
+Result: sets {A,B,C} and {D,E}, k = 2.
 
-### 13.5 Settling each group greedily
-Inside a group the **largest debtor pays the largest creditor** as much as both can bear, and repeat; ties go to the lower user id. A group of *m* people ends after at most *m − 1* transfers.
+### 13.5 Settling each set greedily
+Inside a set the **largest debtor pays the largest creditor** as much as both can bear, and repeat; ties go to the lower user id. A set of *m* people ends after at most *m − 1* transfers.
 
-| Group | Step | Transfer | Balances after |
+| Set | Step | Transfer | Balances after |
 |---|---|---|---|
 | {A,B,C} | 1 | Carol pays Alice 30.00 (tie Alice/Bob: Alice has the lower id) | A 0, B +30, C −30 |
 | {A,B,C} | 2 | Carol pays Bob 30.00 | all 0 |
@@ -356,7 +356,7 @@ One pass over all five, largest debtor to largest creditor:
 *Added 05.11.26. The choice of algorithm and of the limit 16 is ours, not from the slides. Nothing below is implemented except what is marked "today".*
 
 ### 14.1 The problem
-Given the balances b₁ … bₙ (non-zero, sum 0), find the plan with the **fewest transfers**. All plans move the same total (the sum of the positive balances), so the number of transfers is the only thing to minimise. As shown in 13.2 this means: **partition the people into the maximum number k of zero-sum groups** (transfers = n − k).
+Given the balances b₁ … bₙ (non-zero, sum 0), find the plan with the **fewest transfers**. All plans move the same total (the sum of the positive balances), so the number of transfers is the only thing to minimise. As shown in 13.2 this means: **partition the people into the maximum number k of zero-sum sets** (transfers = n − k).
 
 This is a genuine search problem and it is hard. The question "is k at least 2?" asks whether some proper subset of the balances adds up to exactly 0, which is the (NP-complete) subset-sum problem. So no fast exact algorithm is known for large n, and we should not expect to find one. (This follows from our own reduction in one line; we did not look up a reference.) The real choices are therefore: exact and exponential, or fast and approximate.
 
@@ -367,12 +367,12 @@ This is a genuine search problem and it is hard. The question "is k at least 2?"
 | 2 | **Plain greedy (today, n > 16)** | no | O(n²) | O(n) | at most n − 1 transfers; never more than twice the minimum (see below) |
 | 3 | **Backtracking search** (the usual "optimal account balancing" solution): take the first person with a balance, try settling them against every opposite-sign person, recurse; skip equal balances already tried; an exact pair ends the loop | yes | worst case factorial in n | O(n) | tried, see 14.3 |
 | 4 | **Cancel exact pairs first, then #1 or #2** | as exact as the algorithm behind it; never worse than #2 alone | O(n log n) + the rest | O(n) | a person with +x and one with −x can always settle together (swapping argument: an optimal cut can be rearranged to contain that pair), so this step is safe and removes people from the expensive part. Not built |
-| 5 | **Extract small zero-sum groups (pairs, triples) first, greedy for the rest** | no | O(n³) for triples | O(n) | polynomial; captures the common real case (two couples, a trio) but can miss larger groups. Not built |
+| 5 | **Extract small zero-sum sets (pairs, triples) first, greedy for the rest** | no | O(n³) for triples | O(n) | polynomial; captures the common real case (two couples, a trio) but can miss larger groups. Not built |
 | 6 | **Meet in the middle** for finding zero-sum subsets: split people in two halves, list the 2^(n/2) sums of each, match them | finds one subset | O(2^(n/2) · n) | 2^(n/2) | takes the square root of the cost of #1 for *finding* a subset; choosing the *best set of disjoint* subsets needs more machinery on top. Not built, so no claim about total gain |
-| 7 | **Integer programming / constraint solver** (variables "person *i* is in group *g*", maximise non-empty zero-sum groups) | yes | solver dependent | solver | handles dozens of people; a heavy dependency for a study project. Not built |
+| 7 | **Integer programming / constraint solver** (variables "person *i* is in set *g*", maximise non-empty zero-sum sets) | yes | solver dependent | solver | handles dozens of people; a heavy dependency for a study project. Not built |
 | 8 | **Do not simplify** (pairwise netting only: for each pair, the net of what they owe each other) | no | O(n²) | O(n) | far more transfers, but every transfer is between two people who really shared expenses; the plan changes less when a new expense arrives. Contradicts R15 (fewest payments) |
 
-*A fact worth knowing for the defence:* every group has at least two people, so k ≤ n / 2 and the minimum n − k is at least n / 2. Greedy needs at most n − 1, so **greedy is never worse than twice the minimum**. That makes the fallback above the limit a safe "good enough" and not a trap.
+*A fact worth knowing for the defence:* every zero-sum set has at least two people, so k ≤ n / 2 and the minimum n − k is at least n / 2. Greedy needs at most n − 1, so **greedy is never worse than twice the minimum**. That makes the fallback above the limit a safe "good enough" and not a trap.
 
 ### 14.3 What we measured
 Scratch script, Java 21 on the development laptop, one run per cell, JVM not warmed up, so read the order of magnitude, not the digits. Balances random; the node limit of the backtracking was 5 million.
