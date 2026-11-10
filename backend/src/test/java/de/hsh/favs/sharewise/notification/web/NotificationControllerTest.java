@@ -104,6 +104,25 @@ class NotificationControllerTest {
 	}
 
 	@Test
+	void aPromotionShowsAPromotedEntryToThePromotedPersonOnly() throws Exception {
+		// given Bob joined Alice's group
+		UUID group = groups.groupWith(alice, "Mallorca 2027", bob);
+
+		// when
+		groups.promote(group, alice, bob).andExpect(status().isOk());
+
+		// then Bob's only entry is the promotion; Alice's only entry is still Bob's join
+		JsonNode entry = awaitEntries(bob, 1).get("items").get(0);
+		assertThat(entry.get("type").asString()).isEqualTo("MEMBER_PROMOTED");
+		assertThat(entry.get("actor").get("userId").asString()).isEqualTo(alice.idString());
+		assertThat(entry.get("group").get("id").asString()).isEqualTo(group.toString());
+		assertThat(entry.get("reference").asString()).isEqualTo(bob.idString());
+		JsonNode alicesEntries = awaitEntries(alice, 1).get("items");
+		assertThat(alicesEntries).hasSize(1);
+		assertThat(alicesEntries.get(0).get("type").asString()).isEqualTo("MEMBER_JOINED");
+	}
+
+	@Test
 	void theCreatorsOwnGroupCreationAndAnInviteWithoutAnAnswerShowNothing() throws Exception {
 		// given
 		UUID group = groups.createGroup(alice, "Quiet");
@@ -139,9 +158,12 @@ class NotificationControllerTest {
 	@Test
 	void readAllMarksOnlyTheCallersEntries() throws Exception {
 		// given an entry for Alice (Bob joined) and one for Bob (Carol joined through
-		// Bob)
+		// Bob, who can invite because Alice invited him as an admin)
 		UUID group = groups.createGroup(alice, "Mallorca 2027");
-		groups.accept(groups.invite(group, alice, bob), bob).andExpect(status().isOk());
+		String invited = groups
+			.body(groups.createInvitation(group, alice, bob.username(), "ADMIN").andExpect(status().isCreated()));
+		groups.accept(UUID.fromString(json.readTree(invited).get("invitationId").asString()), bob)
+			.andExpect(status().isOk());
 		groups.accept(groups.invite(group, bob, carol), carol).andExpect(status().isOk());
 		awaitEntries(alice, 1);
 		awaitEntries(bob, 1);

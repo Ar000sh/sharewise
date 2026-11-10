@@ -11,6 +11,9 @@ public enum NotificationType {
 	MEMBER_JOINED,
 
 	/** Somebody turned the recipient's invitation down. */
-	INVITATION_DECLINED
+	INVITATION_DECLINED,
+
+	/** An admin made the recipient an admin. */
+	MEMBER_PROMOTED
 
 }

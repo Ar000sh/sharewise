@@ -5,6 +5,7 @@ import de.hsh.favs.sharewise.account.api.UserProfiles;
 import de.hsh.favs.sharewise.group.api.GroupDirectory;
 import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
+import de.hsh.favs.sharewise.group.api.MemberPromoted;
 import de.hsh.favs.sharewise.notification.domain.Notification;
 import de.hsh.favs.sharewise.notification.domain.NotificationId;
 import de.hsh.favs.sharewise.notification.domain.NotificationType;
@@ -83,6 +84,13 @@ public class NotificationService {
 		}
 		record(Notification.notify(event.invitedBy(), NotificationType.MEMBER_JOINED, event.groupId(), event.userId(),
 				event.userId().value(), event.occurredAt()));
+	}
+
+	/** Tells a member that an admin made them an admin. */
+	@Transactional
+	public void recordMemberPromoted(MemberPromoted event) {
+		record(Notification.notify(event.userId(), NotificationType.MEMBER_PROMOTED, event.groupId(),
+				event.promotedBy(), event.userId().value(), event.occurredAt()));
 	}
 
 	/** Tells the inviter that the invitation was turned down. */
