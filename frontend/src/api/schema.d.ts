@@ -323,7 +323,7 @@ export interface paths {
         put?: never;
         /**
          * The caller (the creditor) waives part of a debtor's debt. Recorded as a settlement payment with status WAIVED.
-         * @description Takes effect at once, no confirmation needed. The amount may not exceed the open debt (422 PAYMENT_EXCEEDS_OPEN_DEBT). A reason (note) is required.
+         * @description Takes effect at once, no confirmation needed. The amount may not exceed the open debt (422 PAYMENT_EXCEEDS_OPEN_DEBT). A reason (note) is optional.
          */
         post: operations["waiveDebt"];
         delete?: never;
@@ -554,7 +554,8 @@ export interface components {
             fromDebtor: string;
             /** @description Greater than zero (AMOUNT_NOT_POSITIVE otherwise) and at most the open debt. */
             amount: components["schemas"]["Amount"];
-            note: string;
+            /** @description Optional reason for the waiver. Leave the field out when there is none. */
+            note?: string;
         };
     };
     responses: {
