@@ -6,7 +6,7 @@ Rule of thumb: **few tests that each protect a rule or a risk.** Do not test get
 
 | Level | Tools | Use it for | Where |
 |---|---|---|---|
-| **Domain unit** | plain JUnit 5 + AssertJ, no Spring | every business rule of an aggregate or value object (R1 to R17), including the rejected cases | `<module>/domain/` |
+| **Domain unit** | plain JUnit 5 + AssertJ, no Spring | every business rule of an aggregate or value object (R1 to R18), including the rejected cases | `<module>/domain/` |
 | **Service** | JUnit 5 + Mockito (`@ExtendWith(MockitoExtension.class)`), mocked repositories and ports | orchestration only: what is loaded, saved, published and in which order; that a rejected call saves and publishes nothing | `<module>/application/` |
 | **API contract** | `@ModuleIntegrationTest` + MockMvc, real Postgres | status codes, JSON shape (field names exactly as the contract), problem `code`s, 401/403/404, events recorded with `ApplicationEvents` | `<module>/web/` |
 | **Database behaviour** | same annotation, call the bean directly | what a mock cannot prove: lazy loading, locks, queries, constraints, `api` port implementations called with no transaction | `<module>/application/` or `persistence/` |

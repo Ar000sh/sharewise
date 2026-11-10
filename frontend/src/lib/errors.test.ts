@@ -23,6 +23,7 @@ describe("messageFor", () => {
     ["NOTIFICATION_NOT_FOUND", "This entry no longer exists."],
     ["INVITATION_NOT_FOUND", "This invitation is no longer valid."],
     ["INVITATION_EXPIRED", "This invitation has expired. Ask for a new one."],
+    ["RECORDER_NOT_PARTICIPANT", "The person recording an expense must be one of its participants."],
   ])("hasAReadableMessageFor%s", (code, message) => {
     expect(messageFor(new ApiError(404, code, "raw detail"))).toBe(message);
   });

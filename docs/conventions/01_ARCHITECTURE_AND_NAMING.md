@@ -85,6 +85,7 @@ Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCam
 - `ExpenseShare(participantId: UserId, owedShare: Money)`.
 - Operations: `record`, `correct`, `remove`. Enumerations `SplitStrategy {EQUAL, EXACT, PERCENTAGE}`, `ExpenseStatus {ACTIVE, CORRECTED, REMOVED}`.
 - Events: `ExpenseRecorded`, `ExpenseCorrected`, `ExpenseRemoved`.
+- Rule R18: the person who records an expense (`recordedBy`) is always one of its participants (`RECORDER_NOT_PARTICIPANT`, 422). It overrides R3's "the payer may or may not be a participant" for the recorder only: Alice cannot record "I paid for Bob and Carol" for herself; Bob records it with Alice as `paidBy`.
 
 ### 3.3 Settlement context
 - Aggregate root `GroupLedger` (`groupId`, entries) with append-only entity `LedgerEntry` (`id: EntryId`, `userId`, `deltaAmount: Money`, `type: LedgerEntryType`, `referenceId`, `occurredAt`); operations `appendExpenseEntry`, `appendCorrectionReversal`, `appendRemovalReversal`, `appendSettlementPayment`, `appendDebtWaiver`, `projectBalances`, `projectSimplifiedPlan`.

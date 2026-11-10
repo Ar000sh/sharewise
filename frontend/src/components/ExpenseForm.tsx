@@ -116,6 +116,7 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
             <input
               type="checkbox"
               checked={!excluded.includes(m.userId)}
+              disabled={m.userId === currentUserId} // the recorder always takes part (R18)
               onChange={() => toggle(m.userId)}
             />
             {m.displayName}

@@ -42,6 +42,24 @@ describe("ExpenseForm", () => {
     }
   });
 
+  it("theRecorderCannotUntickThemselvesButOthersCanBeUnticked", async () => {
+    // given Bob (u2) is signed in
+    renderForm();
+
+    // when everybody else is unticked and Bob tries to untick himself
+    await userEvent.click(screen.getByRole("checkbox", { name: "Alice" }));
+    await userEvent.click(screen.getByRole("checkbox", { name: "Carol" }));
+    await userEvent.click(screen.getByRole("checkbox", { name: "Bob" }));
+
+    // then Bob stays ticked and disabled, the others are unticked, and Bob alone is in the preview
+    expect(screen.getByRole("checkbox", { name: "Bob" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Bob" })).toBeDisabled();
+    expect(screen.getByRole("checkbox", { name: "Alice" })).not.toBeChecked();
+    await fill("Taxi", "10");
+    const rows = within(screen.getByRole("list", { name: /shares/i })).getAllByRole("listitem");
+    expect(rows.map((r) => r.textContent)).toEqual(["Bob10,00 €"]);
+  });
+
   it.each([
     ["19.99", 1999],
     ["19,99", 1999],

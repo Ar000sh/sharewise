@@ -93,7 +93,8 @@ public class Expense {
 	 * group is open (GROUP_NOT_OPEN, R5), the payer and the person recording it are
 	 * active members (PAYER_NOT_IN_GROUP, NOT_A_MEMBER, R2), there is at least one
 	 * participant and none twice (NO_PARTICIPANTS), every participant is an active member
-	 * (PARTICIPANT_NOT_IN_GROUP, R3), the total is positive (AMOUNT_NOT_POSITIVE, R1).
+	 * (PARTICIPANT_NOT_IN_GROUP, R3), the person recording it is one of the participants
+	 * (RECORDER_NOT_PARTICIPANT, R18), the total is positive (AMOUNT_NOT_POSITIVE, R1).
 	 * @param view who is in the group and whether it is open, at this moment
 	 * @param shares what each participant owes; they must add up to the total (R4)
 	 * @throws IllegalArgumentException when the shares do not add up to the total, which
@@ -122,6 +123,10 @@ public class Expense {
 				throw new DomainException(ErrorCode.PARTICIPANT_NOT_IN_GROUP,
 						"A participant is not a member of the group");
 			}
+		}
+		if (!participants.contains(recordedBy)) {
+			throw new DomainException(ErrorCode.RECORDER_NOT_PARTICIPANT,
+					"The person recording an expense must be one of its participants");
 		}
 		if (!totalAmount.isPositive()) {
 			throw new DomainException(ErrorCode.AMOUNT_NOT_POSITIVE, "Amount must be greater than zero");

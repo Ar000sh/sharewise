@@ -17,6 +17,7 @@ const MESSAGES: Record<string, string> = {
   PAYER_NOT_IN_GROUP: "The payer is not a member of this group.",
   PARTICIPANT_NOT_IN_GROUP: "A participant is not a member of this group.",
   NO_PARTICIPANTS: "Select at least one participant.",
+  RECORDER_NOT_PARTICIPANT: "The person recording an expense must be one of its participants.",
   GROUP_NOT_OPEN: "This group is no longer open for new expenses.",
   SPLIT_NOT_SUPPORTED: "Only equal splits are supported for now.",
   PAYMENT_EXCEEDS_OPEN_DEBT: "You can only pay up to what you owe.",
