@@ -35,9 +35,7 @@ flowchart LR
     ES[ExpenseService] --> EX[(Expense)]
   end
   subgraph settlement
-    L1[ExpenseRecordedListener] --> GLS[GroupLedgerService]
-    L2[SettlementPaymentConfirmedListener] --> GLS
-    L3[DebtWaivedListener] --> GLS
+    L[GroupLedgerListener] --> GLS[GroupLedgerService]
     GLS --> GL[(GroupLedger + entries)]
     SPS[SettlementPaymentService] --> SP[(SettlementPayment)]
     SPS -. lock + open debt .-> GL
@@ -49,9 +47,8 @@ flowchart LR
   subgraph notification
     N[listeners] --> NO[(Notification)]
   end
-  ES -- ExpenseRecorded --> L1
-  SPS -- SettlementPaymentConfirmed --> L2
-  SPS -- DebtWaived --> L3
+  ES -- ExpenseRecorded --> L
+  SPS -- SettlementPaymentConfirmed / DebtWaived --> L
   GLS -- MemberBalanceStatusChanged / AllBalancesSettled --> GL2
   SPS -- Confirmed / Rejected / DebtWaived --> N
 ```
@@ -65,7 +62,7 @@ sequenceDiagram
   participant U as Alice (browser)
   participant ES as ExpenseService
   participant DB as Postgres
-  participant L as ExpenseRecordedListener
+  participant L as GroupLedgerListener
   participant GLS as GroupLedgerService
   participant G as Group (listener)
   U->>ES: POST /groups/{id}/expenses (900.00, paidBy Alice, 3 participants)

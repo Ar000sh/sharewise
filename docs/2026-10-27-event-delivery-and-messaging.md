@@ -4,7 +4,7 @@
 
 ## 1. How an expense reaches the balances today
 1. `ExpenseService.recordExpense` saves the expense and publishes `ExpenseRecorded` **in the same database transaction**. Spring Modulith writes the event to the table `event_publication` as part of that transaction. A saved expense therefore always has an event waiting. This is a small **transactional outbox**.
-2. After the commit, `ExpenseRecordedListener` (`@ApplicationModuleListener`, asynchronous, own transaction) books the amounts in the ledger of the group.
+2. After the commit, `GroupLedgerListener.on(ExpenseRecorded)` (`@ApplicationModuleListener`, asynchronous, own transaction) books the amounts in the ledger of the group.
 3. When the listener finishes, Modulith marks the event as completed.
 
 Balances are therefore **eventually consistent** with expenses: for a short moment after recording, the balances can still be the old ones.
