@@ -7,7 +7,7 @@ paths:
 
 Checklist from `docs/conventions/01` section 2.3 and `03` section 2. ArchUnit catches the imports; the rest is on you.
 - The name is in the diagram (`docs/domain/ShareWise_Domain_Model.drawio`). If it is not, stop and ask: either the diagram gets the concept or the code is wrong.
-- Every state change is a method on the aggregate root, named after the diagram operation, and **returns** its event (it never publishes, never calls another module). Children (`Membership`, `Invitation`, `LedgerEntry`) are never constructed or changed from outside the root.
+- Every state change is a method on the aggregate root, named after the diagram operation, and **returns** its event (it never publishes, never calls another module). An operation that reacts to another context's event and produces no event of its own returns nothing (`Group.updateBalanceStatus` is `void`). Children (`Membership`, `Invitation`, `LedgerEntry`) are never constructed or changed from outside the root.
 - Time is a parameter (`Instant now`), never `Instant.now()`. No Spring, no servlet, no repository imports.
 - Other aggregates by id only (`GroupId`, `UserId`). Money only as `Money`, never `double` or `new BigDecimal(double)`.
 - A rule that fails throws `DomainException` with an `ErrorCode`; a new code also goes into the contract, `ErrorCode` and `frontend/src/lib/errors.ts` (use `/contract-change`).

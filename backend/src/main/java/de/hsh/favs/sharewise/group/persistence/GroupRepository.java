@@ -32,7 +32,7 @@ public interface GroupRepository extends JpaRepository<Group, UUID> {
 	 */
 	@Query("""
 			select new de.hsh.favs.sharewise.group.persistence.PendingInvitationRow(
-				i.id, g.id, g.name, i.createdBy, i.expiresAt)
+				i.id, g.id, g.name, i.createdBy, i.role, i.expiresAt)
 			from Group g join g.invitations i
 			where i.invitee = :userId
 			and i.status = de.hsh.favs.sharewise.group.domain.InvitationStatus.PENDING

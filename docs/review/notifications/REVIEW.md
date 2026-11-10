@@ -14,7 +14,7 @@ Start at the entry point and follow the path yourself: **controller → service 
 | **See my open invitations** | `GroupController.listPendingInvitations` `GET /invitations` → `GroupRepository.findPendingInvitationsFor` | `components/InboxBell.tsx` (via `app/api/inbox/route.ts`) | `InvitationControllerTest` |
 | **Accept an invitation** | `GroupController.acceptInvitation` → `GroupService.acceptInvitation` → `Group.acceptInvitation` → `Invitation.requireAnswerableBy` | `InboxBell.tsx` (Accept) | `GroupTest`, `InvitationControllerTest` |
 | **Decline an invitation** | `GroupController.declineInvitation` → `Group.declineInvitation` | `InboxBell.tsx` (Decline) | same |
-| **Hear about the answer** (inbox entry) | listeners `notification/application/MemberJoinedListener`, `InvitationDeclinedListener` → `NotificationService.record…` | – | `NotificationEventsTest` |
+| **Hear about the answer** (inbox entry) | `notification/application/NotificationListener` (`on(MemberJoined)`, `on(InvitationDeclined)`) → `NotificationService.record…` | – | `NotificationEventsTest` |
 | **Read the inbox** | `notification/web/NotificationController` `GET /notifications`, `POST …/read`, `…/read-all` | `InboxBell.tsx` | `NotificationControllerTest`, `InboxBell.test.tsx` |
 | **Readable in dark mode** | – | class swaps in 13 files | `lib/themeRules.test.ts` |
 

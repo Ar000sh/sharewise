@@ -26,9 +26,11 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The Ex4 slice with every real bean and no stubs: sign up, create a group, invite,
- * accept, record equal-split expenses, read balances. Balances arrive through the
- * {@code ExpenseRecorded} event, so they are awaited.
+ * The Mallorca slice with every real bean and no stubs: sign up, create a group, invite,
+ * accept, record equal-split expenses, read balances, then settle up with a confirmed
+ * payment, a rejected one and a waiver, and a confirm after a later expense moved the
+ * debts. Balances arrive through the {@code ExpenseRecorded},
+ * {@code SettlementPaymentConfirmed} and {@code DebtWaived} events, so they are awaited.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -76,6 +78,83 @@ class MallorcaSliceTest {
 	}
 
 	@Test
+	void carolPaysAliceAndAliceWaivesBobsDebtSoOnlyDavidStillOwes() throws Exception {
+		// given the Mallorca balances after hotel and dinner
+		UUID group = mallorcaAfterHotelAndDinner();
+
+		// when Carol reports 270.00 to Alice and Alice confirms it (R16)
+		UUID payment = recordPayment(group, carol, alice, "270.00");
+		mvc.perform(post("/settlement-payments/" + payment + "/confirm").header("Authorization", auth(alice)))
+			.andExpect(status().isOk());
+
+		// then the confirmed payment is booked: Carol is settled, Alice is owed less
+		await().atMost(Duration.ofSeconds(10))
+			.untilAsserted(() -> assertThat(balances(group, alice))
+				.containsExactlyInAnyOrderEntriesOf(Map.of(alice, 36000L, bob, -9000L, carol, 0L, david, -27000L)));
+
+		// when Alice waives Bob's 90.00 (R17)
+		waive(group, alice, bob, "90.00").andExpect(status().isCreated());
+
+		// then Bob is settled too and the sum is still zero
+		await().atMost(Duration.ofSeconds(10))
+			.untilAsserted(() -> assertThat(balances(group, alice))
+				.containsExactlyInAnyOrderEntriesOf(Map.of(alice, 27000L, bob, 0L, carol, 0L, david, -27000L)));
+		assertThat(balances(group, alice).values().stream().mapToLong(Long::longValue).sum()).isZero();
+	}
+
+	@Test
+	void aRejectedPaymentBooksNothingAndReleasesItsReservation() throws Exception {
+		// given the Mallorca balances and a PENDING payment of 270.00 from David to Alice
+		UUID group = mallorcaAfterHotelAndDinner();
+		UUID payment = recordPayment(group, david, alice, "270.00");
+
+		// when Alice rejects it
+		JsonNode rejected = read(mvc
+			.perform(post("/settlement-payments/" + payment + "/reject").header("Authorization", auth(alice))
+				.contentType(APPLICATION_JSON)
+				.content("{\"note\":\"Money has not arrived\"}"))
+			.andExpect(status().isOk()));
+
+		// then it is REJECTED, no balance moved, and David may report the full 270.00
+		// again
+		assertThat(rejected.get("status").asString()).isEqualTo("REJECTED");
+		assertThat(balances(group, alice))
+			.containsExactlyInAnyOrderEntriesOf(Map.of(alice, 63000L, bob, -9000L, carol, -27000L, david, -27000L));
+		recordPayment(group, david, alice, "270.00");
+		assertThat(balances(group, alice))
+			.containsExactlyInAnyOrderEntriesOf(Map.of(alice, 63000L, bob, -9000L, carol, -27000L, david, -27000L));
+	}
+
+	@Test
+	void aConfirmAfterALaterExpenseBooksTheFactAndNobodyIsRefused() throws Exception {
+		// given (money flow, sections 8 and 9) Alice pays 100.00 for Alice and Bob
+		UUID group = groupWith(alice, bob, carol);
+		recordExpense(group, alice, "Hotel", 10000, alice, List.of(alice, bob)).andExpect(status().isCreated());
+		await().atMost(Duration.ofSeconds(10))
+			.untilAsserted(() -> assertThat(balances(group, alice))
+				.containsExactlyInAnyOrderEntriesOf(Map.of(alice, 5000L, bob, -5000L, carol, 0L)));
+
+		// and Bob reports 50.00 to Alice, which is PENDING and moves no balance (R16)
+		UUID payment = recordPayment(group, bob, alice, "50.00");
+
+		// and Carol then pays 50.00 that only Alice owes
+		recordExpense(group, carol, "Taxi", 5000, carol, List.of(alice)).andExpect(status().isCreated());
+		await().atMost(Duration.ofSeconds(10))
+			.untilAsserted(() -> assertThat(balances(group, alice))
+				.containsExactlyInAnyOrderEntriesOf(Map.of(alice, 0L, bob, -5000L, carol, 5000L)));
+
+		// when Alice confirms that Bob's money arrived
+		mvc.perform(post("/settlement-payments/" + payment + "/confirm").header("Authorization", auth(alice)))
+			.andExpect(status().isOk());
+
+		// then the fact is booked: Alice now owes Carol, Bob is settled, the sum is zero
+		await().atMost(Duration.ofSeconds(10))
+			.untilAsserted(() -> assertThat(balances(group, alice))
+				.containsExactlyInAnyOrderEntriesOf(Map.of(alice, -5000L, bob, 0L, carol, 5000L)));
+		assertThat(balances(group, alice).values().stream().mapToLong(Long::longValue).sum()).isZero();
+	}
+
+	@Test
 	void responsesCarryExactlyTheFieldsOfTheContract() throws Exception {
 		// given a group with one invited member and one expense
 		UUID group = groupWith(alice, bob);
@@ -101,7 +180,7 @@ class MallorcaSliceTest {
 		assertThat(fields(expense.get("shares").get(0))).containsExactly("owedShare", "participantId");
 		assertThat(fields(invitation)).containsExactly("expiresAt", "invitationId", "invitee");
 		assertThat(fields(invitation.get("invitee"))).containsExactly("displayName", "userId", "username");
-		assertThat(fields(pending.get(0))).containsExactly("expiresAt", "group", "invitationId", "invitedBy");
+		assertThat(fields(pending.get(0))).containsExactly("expiresAt", "group", "invitationId", "invitedBy", "role");
 		assertThat(fields(pending.get(0).get("group"))).containsExactly("id", "name");
 		assertThat(fields(pending.get(0).get("invitedBy"))).containsExactly("displayName", "userId", "username");
 		assertThat(fields(me)).containsExactly("displayName", "userId", "username");
@@ -230,6 +309,46 @@ class MallorcaSliceTest {
 		body.put("participantIds", participants);
 		body.put("splitStrategy", "EQUAL");
 		return mvc.perform(post("/groups/" + group + "/expenses").header("Authorization", auth(caller))
+			.contentType(APPLICATION_JSON)
+			.content(json.writeValueAsString(body)));
+	}
+
+	/**
+	 * Alice's group of four after the hotel (Alice, 900.00) and the dinner (Bob, 180.00),
+	 * once the balances have arrived, so the settlement plan has its three edges to
+	 * Alice.
+	 */
+	private UUID mallorcaAfterHotelAndDinner() throws Exception {
+		UUID group = groupWith(alice, bob, carol, david);
+		List<String> everyone = List.of(alice, bob, carol, david);
+		recordExpense(group, alice, "Hotel", 90000, alice, everyone).andExpect(status().isCreated());
+		recordExpense(group, bob, "Dinner", 18000, bob, everyone).andExpect(status().isCreated());
+		await().atMost(Duration.ofSeconds(10))
+			.untilAsserted(() -> assertThat(balances(group, alice)).containsExactlyInAnyOrderEntriesOf(
+					Map.of(alice, 63000L, bob, -9000L, carol, -27000L, david, -27000L)));
+		return group;
+	}
+
+	/** The debtor reports a payment to the creditor (expects 201) and returns its id. */
+	private UUID recordPayment(UUID group, String debtor, String creditor, String amount) throws Exception {
+		Map<String, Object> body = new LinkedHashMap<>();
+		body.put("toCreditor", creditor);
+		body.put("amount", amount);
+		body.put("note", "Bank transfer");
+		JsonNode payment = read(mvc
+			.perform(post("/groups/" + group + "/settlement-payments").header("Authorization", auth(debtor))
+				.contentType(APPLICATION_JSON)
+				.content(json.writeValueAsString(body)))
+			.andExpect(status().isCreated()));
+		return UUID.fromString(payment.get("id").asString());
+	}
+
+	private ResultActions waive(UUID group, String creditor, String debtor, String amount) throws Exception {
+		Map<String, Object> body = new LinkedHashMap<>();
+		body.put("fromDebtor", debtor);
+		body.put("amount", amount);
+		body.put("note", "A gift");
+		return mvc.perform(post("/groups/" + group + "/debt-waivers").header("Authorization", auth(creditor))
 			.contentType(APPLICATION_JSON)
 			.content(json.writeValueAsString(body)));
 	}

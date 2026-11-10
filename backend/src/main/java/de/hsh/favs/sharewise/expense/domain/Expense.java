@@ -152,7 +152,7 @@ public class Expense {
 		expense.createdAt = now;
 		expense.shares = shares.stream().map(StoredShare::new).toList();
 		return new Recorded(expense,
-				new ExpenseRecorded(expense.expenseId(), view.groupId(), paidBy, totalAmount, shares, now));
+				new ExpenseRecorded(expense.expenseId(), view.groupId(), paidBy, recordedBy, totalAmount, shares, now));
 	}
 
 	public ExpenseId expenseId() {

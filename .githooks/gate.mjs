@@ -3,7 +3,7 @@
 //
 // pre-commit (fast, only for what is staged):
 //   1. no secrets file staged, no Anthropic API key in the added lines
-//   2. docs/api/openapi.yaml is committed on its own (contract first, docs/conventions/03 section 6)
+//   2. docs/api/openapi.yaml is committed on its own (contract first, docs/conventions/03 section 6); a merge commit is exempt
 //   3. package-lock.json did not lose other platforms' entries (npm on Windows drops them, docs/conventions/04 section 7)
 //   4. no existing file flips its line endings (CRLF <-> LF): the whole file would show as changed and hide the real
 //      change. An intended normalisation is committed alone with SHAREWISE_ALLOW_EOL_FLIP=1 (see line-endings.mjs)
@@ -71,6 +71,16 @@ function lockFileLostPlatforms() {
 	return countPlatformEntries(git('show', `:${LOCK_FILE}`)) < countPlatformEntries(before);
 }
 
+function isMergeCommit() {
+	try {
+		git('rev-parse', '-q', '--verify', 'MERGE_HEAD');
+		return true;
+	}
+	catch {
+		return false;
+	}
+}
+
 // Staged text files that exist at HEAD and now have the other line ending.
 function filesWithFlippedLineEndings() {
 	const modified = git('diff', '--cached', '--name-only', '--diff-filter=M').split('\n').filter(Boolean);
@@ -96,7 +106,9 @@ function preCommit() {
 	if (KEY_IN_ADDED_LINES.test(git('diff', '--cached', '-U0'))) {
 		fail('an Anthropic API key (sk-ant-...) is in the staged changes. Remove it; rotate the key if it was ever pushed.');
 	}
-	if (staged.includes(CONTRACT) && staged.length > 1) {
+	// A merge commit carries the other branch's contract change together with its code; the contract commit
+	// itself was already made alone on that branch.
+	if (staged.includes(CONTRACT) && staged.length > 1 && !isMergeCommit()) {
 		fail(`${CONTRACT} is staged together with other files. The contract changes in its own commit ("contract(<scope>): ..."), the code follows.`);
 	}
 	if (staged.includes(LOCK_FILE) && lockFileLostPlatforms()) {

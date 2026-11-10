@@ -10,6 +10,7 @@ type Invitation = components["schemas"]["Invitation"];
 /** Invites an existing account by exact username or email. The backend finds the account; nothing here guesses. */
 export function InviteForm({ groupId }: { groupId: string }) {
   const [identifier, setIdentifier] = useState("");
+  const [role, setRole] = useState<"MEMBER" | "ADMIN">("MEMBER");
   const [busy, setBusy] = useState(false);
   const [invited, setInvited] = useState<string>();
   const [error, setError] = useState<unknown>();
@@ -23,7 +24,7 @@ export function InviteForm({ groupId }: { groupId: string }) {
       const invitation = await api<Invitation>(`/groups/${groupId}/invitations`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ identifier: value }),
+        body: JSON.stringify({ identifier: value, role }),
       });
       setInvited(invitation.invitee.username);
       setError(undefined);
@@ -46,6 +47,17 @@ export function InviteForm({ groupId }: { groupId: string }) {
           className="rounded border px-2 py-2"
           autoComplete="off"
         />
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        Joins as
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value as "MEMBER" | "ADMIN")}
+          className="rounded border bg-background px-2 py-2"
+        >
+          <option value="MEMBER">Member</option>
+          <option value="ADMIN">Admin</option>
+        </select>
       </label>
       <button type="submit" disabled={busy} className="self-start rounded border px-3 py-2 disabled:opacity-50">
         Invite

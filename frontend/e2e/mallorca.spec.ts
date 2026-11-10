@@ -43,7 +43,7 @@ async function addExpense(page: Page, title: string, euros: string) {
   await expect(page.getByText(title).first()).toBeVisible();
 }
 
-test("three friends sign up, share a group and see who owes what", async ({ browser }) => {
+test("three friends sign up, share a group, see who owes what and settle up", async ({ browser }) => {
   // Alice signs up, creates the group and an invite link.
   const alice = await signUp(browser, "Alice");
 
@@ -106,6 +106,40 @@ test("three friends sign up, share a group and see who owes what", async ({ brow
   await expect(balances.filter({ hasText: "Bob Tester" })).toContainText("-180,00");
   await expect(balances.filter({ hasText: "Carol Tester" })).toContainText("-360,00");
   await expect(alice.getByText("Sum: 0,00")).toBeVisible();
+
+  // Carol settles up: she reports her whole debt to Alice. It only counts once Alice confirms it (R16).
+  await carol.getByRole("tab", { name: /^Settle up/ }).click();
+  const carolOwes = carol.getByRole("region", { name: "You owe" });
+  await expect(carolOwes).toContainText("360,00 € to Alice Tester");
+  await carolOwes.getByRole("button", { name: "I paid" }).click();
+  await expect(carolOwes.getByLabel("Amount (€)")).toHaveValue("360.00");
+  await carolOwes.getByRole("button", { name: "Send payment" }).click();
+  await expect(carolOwes).toContainText("360,00 € awaiting confirmation");
+
+  // Alice finds the payment waiting for her answer in the bell (state, not an event: a reload shows it) and confirms it.
+  await alice.reload();
+  await alice.getByRole("button", { name: /inbox/i }).click();
+  await expect(alice.getByText("Carol Tester marked 360,00 € as paid to you")).toBeVisible();
+  await alice.getByRole("button", { name: "Confirm payment from Carol Tester" }).click();
+  await expect(alice.getByText("Carol Tester marked 360,00 € as paid to you")).toHaveCount(0);
+
+  // Carol hears about it: the entry arrives through an event, so she reloads until it is there.
+  await expect(async () => {
+    await carol.reload();
+    await carol.getByRole("button", { name: /inbox/i }).click();
+    await expect(carol.getByText("Alice Tester confirmed your payment in Mallorca 2027")).toBeVisible({ timeout: 2000 });
+  }).toPass();
+
+  // The ledger books the confirmation asynchronously; the plan shrinks to Bob's debt alone.
+  // The plan is only fetched when the tab opens, so she reloads until the booking has arrived.
+  const owedToAlice = alice.getByRole("region", { name: "Owed to you" });
+  await expect(async () => {
+    await alice.reload();
+    await alice.getByRole("tab", { name: /^Settle up/ }).click();
+    await expect(owedToAlice.getByRole("listitem")).toHaveCount(1, { timeout: 2000 });
+  }).toPass();
+  await expect(owedToAlice).toContainText("Bob Tester owes 180,00 €");
+  await expect(owedToAlice).not.toContainText("Carol Tester");
 });
 
 test("wrong password is refused, signed-out visitors are sent to sign in, signing in again works", async ({

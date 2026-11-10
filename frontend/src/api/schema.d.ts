@@ -69,8 +69,28 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Invite an existing account by exact username or exact email (valid 7 days, R9). The caller must be a member. The invitation belongs to that account; there is no link anyone can use. */
+        /** Invite an existing account by exact username or exact email (valid 7 days, R9). The caller must be an admin of the group. The invitation belongs to that account; there is no link anyone can use. The invitee joins with the given role (MEMBER when omitted). */
         post: operations["createInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/groups/{groupId}/members/{userId}/promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+                userId: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Make an active member an ADMIN. The caller must be an admin. Promotion is one way: there is no demotion. */
+        post: operations["promoteToAdmin"];
         delete?: never;
         options?: never;
         head?: never;
@@ -227,6 +247,131 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/groups/{groupId}/settlement-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Who should pay whom to settle the group (one edge per debtor and creditor pair)
+         * @description Computed from the booked balances (eventually consistent), in the order creditor, then debtor id. pendingAmount is the part of amount already reserved on that pair by payments that are PENDING or confirmed but not yet booked. payableAmount is what the screen should offer as a new payment (or waiver) on that pair right now: amount minus pendingAmount, but never more than the open debt the server accepts (the debtor's remaining debt and the creditor's remaining credit, after reservations). It can be lower than amount minus pendingAmount when the debtor's other reservations, or the creditor's, use up the rest.
+         */
+        get: operations["getSettlementPlan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/groups/{groupId}/settlement-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        /** Settlement payments of the group (all statuses), newest first */
+        get: operations["listSettlementPayments"];
+        put?: never;
+        /**
+         * The caller (the debtor) reports a payment to a creditor. Status starts PENDING until the creditor confirms.
+         * @description The amount reserves that much of the debtor's debt and of the creditor's credit, so it may not exceed the open debt: the smaller of what the debtor still owes and what the creditor is still owed, after what other payments reserve (422 PAYMENT_EXCEEDS_OPEN_DEBT). The pair does not have to be an edge of the plan; the plan only limits what the screen offers (payableAmount). A group that is archived answers 422 GROUP_NOT_OPEN.
+         */
+        post: operations["recordSettlementPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settlement-payments/{paymentId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                paymentId: components["parameters"]["PaymentId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The creditor confirms a PENDING payment. Status becomes CONFIRMED and the debt shrinks. */
+        post: operations["confirmSettlementPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/settlement-payments/{paymentId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                paymentId: components["parameters"]["PaymentId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The creditor rejects a PENDING payment with a reason. Status becomes REJECTED and the reservation is released. */
+        post: operations["rejectSettlementPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/groups/{groupId}/debt-waivers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The caller (the creditor) waives part of a debtor's debt. Recorded as a settlement payment with status WAIVED.
+         * @description Takes effect at once, no confirmation needed. The amount may not exceed the open debt (422 PAYMENT_EXCEEDS_OPEN_DEBT). A reason (note) is optional.
+         */
+        post: operations["waiveDebt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/settlement-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Settlement payments waiting for the caller's answer, newest first
+         * @description The PENDING payments in which the caller is the creditor and so is the one to confirm or reject. This is state, asked like the caller's open invitations; what happened to a payment arrives as a notification.
+         */
+        get: operations["listMySettlementPayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -236,7 +381,7 @@ export interface components {
             title?: string;
             status: number;
             /** @enum {string} */
-            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "RECORDER_NOT_PARTICIPANT" | "GROUP_NOT_OPEN" | "SPLIT_NOT_SUPPORTED" | "ACCOUNT_NOT_FOUND" | "ALREADY_INVITED" | "NOTIFICATION_NOT_FOUND";
+            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "RECORDER_NOT_PARTICIPANT" | "GROUP_NOT_OPEN" | "SPLIT_NOT_SUPPORTED" | "PAYMENT_EXCEEDS_OPEN_DEBT" | "SETTLEMENT_PAYMENT_NOT_FOUND" | "PAYMENT_NOT_PENDING" | "NOT_THE_CREDITOR" | "ACCOUNT_NOT_FOUND" | "ALREADY_INVITED" | "NOTIFICATION_NOT_FOUND" | "NOT_AN_ADMIN" | "MEMBER_NOT_FOUND" | "ALREADY_ADMIN";
             detail?: string;
         };
         User: {
@@ -281,6 +426,12 @@ export interface components {
         InviteMemberRequest: {
             /** @description Exact username or exact email of an existing account (an identifier with "@" is an email). Trimmed and compared case-insensitively; no partial matching. */
             identifier: string;
+            /**
+             * @description The role the invitee gets when they accept.
+             * @default MEMBER
+             * @enum {string}
+             */
+            role: "ADMIN" | "MEMBER";
         };
         Invitation: {
             /** Format: uuid */
@@ -294,14 +445,19 @@ export interface components {
             invitationId: string;
             group: components["schemas"]["GroupRef"];
             invitedBy: components["schemas"]["UserSummary"];
+            /**
+             * @description What the invitee becomes on accepting.
+             * @enum {string}
+             */
+            role: "ADMIN" | "MEMBER";
             /** Format: date-time */
             expiresAt: string;
         };
         /**
-         * @description More types arrive with later features (payments, waived debts, removal).
+         * @description PAYMENT_CONFIRMED and PAYMENT_REJECTED tell the payer how the creditor answered; DEBT_WAIVED tells the debtor that the creditor forgave part of the debt. The actor is the creditor and the reference is the settlement payment. EXPENSE_RECORDED tells everybody involved in an expense (the participants and the payer) that somebody recorded it, except the person who recorded it; the actor is the recorder and the reference is the expense. MEMBER_PROMOTED tells a member that an admin made them an admin; the actor is the promoting admin and the reference is the promoted member. A payment waiting for an answer is not an entry (see GET /me/settlement-payments). More types arrive with later features (removal).
          * @enum {string}
          */
-        NotificationType: "MEMBER_JOINED" | "INVITATION_DECLINED";
+        NotificationType: "MEMBER_JOINED" | "INVITATION_DECLINED" | "MEMBER_PROMOTED" | "PAYMENT_CONFIRMED" | "PAYMENT_REJECTED" | "DEBT_WAIVED" | "EXPENSE_RECORDED";
         Notification: {
             /** Format: uuid */
             id: string;
@@ -316,7 +472,7 @@ export interface components {
             group: components["schemas"]["GroupRef"] | null;
             /**
              * Format: uuid
-             * @description What the entry points at (the person who joined, or the declined invitation).
+             * @description What the entry points at (the person who joined or was made admin, or the declined invitation).
              */
             reference: string;
         };
@@ -374,6 +530,63 @@ export interface components {
             displayName: string;
             /** @description + is owed, - owes */
             netBalance: components["schemas"]["Amount"];
+        };
+        SettlementPlanEdge: {
+            /** Format: uuid */
+            fromDebtor: string;
+            fromDebtorName: string;
+            /** Format: uuid */
+            toCreditor: string;
+            toCreditorName: string;
+            /** @description What the plan asks fromDebtor to pay toCreditor. */
+            amount: components["schemas"]["Amount"];
+            /** @description Part of amount reserved on this pair by payments that are PENDING or confirmed but not yet booked. */
+            pendingAmount: components["schemas"]["Amount"];
+            /** @description What the screen offers as a new payment or waiver on this pair right now (amount minus pendingAmount, never more than the open debt the server accepts). Show the "I paid" action only when it is above zero. */
+            payableAmount: components["schemas"]["Amount"];
+        };
+        /** @enum {string} */
+        SettlementPaymentStatus: "PENDING" | "CONFIRMED" | "REJECTED" | "WAIVED";
+        SettlementPayment: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            groupId: string;
+            /** Format: uuid */
+            fromDebtor: string;
+            fromDebtorName: string;
+            /** Format: uuid */
+            toCreditor: string;
+            toCreditorName: string;
+            amount: components["schemas"]["Amount"];
+            status: components["schemas"]["SettlementPaymentStatus"];
+            /** @description Free text of the debtor, the rejection reason or the waiver reason. */
+            note: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description Null while PENDING.
+             */
+            resolvedAt: string | null;
+        };
+        RecordSettlementPaymentRequest: {
+            /** Format: uuid */
+            toCreditor: string;
+            /** @description Greater than zero (AMOUNT_NOT_POSITIVE otherwise) and at most the open debt. */
+            amount: components["schemas"]["Amount"];
+            note?: string;
+        };
+        RejectSettlementPaymentRequest: {
+            note: string;
+        };
+        WaiveDebtRequest: {
+            /** Format: uuid */
+            fromDebtor: string;
+            /** @description Greater than zero (AMOUNT_NOT_POSITIVE otherwise) and at most the open debt. */
+            amount: components["schemas"]["Amount"];
+            /** @description Optional reason for the waiver. Leave the field out when there is none. */
+            note?: string;
         };
     };
     responses: {
@@ -521,7 +734,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description A domain rule was violated. code is one of AMOUNT_NOT_POSITIVE, PAYER_NOT_IN_GROUP, PARTICIPANT_NOT_IN_GROUP, NO_PARTICIPANTS, RECORDER_NOT_PARTICIPANT, GROUP_NOT_OPEN, SPLIT_NOT_SUPPORTED. */
+        /** @description A domain rule was violated. code is one of AMOUNT_NOT_POSITIVE, PAYER_NOT_IN_GROUP, PARTICIPANT_NOT_IN_GROUP, NO_PARTICIPANTS, RECORDER_NOT_PARTICIPANT, GROUP_NOT_OPEN, SPLIT_NOT_SUPPORTED. GROUP_NOT_OPEN means the group is archived (also for settlement calls). */
         DomainRule: {
             headers: {
                 [name: string]: unknown;
@@ -539,10 +752,84 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
+        /** @description The amount is larger than the open debt (what the debtor still owes or the creditor is still owed, whichever is smaller, after reservations). code is PAYMENT_EXCEEDS_OPEN_DEBT, or AMOUNT_NOT_POSITIVE, PARTICIPANT_NOT_IN_GROUP or GROUP_NOT_OPEN (group is archived). */
+        PaymentExceedsOpenDebt: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Unprocessable Entity",
+                 *       "status": 422,
+                 *       "code": "PAYMENT_EXCEEDS_OPEN_DEBT",
+                 *       "detail": "The amount is larger than the open debt"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Unknown settlement payment */
+        SettlementPaymentNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Not Found",
+                 *       "status": 404,
+                 *       "code": "SETTLEMENT_PAYMENT_NOT_FOUND",
+                 *       "detail": "Settlement payment not found"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description The payment is no longer PENDING (already confirmed, rejected or waived) */
+        PaymentNotPending: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Conflict",
+                 *       "status": 409,
+                 *       "code": "PAYMENT_NOT_PENDING",
+                 *       "detail": "The payment is not pending"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Only the creditor of the payment may do this */
+        NotTheCreditor: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Forbidden",
+                 *       "status": 403,
+                 *       "code": "NOT_THE_CREDITOR",
+                 *       "detail": "Only the creditor can resolve this payment"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
     };
     parameters: {
         GroupId: string;
+        PaymentId: string;
         InvitationId: string;
+        UserId: string;
     };
     requestBodies: never;
     headers: never;
@@ -707,7 +994,8 @@ export interface operations {
             content: {
                 /**
                  * @example {
-                 *       "identifier": "bob"
+                 *       "identifier": "bob",
+                 *       "role": "MEMBER"
                  *     }
                  */
                 "application/json": components["schemas"]["InviteMemberRequest"];
@@ -736,7 +1024,15 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthenticated"];
-            403: components["responses"]["NotAMember"];
+            /** @description The caller is not a member of the group, or is a member but not an admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
             /** @description Unknown group, or no account for the username or email */
             404: {
                 headers: {
@@ -752,6 +1048,73 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    promoteToAdmin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+                userId: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The member, now with role ADMIN */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "userId": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *       "displayName": "Bob",
+                     *       "role": "ADMIN"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Member"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            /** @description The caller is not a member of the group, or is a member but not an admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unknown group, or the person is not an active member of it */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The member already is an admin */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Conflict",
+                     *       "status": 409,
+                     *       "code": "ALREADY_ADMIN",
+                     *       "detail": "This member is already an admin"
+                     *     }
+                     */
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
@@ -785,6 +1148,7 @@ export interface operations {
                      *           "displayName": "Alice",
                      *           "username": "alice"
                      *         },
+                     *         "role": "MEMBER",
                      *         "expiresAt": "2027-06-08T10:00:00Z"
                      *       }
                      *     ]
@@ -1141,6 +1505,343 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["NotAMember"];
             404: components["responses"]["GroupNotFound"];
+        };
+    };
+    getSettlementPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settlement plan edges (empty when everything is settled) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "fromDebtor": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *         "fromDebtorName": "Bob",
+                     *         "toCreditor": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *         "toCreditorName": "Alice",
+                     *         "amount": "90.00",
+                     *         "pendingAmount": "0.00",
+                     *         "payableAmount": "90.00"
+                     *       },
+                     *       {
+                     *         "fromDebtor": "aaaaaaaa-0000-0000-0000-000000000003",
+                     *         "fromDebtorName": "Carol",
+                     *         "toCreditor": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *         "toCreditorName": "Alice",
+                     *         "amount": "270.00",
+                     *         "pendingAmount": "270.00",
+                     *         "payableAmount": "0.00"
+                     *       },
+                     *       {
+                     *         "fromDebtor": "aaaaaaaa-0000-0000-0000-000000000004",
+                     *         "fromDebtorName": "David",
+                     *         "toCreditor": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *         "toCreditorName": "Alice",
+                     *         "amount": "270.00",
+                     *         "pendingAmount": "0.00",
+                     *         "payableAmount": "270.00"
+                     *       }
+                     *     ]
+                     */
+                    "application/json": components["schemas"]["SettlementPlanEdge"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["NotAMember"];
+            404: components["responses"]["GroupNotFound"];
+        };
+    };
+    listSettlementPayments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settlement payments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "id": "dddddddd-0000-0000-0000-000000000001",
+                     *         "groupId": "bbbbbbbb-0000-0000-0000-000000000001",
+                     *         "fromDebtor": "aaaaaaaa-0000-0000-0000-000000000003",
+                     *         "fromDebtorName": "Carol",
+                     *         "toCreditor": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *         "toCreditorName": "Alice",
+                     *         "amount": "270.00",
+                     *         "status": "PENDING",
+                     *         "note": "Bank transfer",
+                     *         "createdAt": "2027-06-10T10:00:00Z",
+                     *         "resolvedAt": null
+                     *       }
+                     *     ]
+                     */
+                    "application/json": components["schemas"]["SettlementPayment"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["NotAMember"];
+            404: components["responses"]["GroupNotFound"];
+        };
+    };
+    recordSettlementPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "toCreditor": "aaaaaaaa-0000-0000-0000-000000000001",
+                 *       "amount": "270.00",
+                 *       "note": "Bank transfer"
+                 *     }
+                 */
+                "application/json": components["schemas"]["RecordSettlementPaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Recorded, status PENDING */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "dddddddd-0000-0000-0000-000000000001",
+                     *       "groupId": "bbbbbbbb-0000-0000-0000-000000000001",
+                     *       "fromDebtor": "aaaaaaaa-0000-0000-0000-000000000003",
+                     *       "fromDebtorName": "Carol",
+                     *       "toCreditor": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *       "toCreditorName": "Alice",
+                     *       "amount": "270.00",
+                     *       "status": "PENDING",
+                     *       "note": "Bank transfer",
+                     *       "createdAt": "2027-06-10T10:00:00Z",
+                     *       "resolvedAt": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SettlementPayment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["NotAMember"];
+            404: components["responses"]["GroupNotFound"];
+            422: components["responses"]["PaymentExceedsOpenDebt"];
+        };
+    };
+    confirmSettlementPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                paymentId: components["parameters"]["PaymentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Confirmed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "dddddddd-0000-0000-0000-000000000001",
+                     *       "groupId": "bbbbbbbb-0000-0000-0000-000000000001",
+                     *       "fromDebtor": "aaaaaaaa-0000-0000-0000-000000000003",
+                     *       "fromDebtorName": "Carol",
+                     *       "toCreditor": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *       "toCreditorName": "Alice",
+                     *       "amount": "270.00",
+                     *       "status": "CONFIRMED",
+                     *       "note": "Bank transfer",
+                     *       "createdAt": "2027-06-10T10:00:00Z",
+                     *       "resolvedAt": "2027-06-11T09:30:00Z"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SettlementPayment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["NotTheCreditor"];
+            404: components["responses"]["SettlementPaymentNotFound"];
+            409: components["responses"]["PaymentNotPending"];
+        };
+    };
+    rejectSettlementPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                paymentId: components["parameters"]["PaymentId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "note": "Money has not arrived"
+                 *     }
+                 */
+                "application/json": components["schemas"]["RejectSettlementPaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Rejected */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "dddddddd-0000-0000-0000-000000000001",
+                     *       "groupId": "bbbbbbbb-0000-0000-0000-000000000001",
+                     *       "fromDebtor": "aaaaaaaa-0000-0000-0000-000000000003",
+                     *       "fromDebtorName": "Carol",
+                     *       "toCreditor": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *       "toCreditorName": "Alice",
+                     *       "amount": "270.00",
+                     *       "status": "REJECTED",
+                     *       "note": "Money has not arrived",
+                     *       "createdAt": "2027-06-10T10:00:00Z",
+                     *       "resolvedAt": "2027-06-11T09:30:00Z"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SettlementPayment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["NotTheCreditor"];
+            404: components["responses"]["SettlementPaymentNotFound"];
+            409: components["responses"]["PaymentNotPending"];
+        };
+    };
+    waiveDebt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "fromDebtor": "aaaaaaaa-0000-0000-0000-000000000002",
+                 *       "amount": "90.00",
+                 *       "note": "Bob gets it as a gift"
+                 *     }
+                 */
+                "application/json": components["schemas"]["WaiveDebtRequest"];
+            };
+        };
+        responses: {
+            /** @description Waived, status WAIVED */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "dddddddd-0000-0000-0000-000000000002",
+                     *       "groupId": "bbbbbbbb-0000-0000-0000-000000000001",
+                     *       "fromDebtor": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *       "fromDebtorName": "Bob",
+                     *       "toCreditor": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *       "toCreditorName": "Alice",
+                     *       "amount": "90.00",
+                     *       "status": "WAIVED",
+                     *       "note": "Bob gets it as a gift",
+                     *       "createdAt": "2027-06-10T10:00:00Z",
+                     *       "resolvedAt": "2027-06-10T10:00:00Z"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["SettlementPayment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["NotAMember"];
+            404: components["responses"]["GroupNotFound"];
+            422: components["responses"]["PaymentExceedsOpenDebt"];
+        };
+    };
+    listMySettlementPayments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settlement payments waiting for the caller's answer */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example [
+                     *       {
+                     *         "id": "dddddddd-0000-0000-0000-000000000001",
+                     *         "groupId": "bbbbbbbb-0000-0000-0000-000000000001",
+                     *         "fromDebtor": "aaaaaaaa-0000-0000-0000-000000000003",
+                     *         "fromDebtorName": "Carol",
+                     *         "toCreditor": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *         "toCreditorName": "Alice",
+                     *         "amount": "270.00",
+                     *         "status": "PENDING",
+                     *         "note": "Bank transfer",
+                     *         "createdAt": "2027-06-10T10:00:00Z",
+                     *         "resolvedAt": null
+                     *       }
+                     *     ]
+                     */
+                    "application/json": components["schemas"]["SettlementPayment"][];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
         };
     };
 }

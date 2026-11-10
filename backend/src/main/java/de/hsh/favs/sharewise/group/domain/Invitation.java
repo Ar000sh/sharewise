@@ -1,5 +1,6 @@
 package de.hsh.favs.sharewise.group.domain;
 
+import de.hsh.favs.sharewise.group.api.GroupRole;
 import de.hsh.favs.sharewise.group.api.InvitationId;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
@@ -41,6 +42,11 @@ public class Invitation {
 	@Column(nullable = false)
 	private InvitationStatus status;
 
+	/** What the invitee becomes on accepting. */
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private GroupRole role;
+
 	@Column(name = "created_by", nullable = false)
 	private UUID createdBy;
 
@@ -53,10 +59,11 @@ public class Invitation {
 	protected Invitation() {
 	}
 
-	static Invitation issue(UserId invitee, UserId createdBy, Instant now) {
+	static Invitation issue(UserId invitee, GroupRole role, UserId createdBy, Instant now) {
 		Invitation invitation = new Invitation();
 		invitation.id = UUID.randomUUID();
 		invitation.invitee = invitee.value();
+		invitation.role = role;
 		invitation.status = InvitationStatus.PENDING;
 		invitation.createdBy = createdBy.value();
 		invitation.createdAt = now;
@@ -114,7 +121,12 @@ public class Invitation {
 		return new UserId(invitee);
 	}
 
-	/** The member who sent it. */
+	/** The role the invitee gets on accepting. */
+	public GroupRole role() {
+		return role;
+	}
+
+	/** The admin who sent it. */
 	public UserId createdBy() {
 		return new UserId(createdBy);
 	}
