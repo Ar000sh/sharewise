@@ -116,6 +116,34 @@ function OweRow({ groupId, edge, onPaid }: { groupId: string; edge: PlanEdge; on
   );
 }
 
+/** One "Owed to you" row: "Waive" opens the waiver form right here, with this debtor and what can be waived now. */
+function OwedRow({ groupId, edge, onWaived }: { groupId: string; edge: PlanEdge; onWaived: () => void }) {
+  const [formOpen, setFormOpen] = useState(false);
+  return (
+    <li className="px-3 py-2">
+      <div className="flex items-center justify-between gap-2">
+        <span>{`${edge.fromDebtorName} owes ${formatEuro(amountToCents(edge.amount))}`}</span>
+        {payableCents(edge) > 0 && !formOpen && (
+          <button type="button" onClick={() => setFormOpen(true)} className="rounded border px-3 py-1">
+            Waive
+          </button>
+        )}
+      </div>
+      <PendingAmountNote edge={edge} />
+      {formOpen && (
+        <WaiveDebtForm
+          groupId={groupId}
+          waivableEdges={[edge]}
+          onWaived={() => {
+            setFormOpen(false);
+            onWaived();
+          }}
+        />
+      )}
+    </li>
+  );
+}
+
 function Section({ title, quiet, children }: { title: string; quiet?: boolean; children: React.ReactNode }) {
   return (
     <section aria-label={title} className={`flex flex-col gap-1 ${quiet ? "text-sm text-foreground/70" : ""}`}>
@@ -134,8 +162,6 @@ export function SettleUpTab({ groupId }: { groupId: string }) {
   const { data: plan, error, reload } = useApi<PlanEdge[]>(`/groups/${groupId}/settlement-plan`);
   const [changedAt, setChangedAt] = useState<number>();
   const [notice, setNotice] = useState<string>();
-  // `resetKey` changes with every click on a "Waive" button so the form starts over with that debtor.
-  const [waivePrefill, setWaivePrefill] = useState<{ fromDebtor: string; resetKey: number }>();
   const dismissNotice = useCallback(() => setNotice(undefined), []);
 
   useLookAgain(changedAt, reload);
@@ -149,6 +175,12 @@ export function SettleUpTab({ groupId }: { groupId: string }) {
 
   if (error && !plan) return <ErrorBanner error={error} />;
   if (!plan || !me) return <p>Loading…</p>;
+
+  const afterWaive = () => {
+    void reload();
+    setChangedAt(Date.now());
+    setNotice("Debt waived.");
+  };
 
   const owedByMe = plan.filter((edge) => edge.fromDebtor === me.userId);
   const owedToMe = plan.filter((edge) => edge.toCreditor === me.userId);
@@ -178,23 +210,7 @@ export function SettleUpTab({ groupId }: { groupId: string }) {
       {owedToMe.length > 0 && (
         <Section title="Owed to you">
           {owedToMe.map((edge) => (
-            <li key={edge.fromDebtor} className="px-3 py-2">
-              <div className="flex items-center justify-between gap-2">
-                <span>{`${edge.fromDebtorName} owes ${formatEuro(amountToCents(edge.amount))}`}</span>
-                {payableCents(edge) > 0 && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setWaivePrefill({ fromDebtor: edge.fromDebtor, resetKey: (waivePrefill?.resetKey ?? 0) + 1 })
-                    }
-                    className="rounded border px-3 py-1"
-                  >
-                    Waive
-                  </button>
-                )}
-              </div>
-              <PendingAmountNote edge={edge} />
-            </li>
+            <OwedRow key={edge.fromDebtor} groupId={groupId} edge={edge} onWaived={afterWaive} />
           ))}
         </Section>
       )}
@@ -210,17 +226,7 @@ export function SettleUpTab({ groupId }: { groupId: string }) {
       {waivable.length > 0 && (
         <section aria-label="Waive manually" className="flex flex-col gap-1">
           <h2 className="font-medium">Waive manually</h2>
-          <WaiveDebtForm
-            key={waivePrefill?.resetKey ?? 0}
-            groupId={groupId}
-            waivableEdges={waivable}
-            prefill={waivePrefill}
-            onWaived={() => {
-              void reload();
-              setChangedAt(Date.now());
-              setNotice("Debt waived.");
-            }}
-          />
+          <WaiveDebtForm groupId={groupId} waivableEdges={waivable} onWaived={afterWaive} />
         </section>
       )}
       {notice && <Toast message={notice} onDismiss={dismissNotice} />}

@@ -15,22 +15,20 @@ export function payableCents(edge: PlanEdge): number {
 
 /**
  * The creditor forgives (part of) a debt. `waivableEdges` are the plan entries toward the current user; the amount starts at
- * what can be waived now. A waiver needs a reason and takes effect at once, so there is no confirmation step.
+ * what can be waived now. The reason is optional. A waiver takes effect at once, so there is no confirmation step.
  */
 export function WaiveDebtForm({
   groupId,
   waivableEdges,
-  prefill,
   onWaived,
 }: {
   groupId: string;
   waivableEdges: PlanEdge[];
-  prefill?: { fromDebtor: string };
   onWaived?: () => void;
 }) {
   // The choice and the typed amount are only what the user did; what is shown is derived from the current `waivableEdges`,
   // so a plan that reloads (a debtor gone, a smaller open amount) never leaves the form on stale values.
-  const [chosenDebtorId, setChosenDebtorId] = useState(prefill?.fromDebtor);
+  const [chosenDebtorId, setChosenDebtorId] = useState<string>();
   const [typedAmount, setTypedAmount] = useState<string>();
   const [note, setNote] = useState("");
   const [error, setError] = useState<string>();
@@ -55,14 +53,13 @@ export function WaiveDebtForm({
     if (cents === null || cents <= 0) return setError("Please enter a valid amount, e.g. 19,99.");
     if (cents > payableCents(selectedEdge))
       return setError(`You can waive up to ${formatEuro(payableCents(selectedEdge))} here.`);
-    if (!note.trim()) return setError("Please give a reason for waiving.");
     sending.current = true;
     setBusy(true);
     try {
       await api(`/groups/${groupId}/debt-waivers`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ fromDebtor, amount: centsToAmount(cents), note: note.trim() }),
+        body: JSON.stringify({ fromDebtor, amount: centsToAmount(cents), ...(note.trim() ? { note: note.trim() } : {}) }),
       });
       setError(undefined);
       setNote("");
@@ -85,7 +82,12 @@ export function WaiveDebtForm({
     <form onSubmit={submit} className="flex flex-col gap-2 rounded border p-3">
       <label className="flex flex-col gap-1">
         Debtor
-        <select className="rounded border px-2 py-2" value={fromDebtor} onChange={(e) => chooseDebtor(e.target.value)}>
+        <select
+          className="rounded border px-2 py-2"
+          value={fromDebtor}
+          disabled={waivableEdges.length === 1}
+          onChange={(e) => chooseDebtor(e.target.value)}
+        >
           {waivableEdges.map((edge) => (
             <option key={edge.fromDebtor} value={edge.fromDebtor}>
               {edge.fromDebtorName}
@@ -103,7 +105,7 @@ export function WaiveDebtForm({
         />
       </label>
       <label className="flex flex-col gap-1">
-        Reason
+        Reason (optional)
         <input className="rounded border px-2 py-2" value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} />
       </label>
       {error && (
