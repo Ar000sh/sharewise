@@ -99,16 +99,29 @@ class DebtWaiverControllerTest {
 	}
 
 	@Test
-	void aZeroAmountIs422AndABlankOrMissingReasonIs400() throws Exception {
+	void aZeroAmountIs422() throws Exception {
 		settlement.waive(group, alice, bob, "0.00", "reason")
 			.andExpect(status().isUnprocessableContent())
 			.andExpect(jsonPath("$.code").value("AMOUNT_NOT_POSITIVE"));
+	}
+
+	@Test
+	void aWaiverWithoutAReasonIsAccepted() throws Exception {
+		// when the reason is left out
 		settlement.waive(group, alice, bob, "10.00", null)
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.status").value("WAIVED"));
+
+		// then it is booked like any other waiver
+		assertThat(events.stream(DebtWaived.class).count()).isEqualTo(1);
+	}
+
+	@Test
+	void aReasonLongerThan500CharactersIs400() throws Exception {
+		settlement.waive(group, alice, bob, "10.00", "x".repeat(501))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
-		settlement.waive(group, alice, bob, "10.00", " ")
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+		assertThat(events.stream(DebtWaived.class).count()).isZero();
 	}
 
 	@Test

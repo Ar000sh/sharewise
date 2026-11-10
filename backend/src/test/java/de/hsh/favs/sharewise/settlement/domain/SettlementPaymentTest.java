@@ -225,11 +225,20 @@ class SettlementPaymentTest {
 		assertRefusedWith(fixture::waive, ErrorCode.PAYMENT_EXCEEDS_OPEN_DEBT);
 	}
 
-	@ParameterizedTest
-	@ValueSource(strings = { "", "   " })
-	void waiveNeedsAReason(String note) {
+	@Test
+	void waiveNeedsNoReason() {
+		// when alice forgives without giving a reason
+		SettlementPayment payment = new SettlementPaymentFixture().withNote(null).waive().payment();
+
+		// then it is a finished WAIVED payment with no note
+		assertThat(payment.status()).isEqualTo(PaymentStatus.WAIVED);
+		assertThat(payment.note()).isNull();
+	}
+
+	@Test
+	void waiveRefusesAReasonLongerThan500Characters() {
 		// given
-		SettlementPaymentFixture fixture = new SettlementPaymentFixture().withNote(note);
+		SettlementPaymentFixture fixture = new SettlementPaymentFixture().withNote("x".repeat(501));
 
 		// when / then
 		assertRefusedWith(fixture::waive, ErrorCode.BAD_REQUEST);

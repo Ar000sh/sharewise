@@ -6,7 +6,7 @@ import de.hsh.favs.sharewise.shared.UserId;
 
 /**
  * Everything needed to waive part of a debt. {@code caller} is the creditor who forgives
- * it; the note is the required reason.
+ * it; the note is the optional reason.
  */
 public record WaiveDebtCommand(GroupId groupId, UserId caller, UserId fromDebtor, Money amount, String note) {
 

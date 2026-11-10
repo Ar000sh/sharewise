@@ -145,7 +145,7 @@ Example: Carol owes 360.00 (plan edge 360.00). Before her report: open debt 360.
 ### 6.3 Confirm, reject, waive
 - **Confirm** (creditor): `SettlementPayment.confirm` sets CONFIRMED and returns `SettlementPaymentConfirmed`; the service saves and publishes. A listener in `settlement` calls `bookSettlementPayment`, which appends `PAYMENT_SENT` (debtor +amount) and `PAYMENT_RECEIVED` (creditor −amount), both referencing the payment id (so a redelivery books once). *Confirm does not check the open debt again (decision of 04.11.26, section 8).*
 - **Reject** (creditor): sets REJECTED, publishes `SettlementPaymentRejected`, books nothing. The reservation ends because the status is no longer PENDING.
-- **Waive** (creditor): same checks as record (open debt, lock), but the payment is created WAIVED and `DebtWaived` is published; the ledger books `DEBT_WAIVED` on both sides. A reason is required.
+- **Waive** (creditor): same checks as record (open debt, lock), but the payment is created WAIVED and `DebtWaived` is published; the ledger books `DEBT_WAIVED` on both sides. The reason is optional (changed 09.11.26; the first design required one), like the note of a reported payment; a rejection still needs a reason.
 - **Two answers at once** (two tabs): `@Version` on the payment makes the second fail with a conflict instead of both succeeding.
 
 ### 6.4 The numbers, step by step (Carol pays Alice, Alice waives for Bob)

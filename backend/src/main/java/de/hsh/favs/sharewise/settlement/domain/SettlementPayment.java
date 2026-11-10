@@ -166,11 +166,10 @@ public class SettlementPayment {
 	/**
 	 * The creditor forgives part of a debt. It needs no confirmation and takes effect at
 	 * once (R17, design decision D8). The amount may not exceed {@code openDebt}; the
-	 * reason is required.
+	 * reason is optional.
 	 * @return the new payment (WAIVED) and {@link DebtWaived}
 	 * @throws DomainException with {@code BAD_REQUEST} when creditor and debtor are the
-	 * same person, the currencies differ or the note is blank or longer than 500
-	 * characters
+	 * same person, the currencies differ or the note is longer than 500 characters
 	 * @throws DomainException with {@code AMOUNT_NOT_POSITIVE} when the amount is zero or
 	 * negative
 	 * @throws DomainException with {@code PAYMENT_EXCEEDS_OPEN_DEBT} when the amount is
@@ -179,7 +178,9 @@ public class SettlementPayment {
 	public static Waived waive(GroupId groupId, UserId creditor, UserId fromDebtor, Money amount, Money openDebt,
 			String note, Instant now) {
 		requireValid(fromDebtor, creditor, amount, openDebt);
-		requireReason(note);
+		if (note != null) {
+			requireNoteLength(note);
+		}
 		SettlementPayment payment = new SettlementPayment(groupId, fromDebtor, creditor, amount, PaymentStatus.WAIVED,
 				note, now);
 		payment.resolvedAt = now;
