@@ -1,10 +1,11 @@
-import { screen, within } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api } from "@/lib/api";
 import { SettleUpTab } from "@/components/SettleUpTab";
 import { CurrentUserProvider } from "@/lib/currentUser";
 import { renderWithQueryClient } from "@/lib/renderWithQueryClient";
+import { markGroupChanged } from "@/lib/useGroupChange";
 
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<typeof import("@/lib/api")>()), api: vi.fn() }));
 
@@ -199,5 +200,61 @@ describe("WaiveDebtForm", () => {
     await userEvent.click(screen.getByRole("button", { name: "Waive debt" }));
     await vi.waitFor(() => expect(waiveCalls()).toHaveLength(2));
     expect(JSON.parse(String(waiveCalls()[1][1]?.body))).toEqual({ fromDebtor: DAVID, amount: "230.00", note: "Rest" });
+  });
+
+  describe("whenThePlanChangesWhileTheFormIsOpen", () => {
+    const withoutBob = plan.slice(0, 2);
+    const davidFirst = [plan[1], plan[0], plan[2]];
+
+    it("aChosenDebtorWhoLeavesThePlanLeavesNoSelectionAndNothingIsSent", async () => {
+      // given Alice chose Bob and typed an amount, then somebody else's payment made Bob's debt disappear
+      serve({ userId: ALICE, displayName: "Alice" }, [plan, withoutBob], async () => ({}));
+      const { client } = renderTab();
+      await screen.findByText("Bob owes 90,00 €");
+      await userEvent.selectOptions(screen.getByLabelText("Debtor"), "Bob");
+      const amount = screen.getByLabelText("Waived amount (€)");
+      await userEvent.clear(amount);
+      await userEvent.type(amount, "50");
+      act(() => markGroupChanged(client, "g1"));
+      await vi.waitFor(() => expect(screen.queryByText("Bob owes 90,00 €")).not.toBeInTheDocument());
+
+      // when she waives anyway
+      await userEvent.click(screen.getByRole("button", { name: "Waive debt" }));
+
+      // then nobody is selected, she is told to choose, and no waiver went out (not one for Carol)
+      expect(screen.getByLabelText("Debtor")).toHaveDisplayValue("Choose who owes you");
+      expect(await screen.findByRole("alert")).toHaveTextContent("Please choose who owes you.");
+      expect(waiveCalls()).toHaveLength(0);
+    });
+
+    it("aDebtorShownByDefaultStaysOnceTheUserTypes", async () => {
+      // given the form shows Carol, the first entry, and Alice types a reason without touching the debtor
+      serve({ userId: ALICE, displayName: "Alice" }, [plan, davidFirst], async () => ({}));
+      const { client } = renderTab();
+      await screen.findByText("Bob owes 90,00 €");
+      expect(screen.getByLabelText("Debtor")).toHaveDisplayValue("Carol");
+      await userEvent.type(screen.getByLabelText("Reason (optional)"), "Gift");
+
+      // when the plan changes and David is now the first entry
+      act(() => markGroupChanged(client, "g1"));
+      await vi.waitFor(() => expect(screen.getAllByRole("listitem")[0]).toHaveTextContent("David"));
+
+      // then the form is still about Carol
+      expect(screen.getByLabelText("Debtor")).toHaveDisplayValue("Carol");
+    });
+
+    it("untouchedTheFormFollowsThePlan", async () => {
+      // given nothing was typed or chosen and the form shows Carol
+      serve({ userId: ALICE, displayName: "Alice" }, [plan, davidFirst], async () => ({}));
+      const { client } = renderTab();
+      await screen.findByText("Bob owes 90,00 €");
+      expect(screen.getByLabelText("Debtor")).toHaveDisplayValue("Carol");
+
+      // when the plan changes and David is now the first entry
+      act(() => markGroupChanged(client, "g1"));
+
+      // then the form shows David
+      await vi.waitFor(() => expect(screen.getByLabelText("Debtor")).toHaveDisplayValue("David"));
+    });
   });
 });
