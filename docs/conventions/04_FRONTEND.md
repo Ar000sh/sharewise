@@ -32,7 +32,7 @@ Amounts in the API are decimal strings (`"900.00"`). All parsing, formatting and
 
 - Every failed call ends in `ApiError`. Display text comes from `messageFor(error)` (`lib/errors.ts`), which maps each contract `code` (plus `BACKEND_UNREACHABLE`, `NETWORK_ERROR`) to a sentence and falls back to the server `detail`. Adding a contract `ErrorCode` means adding its message there.
 - A page never renders blank on failure: errors show the `ErrorBanner`. Loading shows "Loading…".
-- A `401` anywhere sends the visitor to `/login?next=<path>`; `next` and `returnTo` are only ever used through `safeReturnTo` (`lib/session.ts`).
+- A `401` anywhere sends the visitor to `/login?next=<path>`, in one place: `api()` (`lib/api.ts`), which still throws, so no caller handles a 401 on its own. `next` and `returnTo` are only ever read through `safeReturnTo` (`lib/session.ts`).
 - Balances are eventually consistent: after recording an expense the balances view re-fetches and re-checks for a short, bounded time. Never assume the new balance is there immediately.
 
 ## 5. Components

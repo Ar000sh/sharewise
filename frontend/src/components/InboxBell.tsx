@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { ApiError, api } from "@/lib/api";
@@ -134,15 +134,12 @@ export function InboxBell() {
   const [open, setOpen] = useState(false);
   const [busyId, setBusyId] = useState<string>();
   const [error, setError] = useState<unknown>();
-  const stopped = useRef(false);
 
   const load = useCallback(async () => {
-    if (stopped.current) return;
     try {
       setInbox(await api<Inbox>("/inbox"));
-    } catch (e) {
-      // Signed out: asking again every 30 seconds would only repeat the 401.
-      if (e instanceof ApiError && e.status === 401) stopped.current = true;
+    } catch {
+      // The next poll tries again; a 401 has already sent the visitor to sign in (in api()).
     }
   }, []);
 
