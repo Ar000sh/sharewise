@@ -14,7 +14,7 @@ Read the conversation, `git log` since the date of the last entry in `docs/devse
 - **What worked:** what caught problems early and should be repeated on purpose.
 - **What the user asked or corrected repeatedly:** a teaching gap or an unclear rule.
 - **Repeated manual steps:** done three times → skill candidate.
-- **Decisions made in chat** that are not in a design doc, the conventions or the FAVS requirements.
+- **Decisions made in chat** that are not in a design doc, the conventions or the requirements (`docs/domain/ShareWise_Requirements.md`).
 
 ## 2. Sort each finding
 | Destination | When |

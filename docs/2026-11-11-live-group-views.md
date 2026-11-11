@@ -152,7 +152,7 @@
 - Modify: `frontend/src/components/ExpenseForm.tsx` (lines 38, 42, 46-48 `excluded` → `included`; fieldset lines 112-124 gets the button)
 - Modify: `frontend/src/components/Expenses.test.tsx`
 - Modify: `frontend/e2e/mallorca.spec.ts` `addExpense` (line 39-44)
-- Outside this repository: `work/ShareWise_Requirements.md` (FAVS folder) J4 step 2
+- J4 step 2 in the requirements file (it was `work/ShareWise_Requirements.md` in the FAVS folder; now `docs/domain/ShareWise_Requirements.md`)
 
 **Interfaces:**
 - Consumes: nothing new; props unchanged `{ groupId, members, currentUserId, onRecorded }`.
@@ -169,7 +169,7 @@
 - [ ] **Step 5: e2e** `addExpense` clicks `page.getByRole("button", { name: "Select everyone" })` before "Add expense" (the journey splits hotel and dinner between all three).
 - [ ] **Step 6: Gate** `npm run lint && npm run typecheck && npm test`.
 - [ ] **Step 7: Commit** `feat(frontend): an expense starts with only the recorder, one click selects everyone` (component, tests and the e2e helper together: the helper breaks without the change). Body: "J4 step 2 changed with the user on 11.11 (design D1): a member who joins while the form is open can never slip into the split."
-- [ ] **Step 8: Requirements file (FAVS folder, not in this repo):** J4 step 2 "participants (default: everyone)" → "participants (default: only me; one click selects everyone)". Tell the user it was changed; it is not committed here.
+- [ ] **Step 8: Requirements file:** J4 step 2 "participants (default: everyone)" → "participants (default: only me; one click selects everyone)". *(Done differently: the file was in the FAVS folder, outside this repo; at the user's request it moved into `docs/domain/` and J4 is its own commit.)*
 
 ### Task 6: Finish
 

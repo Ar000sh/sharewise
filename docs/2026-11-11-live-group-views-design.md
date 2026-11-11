@@ -84,7 +84,7 @@ No change.
 - `04` section 5: "State: local `useState`; server data through `useApi`. No global state library." becomes "server data only through `useApi`, which is TanStack Query; no client state library."
 - `04` section 4, the eventual-consistency line: the look-again after an own write plus the 10 s poll of the open group page.
 - `RUNNING.md`: nothing (no new setup).
-- Requirement J4 step 2 (FAVS folder, `work/ShareWise_Requirements.md`): participants default "only me", one click selects everyone (D1).
+- Requirement J4 step 2 (`docs/domain/ShareWise_Requirements.md`, moved into the repository on this branch, own commit): participants default "only me", one click selects everyone (D1).
 
 ## Failure modes (`/edge-case-probe` plan mode, 11.11)
 
@@ -111,7 +111,7 @@ The change is frontend-only, so the risk areas that apply are eventual consisten
 
 | # | Question | Options | Recommendation |
 |---|---|---|---|
-| D1 | A member joins while "Add expense" is open: is the new member in the split? | (a) everybody ticked when the form opens (J4 as written), a member who joins meanwhile unticked; (b) **nobody but the recorder ticked by default, plus a "Select everyone" button**; then untick who is not part of it | **(b), decided by the user 11.11**: a split only ever contains people the user ticked, so a joining member can never slip in; "Select everyone" keeps the common case (whole group) one click. Changes requirement J4 step 2 ("participants (default: everyone)" becomes "default: only me, one click selects everyone"); `work/ShareWise_Requirements.md` lives in the FAVS folder, outside this repository, and is updated there in the same step. |
+| D1 | A member joins while "Add expense" is open: is the new member in the split? | (a) everybody ticked when the form opens (J4 as written), a member who joins meanwhile unticked; (b) **nobody but the recorder ticked by default, plus a "Select everyone" button**; then untick who is not part of it | **(b), decided by the user 11.11**: a split only ever contains people the user ticked, so a joining member can never slip in; "Select everyone" keeps the common case (whole group) one click. Changes requirement J4 step 2 ("participants (default: everyone)" becomes "default: only me, one click selects everyone"); the requirements file was in the FAVS folder, outside this repository; it moved to `docs/domain/ShareWise_Requirements.md` on this branch and J4 is changed there in its own commit. |
 | D2 | The chosen debtor disappears from an open "Waive" form | (a) no selection, message "Please choose who owes you."; (b) silently the first debtor (today) | **(a), decided by the user 11.11**: (b) can waive money for the wrong person. |
 
 ## Left to the builder

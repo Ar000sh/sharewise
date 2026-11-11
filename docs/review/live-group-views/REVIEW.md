@@ -51,4 +51,4 @@ cd frontend && npm test && npm run e2e   # e2e needs Postgres, Keycloak and the 
 - The bell keeps its own hand-written 30 s poll (not a query); two polling mechanisms to explain.
 - A removed member's open page would poll 403 every 10 s; parked until remove/leave have endpoints.
 - Light and dark mode of "Select everyone" and the waiver placeholder were not looked at in a browser (theme rules test passes).
-- Requirement J4 step 2 was changed in `work/ShareWise_Requirements.md` (FAVS folder, outside this repository).
+- The requirements (R1 to R18, journeys) and the glossary moved into `docs/domain/` on this branch, copied as they were (commit "the requirements and the glossary move into the repo"); J4 step 2 is changed in the next commit, so it is a diff you can read. The FAVS folder keeps pointer files at the old paths.

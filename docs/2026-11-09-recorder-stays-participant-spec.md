@@ -12,7 +12,7 @@ In the "Add expense" form the list "Split equally between" shows every member wi
 |---|---|
 | `frontend/src/components/ExpenseForm.tsx` lines 38, 46-48, 112-124 | `excluded` holds the unticked members; `toggle` works for every member, the current user included. The only check is "at least one participant" (line 55). |
 | `backend/.../expense/domain/Expense.java` `record(...)` lines 102-134 | Checks R5 (group open), R2 (payer and recorder are active members), R3 (at least one participant, distinct, all active members), R1 (amount positive), R4 (shares add up). **No relation between `recordedBy` and the participants.** |
-| Requirements `R3` (`work/ShareWise_Requirements.md`, FAVS folder) | "The payer may or may not be a participant." The open-points list asks "Is the payer automatically a participant?", current answer: **no**. |
+| Requirements `R3` (`docs/domain/ShareWise_Requirements.md`; it was in the FAVS folder when this was written) | "The payer may or may not be a participant." The open-points list asks "Is the payer automatically a participant?", current answer: **no**. |
 | Glossary | **Recorder** = the member who recorded an expense. It can differ from the payer (the form has a separate "Paid by" field). |
 
 ## 3. Wanted behaviour (decided by the user)

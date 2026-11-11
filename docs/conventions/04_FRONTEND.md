@@ -47,7 +47,7 @@ Amounts in the API are decimal strings (`"900.00"`). All parsing, formatting and
   - A coloured text (`text-red-700`, `text-green-700`) needs a `dark:` counterpart (`dark:text-red-400`), unless it sits on its own fixed background.
   - New UI is looked at in **both** modes before it is called done (browser or OS setting; a Playwright run can use `colorScheme: "dark"`).
   - Checked by `src/lib/themeRules.test.ts`, which scans every component and page; it fails with the file and the offending class string.
-- Text in the UI is English, sentence case, and uses the glossary: "group", "expense", "paid by", "split equally between", "balance". Not "payer", "bill" or "user" for a group participant.
+- Text in the UI is English, sentence case, and uses the glossary (`docs/domain/Ubiquitous_Language.md`): "group", "expense", "paid by", "split equally between", "balance". Not "payer", "bill" or "user" for a group participant.
 - No `console.log`, no commented-out code, no `any` (use `unknown` and narrow), no `// @ts-ignore`.
 
 ## 6. Tests
