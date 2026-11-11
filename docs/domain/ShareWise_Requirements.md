@@ -206,7 +206,7 @@ Each journey lists: actor · trigger · preconditions · main flow · alternativ
 - **Preconditions:** group OPEN
 - **Flow:**
   1. Choose "Add expense".
-  2. Enter title, amount, date, payer (default: me) and participants (default: everyone).
+  2. Enter title, amount, date, payer (default: me) and participants (default: only me, who is always one of them (R18); one click selects everyone).
   3. Choose the split: **equal / exact / percentage**.
   4. The system previews each person's share.
   5. Save. The balances update and the participants are notified.
