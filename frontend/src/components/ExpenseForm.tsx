@@ -11,7 +11,7 @@ type Member = components["schemas"]["Member"];
 type Props = {
   groupId: string;
   members: Member[];
-  currentUserId?: string;
+  currentUserId: string;
   onRecorded: () => void;
 };
 
@@ -35,16 +35,19 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
   const [paidBy, setPaidBy] = useState(
     members.find((m) => m.userId === currentUserId)?.userId ?? members[0]?.userId ?? "",
   );
-  const [excluded, setExcluded] = useState<string[]>([]);
+  // Only the recorder is in the split at first (R18); everybody else is ticked on purpose. The group page hands this form
+  // a new member list whenever somebody joins, and a person nobody ticked must never slip into the split (design
+  // 2026-11-11, D1).
+  const [included, setIncluded] = useState<string[]>([currentUserId]);
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
 
-  const participants = members.filter((m) => !excluded.includes(m.userId));
+  const participants = members.filter((m) => included.includes(m.userId));
   const cents = eurosToCents(amount);
-  const shares = cents !== null && participants.length > 0 ? equalShares(cents, participants.length) : [];
+  const shares = cents !== null ? equalShares(cents, participants.length) : [];
 
   function toggle(userId: string) {
-    setExcluded((ex) => (ex.includes(userId) ? ex.filter((id) => id !== userId) : [...ex, userId]));
+    setIncluded((ids) => (ids.includes(userId) ? ids.filter((id) => id !== userId) : [...ids, userId]));
   }
 
   async function submit(e: React.FormEvent) {
@@ -52,7 +55,6 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
     if (busy) return;
     if (!title.trim()) return setError("Please enter a title.");
     if (cents === null) return setError("Please enter a valid amount, e.g. 19,99.");
-    if (participants.length === 0) return setError("Select at least one participant.");
     setBusy(true);
     try {
       await api(`/groups/${groupId}/expenses`, {
@@ -111,11 +113,18 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
       </label>
       <fieldset className="flex flex-col gap-1">
         <legend>Split equally between</legend>
+        <button
+          type="button"
+          onClick={() => setIncluded(members.map((m) => m.userId))}
+          className="self-start rounded border px-2 py-1 text-sm"
+        >
+          Select everyone
+        </button>
         {members.map((m) => (
           <label key={m.userId} className="flex items-center gap-2">
             <input
               type="checkbox"
-              checked={!excluded.includes(m.userId)}
+              checked={included.includes(m.userId)}
               disabled={m.userId === currentUserId} // the recorder always takes part (R18)
               onChange={() => toggle(m.userId)}
             />

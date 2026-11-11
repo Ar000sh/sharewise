@@ -39,6 +39,8 @@ async function signUp(browser: Browser, firstName: string): Promise<Page> {
 async function addExpense(page: Page, title: string, euros: string) {
   await page.getByLabel("Title").fill(title);
   await page.getByLabel("Amount (€)").fill(euros);
+  // Only the recorder is ticked at first: the journey splits every expense between the whole group.
+  await page.getByRole("button", { name: "Select everyone" }).click();
   await page.getByRole("button", { name: "Add expense" }).click();
   await expect(page.getByText(title).first()).toBeVisible();
 }
