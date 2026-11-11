@@ -12,6 +12,7 @@ import { SettleUpTab } from "@/components/SettleUpTab";
 import { Toast } from "@/components/Toast";
 import { useCurrentUser } from "@/lib/currentUser";
 import { useApi } from "@/lib/useApi";
+import { useGroupChange } from "@/lib/useGroupChange";
 
 type GroupDetailData = components["schemas"]["GroupDetail"];
 type Expense = components["schemas"]["Expense"];
@@ -20,13 +21,11 @@ const TABS = ["Expenses", "Balances", "Settle up", "Members"] as const;
 type Tab = (typeof TABS)[number];
 
 export function GroupDetail({ groupId }: { groupId: string }) {
-  const { data: group, error, reload: reloadGroup } = useApi<GroupDetailData>(`/groups/${groupId}`);
+  const { data: group, error } = useApi<GroupDetailData>(`/groups/${groupId}`);
   const me = useCurrentUser();
-  const { data: expenses, error: expensesError, reload: reloadExpenses } = useApi<Expense[]>(
-    `/groups/${groupId}/expenses`,
-  );
+  const { data: expenses, error: expensesError } = useApi<Expense[]>(`/groups/${groupId}/expenses`);
+  const { markChanged } = useGroupChange(groupId);
   const [tab, setTab] = useState<Tab>("Expenses");
-  const [lastRecordedAt, setLastRecordedAt] = useState<number>();
   const [notice, setNotice] = useState<string>();
   const dismissNotice = useCallback(() => setNotice(undefined), []);
 
@@ -63,8 +62,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
               members={group.members}
               currentUserId={me.userId}
               onRecorded={() => {
-                void reloadExpenses();
-                setLastRecordedAt(Date.now());
+                markChanged();
                 setNotice("Expense saved. Balances update in a moment.");
               }}
             />
@@ -75,14 +73,14 @@ export function GroupDetail({ groupId }: { groupId: string }) {
           {expenses && <ExpenseList expenses={expenses} members={group.members} />}
         </div>
       )}
-      {tab === "Balances" && <BalancesTab groupId={group.id} lastRecordedAt={lastRecordedAt} />}
+      {tab === "Balances" && <BalancesTab groupId={group.id} />}
       {tab === "Settle up" && <SettleUpTab groupId={group.id} />}
       {tab === "Members" && (
         <section className="flex flex-col gap-3">
           <MemberList
             members={group.members}
             currentUserId={me?.userId}
-            promote={isAdmin ? { groupId: group.id, onPromoted: () => void reloadGroup() } : undefined}
+            promote={isAdmin ? { groupId: group.id, onPromoted: markChanged } : undefined}
           />
           {isAdmin && <InviteForm groupId={group.id} />}
         </section>

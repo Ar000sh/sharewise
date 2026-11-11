@@ -108,4 +108,23 @@ describe("GroupDetail", () => {
     // then
     expect(await screen.findByRole("status")).toHaveTextContent(/expense saved.*balances/i);
   });
+
+  it("afterAnExpenseTheSettleUpTabLooksAgainWhenOpened", async () => {
+    // given Bob recorded an expense on the Expenses tab, where neither Balances nor Settle up is mounted
+    serve({ userId: "u2", displayName: "Bob" });
+    renderPage();
+    await userEvent.type(await screen.findByLabelText(/title/i), "Dinner");
+    await userEvent.type(screen.getByLabelText(/amount/i), "180");
+    await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
+    await screen.findByRole("status");
+    const planCalls = () => apiMock.mock.calls.filter(([path]) => path === "/groups/g1/settlement-plan").length;
+
+    // when he opens Settle up
+    await userEvent.click(screen.getByRole("tab", { name: "Settle up" }));
+    await vi.waitFor(() => expect(planCalls()).toBeGreaterThanOrEqual(1));
+    const first = planCalls();
+
+    // then the plan is asked for again, because the ledger may not have booked the expense yet
+    await vi.waitFor(() => expect(planCalls()).toBeGreaterThan(first), { timeout: 3000 });
+  });
 });

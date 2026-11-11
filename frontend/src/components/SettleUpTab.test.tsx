@@ -5,7 +5,7 @@ import { ApiError, api } from "@/lib/api";
 import { SettleUpTab } from "@/components/SettleUpTab";
 import { CurrentUserProvider } from "@/lib/currentUser";
 import { renderWithQueryClient } from "@/lib/renderWithQueryClient";
-import { announcePaymentAnswered } from "@/lib/paymentAnswered";
+import { markGroupChanged } from "@/lib/useGroupChange";
 
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<typeof import("@/lib/api")>()), api: vi.fn() }));
 
@@ -145,19 +145,19 @@ describe("SettleUpTab", () => {
     expect(screen.queryByRole("button", { name: "I paid" })).not.toBeInTheDocument();
   });
 
-  it("looksAtThePlanAgainWhenThePaymentBellAnswersAPayment", async () => {
+  it("looksAtThePlanAgainWhenItsGroupIsMarkedChanged", async () => {
     // given Alice is looking at the plan
     serve({ userId: ALICE, displayName: "Alice" }, mallorca);
-    renderTab();
+    const { client } = renderTab();
     await screen.findByRole("region", { name: "Owed to you" });
     const planCalls = () => apiMock.mock.calls.filter(([path]) => path === "/groups/g1/settlement-plan").length;
     const before = planCalls();
 
-    // when the bell announces that a payment was answered
-    act(() => announcePaymentAnswered());
+    // when something in the group changed (the bell answered a payment, an expense was recorded)
+    act(() => markGroupChanged(client, "g1"));
 
-    // then the plan is asked for again after the ledger had a moment to book it
-    await waitFor(() => expect(planCalls()).toBeGreaterThan(before), { timeout: 3000 });
+    // then the plan is asked for at once and again after the ledger had a moment to book it
+    await waitFor(() => expect(planCalls()).toBeGreaterThanOrEqual(before + 2), { timeout: 3000 });
   });
 
   it("noIPaidButtonButThePendingAmountWhenTheWholeDebtIsAlreadyReported", async () => {

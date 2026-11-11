@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api } from "@/lib/api";
 import { BalancesTab } from "@/components/BalancesTab";
 import { ErrorBanner } from "@/components/ErrorBanner";
-import { renderWithQueryClient } from "@/lib/renderWithQueryClient";
+import { renderWithQueryClient, testQueryClient } from "@/lib/renderWithQueryClient";
+import { lastChangedKey } from "@/lib/useGroupChange";
 
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<typeof import("@/lib/api")>()), api: vi.fn() }));
 
@@ -12,6 +13,13 @@ afterEach(() => {
   vi.resetAllMocks();
   vi.useRealTimers();
 });
+
+/** The tab opens right after an expense was recorded on this page: the group's change time is now. */
+function renderAfterAnExpense() {
+  const client = testQueryClient();
+  client.setQueryData(lastChangedKey("g1"), Date.now());
+  return renderWithQueryClient(<BalancesTab groupId="g1" />, client);
+}
 
 const balances = [
   { userId: "u1", displayName: "Alice", netBalance: "630.00" },
@@ -80,7 +88,7 @@ describe("BalancesTab", () => {
       apiMock.mockResolvedValueOnce(before).mockResolvedValueOnce(before).mockResolvedValue(after);
 
       // when the tab opens right after an expense was recorded
-      renderWithQueryClient(<BalancesTab groupId="g1" lastRecordedAt={Date.now()} />);
+      renderAfterAnExpense();
       expect(await screen.findByText(/updating/i)).toBeInTheDocument();
       await act(() => vi.advanceTimersByTimeAsync(1200));
 
@@ -93,7 +101,7 @@ describe("BalancesTab", () => {
     it("stopsLookingAfterTheBoundedWindow", async () => {
       apiMock.mockResolvedValue(before);
 
-      renderWithQueryClient(<BalancesTab groupId="g1" lastRecordedAt={Date.now()} />);
+      renderAfterAnExpense();
       await screen.findByText("Sum: 0,00 €", { exact: false });
       await act(() => vi.advanceTimersByTimeAsync(10_000));
       const calls = apiMock.mock.calls.length;

@@ -4,6 +4,7 @@ import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { amountToCents, formatEuro } from "@/lib/money";
 import { useApi } from "@/lib/useApi";
+import { useGroupChange } from "@/lib/useGroupChange";
 import { useLookAgain } from "@/lib/useLookAgain";
 
 type Balance = components["schemas"]["Balance"];
@@ -13,12 +14,13 @@ function signed(cents: number): string {
 }
 
 /**
- * `lastRecordedAt` is the time (ms since 1970) an expense was recorded on this page, if one was. While that is
- * recent the tab looks again a few times and says so.
+ * Everybody's net balance. When something in the group changed on this page a moment ago (an expense, a payment
+ * answered in the bell) the tab looks again a few times and says so: the ledger books the change after it was saved.
  */
-export function BalancesTab({ groupId, lastRecordedAt }: { groupId: string; lastRecordedAt?: number }) {
+export function BalancesTab({ groupId }: { groupId: string }) {
   const { data: balances, error, reload } = useApi<Balance[]>(`/groups/${groupId}/balances`);
-  const { updating } = useLookAgain(lastRecordedAt, reload);
+  const { lastChangedAt } = useGroupChange(groupId);
+  const { updating } = useLookAgain(lastChangedAt, reload);
 
   if (error && !balances) return <ErrorBanner error={error} />;
   if (!balances) return <p>Loading…</p>;

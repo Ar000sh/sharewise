@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -7,7 +8,7 @@ import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { ApiError, api } from "@/lib/api";
 import { amountToCents, formatEuro } from "@/lib/money";
-import { announcePaymentAnswered } from "@/lib/paymentAnswered";
+import { markGroupChanged } from "@/lib/useGroupChange";
 
 type PendingInvitation = components["schemas"]["PendingInvitation"];
 type NotificationList = components["schemas"]["NotificationList"];
@@ -130,6 +131,7 @@ function PaymentRow({
  */
 export function InboxBell() {
   const router = useRouter();
+  const client = useQueryClient();
   const [inbox, setInbox] = useState<Inbox>();
   const [open, setOpen] = useState(false);
   const [busyId, setBusyId] = useState<string>();
@@ -189,7 +191,7 @@ export function InboxBell() {
   const confirmPayment = (payment: SettlementPayment) =>
     perform(async () => {
       await api(`/settlement-payments/${payment.id}/confirm`, { method: "POST" });
-      announcePaymentAnswered();
+      markGroupChanged(client, payment.groupId);
     }, payment.id);
 
   const rejectPayment = (payment: SettlementPayment, note: string) =>
@@ -199,7 +201,7 @@ export function InboxBell() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ note }),
       });
-      announcePaymentAnswered();
+      markGroupChanged(client, payment.groupId);
     }, payment.id);
 
   const markRead = (entry: Notification) => perform(() => api(`/notifications/${entry.id}/read`, { method: "POST" }));

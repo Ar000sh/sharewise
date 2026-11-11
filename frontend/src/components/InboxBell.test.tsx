@@ -1,9 +1,10 @@
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api } from "@/lib/api";
 import { InboxBell } from "@/components/InboxBell";
-import { PAYMENT_ANSWERED } from "@/lib/paymentAnswered";
+import { renderWithQueryClient } from "@/lib/renderWithQueryClient";
+import { lastChangedKey } from "@/lib/useGroupChange";
 
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<typeof import("@/lib/api")>()), api: vi.fn() }));
 const apiMock = vi.mocked(api);
@@ -61,7 +62,7 @@ async function openBell() {
 
 /** Renders the bell and opens its dropdown, the set-up of most tests. */
 async function renderOpened() {
-  const view = render(<InboxBell />);
+  const view = renderWithQueryClient(<InboxBell />);
   await openBell();
   return view;
 }
@@ -82,7 +83,7 @@ describe("InboxBell", () => {
     backend();
 
     // when
-    render(<InboxBell />);
+    renderWithQueryClient(<InboxBell />);
 
     // then
     expect(await screen.findByRole("button", { name: /inbox/i })).toHaveTextContent("3");
@@ -194,39 +195,33 @@ describe("InboxBell", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  it("announcesAnAnsweredPaymentSoAnOpenSettleUpTabLooksAgain", async () => {
+  it("answeringAPaymentMarksItsGroupChangedSoOpenTabsLookAgain", async () => {
     // given
     inbox = { ...inbox, payments: [payment] };
     backend();
-    const announced = vi.fn();
-    window.addEventListener(PAYMENT_ANSWERED, announced);
-    await renderOpened();
+    const { client } = await renderOpened();
 
     // when
     await userEvent.click(screen.getByRole("button", { name: "Confirm payment from Carol Tester" }));
 
-    // then
-    await waitFor(() => expect(announced).toHaveBeenCalledTimes(1));
-    window.removeEventListener(PAYMENT_ANSWERED, announced);
+    // then the payment's group has a change time
+    await waitFor(() => expect(client.getQueryData(lastChangedKey("g1"))).toEqual(expect.any(Number)));
   });
 
-  it("failedAnswerAnnouncesNothing", async () => {
+  it("failedAnswerMarksNothing", async () => {
     // given the server refuses the confirm
     inbox = { ...inbox, payments: [payment] };
     backend((path) => {
       if (path === "/settlement-payments/p1/confirm") throw new ApiError(403, "NOT_THE_CREDITOR");
     });
-    const announced = vi.fn();
-    window.addEventListener(PAYMENT_ANSWERED, announced);
-    await renderOpened();
+    const { client } = await renderOpened();
 
     // when
     await userEvent.click(screen.getByRole("button", { name: "Confirm payment from Carol Tester" }));
 
     // then
     expect(await screen.findByRole("alert")).toBeInTheDocument();
-    expect(announced).not.toHaveBeenCalled();
-    window.removeEventListener(PAYMENT_ANSWERED, announced);
+    expect(client.getQueryData(lastChangedKey("g1"))).toBeUndefined();
   });
 
   it("openingTheGroupFromAPaymentClosesTheDropdown", async () => {
@@ -450,7 +445,7 @@ describe("InboxBell", () => {
     vi.useFakeTimers();
     backend();
 
-    render(<InboxBell />);
+    renderWithQueryClient(<InboxBell />);
     await act(async () => {});
     expect(apiMock).toHaveBeenCalledTimes(1);
 
