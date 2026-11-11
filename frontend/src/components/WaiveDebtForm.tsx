@@ -101,7 +101,7 @@ export function WaiveDebtForm({
         <select
           className="rounded border px-2 py-2"
           value={fromDebtor}
-          disabled={waivableEdges.length === 1}
+          disabled={waivableEdges.length === 1 && selectedEdge !== undefined} // with nobody selected there is something to choose
           onChange={(e) => chooseDebtor(e.target.value)}
         >
           {!selectedEdge && (

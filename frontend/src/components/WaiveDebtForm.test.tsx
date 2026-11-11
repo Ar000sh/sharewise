@@ -227,6 +227,25 @@ describe("WaiveDebtForm", () => {
       expect(waiveCalls()).toHaveLength(0);
     });
 
+    it("aChosenDebtorWhoLeavesAPlanOfTwoStillLetsTheUserChooseTheOtherOne", async () => {
+      // given two debtors, Alice chose Bob, and then Bob's debt disappeared, leaving only Carol
+      serve({ userId: ALICE, displayName: "Alice" }, [[plan[0], plan[2]], [plan[0]]], async () => ({}));
+      const { client } = renderTab();
+      await screen.findByText("Bob owes 90,00 €");
+      await userEvent.selectOptions(screen.getByLabelText("Debtor"), "Bob");
+      act(() => markGroupChanged(client, "g1"));
+      await vi.waitFor(() => expect(screen.queryByText("Bob owes 90,00 €")).not.toBeInTheDocument());
+
+      // when she looks at the form
+      const debtor = screen.getByLabelText("Debtor");
+
+      // then nobody is selected, but the debtor who is left can be chosen (it is not a dead end)
+      expect(debtor).toHaveDisplayValue("Choose who owes you");
+      expect(debtor).toBeEnabled();
+      await userEvent.selectOptions(debtor, "Carol");
+      expect(debtor).toHaveDisplayValue("Carol");
+    });
+
     it("aDebtorShownByDefaultStaysOnceTheUserTypes", async () => {
       // given the form shows Carol, the first entry, and Alice types a reason without touching the debtor
       serve({ userId: ALICE, displayName: "Alice" }, [plan, davidFirst], async () => ({}));
