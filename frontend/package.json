@@ -13,6 +13,7 @@
     "gen:api": "openapi-typescript ../docs/api/openapi.yaml -o src/api/schema.d.ts"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.107.1",
     "next": "16.4.3",
     "react": "19.3.0",
     "react-dom": "19.3.0"

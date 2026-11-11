@@ -38,7 +38,7 @@ Amounts in the API are decimal strings (`"900.00"`). All parsing, formatting and
 ## 5. Components
 
 - Client components say `"use client"` on the first line; keep server components (pages, layouts) free of state and effects.
-- State: local `useState`; server data through `useApi`. No global state library.
+- State: local `useState`; server data only through `useApi`, which is TanStack Query (`lib/useApi.ts`, client defaults in `lib/queryClient.ts`). No client state library. Component tests render inside `renderWithQueryClient` (`lib/renderWithQueryClient.tsx`).
 - Forms are controlled, labelled (`<label>` text is what Playwright and screen readers use), validate on submit, and disable the submit button while busy.
 - Styling with Tailwind utility classes; a layout must work at phone width.
 - **Colours and dark mode.** The page follows the browser's light or dark setting (`globals.css`: `--background` and `--foreground` switch in `prefers-color-scheme: dark`, and `color-scheme: light dark` lets form controls follow). Everything inside inherits the *foreground* colour, which is light in dark mode. So:

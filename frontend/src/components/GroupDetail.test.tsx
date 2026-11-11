@@ -1,9 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/api";
 import { GroupDetail } from "@/components/GroupDetail";
 import { CurrentUserProvider } from "@/lib/currentUser";
+import { renderWithQueryClient } from "@/lib/renderWithQueryClient";
 
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<typeof import("@/lib/api")>()), api: vi.fn() }));
 
@@ -35,7 +36,7 @@ function serve(me: Promise<unknown> | unknown) {
 }
 
 function renderPage() {
-  render(
+  renderWithQueryClient(
     <CurrentUserProvider>
       <GroupDetail groupId="g1" />
     </CurrentUserProvider>,

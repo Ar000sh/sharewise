@@ -1,9 +1,10 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api } from "@/lib/api";
 import { SettleUpTab } from "@/components/SettleUpTab";
 import { CurrentUserProvider } from "@/lib/currentUser";
+import { renderWithQueryClient } from "@/lib/renderWithQueryClient";
 import { announcePaymentAnswered } from "@/lib/paymentAnswered";
 
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<typeof import("@/lib/api")>()), api: vi.fn() }));
@@ -42,7 +43,7 @@ function serve(
 }
 
 function renderTab() {
-  return render(
+  return renderWithQueryClient(
     <CurrentUserProvider>
       <SettleUpTab groupId="g1" />
     </CurrentUserProvider>,
