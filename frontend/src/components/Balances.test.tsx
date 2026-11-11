@@ -103,9 +103,10 @@ describe("BalancesTab", () => {
 
       renderAfterAnExpense();
       await screen.findByText("Sum: 0,00 €", { exact: false });
-      await act(() => vi.advanceTimersByTimeAsync(10_000));
+      // the last look is at 4 s; stay below the 10 s poll, which is a separate rule (GroupDetail.test.tsx)
+      await act(() => vi.advanceTimersByTimeAsync(5000));
       const calls = apiMock.mock.calls.length;
-      await act(() => vi.advanceTimersByTimeAsync(10_000));
+      await act(() => vi.advanceTimersByTimeAsync(4000));
 
       expect(apiMock.mock.calls.length).toBe(calls);
       expect(calls).toBeLessThanOrEqual(5);
@@ -116,7 +117,8 @@ describe("BalancesTab", () => {
 
       renderWithQueryClient(<BalancesTab groupId="g1" />);
       await screen.findByText("Sum: 0,00 €", { exact: false });
-      await act(() => vi.advanceTimersByTimeAsync(10_000));
+      // stay below the 10 s poll, which is a separate rule (GroupDetail.test.tsx)
+      await act(() => vi.advanceTimersByTimeAsync(9000));
 
       expect(apiMock).toHaveBeenCalledTimes(1);
       expect(screen.queryByText(/updating/i)).not.toBeInTheDocument();

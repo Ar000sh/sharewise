@@ -159,7 +159,7 @@ function Section({ title, quiet, children }: { title: string; quiet?: boolean; c
  */
 export function SettleUpTab({ groupId }: { groupId: string }) {
   const me = useCurrentUser();
-  const { data: plan, error, reload } = useApi<PlanEdge[]>(`/groups/${groupId}/settlement-plan`);
+  const { data: plan, error, reload } = useApi<PlanEdge[]>(`/groups/${groupId}/settlement-plan`, { poll: true });
   const { lastChangedAt, markChanged } = useGroupChange(groupId);
   const [notice, setNotice] = useState<string>();
   const dismissNotice = useCallback(() => setNotice(undefined), []);

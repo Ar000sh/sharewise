@@ -18,7 +18,7 @@ function signed(cents: number): string {
  * answered in the bell) the tab looks again a few times and says so: the ledger books the change after it was saved.
  */
 export function BalancesTab({ groupId }: { groupId: string }) {
-  const { data: balances, error, reload } = useApi<Balance[]>(`/groups/${groupId}/balances`);
+  const { data: balances, error, reload } = useApi<Balance[]>(`/groups/${groupId}/balances`, { poll: true });
   const { lastChangedAt } = useGroupChange(groupId);
   const { updating } = useLookAgain(lastChangedAt, reload);
 
