@@ -123,6 +123,10 @@ test("three friends sign up, share a group, see who owes what and settle up", as
   await alice.getByRole("button", { name: "Confirm payment from Carol Tester" }).click();
   await expect(alice.getByText("Carol Tester marked 360,00 € as paid to you")).toHaveCount(0);
 
+  // Carol's Settle up tab is still open and was not touched: it asks again by itself (every 10 s), so her debt
+  // disappears from it without a reload once the ledger has booked the confirmation.
+  await expect(carolOwes).toHaveCount(0);
+
   // Carol hears about it: the entry arrives through an event, so she reloads until it is there.
   await expect(async () => {
     await carol.reload();
@@ -131,13 +135,10 @@ test("three friends sign up, share a group, see who owes what and settle up", as
   }).toPass();
 
   // The ledger books the confirmation asynchronously; the plan shrinks to Bob's debt alone.
-  // The plan is only fetched when the tab opens, so she reloads until the booking has arrived.
+  // The open tab asks again by itself, so the assertion retries until the booking has arrived; no reload.
+  await alice.getByRole("tab", { name: /^Settle up/ }).click();
   const owedToAlice = alice.getByRole("region", { name: "Owed to you" });
-  await expect(async () => {
-    await alice.reload();
-    await alice.getByRole("tab", { name: /^Settle up/ }).click();
-    await expect(owedToAlice.getByRole("listitem")).toHaveCount(1, { timeout: 2000 });
-  }).toPass();
+  await expect(owedToAlice.getByRole("listitem")).toHaveCount(1);
   await expect(owedToAlice).toContainText("Bob Tester owes 180,00 €");
   await expect(owedToAlice).not.toContainText("Carol Tester");
 });
