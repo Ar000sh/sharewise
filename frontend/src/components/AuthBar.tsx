@@ -3,7 +3,7 @@
 import { InboxBell } from "@/components/InboxBell";
 import { useCurrentUser } from "@/lib/currentUser";
 
-/** Header part that shows who is signed in. Finding out (and sending visitors to sign in) is the provider's job. */
+/** Header part that shows who is signed in. Finding out is the provider's job; sending visitors to sign in is `api()`'s. */
 export function AuthBar() {
   const user = useCurrentUser();
 

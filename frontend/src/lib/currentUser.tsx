@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import type { components } from "@/api/schema";
-import { ApiError, api } from "@/lib/api";
+import { api } from "@/lib/api";
 
 type User = components["schemas"]["User"];
 
@@ -12,21 +12,17 @@ const CurrentUserContext = createContext<User | undefined>(undefined);
 
 /**
  * Asks the server once "who am I" (the session cookie is httpOnly, so the page cannot read it) and shares the answer
- * with every component. A visitor without a session is sent to the sign-in page and back to this page afterwards.
+ * with every component. A visitor without a session gets a 401, and `api()` sends them to sign in.
  */
 export function CurrentUserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User>();
 
   useEffect(() => {
-    const { pathname, search } = window.location;
-    if (PUBLIC_PATHS.includes(pathname)) return;
+    if (PUBLIC_PATHS.includes(window.location.pathname)) return;
+    // A 401 has already sent the visitor to sign in (in api()); after any other failure the user stays unknown.
     api<User>("/me")
       .then(setUser)
-      .catch((err) => {
-        if (err instanceof ApiError && err.status === 401) {
-          window.location.replace(`/login?next=${encodeURIComponent(pathname + search)}`);
-        }
-      });
+      .catch(() => {});
   }, []);
 
   return <CurrentUserContext value={user}>{children}</CurrentUserContext>;

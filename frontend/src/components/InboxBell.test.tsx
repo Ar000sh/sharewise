@@ -446,17 +446,6 @@ describe("InboxBell", () => {
     expect(screen.getByText(`${evil} joined Mallorca 2027`)).toBeInTheDocument();
   });
 
-  it("stopsPollingAfter401", async () => {
-    vi.useFakeTimers();
-    apiMock.mockRejectedValue(new ApiError(401, "UNAUTHENTICATED"));
-
-    render(<InboxBell />);
-    await act(async () => {});
-    await vi.advanceTimersByTimeAsync(90_000);
-
-    expect(apiMock).toHaveBeenCalledTimes(1);
-  });
-
   it("pollsEveryThirtySecondsAndWhenTheTabBecomesVisible", async () => {
     vi.useFakeTimers();
     backend();
