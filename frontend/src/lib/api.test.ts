@@ -35,7 +35,8 @@ describe("api", () => {
     expect(err).toMatchObject({ status: 401, code: "UNAUTHENTICATED" });
   });
 
-  it.each([403, 404, 422, 500])("otherErrorsDoNotNavigate %i", async (status) => {
+  // 422 and the network failure are checked in their own tests below.
+  it.each([403, 404, 500])("otherErrorsDoNotNavigate %i", async (status) => {
     // given
     stubLocation("/groups/g1");
     vi.spyOn(globalThis, "fetch").mockResolvedValue(answer(status, "SOMETHING"));
@@ -45,19 +46,6 @@ describe("api", () => {
 
     // then
     expect(err).toMatchObject({ status });
-    expect(replace).not.toHaveBeenCalled();
-  });
-
-  it("aNetworkFailureDoesNotNavigate", async () => {
-    // given
-    stubLocation("/groups/g1");
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
-
-    // when
-    const err = await api("/groups/g1").catch((e) => e);
-
-    // then
-    expect(err).toMatchObject({ status: 0, code: "NETWORK_ERROR" });
     expect(replace).not.toHaveBeenCalled();
   });
 
@@ -73,6 +61,7 @@ describe("api", () => {
   });
 
   it("throwsApiErrorWithCodeFromProblemJson", async () => {
+    stubLocation("/groups/x");
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(
         JSON.stringify({ status: 422, code: "PAYER_NOT_IN_GROUP", detail: "The payer is not a member" }),
@@ -84,14 +73,17 @@ describe("api", () => {
 
     expect(err).toBeInstanceOf(ApiError);
     expect(err).toMatchObject({ status: 422, code: "PAYER_NOT_IN_GROUP", detail: "The payer is not a member" });
+    expect(replace).not.toHaveBeenCalled();
   });
 
-  it("throwsApiErrorWhenNetworkFails", async () => {
+  it("throwsApiErrorWhenNetworkFailsAndDoesNotNavigate", async () => {
+    stubLocation("/groups");
     vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
 
     const err = await api("/groups").catch((e) => e);
 
     expect(err).toBeInstanceOf(ApiError);
     expect(err).toMatchObject({ status: 0, code: "NETWORK_ERROR" });
+    expect(replace).not.toHaveBeenCalled();
   });
 });

@@ -49,8 +49,8 @@ It is fixed before `feature/live-group-views` because that branch adds a 10 s po
 | Test | Level | File |
 |---|---|---|
 | `aRejectedSessionSendsTheVisitorToSignInAndBackToThisPage` (criterion 1) | unit | `lib/api.test.ts` |
-| `otherErrorsDoNotNavigate` (4, parameterised: 403, 404, 422, 500) | unit | `lib/api.test.ts` |
-| `aNetworkFailureDoesNotNavigate` (4, status 0) | unit | `lib/api.test.ts` |
+| `otherErrorsDoNotNavigate` (4, parameterised: 403, 404, 500) | unit | `lib/api.test.ts` |
+| 422 and status 0: "did not navigate" added to the existing `throwsApiErrorWithCodeFromProblemJson` and `throwsApiErrorWhenNetworkFails` (renamed `...AndDoesNotNavigate`), so each case is tested once | unit | `lib/api.test.ts` |
 | Change `sendsAVisitorWithoutASessionToSignInAndBackToTheSamePage` | component | `lib/currentUser.test.tsx` (line 42): `api` is mocked there, so the redirect is no longer this component's job; remove the test, keep `doesNotAskOnThePublicPage` |
 | Remove `stopsPollingAfter401` | component | `components/InboxBell.test.tsx` (line 449) |
 
