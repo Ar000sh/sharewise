@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>B · Group states</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="b.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<header class="bar"><span class="logo"><i></i>ShareWise</span>
+<nav class="tn on-d" aria-label="Main"><a href="#">My groups</a><a href="#">Inbox <span class="cnt">3</span></a></nav>
+<span class="sp"></span>
+<a class="btn on-p" href="#" aria-label="Inbox, 3 waiting" style="min-height:44px;padding:0 14px;flex:none"><i class="ic i-inbox"></i><span class="cnt">3</span></a>
+<span class="av s" data-p="1">A</span>
+</header>
+
+<main class="cc">
+<section class="hero" aria-label="Closed for settlement">
+<h1>Ski weekend</h1>
+<div class="row wrap" style="gap:8px 12px"><span class="bdg mu"><i class="ic s i-lock"></i>Closed for settlement</span><span class="mut">4 members · EUR</span></div>
+<p class="lead">You owe <span class="money neg">−48,50 €</span></p>
+<div class="note warn" role="status"><i class="ic i-lock"></i><div><span class="b">This group is closed for settlement.</span> Expenses are frozen: nothing can be added, corrected or removed. Payments still work. An admin can reopen it.</div></div>
+<div class="acts"><button class="btn" type="button" disabled><i class="ic i-plus"></i>Add expense</button><a class="btn pr" href="#"><i class="ic i-swap"></i>Settle up</a><button class="btn" type="button">Reopen group (admin)</button></div>
+</section>
+<section class="col" aria-label="Expenses">
+<div class="day">Monday 8 Mar</div>
+<div class="it"><span class="av" data-p="3">J</span><div class="m"><span class="b">Lift passes</span><span class="sm mut">Jonas paid</span></div><div class="amt"><span class="sm money neg">your part −32,00 €</span></div></div>
+<div class="day">Sunday 7 Mar</div>
+<div class="it"><span class="av" data-p="1">A</span><div class="m"><span class="b">Chalet, 2 nights</span><span class="sm mut">you paid</span></div><div class="amt"><span class="sm money pos">your part +120,00 €</span></div></div>
+</section>
+
+<hr class="hr">
+
+<section class="hero" aria-label="Archived">
+<h1>Flat 12</h1>
+<div class="row wrap" style="gap:8px 12px"><span class="bdg mu"><i class="ic s i-archive"></i>Archived</span><span class="mut">3 members · EUR</span></div>
+<p class="lead">Settled <span class="money">0,00 €</span></p>
+<div class="note" role="status"><i class="ic i-archive"></i><div><span class="b">This group is archived.</span> It is final and read-only: no expenses, no payments, no changes. It archived itself on 30 Jun when the last balance reached 0,00 €.</div></div>
+<div class="acts"><button class="btn" type="button" disabled><i class="ic i-plus"></i>Add expense</button></div>
+</section>
+</main>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C · Add expense</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.sh-tr{grid-template-columns:minmax(0,1fr) auto}@container (max-width:720px){.two{grid-template-columns:1fr}}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<header class="pt on-p"><a class="btn" href="#" aria-label="Back to Expenses" style="min-height:44px;padding:0 12px;flex:none"><i class="ic i-back"></i></a><span class="b" style="font-size:17px;flex:1">Add expense</span></header>
+
+<nav class="rail on-d" aria-label="Main"><span class="lg">S</span>
+<a href="#" aria-current="page"><i class="ic l i-home"></i>Groups</a>
+<a href="#"><i class="ic l i-inbox"></i>Inbox<span class="cn">3</span></a>
+<a href="#" class="me"><span class="av" data-p="1">A</span>alice</a></nav>
+
+<aside class="pane on-d" aria-label="Groups">
+<h2>Your groups</h2>
+<a class="gi" href="#" aria-current="true"><span class="t">Mallorca 2027</span><span class="s"><span>Open</span><span class="money pos">+573,00 €</span></span></a>
+<a class="gi" href="#"><span class="t">Ski weekend</span><span class="s"><span>Closed for settlement</span><span class="money neg">−48,50 €</span></span></a>
+<a class="gi" href="#"><span class="t">Flat 12</span><span class="s"><span>Archived</span><span class="money">0,00 €</span></span></a>
+</aside>
+
+<main class="dt">
+<header class="dh" style="padding-bottom:16px"><div class="tt"><h1>Add expense</h1><span class="mut">Mallorca 2027</span></div></header>
+<div class="bd">
+<div class="cols">
+<form class="col g16" onsubmit="return false">
+<div class="two">
+<div class="field"><label for="a-{{v.theme}}{{v.size}}">Amount (EUR)</label><input id="a-{{v.theme}}{{v.size}}" type="text" inputmode="decimal" value="86,50" style="font:500 20px 'JetBrains Mono',monospace"><span class="hint">Comma or point, at most two decimals.</span></div>
+<div class="field"><label for="d-{{v.theme}}{{v.size}}">Date</label><input id="d-{{v.theme}}{{v.size}}" type="text" value="28 Jul 2027"></div>
+</div>
+<div class="field"><label for="t-{{v.theme}}{{v.size}}">Title</label><input id="t-{{v.theme}}{{v.size}}" type="text" value="Dinner at Es Port"></div>
+<div class="field"><label for="p-{{v.theme}}{{v.size}}">Paid by</label><select id="p-{{v.theme}}{{v.size}}"><option>alice (you)</option><option>bob</option><option>carol</option><option>david</option><option>eve</option></select></div>
+<fieldset style="border:0;padding:0;margin:0" class="col"><legend class="lbl" style="padding:0 0 4px">Split equally between</legend>
+<div class="tbw">
+<label class="tr chk sh-tr" style="min-height:48px"><span class="row"><input type="checkbox" checked disabled><span class="pn"><span class="av" data-p="1">A</span>alice (you)</span></span><span class="money">17,30 €</span></label>
+<label class="tr chk sh-tr"><span class="row"><input type="checkbox" checked><span class="pn"><span class="av" data-p="2">B</span>bob</span></span><span class="money">17,30 €</span></label>
+<label class="tr chk sh-tr"><span class="row"><input type="checkbox" checked><span class="pn"><span class="av" data-p="3">C</span>carol</span></span><span class="money">17,30 €</span></label>
+<label class="tr chk sh-tr"><span class="row"><input type="checkbox" checked><span class="pn"><span class="av" data-p="4">D</span>david</span></span><span class="money">17,30 €</span></label>
+<label class="tr chk sh-tr"><span class="row"><input type="checkbox" checked><span class="pn"><span class="av" data-p="5">E</span>eve</span></span><span class="money">17,30 €</span></label>
+<div class="tr tot sh-tr"><span>Total</span><span class="money">86,50 €</span></div>
+</div>
+<span class="hint" style="margin-top:6px">You stay in the split because you record it.</span>
+</fieldset>
+<div class="acts"><button class="btn pr" type="button"><i class="ic i-check"></i>Save expense</button><a class="btn" href="#">Cancel</a></div>
+</form>
+<div class="note"><i class="ic i-refresh"></i><div><span class="b">After you save</span><br>The expense shows in the list at once. Balances show “updating” for a moment, then catch up.</div></div>
+</div>
+</div>
+</main>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

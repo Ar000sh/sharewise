@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A · Group states</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="a.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0}.s-tr{grid-template-columns:96px minmax(0,1fr) 120px}@container (max-width:720px){.s-tr{grid-template-columns:minmax(0,1fr) auto}}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<aside class="side on-d">
+<div class="brand"><span class="mk">S</span>ShareWise</div>
+<nav class="nav" aria-label="Main"><a href="#"><i class="ic i-home"></i>My groups</a><a href="#"><i class="ic i-inbox"></i>Inbox<span class="n">3</span></a></nav>
+<div class="gl">Ski weekend</div>
+<nav class="nav" aria-label="Group">
+<a href="#" aria-current="page"><i class="ic i-list"></i>Expenses</a><a href="#"><i class="ic i-scale"></i>Balances</a><a href="#"><i class="ic i-swap"></i>Settle up</a><a href="#"><i class="ic i-users"></i>Members</a><a href="#"><i class="ic i-activity"></i>Activity</a><a href="#"><i class="ic i-lock"></i>Group status</a>
+</nav>
+<div class="who"><span class="av" data-p="1">A</span><div><div class="b">alice</div><a href="#" class="sm">Sign out</a></div></div>
+</aside>
+<header class="top on-p"><a class="btn" href="#" aria-label="Back to My groups" style="padding:0 10px;flex:none"><i class="ic i-back"></i></a><div class="t">Ski weekend</div><a class="btn" href="#" aria-label="Group menu" style="padding:0 10px;flex:none"><i class="ic i-dots"></i></a></header>
+
+<main class="main">
+<section class="col g16" aria-label="Closed for settlement">
+<div class="hd"><div><div class="crumb"><a href="#">My groups</a><i class="ic s i-chev"></i>Ski weekend</div><h1>Ski weekend</h1><div class="row wrap" style="gap:8px 14px;margin-top:8px"><span class="bdg mu"><i class="ic s i-lock"></i>Closed for settlement</span><span class="mut">4 members · EUR · you owe <span class="money neg">−48,50 €</span></span></div></div>
+<div class="acts"><button class="btn" type="button" disabled><i class="ic i-plus"></i>Add expense</button><a class="btn pr" href="#"><i class="ic i-swap"></i>Settle up</a></div></div>
+<div class="note warn" role="status"><i class="ic i-lock"></i><div><span class="b">This group is closed for settlement.</span> Expenses are frozen: nothing can be added, corrected or removed. Payments still work. An admin can reopen the group.<br><button class="btn" type="button" style="margin-top:10px;min-height:44px">Reopen group (admin)</button></div></div>
+<div class="tbl">
+<div class="tr s-tr"><span class="mut sm">8 Mar 2027</span><span class="col"><span class="b">Lift passes</span><span class="sm mut">paid by Jonas</span></span><span class="money r neg">−32,00 €</span></div>
+<div class="tr s-tr"><span class="mut sm">7 Mar 2027</span><span class="col"><span class="b">Chalet, 2 nights</span><span class="sm mut">paid by you</span></span><span class="money r pos">+120,00 €</span></div>
+</div>
+</section>
+
+<hr class="hr">
+
+<section class="col g16" aria-label="Archived">
+<div class="hd"><div><div class="crumb">Flat 12</div><h1>Flat 12</h1><div class="row wrap" style="gap:8px 14px;margin-top:8px"><span class="bdg mu"><i class="ic s i-archive"></i>Archived</span><span class="mut">3 members · EUR · settled <span class="money">0,00 €</span></span></div></div>
+<div class="acts"><button class="btn" type="button" disabled><i class="ic i-plus"></i>Add expense</button></div></div>
+<div class="note" role="status"><i class="ic i-archive"></i><div><span class="b">This group is archived.</span> It is final and read-only: no expenses, no payments, no changes. It archived itself on 30 Jun when the last balance reached 0,00 €.</div></div>
+<div class="tbl"><div class="tr s-tr"><span class="mut sm">28 Jun 2027</span><span class="col"><span class="b">Internet, June</span><span class="sm mut">paid by Ben</span></span><span class="money r">0,00 €</span></div></div>
+</section>
+</main>
+
+<nav class="tabs on-p" aria-label="Group">
+<a href="#"><i class="ic i-home"></i>Groups</a>
+<a href="#"><i class="ic i-inbox"></i>Inbox (3)</a>
+<a href="#" aria-current="page"><i class="ic i-list"></i>Expenses</a>
+<a href="#"><i class="ic i-scale"></i>Balances</a>
+<a href="#"><i class="ic i-swap"></i>Settle up</a>
+</nav>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

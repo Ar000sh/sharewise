@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C · Payment dialogs</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}.dgrid{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}.dgrid .dlg{flex:1 1 320px;max-width:380px;margin:0}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+<main class="dt">
+<header class="dh" style="padding-bottom:14px"><div class="tt"><h1>Payment dialogs</h1></div><p class="mut">Opened from Settle up over a dimmed page. On the phone each rises as a sheet from the bottom.</p></header>
+<div class="bd"><div class="scrim"><div class="dgrid">
+
+<div class="dlg" role="dialog" aria-labelledby="d1-{{v.theme}}{{v.size}}">
+<div class="row"><h2 id="d1-{{v.theme}}{{v.size}}" class="sp">Report a payment</h2><button class="btn" type="button" aria-label="Close" style="min-width:44px;padding:0"><i class="ic i-x"></i></button></div>
+<p class="mut">As bob, tell alice you paid her. It stays pending until she answers.</p>
+<div class="pn"><span class="av" data-p="1">A</span><span class="b">alice</span></div>
+<div class="field"><label for="m1-{{v.theme}}{{v.size}}">Amount (EUR)</label><input id="m1-{{v.theme}}{{v.size}}" type="text" inputmode="decimal" value="136,00"><span class="hint">Up to 136,00 €, what you owe alice.</span></div>
+<div class="field"><label for="n1-{{v.theme}}{{v.size}}">Note (optional)</label><textarea id="n1-{{v.theme}}{{v.size}}">Bank transfer, ref Mallorca</textarea></div>
+<div class="acts"><button class="btn pr" type="button">Report payment</button><button class="btn" type="button">Cancel</button></div>
+</div>
+
+<div class="dlg" role="dialog" aria-labelledby="d2-{{v.theme}}{{v.size}}">
+<div class="row"><h2 id="d2-{{v.theme}}{{v.size}}" class="sp">Reject payment</h2><button class="btn" type="button" aria-label="Close" style="min-width:44px;padding:0"><i class="ic i-x"></i></button></div>
+<div class="note"><i class="ic i-info"></i><div><span class="b">david</span> reported <span class="money">437,00 €</span> on 27 Jul. “Bank transfer, ref Mallorca”</div></div>
+<div class="field"><label for="n2-{{v.theme}}{{v.size}}">Reason</label><textarea id="n2-{{v.theme}}{{v.size}}" class="bad">&nbsp;</textarea><span class="err"><i class="ic s i-alert"></i>Say why you reject it, so david can fix it.</span></div>
+<div class="acts"><button class="btn dg" type="button">Reject payment</button><button class="btn" type="button">Cancel</button></div>
+</div>
+
+<div class="dlg" role="dialog" aria-labelledby="d3-{{v.theme}}{{v.size}}">
+<div class="row"><h2 id="d3-{{v.theme}}{{v.size}}" class="sp">Waive a debt</h2><button class="btn" type="button" aria-label="Close" style="min-width:44px;padding:0"><i class="ic i-x"></i></button></div>
+<p class="mut">You give up part of what bob owes you. It takes effect at once and cannot be undone.</p>
+<div class="field"><label for="s3-{{v.theme}}{{v.size}}">Debtor</label><select id="s3-{{v.theme}}{{v.size}}"><option>bob owes you 136,00 €</option></select></div>
+<div class="field"><label for="m3-{{v.theme}}{{v.size}}">Amount (EUR)</label><input id="m3-{{v.theme}}{{v.size}}" type="text" inputmode="decimal" value="36,00"><span class="hint">Up to 136,00 €, what is open.</span></div>
+<div class="field"><label for="n3-{{v.theme}}{{v.size}}">Reason (optional)</label><input id="n3-{{v.theme}}{{v.size}}" type="text" value="Fuel was on me"></div>
+<div class="acts"><button class="btn pr" type="button">Waive 36,00 €</button><button class="btn" type="button">Cancel</button></div>
+</div>
+
+</div></div></div>
+</main>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

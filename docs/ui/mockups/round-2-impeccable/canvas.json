@@ -1,0 +1,469 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-12T12:00:00Z"
+ },
+ "title": "ShareWise design directions",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1760,
+   "h": 1500,
+   "title": "A · My groups",
+   "is_interactive": false
+  },
+  "B-01-groups.dc.html": {
+   "x": 1880,
+   "y": 0,
+   "w": 1760,
+   "h": 1500,
+   "title": "B · My groups",
+   "is_interactive": false
+  },
+  "C-01-groups.dc.html": {
+   "x": 3760,
+   "y": 0,
+   "w": 1760,
+   "h": 1500,
+   "title": "C · My groups",
+   "is_interactive": false
+  },
+  "A-02-create.dc.html": {
+   "x": 0,
+   "y": 1620,
+   "w": 1760,
+   "h": 1500,
+   "title": "A · Create group",
+   "is_interactive": false
+  },
+  "B-02-create.dc.html": {
+   "x": 1880,
+   "y": 1620,
+   "w": 1760,
+   "h": 1500,
+   "title": "B · Create group",
+   "is_interactive": false
+  },
+  "C-02-create.dc.html": {
+   "x": 3760,
+   "y": 1620,
+   "w": 1760,
+   "h": 1500,
+   "title": "C · Create group",
+   "is_interactive": false
+  },
+  "A-03-inbox.dc.html": {
+   "x": 0,
+   "y": 3240,
+   "w": 1760,
+   "h": 1700,
+   "title": "A · Inbox",
+   "is_interactive": false
+  },
+  "B-03-inbox.dc.html": {
+   "x": 1880,
+   "y": 3240,
+   "w": 1760,
+   "h": 1700,
+   "title": "B · Inbox",
+   "is_interactive": false
+  },
+  "C-03-inbox.dc.html": {
+   "x": 3760,
+   "y": 3240,
+   "w": 1760,
+   "h": 1700,
+   "title": "C · Inbox",
+   "is_interactive": false
+  },
+  "A-04-expenses.dc.html": {
+   "x": 0,
+   "y": 5060,
+   "w": 1760,
+   "h": 2300,
+   "title": "A · Expenses",
+   "is_interactive": false
+  },
+  "B-04-expenses.dc.html": {
+   "x": 1880,
+   "y": 5060,
+   "w": 1760,
+   "h": 2300,
+   "title": "B · Expenses",
+   "is_interactive": false
+  },
+  "C-04-expenses.dc.html": {
+   "x": 3760,
+   "y": 5060,
+   "w": 1760,
+   "h": 2300,
+   "title": "C · Expenses",
+   "is_interactive": false
+  },
+  "A-05-add-expense.dc.html": {
+   "x": 0,
+   "y": 7480,
+   "w": 1760,
+   "h": 1700,
+   "title": "A · Add expense",
+   "is_interactive": false
+  },
+  "B-05-add-expense.dc.html": {
+   "x": 1880,
+   "y": 7480,
+   "w": 1760,
+   "h": 1700,
+   "title": "B · Add expense",
+   "is_interactive": false
+  },
+  "C-05-add-expense.dc.html": {
+   "x": 3760,
+   "y": 7480,
+   "w": 1760,
+   "h": 1700,
+   "title": "C · Add expense",
+   "is_interactive": false
+  },
+  "A-06-balances.dc.html": {
+   "x": 0,
+   "y": 9300,
+   "w": 1760,
+   "h": 1700,
+   "title": "A · Balances",
+   "is_interactive": false
+  },
+  "B-06-balances.dc.html": {
+   "x": 1880,
+   "y": 9300,
+   "w": 1760,
+   "h": 1700,
+   "title": "B · Balances",
+   "is_interactive": false
+  },
+  "C-06-balances.dc.html": {
+   "x": 3760,
+   "y": 9300,
+   "w": 1760,
+   "h": 1700,
+   "title": "C · Balances",
+   "is_interactive": false
+  },
+  "A-07-settle-alice.dc.html": {
+   "x": 0,
+   "y": 11120,
+   "w": 1760,
+   "h": 2400,
+   "title": "A · Settle up, as alice (creditor)",
+   "is_interactive": false
+  },
+  "B-07-settle-alice.dc.html": {
+   "x": 1880,
+   "y": 11120,
+   "w": 1760,
+   "h": 2400,
+   "title": "B · Settle up, as alice (creditor)",
+   "is_interactive": false
+  },
+  "C-07-settle-alice.dc.html": {
+   "x": 3760,
+   "y": 11120,
+   "w": 1760,
+   "h": 2400,
+   "title": "C · Settle up, as alice (creditor)",
+   "is_interactive": false
+  },
+  "A-08-settle-bob.dc.html": {
+   "x": 0,
+   "y": 13640,
+   "w": 1760,
+   "h": 2300,
+   "title": "A · Settle up, as bob (debtor)",
+   "is_interactive": false
+  },
+  "B-08-settle-bob.dc.html": {
+   "x": 1880,
+   "y": 13640,
+   "w": 1760,
+   "h": 2300,
+   "title": "B · Settle up, as bob (debtor)",
+   "is_interactive": false
+  },
+  "C-08-settle-bob.dc.html": {
+   "x": 3760,
+   "y": 13640,
+   "w": 1760,
+   "h": 2300,
+   "title": "C · Settle up, as bob (debtor)",
+   "is_interactive": false
+  },
+  "A-09-members.dc.html": {
+   "x": 0,
+   "y": 16060,
+   "w": 1760,
+   "h": 1900,
+   "title": "A · Members and invitations",
+   "is_interactive": false
+  },
+  "B-09-members.dc.html": {
+   "x": 1880,
+   "y": 16060,
+   "w": 1760,
+   "h": 1900,
+   "title": "B · Members and invitations",
+   "is_interactive": false
+  },
+  "C-09-members.dc.html": {
+   "x": 3760,
+   "y": 16060,
+   "w": 1760,
+   "h": 1900,
+   "title": "C · Members and invitations",
+   "is_interactive": false
+  },
+  "A-10-status.dc.html": {
+   "x": 0,
+   "y": 18080,
+   "w": 1760,
+   "h": 1700,
+   "title": "A · Group status",
+   "is_interactive": false
+  },
+  "B-10-status.dc.html": {
+   "x": 1880,
+   "y": 18080,
+   "w": 1760,
+   "h": 1700,
+   "title": "B · Group status",
+   "is_interactive": false
+  },
+  "C-10-status.dc.html": {
+   "x": 3760,
+   "y": 18080,
+   "w": 1760,
+   "h": 1700,
+   "title": "C · Group status",
+   "is_interactive": false
+  },
+  "A-11-activity.dc.html": {
+   "x": 0,
+   "y": 19900,
+   "w": 1760,
+   "h": 1900,
+   "title": "A · Activity",
+   "is_interactive": false
+  },
+  "B-11-activity.dc.html": {
+   "x": 1880,
+   "y": 19900,
+   "w": 1760,
+   "h": 1900,
+   "title": "B · Activity",
+   "is_interactive": false
+  },
+  "C-11-activity.dc.html": {
+   "x": 3760,
+   "y": 19900,
+   "w": 1760,
+   "h": 1900,
+   "title": "C · Activity",
+   "is_interactive": false
+  },
+  "A-12-dialogs.dc.html": {
+   "x": 0,
+   "y": 21920,
+   "w": 1760,
+   "h": 2200,
+   "title": "A · Payment dialogs",
+   "is_interactive": false
+  },
+  "B-12-dialogs.dc.html": {
+   "x": 1880,
+   "y": 21920,
+   "w": 1760,
+   "h": 2200,
+   "title": "B · Payment dialogs",
+   "is_interactive": false
+  },
+  "C-12-dialogs.dc.html": {
+   "x": 3760,
+   "y": 21920,
+   "w": 1760,
+   "h": 2200,
+   "title": "C · Payment dialogs",
+   "is_interactive": false
+  },
+  "A-13-signin.dc.html": {
+   "x": 0,
+   "y": 24240,
+   "w": 1760,
+   "h": 1700,
+   "title": "A · Sign in and invitation entry",
+   "is_interactive": false
+  },
+  "B-13-signin.dc.html": {
+   "x": 1880,
+   "y": 24240,
+   "w": 1760,
+   "h": 1700,
+   "title": "B · Sign in and invitation entry",
+   "is_interactive": false
+  },
+  "C-13-signin.dc.html": {
+   "x": 3760,
+   "y": 24240,
+   "w": 1760,
+   "h": 1700,
+   "title": "C · Sign in and invitation entry",
+   "is_interactive": false
+  },
+  "A-14-group-states.dc.html": {
+   "x": 0,
+   "y": 26060,
+   "w": 1760,
+   "h": 1900,
+   "title": "A · Group states",
+   "is_interactive": false
+  },
+  "B-14-group-states.dc.html": {
+   "x": 1880,
+   "y": 26060,
+   "w": 1760,
+   "h": 1900,
+   "title": "B · Group states",
+   "is_interactive": false
+  },
+  "C-14-group-states.dc.html": {
+   "x": 3760,
+   "y": 26060,
+   "w": 1760,
+   "h": 1900,
+   "title": "C · Group states",
+   "is_interactive": false
+  },
+  "A-15-states.dc.html": {
+   "x": 0,
+   "y": 28080,
+   "w": 1760,
+   "h": 2000,
+   "title": "A · Loading, error, empty",
+   "is_interactive": false
+  },
+  "B-15-states.dc.html": {
+   "x": 1880,
+   "y": 28080,
+   "w": 1760,
+   "h": 2000,
+   "title": "B · Loading, error, empty",
+   "is_interactive": false
+  },
+  "C-15-states.dc.html": {
+   "x": 3760,
+   "y": 28080,
+   "w": 1760,
+   "h": 2000,
+   "title": "C · Loading, error, empty",
+   "is_interactive": false
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "B-01-groups.dc.html",
+  "C-01-groups.dc.html",
+  "A-02-create.dc.html",
+  "B-02-create.dc.html",
+  "C-02-create.dc.html",
+  "A-03-inbox.dc.html",
+  "B-03-inbox.dc.html",
+  "C-03-inbox.dc.html",
+  "A-04-expenses.dc.html",
+  "B-04-expenses.dc.html",
+  "C-04-expenses.dc.html",
+  "A-05-add-expense.dc.html",
+  "B-05-add-expense.dc.html",
+  "C-05-add-expense.dc.html",
+  "A-06-balances.dc.html",
+  "B-06-balances.dc.html",
+  "C-06-balances.dc.html",
+  "A-07-settle-alice.dc.html",
+  "B-07-settle-alice.dc.html",
+  "C-07-settle-alice.dc.html",
+  "A-08-settle-bob.dc.html",
+  "B-08-settle-bob.dc.html",
+  "C-08-settle-bob.dc.html",
+  "A-09-members.dc.html",
+  "B-09-members.dc.html",
+  "C-09-members.dc.html",
+  "A-10-status.dc.html",
+  "B-10-status.dc.html",
+  "C-10-status.dc.html",
+  "A-11-activity.dc.html",
+  "B-11-activity.dc.html",
+  "C-11-activity.dc.html",
+  "A-12-dialogs.dc.html",
+  "B-12-dialogs.dc.html",
+  "C-12-dialogs.dc.html",
+  "A-13-signin.dc.html",
+  "B-13-signin.dc.html",
+  "C-13-signin.dc.html",
+  "A-14-group-states.dc.html",
+  "B-14-group-states.dc.html",
+  "C-14-group-states.dc.html",
+  "A-15-states.dc.html",
+  "B-15-states.dc.html",
+  "C-15-states.dc.html"
+ ],
+ "notes": {
+  "ta": {
+   "x": 0,
+   "y": -330,
+   "text": "A · Ledger",
+   "kind": "title1",
+   "maxW": 1760
+  },
+  "tb": {
+   "x": 1880,
+   "y": -330,
+   "text": "B · Journey",
+   "kind": "title1",
+   "maxW": 1760
+  },
+  "tc": {
+   "x": 3760,
+   "y": -330,
+   "text": "C · Desk",
+   "kind": "title1",
+   "maxW": 1760
+  },
+  "sa": {
+   "x": 0,
+   "y": -220,
+   "w": 900,
+   "text": "Sidebar navigation, squared hairline tables, serif headings. For flatmates with a long-running group who want a record they can read like a ledger.",
+   "size": "m",
+   "fill": "green"
+  },
+  "sb": {
+   "x": 1880,
+   "y": -220,
+   "w": 900,
+   "text": "Top bar, one centred feed, big money, an Add expense button that is always in reach. For friends on a trip who use it on the phone in the moment.",
+   "size": "m",
+   "fill": "orange"
+  },
+  "sc": {
+   "x": 3760,
+   "y": -220,
+   "w": 900,
+   "text": "Icon rail and a work list beside the detail, a queue of what needs you first. For the one person in the group who keeps the books and answers the payments.",
+   "size": "m",
+   "fill": "blue"
+  }
+ },
+ "designSystems": []
+}

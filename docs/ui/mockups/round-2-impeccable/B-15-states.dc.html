@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>B · Loading, error, empty</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="b.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0}.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;align-items:start}.sg .panel{gap:12px}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+<header class="bar"><span class="logo"><i></i>ShareWise</span></header>
+<main class="cc w">
+<div><h1>Loading, error, empty</h1><p class="mut" style="margin-top:8px">Every screen can end up in one of these.</p></div>
+<div class="sg">
+
+<section class="panel" aria-label="Loading" aria-busy="true"><h2>Loading</h2><p class="mut" role="status">Loading expenses…</p><div class="skel" style="height:56px"></div><div class="skel" style="height:56px"></div><div class="skel" style="height:56px"></div></section>
+
+<section class="panel" aria-label="Server unreachable"><h2>Server unreachable</h2><div class="note warn" role="alert"><i class="ic i-alert"></i><div>ShareWise can’t reach the server. Your data is safe. Try again in a moment.</div></div><button class="btn pr" type="button"><i class="ic i-refresh"></i>Try again</button></section>
+
+<section class="panel" aria-label="Network error"><h2>Network error</h2><div class="note warn" role="alert"><i class="ic i-alert"></i><div>No connection. Check your network, then try again.</div></div><button class="btn pr" type="button"><i class="ic i-refresh"></i>Try again</button></section>
+
+<section class="panel" aria-label="Field error"><h2>Field error</h2><div class="field"><label for="e1-{{v.theme}}{{v.size}}">Amount (EUR)</label><input class="bad" id="e1-{{v.theme}}{{v.size}}" type="text" value="12,345"><span class="err"><i class="ic s i-alert"></i>Use at most two decimals, like 12,34.</span></div></section>
+
+<section class="panel" aria-label="Not an admin"><h2>Refused: not an admin</h2><div class="note warn" role="alert"><i class="ic i-lock"></i><div>Only an admin can invite people. Ask alice to make you an admin.</div></div></section>
+
+<section class="panel" aria-label="Group not open"><h2>Refused: group not open</h2><div class="note warn" role="alert"><i class="ic i-lock"></i><div>The group is closed for settlement, so expenses can’t change. Payments still work.</div></div><a class="btn" href="#">Go to settle up</a></section>
+
+<section class="panel" aria-label="Balance not zero"><h2>Refused: balance not zero</h2><div class="note warn" role="alert"><i class="ic i-alert"></i><div>david can’t leave yet: he owes 437,00 €. Settle up first.</div></div><a class="btn" href="#">Go to settle up</a></section>
+
+<section class="panel" aria-label="Updating balances"><h2>Balances updating</h2><div class="note" role="status"><i class="ic i-refresh"></i><div>Updating… Your expense is saved. Balances catch up in a moment.</div></div></section>
+
+<section class="panel" aria-label="No groups"><h2>No groups yet</h2><p class="mut">Create a group for a trip or a flat, or accept an invitation.</p><a class="btn pr" href="#"><i class="ic i-plus"></i>Create group</a></section>
+
+<section class="panel" aria-label="No expenses"><h2>No expenses yet</h2><p class="mut">Record the first one. Everyone in the group sees it.</p><a class="btn pr" href="#"><i class="ic i-plus"></i>Add expense</a></section>
+
+<section class="panel" aria-label="All settled"><h2>All settled</h2><p class="mut">Nothing is open. Everyone is square at 0,00 €.</p></section>
+
+<section class="panel" aria-label="Empty inbox"><h2>Inbox is empty</h2><p class="mut">No invitations, no payments waiting, no news.</p></section>
+
+<section class="panel" aria-label="No invitations"><h2>No open invitations</h2><p class="mut">Invite someone by username or email.</p></section>
+
+<section class="panel" aria-label="No payments"><h2>No payments yet</h2><p class="mut">Payments you report or receive appear here with their status.</p></section>
+
+</div>
+</main>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

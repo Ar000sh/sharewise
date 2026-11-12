@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A · My groups</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="a.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<aside class="side on-d">
+<div class="brand"><span class="mk">S</span>ShareWise</div>
+<nav class="nav" aria-label="Main">
+<a href="#" aria-current="page"><i class="ic i-home"></i>My groups</a>
+<a href="#"><i class="ic i-inbox"></i>Inbox<span class="n" aria-label="3 waiting">3</span></a>
+</nav>
+<div class="gl">Your groups</div>
+<nav class="nav" aria-label="Groups">
+<a href="#">Mallorca 2027</a><a href="#">Ski weekend</a><a href="#">Flat 12</a>
+</nav>
+<div class="who"><span class="av" data-p="1">A</span><div><div class="b">alice</div><a href="#" class="sm">Sign out</a></div></div>
+</aside>
+<header class="top on-p"><div class="t">My groups</div><a class="btn" href="#" aria-label="Inbox, 3 waiting" style="padding:0 12px"><i class="ic i-inbox"></i>3</a></header>
+
+<main class="main">
+<div class="hd">
+<div><h1>My groups</h1><p class="mut">3 groups. Everything is in euro.</p></div>
+<a class="btn pr" href="#"><i class="ic i-plus"></i>Create group</a>
+</div>
+
+<div class="note"><i class="ic i-info"></i><div><span class="b">Across all groups</span> <span class="bdg mu" style="margin-left:6px">Planned</span><div class="row wrap g16" style="margin-top:6px;gap:6px 28px"><span>Owed to you <span class="money pos">+573,00 €</span></span><span>You owe <span class="money neg">−48,50 €</span></span><span>Waiting for you <span class="b">1</span></span></div></div></div>
+
+<div class="tbl" role="list">
+<div class="tr g-tr h on-d"><div class="ga-n">Group</div><div class="ga-s">Status</div><div class="ga-m">Members</div><div class="ga-b r">Your balance</div><div class="ga-l">Latest activity</div></div>
+
+<a class="tr g-tr" href="#" role="listitem" style="text-decoration:none">
+<div class="ga-n pn"><span class="b" style="font-size:17px">Mallorca 2027</span></div>
+<div class="ga-b r col" style="align-items:flex-end"><span class="money pos">+573,00 €</span><span class="sm mut">you are owed</span></div>
+<div class="ga-s row g8 wrap"><span class="bdg ok"><i class="ic s i-check"></i>Open</span><span class="bdg warn"><i class="ic s i-clock"></i>1 waiting for you</span></div>
+<div class="ga-m on-d">5 members</div>
+<div class="ga-l mut sm">david reported a payment · yesterday</div>
+</a>
+
+<a class="tr g-tr" href="#" role="listitem" style="text-decoration:none">
+<div class="ga-n pn"><span class="b" style="font-size:17px">Ski weekend</span></div>
+<div class="ga-b r col" style="align-items:flex-end"><span class="money neg">−48,50 €</span><span class="sm mut">you owe</span></div>
+<div class="ga-s"><span class="bdg mu"><i class="ic s i-lock"></i>Closed for settlement</span></div>
+<div class="ga-m on-d">4 members</div>
+<div class="ga-l mut sm">Closed for settlement · 12 Mar</div>
+</a>
+
+<a class="tr g-tr" href="#" role="listitem" style="text-decoration:none">
+<div class="ga-n pn"><span class="b" style="font-size:17px">Flat 12</span></div>
+<div class="ga-b r col" style="align-items:flex-end"><span class="money">0,00 €</span><span class="sm mut">settled</span></div>
+<div class="ga-s"><span class="bdg mu"><i class="ic s i-archive"></i>Archived</span></div>
+<div class="ga-m on-d">3 members</div>
+<div class="ga-l mut sm">Archived · 30 Jun</div>
+</a>
+</div>
+<p class="hint">Your balance counts only confirmed payments.</p>
+</main>
+
+<nav class="tabs on-p" aria-label="Main">
+<a href="#" aria-current="page"><i class="ic i-home"></i>Groups</a>
+<a href="#"><i class="ic i-inbox"></i>Inbox (3)</a>
+<a href="#"><i class="ic i-list"></i>Expenses</a>
+<a href="#"><i class="ic i-scale"></i>Balances</a>
+<a href="#"><i class="ic i-swap"></i>Settle up</a>
+</nav>
+
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

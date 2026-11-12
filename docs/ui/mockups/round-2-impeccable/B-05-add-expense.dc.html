@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>B · Add expense</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="b.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0}.amt-in{font:800 44px/1 "Bricolage Grotesque",sans-serif!important;min-height:76px!important;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}@container (max-width:720px){.two{grid-template-columns:1fr}}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<header class="bar"><a class="btn" href="#" aria-label="Back to Mallorca 2027" style="min-height:44px;padding:0 14px;flex:none"><i class="ic i-back"></i></a><span class="b" style="font-size:18px">Mallorca 2027</span><span class="sp"></span><span class="av s" data-p="1">A</span></header>
+
+<main class="cc">
+<h1>Add expense</h1>
+<form class="col g24" onsubmit="return false">
+<div class="field"><label for="a-{{v.theme}}{{v.size}}">Amount (EUR)</label><input class="amt-in" id="a-{{v.theme}}{{v.size}}" type="text" inputmode="decimal" value="86,50"><span class="hint">Comma or point, at most two decimals.</span></div>
+<div class="field"><label for="t-{{v.theme}}{{v.size}}">What was it for?</label><input id="t-{{v.theme}}{{v.size}}" type="text" value="Dinner at Es Port"></div>
+<div class="two">
+<div class="field"><label for="p-{{v.theme}}{{v.size}}">Paid by</label><select id="p-{{v.theme}}{{v.size}}"><option>alice (you)</option><option>bob</option><option>carol</option><option>david</option><option>eve</option></select></div>
+<div class="field"><label for="d-{{v.theme}}{{v.size}}">Date</label><input id="d-{{v.theme}}{{v.size}}" type="text" value="28 Jul 2027"></div>
+</div>
+<fieldset style="border:0;padding:0;margin:0" class="col g8"><legend class="lbl" style="padding:0 0 8px">Split equally between</legend>
+<label class="chk"><input type="checkbox" checked disabled><span class="pn"><span class="av s" data-p="1">A</span>alice (you)</span><span class="sp"></span><span class="money">17,30 €</span></label>
+<label class="chk"><input type="checkbox" checked><span class="pn"><span class="av s" data-p="2">B</span>bob</span><span class="sp"></span><span class="money">17,30 €</span></label>
+<label class="chk"><input type="checkbox" checked><span class="pn"><span class="av s" data-p="3">C</span>carol</span><span class="sp"></span><span class="money">17,30 €</span></label>
+<label class="chk"><input type="checkbox" checked><span class="pn"><span class="av s" data-p="4">D</span>david</span><span class="sp"></span><span class="money">17,30 €</span></label>
+<label class="chk"><input type="checkbox" checked><span class="pn"><span class="av s" data-p="5">E</span>eve</span><span class="sp"></span><span class="money">17,30 €</span></label>
+<span class="hint">You stay in the split because you record it. Everyone pays 17,30 €.</span>
+</fieldset>
+<div class="acts"><button class="btn pr" type="button" style="min-height:56px"><i class="ic i-check"></i>Save expense</button><a class="btn" href="#" style="min-height:56px">Cancel</a></div>
+<div class="note"><i class="ic i-refresh"></i><div><span class="b">After you save,</span> it shows in the list at once. Balances show “updating” for a moment, then catch up.</div></div>
+</form>
+</main>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

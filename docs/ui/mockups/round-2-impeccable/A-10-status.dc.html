@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A · Group status</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="a.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0}.st-tr{grid-template-columns:minmax(0,1fr) auto;padding:18px 6px}.life{display:flex;gap:0;align-items:stretch;flex-wrap:wrap}.life>div{flex:1 1 200px;padding:14px 16px;border:1.5px solid var(--ink);margin-left:-1.5px}.life .on{background:var(--ink);color:var(--bg)}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<aside class="side on-d">
+<div class="brand"><span class="mk">S</span>ShareWise</div>
+<nav class="nav" aria-label="Main"><a href="#"><i class="ic i-home"></i>My groups</a><a href="#"><i class="ic i-inbox"></i>Inbox<span class="n">3</span></a></nav>
+<div class="gl">Mallorca 2027</div>
+<nav class="nav" aria-label="Group">
+<a href="#"><i class="ic i-list"></i>Expenses</a><a href="#"><i class="ic i-scale"></i>Balances</a><a href="#"><i class="ic i-swap"></i>Settle up<span class="n">1</span></a><a href="#"><i class="ic i-users"></i>Members</a><a href="#"><i class="ic i-activity"></i>Activity</a><a href="#" aria-current="page"><i class="ic i-lock"></i>Group status</a>
+</nav>
+<div class="who"><span class="av" data-p="1">A</span><div><div class="b">alice</div><a href="#" class="sm">Sign out</a></div></div>
+</aside>
+<header class="top on-p"><a class="btn" href="#" aria-label="Back to My groups" style="padding:0 10px;flex:none"><i class="ic i-back"></i></a><div class="t">Group status</div><a class="btn" href="#" aria-label="Group menu" style="padding:0 10px;flex:none"><i class="ic i-dots"></i></a></header>
+
+<main class="main">
+<div class="hd"><div><div class="crumb"><a href="#">Mallorca 2027</a><i class="ic s i-chev"></i>Group status</div><h1>Group status</h1><p class="mut" style="margin-top:6px">Admin actions. Planned.</p></div></div>
+
+<ol class="life" style="list-style:none;margin:0;padding:0" aria-label="Group lifecycle">
+<li class="on"><div class="b"><i class="ic s i-check" style="vertical-align:-2px"></i> Open (current)</div><div class="sm">Everything works.</div></li>
+<li><div class="b">Closed for settlement</div><div class="sm mut">Expenses are frozen. Payments still work.</div></li>
+<li><div class="b">Archived</div><div class="sm mut">Final and read-only.</div></li>
+</ol>
+
+<div class="tbl">
+<div class="tr st-tr"><div class="col g8"><h3>Close for settlement</h3><p class="mut">Freezes expenses: no one can add, correct or remove one. The settlement plan is fixed. Payments keep working, and an admin can reopen the group.</p></div><button class="btn pr" type="button"><i class="ic i-lock"></i>Close for settlement</button></div>
+<div class="tr st-tr"><div class="col g8"><h3>Reopen</h3><p class="mut">Available when the group is closed for settlement.</p><p class="sm"><i class="ic s i-info" style="vertical-align:-2px"></i> Not available: the group is open.</p></div><button class="btn" type="button" disabled>Reopen group</button></div>
+<div class="tr st-tr"><div class="col g8"><h3>Archive</h3><p class="mut">Final. The group becomes read-only. It also archives itself when the last balance reaches 0,00 €.</p><p class="sm"><i class="ic s i-info" style="vertical-align:-2px"></i> Not available: 4 members still have open balances. <a href="#" class="b">Go to settle up</a></p></div><button class="btn" type="button" disabled><i class="ic i-archive"></i>Archive group</button></div>
+</div>
+<div class="note"><i class="ic i-info"></i><div>You see these actions because you are an admin. Members see this page without the buttons.</div></div>
+</main>
+
+<nav class="tabs on-p" aria-label="Group">
+<a href="#"><i class="ic i-home"></i>Groups</a>
+<a href="#"><i class="ic i-inbox"></i>Inbox (3)</a>
+<a href="#"><i class="ic i-list"></i>Expenses</a>
+<a href="#"><i class="ic i-scale"></i>Balances</a>
+<a href="#"><i class="ic i-swap"></i>Settle up</a>
+</nav>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

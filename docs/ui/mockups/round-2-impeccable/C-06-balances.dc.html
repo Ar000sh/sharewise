@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C · Balances</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}.bal-tr{grid-template-columns:minmax(0,1.3fr) 130px 130px 150px}@container (max-width:720px){.bal-tr{grid-template-columns:minmax(0,1fr) auto;gap:2px 10px}}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<header class="pt on-p"><a class="btn" href="#" aria-label="Back to My groups" style="min-height:44px;padding:0 12px;flex:none"><i class="ic i-back"></i></a><span class="b" style="font-size:17px;flex:1">Mallorca 2027</span><a class="btn" href="#" aria-label="Inbox, 3 waiting" style="min-height:44px;padding:0 12px;flex:none"><i class="ic i-inbox"></i>3</a></header>
+
+<nav class="rail on-d" aria-label="Main"><span class="lg">S</span>
+<a href="#" aria-current="page"><i class="ic l i-home"></i>Groups</a>
+<a href="#"><i class="ic l i-inbox"></i>Inbox<span class="cn">3</span></a>
+<a href="#" class="me"><span class="av" data-p="1">A</span>alice</a></nav>
+
+<aside class="pane on-d" aria-label="Groups">
+<h2>Your groups</h2>
+<a class="gi" href="#" aria-current="true"><span class="t">Mallorca 2027</span><span class="s"><span>Open</span><span class="money pos">+573,00 €</span></span></a>
+<a class="gi" href="#"><span class="t">Ski weekend</span><span class="s"><span>Closed for settlement</span><span class="money neg">−48,50 €</span></span></a>
+<a class="gi" href="#"><span class="t">Flat 12</span><span class="s"><span>Archived</span><span class="money">0,00 €</span></span></a>
+</aside>
+
+<main class="dt">
+<header class="dh">
+<div class="tt"><h1>Mallorca 2027</h1><span class="bdg ok"><i class="ic s i-check"></i>Open</span><span class="mut">5 members · EUR</span><span class="bdg mu"><i class="ic s i-refresh"></i>Up to date, 14:02</span><span class="sp"></span><a class="btn pr on-d" href="#"><i class="ic i-plus"></i>Add expense</a></div>
+<div class="row wrap" style="gap:4px 18px"><span>Your balance <span class="money pos">+573,00 €</span> <span class="mut">you are owed</span></span><a class="b" href="#">1 payment waiting for your answer</a></div>
+<nav class="t2" aria-label="Group"><a href="#">Expenses</a><a href="#" aria-current="page">Balances</a><a href="#">Settle up <span class="bdg ac">1</span></a><a href="#">Members</a><a href="#">Activity</a><a href="#">Status</a></nav>
+</header>
+<div class="bd">
+<div class="cols">
+<div class="tbw">
+<div class="tr bal-tr h on-d"><span>Member</span><span class="r">Paid</span><span class="r">Owed</span><span class="r">Balance</span></div>
+<div class="tr bal-tr"><span class="pn"><span class="av" data-p="1">A</span><span class="b">alice (you)</span></span><span class="money r on-d">1.150,00 €</span><span class="money r on-d">577,00 €</span><span class="r col" style="align-items:flex-end"><span class="money pos">+573,00 €</span><span class="sm mut">is owed</span></span></div>
+<div class="tr bal-tr"><span class="pn"><span class="av" data-p="2">B</span><span class="b">bob</span></span><span class="money r on-d">375,00 €</span><span class="money r on-d">577,00 €</span><span class="r col" style="align-items:flex-end"><span class="money neg">−202,00 €</span><span class="sm mut">owes</span></span></div>
+<div class="tr bal-tr"><span class="pn"><span class="av" data-p="3">C</span><span class="b">carol</span></span><span class="money r on-d">505,00 €</span><span class="money r on-d">577,00 €</span><span class="r col" style="align-items:flex-end"><span class="money neg">−72,00 €</span><span class="sm mut">owes</span></span></div>
+<div class="tr bal-tr"><span class="pn"><span class="av" data-p="4">D</span><span class="b">david</span></span><span class="money r on-d">140,00 €</span><span class="money r on-d">577,00 €</span><span class="r col" style="align-items:flex-end"><span class="money neg">−437,00 €</span><span class="sm mut">owes</span></span></div>
+<div class="tr bal-tr"><span class="pn"><span class="av" data-p="5">E</span><span class="b">eve</span></span><span class="money r on-d">715,00 €</span><span class="money r on-d">577,00 €</span><span class="r col" style="align-items:flex-end"><span class="money pos">+138,00 €</span><span class="sm mut">is owed</span></span></div>
+<div class="tr bal-tr tot"><span>All balances together</span><span class="money r on-d">2.885,00 €</span><span class="money r on-d">2.885,00 €</span><span class="money r">0,00 €</span></div>
+</div>
+<div class="col g12">
+<h2>How a balance is made</h2>
+<p>What you paid minus your share of every expense. Plus means the group owes you, minus means you owe the group.</p>
+<p>Only <span class="b">confirmed</span> payments change a balance.</p>
+<div class="note warn"><i class="ic i-refresh"></i><div>After a new expense, balances show “Updating…” for a moment.</div></div>
+</div>
+</div>
+</div>
+</main>
+
+<footer class="bb on-p"><a class="btn" href="#"><i class="ic i-swap"></i>Settle up</a><a class="btn pr" href="#"><i class="ic i-plus"></i>Add expense</a></footer>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

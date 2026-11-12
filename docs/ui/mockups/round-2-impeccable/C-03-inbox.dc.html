@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C · Inbox</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<header class="pt on-p"><span class="b" style="font-size:17px;flex:1">Inbox</span><span class="bdg warn">3 waiting</span></header>
+
+<nav class="rail on-d" aria-label="Main"><span class="lg">S</span>
+<a href="#"><i class="ic l i-home"></i>Groups</a>
+<a href="#" aria-current="page"><i class="ic l i-inbox"></i>Inbox<span class="cn">3</span></a>
+<a href="#" class="me"><span class="av" data-p="1">A</span>alice</a></nav>
+
+<aside class="pane on-d" aria-label="Inbox filters">
+<h2>Inbox</h2>
+<a class="gi" href="#" aria-current="true"><span class="s" style="color:var(--ink)"><span class="t">Needs you</span><span class="b">2</span></span></a>
+<a class="gi" href="#"><span class="s" style="color:var(--ink)"><span class="t">Payments waiting</span><span class="b">1</span></span></a>
+<a class="gi" href="#"><span class="s" style="color:var(--ink)"><span class="t">Invitations</span><span class="b">1</span></span></a>
+<a class="gi" href="#"><span class="s" style="color:var(--ink)"><span class="t">Notifications</span><span class="b">2 new</span></span></a>
+</aside>
+
+<main class="dt">
+<header class="dh" style="padding-bottom:16px"><div class="tt"><h1>Inbox</h1><span class="sp"></span><a class="btn" href="#"><i class="ic i-check"></i>Mark all as read</a></div></header>
+<div class="bd">
+<section class="queue" aria-label="Needs you"><h2>Needs you · 2</h2>
+<div class="qi"><div class="m"><span><span class="b">david</span> says he paid you <span class="money">437,00 €</span></span><span class="sm mut">Mallorca 2027 · reported yesterday, 27 Jul · “Bank transfer, ref Mallorca”</span></div><div class="acts"><button class="btn pr" type="button"><i class="ic i-check"></i>Confirm</button><button class="btn dg" type="button"><i class="ic i-x"></i>Reject</button></div></div>
+<div class="qi"><div class="m"><span><span class="b">sara</span> invited you to <span class="b">Camping Harz 2027</span></span><span class="sm mut">Role: member · 4 members · expires in 5 days (3 Aug)</span></div><div class="acts"><button class="btn pr" type="button"><i class="ic i-check"></i>Accept</button><button class="btn" type="button">Decline</button></div></div>
+</section>
+
+<section class="col g8" aria-label="Notifications"><h2>Notifications</h2>
+<div class="tbw">
+<div class="tr" style="grid-template-columns:minmax(0,1fr) auto"><span><span class="b">carol recorded Beach club · 220,00 € in Mallorca 2027</span><br><span class="sm mut">2 hours ago</span></span><span class="bdg ac">New</span></div>
+<div class="tr" style="grid-template-columns:minmax(0,1fr) auto"><span><span class="b">You were promoted to admin in Flat 12</span><br><span class="sm mut">Yesterday</span></span><span class="bdg ac">New</span></div>
+<div class="tr" style="grid-template-columns:minmax(0,1fr) auto"><span>Jonas confirmed your payment of 20,00 € in Ski weekend<br><span class="sm mut">3 days ago</span></span><span class="bdg mu">Read</span></div>
+<div class="tr" style="grid-template-columns:minmax(0,1fr) auto"><span>eve joined Mallorca 2027<br><span class="sm mut">4 days ago</span></span><span class="bdg mu">Read</span></div>
+<div class="tr" style="grid-template-columns:minmax(0,1fr) auto"><span>tim declined your invitation to Mallorca 2027<br><span class="sm mut">5 days ago</span></span><span class="bdg mu">Read</span></div>
+<div class="tr" style="grid-template-columns:minmax(0,1fr) auto"><span>Ben waived 12,00 € you owed in Ski weekend<br><span class="sm mut">12 Mar</span></span><span class="bdg mu">Read</span></div>
+</div></section>
+</div>
+</main>
+
+<footer class="bb on-p"><a class="btn" href="#"><i class="ic i-home"></i>Groups</a><a class="btn" href="#"><i class="ic i-check"></i>Mark all as read</a></footer>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

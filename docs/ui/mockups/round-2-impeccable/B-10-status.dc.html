@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>B · Group status</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="b.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0}.stp{display:flex;gap:10px;flex-wrap:wrap}.stp>div{flex:1 1 180px;padding:16px 18px;border-radius:20px;border:2px solid var(--line);background:var(--sf)}.stp .on{background:var(--ink);color:var(--bg);border-color:var(--ink)}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<header class="bar"><span class="logo"><i></i>ShareWise</span>
+<nav class="tn on-d" aria-label="Main"><a href="#">My groups</a><a href="#">Inbox <span class="cnt">3</span></a></nav>
+<span class="sp"></span>
+<a class="btn on-p" href="#" aria-label="Inbox, 3 waiting" style="min-height:44px;padding:0 14px;flex:none"><i class="ic i-inbox"></i><span class="cnt">3</span></a>
+<span class="av s" data-p="1">A</span>
+</header>
+
+<main class="cc">
+<section class="hero">
+<div class="row wrap" style="justify-content:space-between;gap:12px"><h1>Mallorca 2027</h1><a class="btn pr on-d" href="#"><i class="ic i-plus"></i>Add expense</a></div>
+<div class="row wrap" style="gap:8px 12px"><span class="bdg ok"><i class="ic s i-check"></i>Open</span><span class="mut">5 members · EUR</span></div>
+</section>
+<nav class="pills" aria-label="Group">
+<a href="#">Expenses</a><a href="#">Balances</a><a href="#">Settle up <span class="cnt">1</span></a><a href="#">People</a><a href="#">Activity</a><a href="#" aria-current="page">Status</a>
+</nav>
+
+<div><h2>Where the group is</h2><p class="mut" style="margin-top:6px">Admin actions. Planned.</p></div>
+<ol class="stp" style="list-style:none;margin:0;padding:0" aria-label="Group lifecycle">
+<li class="on"><div class="b"><i class="ic s i-check" style="vertical-align:-2px"></i> Open (now)</div><div class="sm">Everything works.</div></li>
+<li><div class="b">Closed for settlement</div><div class="sm mut">Expenses frozen, payments work.</div></li>
+<li><div class="b">Archived</div><div class="sm mut">Final and read-only.</div></li>
+</ol>
+
+<div class="panel"><h3>Close for settlement</h3><p class="mut">Freezes expenses: no one can add, correct or remove one, and the settlement plan is fixed. Payments keep working. An admin can reopen the group.</p><div class="acts"><button class="btn pr" type="button"><i class="ic i-lock"></i>Close for settlement</button></div></div>
+<div class="panel"><h3>Reopen</h3><p class="mut">Brings a closed group back to open.</p><p class="sm"><i class="ic s i-info" style="vertical-align:-2px"></i> Not available: the group is open.</p><div class="acts"><button class="btn" type="button" disabled>Reopen group</button></div></div>
+<div class="panel"><h3>Archive</h3><p class="mut">Final and read-only. It also happens by itself when the last balance reaches 0,00 €.</p><p class="sm"><i class="ic s i-info" style="vertical-align:-2px"></i> Not available: 4 members still have open balances. <a href="#" class="b">Go to settle up</a></p><div class="acts"><button class="btn" type="button" disabled><i class="ic i-archive"></i>Archive group</button></div></div>
+<p class="hint">Only admins see the buttons. Members see this page without them.</p>
+</main>
+<div class="fabw on-p"><a class="btn pr fab" href="#"><i class="ic i-plus"></i>Add expense</a></div>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C · Expenses</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}.e-tr{grid-template-columns:92px minmax(0,1fr) 150px 110px 110px}.x-d{text-decoration:line-through}@container (max-width:720px){.e-tr{grid-template-columns:minmax(0,1fr) auto;gap:2px 10px}}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<header class="pt on-p"><a class="btn" href="#" aria-label="Back to My groups" style="min-height:44px;padding:0 12px;flex:none"><i class="ic i-back"></i></a><span class="b" style="font-size:17px;flex:1">Mallorca 2027</span><a class="btn" href="#" aria-label="Inbox, 3 waiting" style="min-height:44px;padding:0 12px;flex:none"><i class="ic i-inbox"></i>3</a></header>
+
+<nav class="rail on-d" aria-label="Main"><span class="lg">S</span>
+<a href="#" aria-current="page"><i class="ic l i-home"></i>Groups</a>
+<a href="#"><i class="ic l i-inbox"></i>Inbox<span class="cn">3</span></a>
+<a href="#" class="me"><span class="av" data-p="1">A</span>alice</a></nav>
+
+<aside class="pane on-d" aria-label="Groups">
+<h2>Your groups</h2>
+<a class="gi" href="#" aria-current="true"><span class="t">Mallorca 2027</span><span class="s"><span>Open</span><span class="money pos">+573,00 €</span></span></a>
+<a class="gi" href="#"><span class="t">Ski weekend</span><span class="s"><span>Closed for settlement</span><span class="money neg">−48,50 €</span></span></a>
+<a class="gi" href="#"><span class="t">Flat 12</span><span class="s"><span>Archived</span><span class="money">0,00 €</span></span></a>
+</aside>
+
+<main class="dt">
+<header class="dh">
+<div class="tt"><h1>Mallorca 2027</h1><span class="bdg ok"><i class="ic s i-check"></i>Open</span><span class="mut">5 members · EUR</span><span class="bdg mu"><i class="ic s i-refresh"></i>Up to date</span><span class="sp"></span><a class="btn pr on-d" href="#"><i class="ic i-plus"></i>Add expense</a></div>
+<div class="row wrap" style="gap:4px 18px"><span>Your balance <span class="money pos">+573,00 €</span> <span class="mut">you are owed</span></span><a class="b" href="#">1 payment waiting for your answer</a></div>
+<nav class="t2" aria-label="Group"><a href="#" aria-current="page">Expenses</a><a href="#">Balances</a><a href="#">Settle up <span class="bdg ac">1</span></a><a href="#">Members</a><a href="#">Activity</a><a href="#">Status</a></nav>
+</header>
+<div class="bd">
+<div class="tbw">
+<div class="tr e-tr h on-d"><span>Date</span><span>Expense · paid by</span><span>Split</span><span class="r">Amount</span><span class="r">Your part</span></div>
+<div class="tr e-tr"><span class="mut sm">19 Jul 2027</span><span><span class="b">Taxi airport</span> <span class="mut sm">· david</span></span><span class="mut sm on-d">Equally between 5</span><span class="money r">75,50 €</span><span class="money r neg">−15,10 €</span></div>
+<div class="tr e-tr"><span class="mut sm">18 Jul 2027</span><span><span class="b">Ferry tickets</span> <span class="mut sm">· eve</span></span><span class="mut sm on-d">Equally between 5</span><span class="money r">235,00 €</span><span class="money r neg">−47,00 €</span></div>
+<div class="tr e-tr"><span class="mut sm">17 Jul 2027</span><span><span class="b">Beach club</span> <span class="mut sm">· carol</span></span><span class="mut sm on-d">Equally between 5</span><span class="money r">220,00 €</span><span class="money r neg">−44,00 €</span></div>
+<div class="tr e-tr"><span class="mut sm">16 Jul 2027</span><span><span class="b">Cooking class</span> <span class="mut sm">· eve</span></span><span class="mut sm on-d">Equally between 5</span><span class="money r">480,00 €</span><span class="money r neg">−96,00 €</span></div>
+<div class="tr e-tr"><span class="mut sm">15 Jul 2027</span><span><span class="b">Groceries Mercadona</span> <span class="mut sm">· bob</span> <span class="bdg mu"><i class="ic s i-edit"></i>Corrected</span></span><span class="mut sm on-d">Equally between 5</span><span class="money r">142,30 €</span><span class="money r neg">−28,46 €</span></div>
+<div class="tr e-tr"><span class="mut sm">14 Jul 2027</span><span><span class="b">Boat trip</span> <span class="mut sm">· bob</span></span><span class="mut sm on-d">Equally between 5</span><span class="money r">232,70 €</span><span class="money r neg">−46,54 €</span></div>
+<div class="tr e-tr"><span class="mut sm">13 Jul 2027</span><span><span class="b">Restaurant Es Port</span> <span class="mut sm">· carol</span></span><span class="mut sm on-d">Equally between 5</span><span class="money r">186,40 €</span><span class="money r neg">−37,28 €</span></div>
+<div class="tr e-tr"><span class="mut sm">12 Jul 2027</span><span><span class="b x-d mut">Sunset drinks (duplicate)</span> <span class="bdg no"><i class="ic s i-x"></i>Removed, not counted</span></span><span class="mut sm on-d">Equally between 5</span><span class="money r mut x-d">64,50 €</span><span class="money r mut">0,00 €</span></div>
+<div class="tr e-tr"><span class="mut sm">12 Jul 2027</span><span><span class="b">Sunset drinks</span> <span class="mut sm">· david</span></span><span class="mut sm on-d">Equally between 5</span><span class="money r">64,50 €</span><span class="money r neg">−12,90 €</span></div>
+<div class="tr e-tr"><span class="mut sm">11 Jul 2027</span><span><span class="b">Fuel and tolls</span> <span class="mut sm">· carol</span></span><span class="mut sm on-d">Equally between 5</span><span class="money r">98,60 €</span><span class="money r neg">−19,72 €</span></div>
+<div class="tr e-tr"><span class="mut sm">10 Jul 2027</span><span><span class="b">Rental car</span> <span class="mut sm">· you</span></span><span class="mut sm on-d">Equally between 5</span><span class="money r">250,00 €</span><span class="money r pos">+200,00 €</span></div>
+<div class="tr e-tr"><span class="mut sm">9 Jul 2027</span><span><span class="b">Villa Sa Costa, 7 nights</span> <span class="mut sm">· you</span></span><span class="mut sm on-d">Equally between 5</span><span class="money r">900,00 €</span><span class="money r pos">+720,00 €</span></div>
+</div>
+<p class="hint">Removed expenses stay visible but do not count. Someone who left stays named, marked “left”.</p>
+</div>
+</main>
+
+<footer class="bb on-p"><a class="btn" href="#"><i class="ic i-swap"></i>Settle up</a><a class="btn pr" href="#"><i class="ic i-plus"></i>Add expense</a></footer>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A · Settle up, as bob (debtor)</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="a.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<aside class="side on-d">
+<div class="brand"><span class="mk">S</span>ShareWise</div>
+<nav class="nav" aria-label="Main"><a href="#"><i class="ic i-home"></i>My groups</a><a href="#"><i class="ic i-inbox"></i>Inbox<span class="n">1</span></a></nav>
+<div class="gl">Mallorca 2027</div>
+<nav class="nav" aria-label="Group">
+<a href="#"><i class="ic i-list"></i>Expenses</a><a href="#"><i class="ic i-scale"></i>Balances</a><a href="#" aria-current="page"><i class="ic i-swap"></i>Settle up<span class="n">2</span></a><a href="#"><i class="ic i-users"></i>Members</a><a href="#"><i class="ic i-activity"></i>Activity</a><a href="#"><i class="ic i-lock"></i>Group status</a>
+</nav>
+<div class="who"><span class="av" data-p="2">B</span><div><div class="b">bob</div><a href="#" class="sm">Sign out</a></div></div>
+</aside>
+<header class="top on-p"><a class="btn" href="#" aria-label="Back to My groups" style="padding:0 10px;flex:none"><i class="ic i-back"></i></a><div class="t">Settle up</div><a class="btn" href="#" aria-label="Group menu" style="padding:0 10px;flex:none"><i class="ic i-dots"></i></a></header>
+
+<main class="main">
+<div class="hd"><div><div class="crumb"><a href="#">Mallorca 2027</a><i class="ic s i-chev"></i>Settle up</div><h1>Settle up</h1>
+<div class="row wrap" style="gap:8px 14px;margin-top:8px"><span class="bdg ok"><i class="ic s i-check"></i>Open</span><span class="mut">Seen as bob · you owe <span class="money neg">−202,00 €</span></span></div></div></div>
+
+<section class="sec-need col g8" aria-label="You pay">
+<h2 style="padding-top:12px">You pay <span class="bdg warn" style="vertical-align:middle">2</span></h2>
+<div class="tr pay-tr" style="border-bottom:1px solid var(--line)">
+<div class="col"><span class="pn"><span class="av" data-p="1">A</span><span>Pay <span class="b">alice</span></span></span><span class="sm no neg"><i class="ic s i-x" style="vertical-align:-2px"></i> Your last report was rejected on 26 Jul: “I have not received it yet”. Check the transfer, then report again.</span></div>
+<div class="money r b" style="font-size:20px">136,00 €</div>
+<div class="acts"><button class="btn pr" type="button"><i class="ic i-check"></i>Report a payment</button></div>
+</div>
+<div class="tr pay-tr" style="border-bottom:0">
+<div class="col"><span class="pn"><span class="av" data-p="5">E</span><span>Pay <span class="b">eve</span></span></span><span class="sm mut">Not reported yet</span></div>
+<div class="money r b" style="font-size:20px">66,00 €</div>
+<div class="acts"><button class="btn pr" type="button"><i class="ic i-check"></i>Report a payment</button></div>
+</div>
+<p class="hint" style="padding-bottom:6px">A reported payment stays pending until the person you paid answers.</p>
+</section>
+
+<section class="col g8" aria-label="Waiting for others">
+<h2>You can receive</h2>
+<p class="mut">Nothing. No one owes you in this group.</p>
+</section>
+
+<section class="col g8" aria-label="Between others">
+<h2>Between other members</h2>
+<div class="tbl">
+<div class="tr pay-tr"><span class="pn"><span class="av" data-p="4">D</span>david pays <span class="av" data-p="1">A</span>alice</span><div class="money r">437,00 €</div><span class="bdg warn"><i class="ic s i-clock"></i>Reported, pending</span></div>
+<div class="tr pay-tr"><span class="pn"><span class="av" data-p="3">C</span>carol pays <span class="av" data-p="5">E</span>eve</span><div class="money r">72,00 €</div><span class="bdg mu">Not reported</span></div>
+</div>
+<div class="note"><i class="ic i-info"></i><div>The settlement plan uses the fewest payments: 4 in total. <span class="b">The plan never changes balances.</span> Only confirmed payments do.</div></div>
+</section>
+
+<section class="col g8" aria-label="Payment history">
+<h2>Payment history</h2>
+<div class="seg" role="group" aria-label="Filter"><a href="#" aria-current="true">All</a><a href="#">Pending</a><a href="#">Confirmed</a><a href="#">Rejected</a><a href="#">Waived</a></div>
+<div class="tbl">
+<div class="tr pay-tr"><div class="col"><span><span class="b">david</span> → alice</span><span class="sm mut">27 Jul</span></div><div class="money r">437,00 €</div><span class="bdg warn"><i class="ic s i-clock"></i>Pending</span></div>
+<div class="tr pay-tr"><div class="col"><span><span class="b">you</span> → alice</span><span class="sm mut">26 Jul · rejected: “I have not received it yet”</span></div><div class="money r">136,00 €</div><span class="bdg no"><i class="ic s i-x"></i>Rejected</span></div>
+</div>
+</section>
+</main>
+
+<nav class="tabs on-p" aria-label="Group">
+<a href="#"><i class="ic i-home"></i>Groups</a>
+<a href="#"><i class="ic i-inbox"></i>Inbox (1)</a>
+<a href="#"><i class="ic i-list"></i>Expenses</a>
+<a href="#"><i class="ic i-scale"></i>Balances</a>
+<a href="#" aria-current="page"><i class="ic i-swap"></i>Settle up</a>
+</nav>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

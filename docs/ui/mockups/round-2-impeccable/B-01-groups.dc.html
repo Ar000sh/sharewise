@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>B · My groups</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="b.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0}.gname{font:700 24px/1.1 "Bricolage Grotesque",sans-serif;letter-spacing:-.02em}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<header class="bar"><span class="logo"><i></i>ShareWise</span>
+<nav class="tn on-d" aria-label="Main"><a href="#" aria-current="page">My groups</a><a href="#">Inbox <span class="cnt">3</span></a></nav>
+<span class="sp"></span>
+<a class="btn on-p" href="#" aria-label="Inbox, 3 waiting" style="min-height:44px;padding:0 14px;flex:none"><i class="ic i-inbox"></i><span class="cnt">3</span></a>
+<span class="av s" data-p="1" title="alice">A</span>
+</header>
+
+<main class="cc">
+<div class="row wrap" style="justify-content:space-between;gap:16px"><div><h1>My groups</h1><p class="mut" style="margin-top:8px">Your trips and flats. Everything is in euro.</p></div><a class="btn pr" href="#"><i class="ic i-plus"></i>Create group</a></div>
+
+<div class="note"><i class="ic i-info"></i><div><span class="b">Across all groups</span> <span class="bdg mu" style="margin-left:6px">Planned</span><div style="margin-top:4px">Owed to you <span class="money pos">+573,00 €</span> · You owe <span class="money neg">−48,50 €</span> · 1 waiting for you</div></div></div>
+
+<div class="col" role="list">
+<a class="it" href="#" role="listitem" style="text-decoration:none;padding:20px 4px"><div class="m"><span class="gname">Mallorca 2027</span><span class="row wrap" style="gap:8px 10px;margin-top:8px"><span class="bdg ok"><i class="ic s i-check"></i>Open</span><span class="mut sm">5 members</span><span class="bdg warn"><i class="ic s i-clock"></i>1 waiting for you</span></span><span class="mut sm" style="margin-top:6px">david reported a payment · yesterday</span></div><div class="amt"><span class="money pos" style="font-size:24px">+573,00 €</span><span class="sm mut">you are owed</span></div></a>
+<a class="it" href="#" role="listitem" style="text-decoration:none;padding:20px 4px"><div class="m"><span class="gname">Ski weekend</span><span class="row wrap" style="gap:8px 10px;margin-top:8px"><span class="bdg mu"><i class="ic s i-lock"></i>Closed for settlement</span><span class="mut sm">4 members</span></span><span class="mut sm" style="margin-top:6px">Closed for settlement · 12 Mar</span></div><div class="amt"><span class="money neg" style="font-size:24px">−48,50 €</span><span class="sm mut">you owe</span></div></a>
+<a class="it" href="#" role="listitem" style="text-decoration:none;padding:20px 4px"><div class="m"><span class="gname">Flat 12</span><span class="row wrap" style="gap:8px 10px;margin-top:8px"><span class="bdg mu"><i class="ic s i-archive"></i>Archived</span><span class="mut sm">3 members</span></span><span class="mut sm" style="margin-top:6px">Archived · 30 Jun</span></div><div class="amt"><span class="money" style="font-size:24px">0,00 €</span><span class="sm mut">settled</span></div></a>
+</div>
+<p class="hint">Your balance counts only confirmed payments.</p>
+</main>
+<div class="fabw on-p"><a class="btn pr fab" href="#"><i class="ic i-plus"></i>Create group</a></div>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

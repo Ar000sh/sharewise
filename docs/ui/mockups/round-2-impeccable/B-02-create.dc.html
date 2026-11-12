@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>B · Create group</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="b.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<header class="bar"><span class="logo"><i></i>ShareWise</span>
+<nav class="tn on-d" aria-label="Main"><a href="#" aria-current="page">My groups</a><a href="#">Inbox <span class="cnt">3</span></a></nav>
+<span class="sp"></span>
+<a class="btn on-p" href="#" aria-label="Inbox, 3 waiting" style="min-height:44px;padding:0 14px;flex:none"><i class="ic i-inbox"></i><span class="cnt">3</span></a>
+<span class="av s" data-p="1">A</span>
+</header>
+
+<main class="cc">
+<a href="#" class="row b" style="text-decoration:none;min-height:44px"><i class="ic i-back"></i>My groups</a>
+<h1>Where are you going, or who are you living with?</h1>
+<form class="panel" onsubmit="return false">
+<div class="field"><label for="gn-{{v.theme}}{{v.size}}">Group name</label><input id="gn-{{v.theme}}{{v.size}}" type="text" value="Camping Harz 2027"><span class="hint">A name your friends recognise.</span></div>
+<div class="row wrap" style="gap:8px 12px"><span class="bdg mu">EUR</span><span class="hint">All amounts are in euro.</span></div>
+<hr class="hr">
+<div class="col g12">
+<div class="row" style="align-items:flex-start"><i class="ic i-users"></i><p>You become the first admin and can invite people by username or email.</p></div>
+<div class="row" style="align-items:flex-start"><i class="ic i-check"></i><p>The group starts open: everyone can record expenses.</p></div>
+</div>
+<div class="acts"><button class="btn pr" type="button"><i class="ic i-check"></i>Create group</button><a class="btn" href="#">Cancel</a></div>
+</form>
+</main>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

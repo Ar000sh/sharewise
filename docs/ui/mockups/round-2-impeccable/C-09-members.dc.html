@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C · Members and invitations</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}.mb-tr{grid-template-columns:minmax(0,1.2fr) 90px 110px 130px 150px}.iv-tr{grid-template-columns:minmax(0,1fr) 90px 130px auto}@container (max-width:720px){.mb-tr,.iv-tr{grid-template-columns:minmax(0,1fr) auto;gap:4px 10px}}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<header class="pt on-p"><a class="btn" href="#" aria-label="Back to My groups" style="min-height:44px;padding:0 12px;flex:none"><i class="ic i-back"></i></a><span class="b" style="font-size:17px;flex:1">Mallorca 2027</span><a class="btn" href="#" aria-label="Inbox, 3 waiting" style="min-height:44px;padding:0 12px;flex:none"><i class="ic i-inbox"></i>3</a></header>
+
+<nav class="rail on-d" aria-label="Main"><span class="lg">S</span>
+<a href="#" aria-current="page"><i class="ic l i-home"></i>Groups</a>
+<a href="#"><i class="ic l i-inbox"></i>Inbox<span class="cn">3</span></a>
+<a href="#" class="me"><span class="av" data-p="1">A</span>alice</a></nav>
+
+<aside class="pane on-d" aria-label="Groups">
+<h2>Your groups</h2>
+<a class="gi" href="#" aria-current="true"><span class="t">Mallorca 2027</span><span class="s"><span>Open</span><span class="money pos">+573,00 €</span></span></a>
+<a class="gi" href="#"><span class="t">Ski weekend</span><span class="s"><span>Closed for settlement</span><span class="money neg">−48,50 €</span></span></a>
+<a class="gi" href="#"><span class="t">Flat 12</span><span class="s"><span>Archived</span><span class="money">0,00 €</span></span></a>
+</aside>
+
+<main class="dt">
+<header class="dh">
+<div class="tt"><h1>Mallorca 2027</h1><span class="bdg ok"><i class="ic s i-check"></i>Open</span><span class="mut">5 members · EUR</span><span class="sp"></span><a class="btn pr on-d" href="#"><i class="ic i-plus"></i>Add expense</a></div>
+<nav class="t2" aria-label="Group"><a href="#">Expenses</a><a href="#">Balances</a><a href="#">Settle up <span class="bdg ac">1</span></a><a href="#" aria-current="page">Members</a><a href="#">Activity</a><a href="#">Status</a></nav>
+</header>
+<div class="bd">
+
+<section class="col g8" aria-label="Members"><h2>Members · 5</h2>
+<div class="tbw">
+<div class="tr mb-tr h on-d"><span>Member</span><span>Role</span><span>Joined</span><span class="r">Balance</span><span class="r">Action</span></div>
+<div class="tr mb-tr"><span class="pn"><span class="av" data-p="1">A</span><span class="b">alice (you)</span></span><span class="bdg ac" style="justify-self:start">Admin</span><span class="sm mut on-d">3 Jul 2027</span><span class="money r pos">+573,00 €</span><span class="on-d"></span></div>
+<div class="tr mb-tr"><span class="pn"><span class="av" data-p="2">B</span><span class="b">bob</span></span><span class="bdg mu" style="justify-self:start">Member</span><span class="sm mut on-d">3 Jul 2027</span><span class="money r neg">−202,00 €</span><span class="r"><button class="btn" type="button">Promote to admin</button></span></div>
+<div class="tr mb-tr"><span class="pn"><span class="av" data-p="3">C</span><span class="b">carol</span></span><span class="bdg mu" style="justify-self:start">Member</span><span class="sm mut on-d">3 Jul 2027</span><span class="money r neg">−72,00 €</span><span class="r"><button class="btn" type="button">Promote to admin</button></span></div>
+<div class="tr mb-tr"><span class="pn"><span class="av" data-p="4">D</span><span class="b">david</span></span><span class="bdg mu" style="justify-self:start">Member</span><span class="sm mut on-d">4 Jul 2027</span><span class="money r neg">−437,00 €</span><span class="r"><button class="btn" type="button">Promote to admin</button></span></div>
+<div class="tr mb-tr"><span class="pn"><span class="av" data-p="5">E</span><span class="b">eve</span></span><span class="bdg mu" style="justify-self:start">Member</span><span class="sm mut on-d">4 Jul 2027</span><span class="money r pos">+138,00 €</span><span class="r"><button class="btn" type="button">Promote to admin</button></span></div>
+</div>
+<div class="note"><i class="ic i-info"></i><div><span class="b">Remove or leave</span> <span class="bdg mu" style="margin-left:6px">Planned</span><br>Only at a balance of 0,00 €. david still owes 437,00 €. <a href="#" class="b">Go to settle up</a></div></div></section>
+
+<div class="cols">
+<form class="panel" onsubmit="return false"><h2>Invite someone</h2>
+<div class="field"><label for="iv-{{v.theme}}{{v.size}}">Username or email</label><input id="iv-{{v.theme}}{{v.size}}" type="text" value="tim"></div>
+<div class="field"><span class="lbl">Joins as</span><div class="seg" role="group" aria-label="Joins as"><a href="#" aria-current="true">Member</a><a href="#">Admin</a></div></div>
+<p class="hint">A person who joins later only shares in expenses recorded after joining. Invitations last 7 days.</p>
+<div class="acts"><button class="btn pr" type="button"><i class="ic i-mail"></i>Send invitation</button><button class="btn" type="button"><i class="ic i-link"></i>Copy invite link</button><span class="bdg mu">Link: Planned</span></div></form>
+
+<div class="col g16">
+<section class="col g8" aria-label="Open invitations"><h2>Open invitations · 2</h2>
+<div class="tbw">
+<div class="tr iv-tr"><span class="pn"><span class="av">T</span><span class="b">tim</span></span><span class="bdg mu" style="justify-self:start">Member</span><span class="sm mut">Expires 3 Aug</span><button class="btn" type="button">Cancel</button></div>
+<div class="tr iv-tr"><span class="pn"><span class="av">F</span><span class="b">frieda@example.org</span></span><span class="bdg ac" style="justify-self:start">Admin</span><span class="sm mut">Expires 2 Aug</span><button class="btn" type="button">Cancel</button></div>
+</div><p class="hint">Cancelling an invitation: Planned.</p></section>
+<section class="col g8" aria-label="Former members"><h2>Former members</h2>
+<div class="tbw"><div class="tr" style="grid-template-columns:minmax(0,1fr) auto"><span class="pn"><span class="av">M</span><span class="b">mia (left)</span> <span class="sm mut">left 1 Jul</span></span><span class="money">0,00 €</span></div></div></section>
+</div>
+</div>
+
+</div>
+</main>
+
+<footer class="bb on-p"><a class="btn" href="#"><i class="ic i-list"></i>Expenses</a><a class="btn pr" href="#"><i class="ic i-plus"></i>Add expense</a></footer>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

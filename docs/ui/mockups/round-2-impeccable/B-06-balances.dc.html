@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>B · Balances</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="b.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0}.pt{display:flex;gap:18px;flex-wrap:wrap;font-size:14px;color:var(--mut)}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<header class="bar"><span class="logo"><i></i>ShareWise</span>
+<nav class="tn on-d" aria-label="Main"><a href="#">My groups</a><a href="#">Inbox <span class="cnt">3</span></a></nav>
+<span class="sp"></span>
+<a class="btn on-p" href="#" aria-label="Inbox, 3 waiting" style="min-height:44px;padding:0 14px;flex:none"><i class="ic i-inbox"></i><span class="cnt">3</span></a>
+<span class="av s" data-p="1">A</span>
+</header>
+
+<main class="cc">
+<section class="hero">
+<div class="row wrap" style="justify-content:space-between;gap:12px"><h1>Mallorca 2027</h1><a class="btn pr on-d" href="#"><i class="ic i-plus"></i>Add expense</a></div>
+<div class="row wrap" style="gap:8px 12px"><span class="bdg ok"><i class="ic s i-check"></i>Open</span><span class="mut">5 members · EUR</span><span class="bdg mu"><i class="ic s i-refresh"></i>Up to date, 28 Jul 14:02</span></div>
+<p class="lead">You are owed <span class="money pos">+573,00 €</span></p>
+<a class="b" href="#">1 payment waits for your answer</a>
+</section>
+<nav class="pills" aria-label="Group">
+<a href="#">Expenses</a><a href="#" aria-current="page">Balances</a><a href="#">Settle up <span class="cnt">1</span></a><a href="#">People</a><a href="#">Activity</a><a href="#">Status</a>
+</nav>
+
+<section class="col" aria-label="Balances">
+<div class="it"><span class="av" data-p="1">A</span><div class="m"><span class="b">alice (you)</span><span class="pt"><span>paid 1.150,00 €</span><span>owes 577,00 €</span></span></div><div class="amt"><span class="money pos" style="font-size:24px">+573,00 €</span><span class="sm mut">is owed</span></div></div>
+<div class="it"><span class="av" data-p="2">B</span><div class="m"><span class="b">bob</span><span class="pt"><span>paid 375,00 €</span><span>owes 577,00 €</span></span></div><div class="amt"><span class="money neg" style="font-size:24px">−202,00 €</span><span class="sm mut">owes</span></div></div>
+<div class="it"><span class="av" data-p="3">C</span><div class="m"><span class="b">carol</span><span class="pt"><span>paid 505,00 €</span><span>owes 577,00 €</span></span></div><div class="amt"><span class="money neg" style="font-size:24px">−72,00 €</span><span class="sm mut">owes</span></div></div>
+<div class="it"><span class="av" data-p="4">D</span><div class="m"><span class="b">david</span><span class="pt"><span>paid 140,00 €</span><span>owes 577,00 €</span></span></div><div class="amt"><span class="money neg" style="font-size:24px">−437,00 €</span><span class="sm mut">owes</span></div></div>
+<div class="it"><span class="av" data-p="5">E</span><div class="m"><span class="b">eve</span><span class="pt"><span>paid 715,00 €</span><span>owes 577,00 €</span></span></div><div class="amt"><span class="money pos" style="font-size:24px">+138,00 €</span><span class="sm mut">is owed</span></div></div>
+<div class="it" style="border-bottom:0"><div class="m"><span class="b">All balances together</span><span class="sm mut">paid 2.885,00 € · owed 2.885,00 €</span></div><span class="money" style="font-size:24px">0,00 €</span></div>
+</section>
+
+<div class="note"><i class="ic i-info"></i><div><span class="b">How a balance is made.</span> What you paid minus your share of every expense. Plus means the group owes you, minus means you owe the group. Only confirmed payments change it.</div></div>
+<div class="note warn"><i class="ic i-refresh"></i><div>Right after someone adds an expense, balances show “Updating…” for a moment.</div></div>
+<a class="btn pr" href="#" style="align-self:flex-start"><i class="ic i-swap"></i>Settle up</a>
+</main>
+<div class="fabw on-p"><a class="btn pr fab" href="#"><i class="ic i-plus"></i>Add expense</a></div>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

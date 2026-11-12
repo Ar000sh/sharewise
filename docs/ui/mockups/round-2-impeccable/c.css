@@ -1,0 +1,88 @@
+/* Direction C: Desk. Icon rail, a work list beside the detail, a queue of what needs you first, dense rows. */
+.fr{--bg:#E9EDF3;--sf:#FFFFFF;--sel:#E8E9FC;--sel2:#F2F4F8;--ink:#14181F;--mut:#4A5565;--line:#D3D9E3;--acc:#3730D8;--onacc:#FFFFFF;--pos:#0B6B43;--neg:#B3261E;--warn:#FFF0BE;--warnt:#5A4300;--foc:#0B57D0;--p1:#C9E8D8;--p2:#F4D9BC;--p3:#D3DAF7;--p4:#F3CFDB;--p5:#E1E4B0;
+background:var(--bg);color:var(--ink);font:400 14px/1.45 "Schibsted Grotesk",system-ui,sans-serif;padding:8px;gap:8px}
+.fr.dk{--bg:#0A0D12;--sf:#141922;--sel:#1E2347;--sel2:#1A202B;--ink:#E8ECF3;--mut:#A3ADBD;--line:#2A3242;--acc:#A5A7FF;--onacc:#0D0F3A;--pos:#5ED39A;--neg:#FF9A92;--warn:#3A3010;--warnt:#F5DB8A;--foc:#8AB4FF;--p1:#1F4A37;--p2:#5A3C1E;--p3:#2D3A78;--p4:#5E2D41;--p5:#4E521C}
+.fr a{color:inherit}
+.rail{width:64px;flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px 0}
+.rail .lg{width:40px;height:40px;border-radius:10px;background:var(--acc);color:var(--onacc);display:grid;place-items:center;font:800 18px "Schibsted Grotesk";margin-bottom:10px}
+.rail a{width:56px;min-height:56px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;text-decoration:none;color:var(--mut);position:relative}
+.rail a[aria-current=page]{background:var(--sf);color:var(--ink);box-shadow:0 0 0 1px var(--line)}
+.rail .cn{position:absolute;top:4px;right:2px;min-width:20px;height:20px;border-radius:10px;background:var(--acc);color:var(--onacc);font:700 11px/20px "Schibsted Grotesk";text-align:center;padding:0 5px}
+.rail .me{margin-top:auto}
+.pane{width:292px;flex:none;background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:14px 10px;display:flex;flex-direction:column;gap:4px}
+.pane h2{font:700 13px "Schibsted Grotesk";color:var(--mut);padding:0 12px 6px;margin:0}
+.gi{display:flex;flex-direction:column;gap:2px;padding:9px 12px;border-radius:8px;text-decoration:none;min-height:56px;justify-content:center}
+.gi[aria-current=true]{background:var(--sel);box-shadow:inset 0 0 0 1px var(--acc)}
+.gi .t{font-weight:700}
+.gi .s{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--mut)}
+.dt{flex:1;min-width:0;background:var(--sf);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column}
+.dh{padding:18px 24px 0;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line)}
+.tt{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font:700 24px/1.2 "Schibsted Grotesk",sans-serif;margin:0;letter-spacing:-.01em}
+h2{font:700 16px/1.3 "Schibsted Grotesk",sans-serif;margin:0}
+h3{font:700 14px/1.3 "Schibsted Grotesk",sans-serif;margin:0}
+p{margin:0}
+.t2{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.t2 a{min-height:44px;padding:0 14px;display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--mut);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+.t2 a[aria-current=page]{color:var(--ink);border-bottom-color:var(--acc)}
+.bd{padding:20px 24px 28px;display:flex;flex-direction:column;gap:22px;flex:1}
+.mut{color:var(--mut)}.sm{font-size:13px}.b{font-weight:700}
+.money{font:500 14px "JetBrains Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pos{color:var(--pos)}.neg{color:var(--neg)}
+.btn{min-height:44px;padding:0 16px;border-radius:8px;border:1px solid var(--line);background:var(--sf);color:var(--ink);font:600 14px "Schibsted Grotesk",sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;cursor:pointer;box-shadow:0 1px 0 var(--line)}
+.btn.pr{background:var(--acc);border-color:var(--acc);color:var(--onacc);box-shadow:none}
+.btn.dg{color:var(--neg);border-color:var(--neg)}
+.btn[disabled]{color:var(--mut);background:var(--sel2);border-style:dashed;box-shadow:none;cursor:not-allowed}
+.btn:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--foc);outline-offset:2px}
+.acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.queue{border:1px solid var(--acc);background:var(--sel);border-radius:8px;padding:6px 14px 10px;display:flex;flex-direction:column;gap:4px}
+.queue>h2{padding:8px 0 2px}
+.qi{display:flex;align-items:center;gap:14px;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.qi:first-of-type{border-top:0}
+.qi .m{flex:1 1 260px;min-width:0;display:flex;flex-direction:column}
+.tr{display:grid;gap:12px;align-items:center;min-height:48px;padding:6px 12px;border-bottom:1px solid var(--line)}
+.tr.h{background:var(--sel2);font-size:12px;font-weight:700;color:var(--mut);min-height:36px;border-radius:6px 6px 0 0}
+.tr.tot{font-weight:700;border-bottom:0;background:var(--sel2)}
+.tbw{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.tbw .tr:last-child{border-bottom:0}
+.r{text-align:right;justify-self:end}
+.bdg{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:6px;font:700 12px "Schibsted Grotesk",sans-serif;white-space:nowrap;border:1px solid currentColor}
+.bdg.warn{background:var(--warn);color:var(--warnt);border-color:var(--warnt)}.bdg.ok{color:var(--pos)}.bdg.no{color:var(--neg)}.bdg.mu{color:var(--mut)}.bdg.ac{color:var(--acc)}
+.av{width:30px;height:30px;border-radius:8px;flex:none;display:inline-grid;place-items:center;font:700 13px "Schibsted Grotesk",sans-serif;background:var(--sel2);color:var(--ink)}
+.av[data-p="1"]{background:var(--p1)}.av[data-p="2"]{background:var(--p2)}.av[data-p="3"]{background:var(--p3)}.av[data-p="4"]{background:var(--p4)}.av[data-p="5"]{background:var(--p5)}
+.pn{display:flex;align-items:center;gap:10px;min-width:0}
+.field{display:flex;flex-direction:column;gap:5px}
+.field>label,.lbl{font-weight:700;font-size:13px}
+.fr input,.fr select,.fr textarea{width:100%;min-height:44px;padding:8px 12px;border:1px solid var(--mut);border-radius:8px;background:var(--sf);color:var(--ink);font:inherit}
+.fr textarea{min-height:80px}
+.fr input.bad,.fr textarea.bad{border-color:var(--neg);box-shadow:0 0 0 1px var(--neg)}
+.hint{font-size:13px;color:var(--mut)}
+.err{color:var(--neg);font-size:13px;font-weight:700;display:flex;gap:6px;align-items:center}
+.note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);background:var(--sel2);border-radius:8px}
+.note.warn{background:var(--warn);color:var(--warnt);border-color:var(--warnt)}
+.note .ic{margin-top:1px}
+.chk{display:flex;align-items:center;gap:10px;min-height:44px}
+.chk input{width:20px;min-height:20px;height:20px;flex:none;accent-color:var(--acc)}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg a{min-height:36px;padding:0 12px;border-radius:6px;border:1px solid var(--line);display:inline-flex;align-items:center;text-decoration:none;font-weight:600;font-size:13px}
+.seg a[aria-current=true]{background:var(--ink);color:var(--sf);border-color:var(--ink)}
+.col{display:flex;flex-direction:column}.g8{gap:8px}.g12{gap:12px}.g16{gap:16px}.row{display:flex;align-items:center;gap:10px}.wrap{flex-wrap:wrap}.sp{flex:1}
+.hr{border:0;border-top:1px solid var(--line);margin:0;width:100%}
+.skel{background:var(--sel2);border-radius:6px;min-height:14px;border:1px solid var(--line)}
+.pt{align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--sf);min-height:56px}
+.bb{background:var(--sf);border-top:1px solid var(--line);padding:8px 10px;gap:8px;margin-top:auto;position:sticky;bottom:0}
+.bb .btn{flex:1;min-height:48px}
+.panel{border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--sf)}
+.dlg{width:100%;max-width:480px;margin:0 auto;background:var(--sf);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 40px -14px rgba(0,0,0,.45)}
+.scrim{background:rgba(10,14,22,.5);padding:24px;border-radius:10px}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:28px;align-items:start}
+@container (max-width:720px){
+.fr{flex-direction:column;padding:0;gap:0}
+.dt{border:0;border-radius:0}
+.dh{padding:12px 14px 0}.bd{padding:16px 14px 20px}
+h1{font-size:20px}
+.cols{grid-template-columns:minmax(0,1fr);gap:20px}
+.tr{min-height:52px}
+.scrim{padding:12px}
+.btn{flex:1 1 auto}
+}

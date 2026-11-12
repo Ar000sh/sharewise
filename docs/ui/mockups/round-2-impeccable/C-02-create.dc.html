@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C · Create group</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<header class="pt on-p"><a class="btn" href="#" aria-label="Back to My groups" style="min-height:44px;padding:0 12px;flex:none"><i class="ic i-back"></i></a><span class="b" style="font-size:17px;flex:1">Create group</span></header>
+
+<nav class="rail on-d" aria-label="Main"><span class="lg">S</span>
+<a href="#" aria-current="page"><i class="ic l i-home"></i>Groups</a>
+<a href="#"><i class="ic l i-inbox"></i>Inbox<span class="cn">3</span></a>
+<a href="#" class="me"><span class="av" data-p="1">A</span>alice</a></nav>
+
+<aside class="pane on-d" aria-label="Groups">
+<h2>Your groups</h2>
+<a class="gi" href="#"><span class="t">Mallorca 2027</span><span class="s"><span>Open</span><span class="money pos">+573,00 €</span></span></a>
+<a class="gi" href="#"><span class="t">Ski weekend</span><span class="s"><span>Closed for settlement</span><span class="money neg">−48,50 €</span></span></a>
+<a class="gi" href="#"><span class="t">Flat 12</span><span class="s"><span>Archived</span><span class="money">0,00 €</span></span></a>
+</aside>
+
+<main class="dt">
+<header class="dh" style="padding-bottom:16px"><div class="tt"><h1>Create group</h1></div></header>
+<div class="bd">
+<div class="cols">
+<form class="panel" onsubmit="return false">
+<div class="field"><label for="gn-{{v.theme}}{{v.size}}">Group name</label><input id="gn-{{v.theme}}{{v.size}}" type="text" value="Camping Harz 2027"><span class="hint">A name your friends recognise.</span></div>
+<div class="field"><span class="lbl">Currency</span><div class="row"><span class="bdg mu">EUR</span><span class="hint">All amounts are in euro.</span></div></div>
+<div class="acts"><button class="btn pr" type="button"><i class="ic i-check"></i>Create group</button><a class="btn" href="#">Cancel</a></div>
+</form>
+<div class="col g12"><h2>What happens</h2>
+<div class="row" style="align-items:flex-start"><i class="ic i-users"></i><p>You become the first admin and can invite people by username or email.</p></div>
+<div class="row" style="align-items:flex-start"><i class="ic i-check"></i><p>The group starts open: everyone can record expenses.</p></div>
+<div class="row" style="align-items:flex-start"><i class="ic i-clock"></i><p>Invitations stay valid for 7 days.</p></div></div>
+</div>
+</div>
+</main>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

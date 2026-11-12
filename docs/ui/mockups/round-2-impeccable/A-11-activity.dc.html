@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A · Activity</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="a.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0}.ac-tr{grid-template-columns:44px minmax(0,1fr) 70px}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<aside class="side on-d">
+<div class="brand"><span class="mk">S</span>ShareWise</div>
+<nav class="nav" aria-label="Main"><a href="#"><i class="ic i-home"></i>My groups</a><a href="#"><i class="ic i-inbox"></i>Inbox<span class="n">3</span></a></nav>
+<div class="gl">Mallorca 2027</div>
+<nav class="nav" aria-label="Group">
+<a href="#"><i class="ic i-list"></i>Expenses</a><a href="#"><i class="ic i-scale"></i>Balances</a><a href="#"><i class="ic i-swap"></i>Settle up<span class="n">1</span></a><a href="#"><i class="ic i-users"></i>Members</a><a href="#" aria-current="page"><i class="ic i-activity"></i>Activity</a><a href="#"><i class="ic i-lock"></i>Group status</a>
+</nav>
+<div class="who"><span class="av" data-p="1">A</span><div><div class="b">alice</div><a href="#" class="sm">Sign out</a></div></div>
+</aside>
+<header class="top on-p"><a class="btn" href="#" aria-label="Back to My groups" style="padding:0 10px;flex:none"><i class="ic i-back"></i></a><div class="t">Activity</div><a class="btn" href="#" aria-label="Group menu" style="padding:0 10px;flex:none"><i class="ic i-dots"></i></a></header>
+
+<main class="main">
+<div class="hd"><div><div class="crumb"><a href="#">Mallorca 2027</a><i class="ic s i-chev"></i>Activity</div><h1>Activity</h1><p class="mut" style="margin-top:6px">Everything that happened in the group, newest first. Planned.</p></div></div>
+
+<section class="col g8"><h2>Wednesday 28 Jul 2027</h2><div class="tbl">
+<div class="tr ac-tr"><span class="ic l i-swap"></span><span><span class="b">david</span> reported a payment of <span class="money">437,00 €</span> to alice</span><span class="sm mut">18:40</span></div>
+<div class="tr ac-tr"><span class="ic l i-x"></span><span><span class="b">alice</span> rejected a payment of <span class="money">136,00 €</span> from bob: “I have not received it yet”</span><span class="sm mut">09:12</span></div>
+</div></section>
+
+<section class="col g8"><h2>Tuesday 27 Jul 2027</h2><div class="tbl">
+<div class="tr ac-tr"><span class="ic l i-swap"></span><span><span class="b">bob</span> reported a payment of <span class="money">136,00 €</span> to alice</span><span class="sm mut">20:05</span></div>
+<div class="tr ac-tr"><span class="ic l i-users"></span><span><span class="b">eve</span> joined the group</span><span class="sm mut">11:30</span></div>
+</div></section>
+
+<section class="col g8"><h2>Monday 19 Jul 2027</h2><div class="tbl">
+<div class="tr ac-tr"><span class="ic l i-plus"></span><span><span class="b">david</span> recorded Taxi airport · <span class="money">75,50 €</span>, split equally between 5</span><span class="sm mut">22:14</span></div>
+<div class="tr ac-tr"><span class="ic l i-edit"></span><span><span class="b">bob</span> corrected Groceries Mercadona · <span class="money">142,30 €</span>. Reason: wrong amount typed</span><span class="sm mut">16:40</span></div>
+<div class="tr ac-tr"><span class="ic l i-x"></span><span><span class="b">david</span> removed Sunset drinks (duplicate)</span><span class="sm mut">09:03</span></div>
+</div></section>
+
+<section class="col g8"><h2>Saturday 3 Jul 2027</h2><div class="tbl">
+<div class="tr ac-tr"><span class="ic l i-lock"></span><span><span class="b">alice</span> created the group. Status: open</span><span class="sm mut">19:00</span></div>
+</div></section>
+</main>
+
+<nav class="tabs on-p" aria-label="Group">
+<a href="#"><i class="ic i-home"></i>Groups</a>
+<a href="#"><i class="ic i-inbox"></i>Inbox (3)</a>
+<a href="#"><i class="ic i-list"></i>Expenses</a>
+<a href="#"><i class="ic i-scale"></i>Balances</a>
+<a href="#"><i class="ic i-swap"></i>Settle up</a>
+</nav>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

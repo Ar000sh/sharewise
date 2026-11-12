@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C · Sign in and invitation entry</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}.ig{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;align-items:start}.kv{grid-template-columns:1fr auto}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+<main class="dt">
+<header class="dh" style="padding-bottom:16px"><div class="tt"><span class="rail" style="width:auto;padding:0"><span class="lg" style="margin:0">S</span></span><h1>ShareWise</h1></div></header>
+<div class="bd">
+<div class="ig">
+
+<section class="panel" aria-label="Sign in"><h2>Sign in</h2>
+<p>Shared expenses made simple. Record expenses together, always know the balance, settle with the fewest payments.</p>
+<a class="btn pr" href="#">Sign in</a><a class="btn" href="#">Create account</a>
+<p class="hint">ShareWise has no passwords. You sign in on your identity provider and come back here.</p></section>
+
+<section class="panel" aria-label="Invitation, signed out"><h2>You are invited</h2>
+<div class="tbw">
+<div class="tr kv"><span class="mut">Group</span><span class="b">Camping Harz 2027</span></div>
+<div class="tr kv"><span class="mut">Status</span><span class="bdg ok"><i class="ic s i-check"></i>Open</span></div>
+<div class="tr kv"><span class="mut">Members</span><span class="b">4</span></div>
+<div class="tr kv"><span class="mut">You join as</span><span class="bdg mu">Member</span></div>
+<div class="tr kv"><span class="mut">Expires</span><span class="b">3 Aug 2027</span></div>
+</div>
+<div class="note"><i class="ic i-info"></i><div>You only share in expenses recorded after you join.</div></div>
+<a class="btn pr" href="#">Sign in to join</a><a class="btn" href="#">Create account</a>
+<p class="hint">After signing in you come back to this invitation.</p></section>
+
+<section class="panel" aria-label="Invitation, signed in"><h2>Join Camping Harz 2027?</h2>
+<p>sara invited you as a member. 4 members, open, expires 3 Aug 2027.</p>
+<div class="note"><i class="ic i-info"></i><div>You only share in expenses recorded after you join.</div></div>
+<div class="acts"><button class="btn pr" type="button"><i class="ic i-check"></i>Join group</button><button class="btn" type="button">Decline</button></div></section>
+
+<section class="panel" aria-label="Invitation expired"><h2>This invitation has expired</h2>
+<div class="note warn"><i class="ic i-clock"></i><div>The invitation to Camping Harz 2027 ran out on 3 Aug 2027. Invitations last 7 days. Ask sara to send a new one.</div></div>
+<a class="btn" href="#">Back to My groups</a></section>
+
+<section class="panel" aria-label="Invitation already used"><h2>This invitation was already used</h2>
+<div class="note warn"><i class="ic i-info"></i><div>Someone already accepted or declined it. If that was you, the group is in My groups.</div></div>
+<a class="btn" href="#">Back to My groups</a></section>
+
+</div>
+</div>
+</main>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

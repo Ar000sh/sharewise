@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>B · Members and invitations</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="b.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<header class="bar"><span class="logo"><i></i>ShareWise</span>
+<nav class="tn on-d" aria-label="Main"><a href="#">My groups</a><a href="#">Inbox <span class="cnt">3</span></a></nav>
+<span class="sp"></span>
+<a class="btn on-p" href="#" aria-label="Inbox, 3 waiting" style="min-height:44px;padding:0 14px;flex:none"><i class="ic i-inbox"></i><span class="cnt">3</span></a>
+<span class="av s" data-p="1">A</span>
+</header>
+
+<main class="cc">
+<section class="hero">
+<div class="row wrap" style="justify-content:space-between;gap:12px"><h1>Mallorca 2027</h1><a class="btn pr on-d" href="#"><i class="ic i-plus"></i>Add expense</a></div>
+<div class="row wrap" style="gap:8px 12px"><span class="bdg ok"><i class="ic s i-check"></i>Open</span><span class="mut">5 members · EUR</span></div>
+<p class="lead">You are owed <span class="money pos">+573,00 €</span></p>
+</section>
+<nav class="pills" aria-label="Group">
+<a href="#">Expenses</a><a href="#">Balances</a><a href="#">Settle up <span class="cnt">1</span></a><a href="#" aria-current="page">People</a><a href="#">Activity</a><a href="#">Status</a>
+</nav>
+
+<section class="col" aria-label="Members">
+<h2>Members</h2>
+<div class="it"><span class="av" data-p="1">A</span><div class="m"><span class="b">alice (you)</span><span class="sm mut">Admin · joined 3 Jul</span></div><span class="money pos">+573,00 €</span></div>
+<div class="it"><span class="av" data-p="2">B</span><div class="m"><span class="b">bob</span><span class="sm mut">Member · joined 3 Jul</span></div><span class="money neg">−202,00 €</span><button class="btn" type="button" style="min-height:44px;padding:0 14px">Promote</button></div>
+<div class="it"><span class="av" data-p="3">C</span><div class="m"><span class="b">carol</span><span class="sm mut">Member · joined 3 Jul</span></div><span class="money neg">−72,00 €</span><button class="btn" type="button" style="min-height:44px;padding:0 14px">Promote</button></div>
+<div class="it"><span class="av" data-p="4">D</span><div class="m"><span class="b">david</span><span class="sm mut">Member · joined 4 Jul</span></div><span class="money neg">−437,00 €</span><button class="btn" type="button" style="min-height:44px;padding:0 14px">Promote</button></div>
+<div class="it"><span class="av" data-p="5">E</span><div class="m"><span class="b">eve</span><span class="sm mut">Member · joined 4 Jul</span></div><span class="money pos">+138,00 €</span><button class="btn" type="button" style="min-height:44px;padding:0 14px">Promote</button></div>
+<div class="note" style="margin-top:12px"><i class="ic i-info"></i><div><span class="b">Remove or leave</span> <span class="bdg mu" style="margin-left:6px">Planned</span><br>Only at a balance of 0,00 €. david still owes 437,00 €. <a href="#" class="b">Go to settle up</a></div></div>
+</section>
+
+<section class="panel" aria-label="Invite">
+<h2>Invite someone</h2>
+<div class="field"><label for="iv-{{v.theme}}{{v.size}}">Username or email</label><input id="iv-{{v.theme}}{{v.size}}" type="text" value="tim"></div>
+<div class="seg" role="group" aria-label="Joins as"><a href="#" aria-current="true">Member</a><a href="#">Admin</a></div>
+<p class="hint">Someone who joins later only shares in expenses recorded after joining. Invitations last 7 days.</p>
+<div class="acts"><button class="btn pr" type="button"><i class="ic i-mail"></i>Send invitation</button><button class="btn" type="button"><i class="ic i-link"></i>Copy invite link</button><span class="bdg mu">Link: Planned</span></div>
+</section>
+
+<section class="col" aria-label="Open invitations">
+<h2>Open invitations</h2>
+<div class="it"><span class="av">T</span><div class="m"><span class="b">tim</span><span class="sm mut">Member · expires 3 Aug</span></div><button class="btn" type="button" style="min-height:44px;padding:0 14px">Cancel</button></div>
+<div class="it"><span class="av">F</span><div class="m"><span class="b">frieda@example.org</span><span class="sm mut">Admin · expires 2 Aug</span></div><button class="btn" type="button" style="min-height:44px;padding:0 14px">Cancel</button></div>
+<p class="hint" style="margin-top:8px">Cancelling an invitation: Planned.</p>
+</section>
+
+<section class="col" aria-label="Former members">
+<h2>Former members</h2>
+<div class="it"><span class="av">M</span><div class="m"><span class="b">mia (left)</span><span class="sm mut">Left 1 Jul · still named in old expenses</span></div><span class="money">0,00 €</span></div>
+</section>
+</main>
+<div class="fabw on-p"><a class="btn pr fab" href="#"><i class="ic i-plus"></i>Add expense</a></div>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

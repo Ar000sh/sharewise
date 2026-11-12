@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C · Activity</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}.ac-tr{grid-template-columns:56px 30px minmax(0,1fr)}.dy{background:var(--sel2);font-weight:700;font-size:13px;padding:8px 12px;border-bottom:1px solid var(--line)}@container (max-width:720px){.ac-tr{grid-template-columns:48px minmax(0,1fr)}.ac-tr .av{display:none}}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<header class="pt on-p"><a class="btn" href="#" aria-label="Back to My groups" style="min-height:44px;padding:0 12px;flex:none"><i class="ic i-back"></i></a><span class="b" style="font-size:17px;flex:1">Mallorca 2027</span><a class="btn" href="#" aria-label="Inbox, 3 waiting" style="min-height:44px;padding:0 12px;flex:none"><i class="ic i-inbox"></i>3</a></header>
+
+<nav class="rail on-d" aria-label="Main"><span class="lg">S</span>
+<a href="#" aria-current="page"><i class="ic l i-home"></i>Groups</a>
+<a href="#"><i class="ic l i-inbox"></i>Inbox<span class="cn">3</span></a>
+<a href="#" class="me"><span class="av" data-p="1">A</span>alice</a></nav>
+
+<aside class="pane on-d" aria-label="Groups">
+<h2>Your groups</h2>
+<a class="gi" href="#" aria-current="true"><span class="t">Mallorca 2027</span><span class="s"><span>Open</span><span class="money pos">+573,00 €</span></span></a>
+<a class="gi" href="#"><span class="t">Ski weekend</span><span class="s"><span>Closed for settlement</span><span class="money neg">−48,50 €</span></span></a>
+<a class="gi" href="#"><span class="t">Flat 12</span><span class="s"><span>Archived</span><span class="money">0,00 €</span></span></a>
+</aside>
+
+<main class="dt">
+<header class="dh">
+<div class="tt"><h1>Mallorca 2027</h1><span class="bdg ok"><i class="ic s i-check"></i>Open</span><span class="mut">5 members · EUR</span><span class="sp"></span><a class="btn pr on-d" href="#"><i class="ic i-plus"></i>Add expense</a></div>
+<nav class="t2" aria-label="Group"><a href="#">Expenses</a><a href="#">Balances</a><a href="#">Settle up <span class="bdg ac">1</span></a><a href="#">Members</a><a href="#" aria-current="page">Activity</a><a href="#">Status</a></nav>
+</header>
+<div class="bd">
+<p class="hint">Everything that happened in the group, newest first. Planned.</p>
+<div class="tbw">
+<div class="dy">Wednesday 28 Jul 2027</div>
+<div class="tr ac-tr"><span class="mut sm">18:40</span><span class="av" data-p="4">D</span><span><span class="b">david</span> reported a payment of <span class="money">437,00 €</span> to alice</span></div>
+<div class="tr ac-tr"><span class="mut sm">09:12</span><span class="av" data-p="1">A</span><span><span class="b">alice</span> rejected a payment of <span class="money">136,00 €</span> from bob: “I have not received it yet”</span></div>
+<div class="dy">Tuesday 27 Jul 2027</div>
+<div class="tr ac-tr"><span class="mut sm">20:05</span><span class="av" data-p="2">B</span><span><span class="b">bob</span> reported a payment of <span class="money">136,00 €</span> to alice</span></div>
+<div class="tr ac-tr"><span class="mut sm">11:30</span><span class="av" data-p="5">E</span><span><span class="b">eve</span> joined the group</span></div>
+<div class="dy">Monday 19 Jul 2027</div>
+<div class="tr ac-tr"><span class="mut sm">22:14</span><span class="av" data-p="4">D</span><span><span class="b">david</span> recorded Taxi airport · <span class="money">75,50 €</span>, split equally between 5</span></div>
+<div class="tr ac-tr"><span class="mut sm">16:40</span><span class="av" data-p="2">B</span><span><span class="b">bob</span> corrected Groceries Mercadona · <span class="money">142,30 €</span>. Reason: wrong amount typed</span></div>
+<div class="tr ac-tr"><span class="mut sm">09:03</span><span class="av" data-p="4">D</span><span><span class="b">david</span> removed Sunset drinks (duplicate)</span></div>
+<div class="dy">Saturday 3 Jul 2027</div>
+<div class="tr ac-tr"><span class="mut sm">19:00</span><span class="av" data-p="1">A</span><span><span class="b">alice</span> created the group. Status: open</span></div>
+</div>
+</div>
+</main>
+
+<footer class="bb on-p"><a class="btn" href="#"><i class="ic i-list"></i>Expenses</a><a class="btn pr" href="#"><i class="ic i-plus"></i>Add expense</a></footer>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

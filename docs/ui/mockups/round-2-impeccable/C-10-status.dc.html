@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C · Group status</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}.st-tr{grid-template-columns:minmax(0,1fr) auto;padding:14px 14px;align-items:start}.lf{display:flex;gap:0;flex-wrap:wrap}.lf>li{flex:1 1 180px;padding:12px 14px;border:1px solid var(--line);margin-left:-1px;list-style:none}.lf .on{background:var(--sel);box-shadow:inset 0 0 0 2px var(--acc)}@container (max-width:720px){.st-tr{grid-template-columns:minmax(0,1fr)}}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<header class="pt on-p"><a class="btn" href="#" aria-label="Back to My groups" style="min-height:44px;padding:0 12px;flex:none"><i class="ic i-back"></i></a><span class="b" style="font-size:17px;flex:1">Mallorca 2027</span><a class="btn" href="#" aria-label="Inbox, 3 waiting" style="min-height:44px;padding:0 12px;flex:none"><i class="ic i-inbox"></i>3</a></header>
+
+<nav class="rail on-d" aria-label="Main"><span class="lg">S</span>
+<a href="#" aria-current="page"><i class="ic l i-home"></i>Groups</a>
+<a href="#"><i class="ic l i-inbox"></i>Inbox<span class="cn">3</span></a>
+<a href="#" class="me"><span class="av" data-p="1">A</span>alice</a></nav>
+
+<aside class="pane on-d" aria-label="Groups">
+<h2>Your groups</h2>
+<a class="gi" href="#" aria-current="true"><span class="t">Mallorca 2027</span><span class="s"><span>Open</span><span class="money pos">+573,00 €</span></span></a>
+<a class="gi" href="#"><span class="t">Ski weekend</span><span class="s"><span>Closed for settlement</span><span class="money neg">−48,50 €</span></span></a>
+<a class="gi" href="#"><span class="t">Flat 12</span><span class="s"><span>Archived</span><span class="money">0,00 €</span></span></a>
+</aside>
+
+<main class="dt">
+<header class="dh">
+<div class="tt"><h1>Mallorca 2027</h1><span class="bdg ok"><i class="ic s i-check"></i>Open</span><span class="mut">5 members · EUR</span><span class="sp"></span><a class="btn pr on-d" href="#"><i class="ic i-plus"></i>Add expense</a></div>
+<nav class="t2" aria-label="Group"><a href="#">Expenses</a><a href="#">Balances</a><a href="#">Settle up <span class="bdg ac">1</span></a><a href="#">Members</a><a href="#">Activity</a><a href="#" aria-current="page">Status</a></nav>
+</header>
+<div class="bd">
+<div><h2>Group status</h2><p class="mut" style="margin-top:4px">Admin actions. Planned.</p></div>
+<ol class="lf" style="margin:0;padding:0" aria-label="Group lifecycle">
+<li class="on"><div class="b"><i class="ic s i-check" style="vertical-align:-2px"></i> Open (now)</div><div class="sm">Everything works.</div></li>
+<li><div class="b">Closed for settlement</div><div class="sm mut">Expenses frozen, payments work.</div></li>
+<li><div class="b">Archived</div><div class="sm mut">Final and read-only.</div></li>
+</ol>
+<div class="tbw">
+<div class="tr st-tr"><div class="col g8"><h3>Close for settlement</h3><p class="mut">Freezes expenses: no add, correct or remove. The final plan is fixed. Payments keep working. An admin can reopen.</p></div><button class="btn pr" type="button"><i class="ic i-lock"></i>Close for settlement</button></div>
+<div class="tr st-tr"><div class="col g8"><h3>Reopen</h3><p class="mut">Brings a closed group back to open.</p><p class="sm"><i class="ic s i-info" style="vertical-align:-2px"></i> Not available: the group is open.</p></div><button class="btn" type="button" disabled>Reopen group</button></div>
+<div class="tr st-tr"><div class="col g8"><h3>Archive</h3><p class="mut">Final and read-only. Also happens by itself when the last balance reaches 0,00 €.</p><p class="sm"><i class="ic s i-info" style="vertical-align:-2px"></i> Not available: 4 members still have open balances. <a href="#" class="b">Go to settle up</a></p></div><button class="btn" type="button" disabled><i class="ic i-archive"></i>Archive group</button></div>
+</div>
+<p class="hint">Only admins see the buttons. Members see this page without them.</p>
+</div>
+</main>
+
+<footer class="bb on-p"><a class="btn" href="#"><i class="ic i-list"></i>Expenses</a><a class="btn pr" href="#"><i class="ic i-plus"></i>Add expense</a></footer>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>B · Expenses</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="b.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0}.x-d{text-decoration:line-through}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<header class="bar"><span class="logo"><i></i>ShareWise</span>
+<nav class="tn on-d" aria-label="Main"><a href="#">My groups</a><a href="#">Inbox <span class="cnt">3</span></a></nav>
+<span class="sp"></span>
+<a class="btn on-p" href="#" aria-label="Inbox, 3 waiting" style="min-height:44px;padding:0 14px;flex:none"><i class="ic i-inbox"></i><span class="cnt">3</span></a>
+<span class="av s" data-p="1">A</span>
+</header>
+
+<main class="cc">
+<section class="hero">
+<div class="row wrap" style="justify-content:space-between;gap:12px"><h1>Mallorca 2027</h1><a class="btn pr on-d" href="#"><i class="ic i-plus"></i>Add expense</a></div>
+<div class="row wrap" style="gap:8px 12px"><span class="bdg ok"><i class="ic s i-check"></i>Open</span><span class="mut">5 members · EUR</span><span class="bdg mu"><i class="ic s i-refresh"></i>Balances up to date</span></div>
+<p class="lead">You are owed <span class="money pos">+573,00 €</span></p>
+<a class="b" href="#">1 payment waits for your answer</a>
+</section>
+<nav class="pills" aria-label="Group">
+<a href="#" aria-current="page">Expenses</a><a href="#">Balances</a><a href="#">Settle up <span class="cnt">1</span></a><a href="#">People</a><a href="#">Activity</a><a href="#">Status</a>
+</nav>
+
+<section class="col" aria-label="Expenses">
+<div class="day">Monday 19 Jul</div>
+<div class="it"><span class="av" data-p="4">D</span><div class="m"><span class="b">Taxi airport</span><span class="sm mut">david paid · equally between 5</span></div><div class="amt"><span class="money">75,50 €</span><span class="sm money neg">your part −15,10 €</span></div></div>
+<div class="day">Sunday 18 Jul</div>
+<div class="it"><span class="av" data-p="5">E</span><div class="m"><span class="b">Ferry tickets</span><span class="sm mut">eve paid · equally between 5</span></div><div class="amt"><span class="money">235,00 €</span><span class="sm money neg">your part −47,00 €</span></div></div>
+<div class="day">Saturday 17 Jul</div>
+<div class="it"><span class="av" data-p="3">C</span><div class="m"><span class="b">Beach club</span><span class="sm mut">carol paid · equally between 5</span></div><div class="amt"><span class="money">220,00 €</span><span class="sm money neg">your part −44,00 €</span></div></div>
+<div class="day">Friday 16 Jul</div>
+<div class="it"><span class="av" data-p="5">E</span><div class="m"><span class="b">Cooking class</span><span class="sm mut">eve paid · equally between 5</span></div><div class="amt"><span class="money">480,00 €</span><span class="sm money neg">your part −96,00 €</span></div></div>
+<div class="day">Thursday 15 Jul</div>
+<div class="it"><span class="av" data-p="2">B</span><div class="m"><span class="b">Groceries Mercadona</span><span class="sm mut">bob paid · equally between 5 · <span class="bdg mu" style="height:22px;font-size:12px"><i class="ic s i-edit"></i>Corrected</span></span></div><div class="amt"><span class="money">142,30 €</span><span class="sm money neg">your part −28,46 €</span></div></div>
+<div class="day">Wednesday 14 Jul</div>
+<div class="it"><span class="av" data-p="2">B</span><div class="m"><span class="b">Boat trip</span><span class="sm mut">bob paid · equally between 5</span></div><div class="amt"><span class="money">232,70 €</span><span class="sm money neg">your part −46,54 €</span></div></div>
+<div class="day">Tuesday 13 Jul</div>
+<div class="it"><span class="av" data-p="3">C</span><div class="m"><span class="b">Restaurant Es Port</span><span class="sm mut">carol paid · equally between 5</span></div><div class="amt"><span class="money">186,40 €</span><span class="sm money neg">your part −37,28 €</span></div></div>
+<div class="day">Monday 12 Jul</div>
+<div class="it"><span class="av" data-p="4">D</span><div class="m"><span class="b x-d mut">Sunset drinks (duplicate)</span><span class="sm"><span class="bdg no" style="height:22px;font-size:12px"><i class="ic s i-x"></i>Removed, not counted</span></span></div><div class="amt"><span class="money mut x-d">64,50 €</span><span class="sm money mut">your part 0,00 €</span></div></div>
+<div class="it"><span class="av" data-p="4">D</span><div class="m"><span class="b">Sunset drinks</span><span class="sm mut">david paid · equally between 5</span></div><div class="amt"><span class="money">64,50 €</span><span class="sm money neg">your part −12,90 €</span></div></div>
+<div class="day">Sunday 11 Jul</div>
+<div class="it"><span class="av" data-p="3">C</span><div class="m"><span class="b">Fuel and tolls</span><span class="sm mut">carol paid · equally between 5</span></div><div class="amt"><span class="money">98,60 €</span><span class="sm money neg">your part −19,72 €</span></div></div>
+<div class="day">Saturday 10 Jul</div>
+<div class="it"><span class="av" data-p="1">A</span><div class="m"><span class="b">Rental car</span><span class="sm mut">you paid · equally between 5</span></div><div class="amt"><span class="money">250,00 €</span><span class="sm money pos">your part +200,00 €</span></div></div>
+<div class="day">Friday 9 Jul</div>
+<div class="it"><span class="av" data-p="1">A</span><div class="m"><span class="b">Villa Sa Costa, 7 nights</span><span class="sm mut">you paid · equally between 5</span></div><div class="amt"><span class="money">900,00 €</span><span class="sm money pos">your part +720,00 €</span></div></div>
+</section>
+<p class="hint">Removed expenses stay visible but do not count. Someone who left stays named, marked “left”.</p>
+</main>
+<div class="fabw on-p"><a class="btn pr fab" href="#"><i class="ic i-plus"></i>Add expense</a></div>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":2300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

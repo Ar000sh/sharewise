@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C · My groups</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>body{margin:0}.g-tr{grid-template-columns:minmax(0,1.3fr) 190px 90px 150px minmax(0,1.2fr)}@container (max-width:720px){.g-tr{grid-template-columns:minmax(0,1fr) auto;gap:4px 10px}.g-tr .lt{grid-column:1/-1}}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<header class="pt on-p"><span class="b" style="font-size:17px;flex:1">My groups</span><a class="btn" href="#" aria-label="Inbox, 3 waiting" style="min-height:44px;padding:0 12px;flex:none"><i class="ic i-inbox"></i>3</a></header>
+
+<nav class="rail on-d" aria-label="Main"><span class="lg">S</span>
+<a href="#" aria-current="page"><i class="ic l i-home"></i>Groups</a>
+<a href="#"><i class="ic l i-inbox"></i>Inbox<span class="cn">3</span></a>
+<a href="#" class="me"><span class="av" data-p="1">A</span>alice</a></nav>
+
+<aside class="pane on-d" aria-label="Needs you">
+<h2>Needs you · 2</h2>
+<a class="gi" href="#"><span class="t">Answer david’s payment</span><span class="s"><span>Mallorca 2027</span><span class="money">437,00 €</span></span></a>
+<a class="gi" href="#"><span class="t">Invitation from sara</span><span class="s"><span>Camping Harz 2027</span><span>expires 3 Aug</span></span></a>
+<hr class="hr" style="margin:10px 0">
+<h2>Across all groups <span class="bdg mu" style="margin-left:4px">Planned</span></h2>
+<div class="gi"><span class="s"><span>Owed to you</span><span class="money pos">+573,00 €</span></span><span class="s"><span>You owe</span><span class="money neg">−48,50 €</span></span></div>
+</aside>
+
+<main class="dt">
+<header class="dh" style="padding-bottom:16px"><div class="tt"><h1>My groups</h1><span class="sp"></span><a class="btn pr" href="#"><i class="ic i-plus"></i>Create group</a></div><p class="mut">3 groups, all in euro. Your balance counts only confirmed payments.</p></header>
+<div class="bd">
+<div class="on-p queue"><h2>Needs you · 2</h2><div class="qi"><div class="m"><span class="b">Answer david’s payment</span><span class="sm mut">Mallorca 2027 · 437,00 €</span></div></div><div class="qi"><div class="m"><span class="b">Invitation from sara</span><span class="sm mut">Camping Harz 2027</span></div></div></div>
+<div class="tbw" role="list">
+<div class="tr g-tr h on-d"><span>Group</span><span>Status</span><span>Members</span><span class="r">Your balance</span><span>Latest activity</span></div>
+<a class="tr g-tr" href="#" role="listitem" style="text-decoration:none"><span class="b" style="font-size:15px">Mallorca 2027</span><span class="row wrap" style="gap:6px"><span class="bdg ok"><i class="ic s i-check"></i>Open</span><span class="bdg warn">1 waiting</span></span><span class="on-d">5</span><span class="r col" style="align-items:flex-end"><span class="money pos">+573,00 €</span><span class="sm mut">you are owed</span></span><span class="lt mut sm">david reported a payment · yesterday</span></a>
+<a class="tr g-tr" href="#" role="listitem" style="text-decoration:none"><span class="b" style="font-size:15px">Ski weekend</span><span><span class="bdg mu"><i class="ic s i-lock"></i>Closed for settlement</span></span><span class="on-d">4</span><span class="r col" style="align-items:flex-end"><span class="money neg">−48,50 €</span><span class="sm mut">you owe</span></span><span class="lt mut sm">Closed for settlement · 12 Mar</span></a>
+<a class="tr g-tr" href="#" role="listitem" style="text-decoration:none"><span class="b" style="font-size:15px">Flat 12</span><span><span class="bdg mu"><i class="ic s i-archive"></i>Archived</span></span><span class="on-d">3</span><span class="r col" style="align-items:flex-end"><span class="money">0,00 €</span><span class="sm mut">settled</span></span><span class="lt mut sm">Archived · 30 Jun</span></a>
+</div>
+</div>
+</main>
+
+<footer class="bb on-p"><a class="btn pr" href="#"><i class="ic i-plus"></i>Create group</a></footer>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>

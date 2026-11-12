@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A · Balances</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="a.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board">
+<sc-for list="{{vars}}" as="v" hint-placeholder-count="4">
+<div class="cell {{v.size}}"><div class="lab">{{v.label}}</div>
+<div class="fr {{v.theme}}">
+
+<aside class="side on-d">
+<div class="brand"><span class="mk">S</span>ShareWise</div>
+<nav class="nav" aria-label="Main"><a href="#"><i class="ic i-home"></i>My groups</a><a href="#"><i class="ic i-inbox"></i>Inbox<span class="n">3</span></a></nav>
+<div class="gl">Mallorca 2027</div>
+<nav class="nav" aria-label="Group">
+<a href="#"><i class="ic i-list"></i>Expenses</a><a href="#" aria-current="page"><i class="ic i-scale"></i>Balances</a><a href="#"><i class="ic i-swap"></i>Settle up<span class="n">1</span></a><a href="#"><i class="ic i-users"></i>Members</a><a href="#"><i class="ic i-activity"></i>Activity</a><a href="#"><i class="ic i-lock"></i>Group status</a>
+</nav>
+<div class="who"><span class="av" data-p="1">A</span><div><div class="b">alice</div><a href="#" class="sm">Sign out</a></div></div>
+</aside>
+<header class="top on-p"><a class="btn" href="#" aria-label="Back to My groups" style="padding:0 10px;flex:none"><i class="ic i-back"></i></a><div class="t">Mallorca 2027</div><a class="btn" href="#" aria-label="Group menu" style="padding:0 10px;flex:none"><i class="ic i-dots"></i></a></header>
+
+<main class="main">
+<div class="hd"><div><div class="crumb"><a href="#">My groups</a><i class="ic s i-chev"></i>Mallorca 2027</div><h1>Balances</h1>
+<div class="row wrap" style="gap:8px 14px;margin-top:8px"><span class="bdg ok"><i class="ic s i-check"></i>Open</span><span class="mut">5 members · EUR</span><span class="bdg mu"><i class="ic s i-refresh"></i>Up to date, 28 Jul 14:02</span></div></div>
+<a class="btn pr" href="#"><i class="ic i-swap"></i>Settle up</a></div>
+
+<div class="cols">
+<div class="col g16">
+<div class="tbl">
+<div class="tr bal-tr h on-d"><div>Member</div><div class="r">Paid</div><div class="r">Owed</div><div class="r">Balance</div></div>
+<div class="tr bal-tr"><span class="pn"><span class="av" data-p="1">A</span><span class="b">alice (you)</span></span><span class="money r on-d">1.150,00 €</span><span class="money r on-d">577,00 €</span><span class="r col" style="align-items:flex-end"><span class="money pos">+573,00 €</span><span class="sm mut">is owed</span></span></div>
+<div class="tr bal-tr"><span class="pn"><span class="av" data-p="2">B</span><span class="b">bob</span></span><span class="money r on-d">375,00 €</span><span class="money r on-d">577,00 €</span><span class="r col" style="align-items:flex-end"><span class="money neg">−202,00 €</span><span class="sm mut">owes</span></span></div>
+<div class="tr bal-tr"><span class="pn"><span class="av" data-p="3">C</span><span class="b">carol</span></span><span class="money r on-d">505,00 €</span><span class="money r on-d">577,00 €</span><span class="r col" style="align-items:flex-end"><span class="money neg">−72,00 €</span><span class="sm mut">owes</span></span></div>
+<div class="tr bal-tr"><span class="pn"><span class="av" data-p="4">D</span><span class="b">david</span></span><span class="money r on-d">140,00 €</span><span class="money r on-d">577,00 €</span><span class="r col" style="align-items:flex-end"><span class="money neg">−437,00 €</span><span class="sm mut">owes</span></span></div>
+<div class="tr bal-tr"><span class="pn"><span class="av" data-p="5">E</span><span class="b">eve</span></span><span class="money r on-d">715,00 €</span><span class="money r on-d">577,00 €</span><span class="r col" style="align-items:flex-end"><span class="money pos">+138,00 €</span><span class="sm mut">is owed</span></span></div>
+<div class="tr bal-tr tot"><span>All balances together</span><span class="money r on-d">2.885,00 €</span><span class="money r on-d">2.885,00 €</span><span class="money r">0,00 €</span></div>
+</div>
+<p class="hint on-p">Paid and owed are shown on the desktop view.</p>
+</div>
+
+<div class="col g16">
+<h2>How a balance is made</h2>
+<p>Balance = what you paid − your share of every expense. A positive balance means the group owes you; a negative one means you owe the group.</p>
+<p>Only <span class="b">confirmed</span> payments change a balance. A reported payment waits until the other person answers.</p>
+<div class="note warn"><i class="ic i-refresh"></i><div><span class="b">Right after you add an expense</span> the balances show “Updating…” for a moment before they catch up.</div></div>
+</div>
+</div>
+</main>
+
+<nav class="tabs on-p" aria-label="Group">
+<a href="#"><i class="ic i-home"></i>Groups</a>
+<a href="#"><i class="ic i-inbox"></i>Inbox (3)</a>
+<a href="#"><i class="ic i-list"></i>Expenses</a>
+<a href="#" aria-current="page"><i class="ic i-scale"></i>Balances</a>
+<a href="#"><i class="ic i-swap"></i>Settle up</a>
+</nav>
+</div></div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { vars: [
+      { size: "d", theme: "", label: "Desktop · light" },
+      { size: "p", theme: "", label: "Phone · light" },
+      { size: "d", theme: "dk", label: "Desktop · dark" },
+      { size: "p", theme: "dk", label: "Phone · dark" }
+    ] };
+  }
+}
+</script>
+</body>
+</html>
