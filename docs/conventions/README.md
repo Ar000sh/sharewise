@@ -37,7 +37,7 @@ npx @redocly/cli lint docs/api/openapi.yaml
 (`npm run e2e` before a release or demo; it needs the backend and Postgres running. The CI pipeline runs it on every pull request, against the built images, so nobody has to remember.)
 
 ## Definition of done for any change
-- [ ] Names come from the diagram and the glossary, not invented.
+- [ ] Names come from the diagram and the glossary (`docs/domain/Ubiquitous_Language.md`), not invented.
 - [ ] Contract changed first (if the HTTP interface changed), types regenerated (`npm run gen:api`).
 - [ ] New behaviour has a test at the right level (document 02); a rejected call is tested to leave nothing behind.
 - [ ] Public types and operations have the Javadoc described in document 03.

@@ -12,6 +12,7 @@ import { SettleUpTab } from "@/components/SettleUpTab";
 import { Toast } from "@/components/Toast";
 import { useCurrentUser } from "@/lib/currentUser";
 import { useApi } from "@/lib/useApi";
+import { useGroupChange } from "@/lib/useGroupChange";
 
 type GroupDetailData = components["schemas"]["GroupDetail"];
 type Expense = components["schemas"]["Expense"];
@@ -20,17 +21,17 @@ const TABS = ["Expenses", "Balances", "Settle up", "Members"] as const;
 type Tab = (typeof TABS)[number];
 
 export function GroupDetail({ groupId }: { groupId: string }) {
-  const { data: group, error, reload: reloadGroup } = useApi<GroupDetailData>(`/groups/${groupId}`);
+  // The open page asks again every few seconds: other members change the group while it is open (design 2026-11-11, L2).
+  const { data: group, error } = useApi<GroupDetailData>(`/groups/${groupId}`, { poll: true });
   const me = useCurrentUser();
-  const { data: expenses, error: expensesError, reload: reloadExpenses } = useApi<Expense[]>(
-    `/groups/${groupId}/expenses`,
-  );
+  const { data: expenses, error: expensesError } = useApi<Expense[]>(`/groups/${groupId}/expenses`, { poll: true });
+  const { markChanged } = useGroupChange(groupId);
   const [tab, setTab] = useState<Tab>("Expenses");
-  const [lastRecordedAt, setLastRecordedAt] = useState<number>();
   const [notice, setNotice] = useState<string>();
   const dismissNotice = useCallback(() => setNotice(undefined), []);
 
-  if (error) return <ErrorBanner error={error} />;
+  // A failed poll keeps the page (and what the user typed) and shows the message above it; only a first load can fail it.
+  if (error && !group) return <ErrorBanner error={error} />;
   if (!group) return <p>Loading…</p>;
 
   // Only a hint for the screen: the backend refuses non-admins with 403 NOT_AN_ADMIN whatever the UI shows.
@@ -39,6 +40,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-semibold">{group.name}</h1>
+      <ErrorBanner error={error} />
       <div role="tablist" className="flex gap-1 border-b">
         {TABS.map((t) => (
           <button
@@ -63,8 +65,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
               members={group.members}
               currentUserId={me.userId}
               onRecorded={() => {
-                void reloadExpenses();
-                setLastRecordedAt(Date.now());
+                markChanged();
                 setNotice("Expense saved. Balances update in a moment.");
               }}
             />
@@ -75,14 +76,14 @@ export function GroupDetail({ groupId }: { groupId: string }) {
           {expenses && <ExpenseList expenses={expenses} members={group.members} />}
         </div>
       )}
-      {tab === "Balances" && <BalancesTab groupId={group.id} lastRecordedAt={lastRecordedAt} />}
+      {tab === "Balances" && <BalancesTab groupId={group.id} />}
       {tab === "Settle up" && <SettleUpTab groupId={group.id} />}
       {tab === "Members" && (
         <section className="flex flex-col gap-3">
           <MemberList
             members={group.members}
             currentUserId={me?.userId}
-            promote={isAdmin ? { groupId: group.id, onPromoted: () => void reloadGroup() } : undefined}
+            promote={isAdmin ? { groupId: group.id, onPromoted: markChanged } : undefined}
           />
           {isAdmin && <InviteForm groupId={group.id} />}
         </section>

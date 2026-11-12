@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { Toast } from "@/components/Toast";
@@ -9,8 +9,8 @@ import { api } from "@/lib/api";
 import { useCurrentUser } from "@/lib/currentUser";
 import { messageFor } from "@/lib/errors";
 import { amountToCents, centsToAmount, eurosToCents, formatEuro } from "@/lib/money";
-import { PAYMENT_ANSWERED } from "@/lib/paymentAnswered";
 import { useApi } from "@/lib/useApi";
+import { useGroupChange } from "@/lib/useGroupChange";
 import { useLookAgain } from "@/lib/useLookAgain";
 
 type PlanEdge = components["schemas"]["SettlementPlanEdge"];
@@ -159,26 +159,18 @@ function Section({ title, quiet, children }: { title: string; quiet?: boolean; c
  */
 export function SettleUpTab({ groupId }: { groupId: string }) {
   const me = useCurrentUser();
-  const { data: plan, error, reload } = useApi<PlanEdge[]>(`/groups/${groupId}/settlement-plan`);
-  const [changedAt, setChangedAt] = useState<number>();
+  const { data: plan, error, reload } = useApi<PlanEdge[]>(`/groups/${groupId}/settlement-plan`, { poll: true });
+  const { lastChangedAt, markChanged } = useGroupChange(groupId);
   const [notice, setNotice] = useState<string>();
   const dismissNotice = useCallback(() => setNotice(undefined), []);
 
-  useLookAgain(changedAt, reload);
-
-  // The bell answers payments of any group; looking again at a plan that did not change is harmless.
-  useEffect(() => {
-    const onAnswered = () => setChangedAt(Date.now());
-    window.addEventListener(PAYMENT_ANSWERED, onAnswered);
-    return () => window.removeEventListener(PAYMENT_ANSWERED, onAnswered);
-  }, []);
+  useLookAgain(lastChangedAt, reload);
 
   if (error && !plan) return <ErrorBanner error={error} />;
   if (!plan || !me) return <p>Loading…</p>;
 
   const afterWaive = () => {
-    void reload();
-    setChangedAt(Date.now());
+    markChanged();
     setNotice("Debt waived.");
   };
 
@@ -199,8 +191,7 @@ export function SettleUpTab({ groupId }: { groupId: string }) {
               groupId={groupId}
               edge={edge}
               onPaid={() => {
-                void reload();
-                setChangedAt(Date.now());
+                markChanged();
                 setNotice("Payment reported. It counts once it is confirmed.");
               }}
             />

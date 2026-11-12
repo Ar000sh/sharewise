@@ -82,10 +82,10 @@
 - **Modules = bounded contexts** from the P1 slides: **Account** (generic), **Group** (supporting), **Expense** (core), **Settlement** (core). 🟢
   - **Shared types** (Money, GroupId, MemberId) is **not a context**, only a code-organisation package. On the P1 context map it is the Shared Kernel between Expense and Settlement.
   - Context map edges: Account → Group (OHS/PL → ACL). Group → Expense and Group → Settlement (OHS/PL → Conformist). Expense ↔ Settlement: Partnership + Shared Kernel.
-  - Sources: `work/ShareWise — Context Map, Ubiquitous Language & Domain Model (1).pdf`, `work/ShareWise_Domain_Model.drawio`, `work/ShareWise_Requirements.md`.
+  - Sources: `work/ShareWise — Context Map, Ubiquitous Language & Domain Model (1).pdf`, `docs/domain/ShareWise_Domain_Model.drawio`, `docs/domain/ShareWise_Requirements.md` (the PDF stayed in the FAVS study folder).
 - **Hexagonal inside core contexts**, layered for supporting ones (P1 §4.2). 🟢
 - **Modules talk only via public interfaces and domain events**, never via each other's tables. This is what makes service extraction (Ex9) possible and gives P2 its "limitations and change drivers" story. 🟢
-- **Single source of truth for rules:** `work/ShareWise_Requirements.md` (R1–R17, journeys J1–J17).
+- **Single source of truth for rules:** `docs/domain/ShareWise_Requirements.md` (R1–R17, journeys J1–J17).
 - **Folders:** `sharewise/frontend` (Next.js) and `sharewise/backend` (Spring Boot), separate apps. 🟢 (assumption, see §4)
 
 ## 6. What P2 needs from the implementation (so we build with it in mind)

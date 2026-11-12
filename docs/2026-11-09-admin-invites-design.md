@@ -9,7 +9,7 @@ Today `Group.inviteMember` lets **any active member** invite, and everybody join
 1. A normal member can grow the group. Admins should decide who joins.
 2. Nobody can become an admin, neither at invitation nor later (requirement J10 / R12: "promote a member to admin" is a **Must**).
 
-**Source of the rule.** The requirements (`work/ShareWise_Requirements.md`, J3) say a *member* invites. Admin-only invitation is **our choice** (the user's), not something from the professor's slides. Promotion is a Must (J10) and R12 needs it (the last admin cannot leave without promoting someone). Say this when defending.
+**Source of the rule.** The requirements (`docs/domain/ShareWise_Requirements.md`, J3) say a *member* invites. Admin-only invitation is **our choice** (the user's), not something from the professor's slides. Promotion is a Must (J10) and R12 needs it (the last admin cannot leave without promoting someone). Say this when defending.
 
 ## Decisions (taken with the user)
 

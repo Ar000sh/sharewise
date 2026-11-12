@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api } from "@/lib/api";
 import { CreateGroupForm } from "@/components/CreateGroupForm";
 import { GroupList } from "@/components/GroupList";
+import { renderWithQueryClient } from "@/lib/renderWithQueryClient";
 
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<typeof import("@/lib/api")>()), api: vi.fn() }));
 const push = vi.fn();
@@ -19,7 +20,7 @@ describe("GroupList", () => {
       { id: "g2", name: "Flat", status: "OPEN", memberCount: 1 },
     ]);
 
-    render(<GroupList />);
+    renderWithQueryClient(<GroupList />);
 
     const link = await screen.findByRole("link", { name: /Mallorca 2027/ });
     expect(link).toHaveAttribute("href", "/groups/g1");
@@ -31,7 +32,7 @@ describe("GroupList", () => {
   it("showsEmptyStateWhenNoGroups", async () => {
     apiMock.mockResolvedValue([]);
 
-    render(<GroupList />);
+    renderWithQueryClient(<GroupList />);
 
     expect(await screen.findByText(/no groups yet/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /create/i })).toHaveAttribute("href", "/groups/new");
@@ -40,7 +41,7 @@ describe("GroupList", () => {
   it("showsErrorMessageWhenLoadingFails", async () => {
     apiMock.mockRejectedValue(new ApiError(401, "UNAUTHENTICATED", "Missing or invalid session"));
 
-    render(<GroupList />);
+    renderWithQueryClient(<GroupList />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/please sign in/i);
   });

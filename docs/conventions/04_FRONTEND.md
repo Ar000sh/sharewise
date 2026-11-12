@@ -33,12 +33,12 @@ Amounts in the API are decimal strings (`"900.00"`). All parsing, formatting and
 - Every failed call ends in `ApiError`. Display text comes from `messageFor(error)` (`lib/errors.ts`), which maps each contract `code` (plus `BACKEND_UNREACHABLE`, `NETWORK_ERROR`) to a sentence and falls back to the server `detail`. Adding a contract `ErrorCode` means adding its message there.
 - A page never renders blank on failure: errors show the `ErrorBanner`. Loading shows "Loading…".
 - A `401` anywhere sends the visitor to `/login?next=<path>`, in one place: `api()` (`lib/api.ts`), which still throws, so no caller handles a 401 on its own. `next` and `returnTo` are only ever read through `safeReturnTo` (`lib/session.ts`).
-- Balances are eventually consistent: after recording an expense the balances view re-fetches and re-checks for a short, bounded time. Never assume the new balance is there immediately.
+- Balances are eventually consistent: after an own write (an expense, a payment, a waiver) the open tab re-fetches and re-checks for a short, bounded time (`useLookAgain`), because the ledger books the change a moment after it was saved. Other members' changes arrive because the open group page asks again every 10 seconds and on window focus (`useApi(path, { poll: true })`). Never assume the new balance is there immediately.
 
 ## 5. Components
 
 - Client components say `"use client"` on the first line; keep server components (pages, layouts) free of state and effects.
-- State: local `useState`; server data through `useApi`. No global state library.
+- State: local `useState`; server data only through `useApi`, which is TanStack Query (`lib/useApi.ts`, client defaults in `lib/queryClient.ts`). No client state library. Component tests render inside `renderWithQueryClient` (`lib/renderWithQueryClient.tsx`).
 - Forms are controlled, labelled (`<label>` text is what Playwright and screen readers use), validate on submit, and disable the submit button while busy.
 - Styling with Tailwind utility classes; a layout must work at phone width.
 - **Colours and dark mode.** The page follows the browser's light or dark setting (`globals.css`: `--background` and `--foreground` switch in `prefers-color-scheme: dark`, and `color-scheme: light dark` lets form controls follow). Everything inside inherits the *foreground* colour, which is light in dark mode. So:
@@ -47,7 +47,7 @@ Amounts in the API are decimal strings (`"900.00"`). All parsing, formatting and
   - A coloured text (`text-red-700`, `text-green-700`) needs a `dark:` counterpart (`dark:text-red-400`), unless it sits on its own fixed background.
   - New UI is looked at in **both** modes before it is called done (browser or OS setting; a Playwright run can use `colorScheme: "dark"`).
   - Checked by `src/lib/themeRules.test.ts`, which scans every component and page; it fails with the file and the offending class string.
-- Text in the UI is English, sentence case, and uses the glossary: "group", "expense", "paid by", "split equally between", "balance". Not "payer", "bill" or "user" for a group participant.
+- Text in the UI is English, sentence case, and uses the glossary (`docs/domain/Ubiquitous_Language.md`): "group", "expense", "paid by", "split equally between", "balance". Not "payer", "bill" or "user" for a group participant.
 - No `console.log`, no commented-out code, no `any` (use `unknown` and narrow), no `// @ts-ignore`.
 
 ## 6. Tests

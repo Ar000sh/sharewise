@@ -8,7 +8,7 @@
 
 **Tech Stack:** Java 21, Spring Boot (newest stable from start.spring.io), Spring Modulith, Spring Data JPA, Flyway, Postgres (compose), Testcontainers, Maven wrapper; Next.js App Router + TypeScript, `openapi-typescript`, Prism mock.
 
-**Spec:** `docs/superpowers/specs/2026-10-24-sharewise-modulith-ex4-design.md` (FAVS repo). Domain rules: `work/ShareWise_Requirements.md`.
+**Spec:** `docs/superpowers/specs/2026-10-24-sharewise-modulith-ex4-design.md` (FAVS repo). Domain rules: `docs/domain/ShareWise_Requirements.md`.
 
 **Paths:** All paths below are relative to the **new ShareWise repo root** (= the folder `sharewise/` today). `<pkg>` = `backend/src/main/java/de/hsh/favs/sharewise`, `<test>` = `backend/src/test/java/de/hsh/favs/sharewise`. Root Java package `de.hsh.favs.sharewise`.
 

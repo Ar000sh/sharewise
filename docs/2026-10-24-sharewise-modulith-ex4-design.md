@@ -1,7 +1,7 @@
 # ShareWise Modulith: Ex4 Design (due Mon 26.10.26), with an outlook on Ex5 (02.11.26)
 
 **Status:** draft for team review. Items marked 🟢 are decisions from the conversation with the user. Items marked **(call)** are my own calls, to be checked.
-**Domain source of truth:** `work/ShareWise_Requirements.md` (rules R1–R17, L1–L6, journeys J1–J17). If this file disagrees with it, the requirements file wins for domain rules; this file wins for implementation scope.
+**Domain source of truth:** `docs/domain/ShareWise_Requirements.md` (rules R1–R17, L1–L6, journeys J1–J17). If this file disagrees with it, the requirements file wins for domain rules; this file wins for implementation scope.
 **Related:** `sharewise/docs/01_Requirements_from_Prof.md` (what the prof demands), `sharewise/docs/02_Reference_Template_Takeaways.md` (demo repo analysis, proposals T1–T7).
 
 ## 1. Intent

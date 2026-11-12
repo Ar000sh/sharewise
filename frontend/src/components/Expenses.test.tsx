@@ -33,18 +33,49 @@ function postedBody() {
 }
 
 describe("ExpenseForm", () => {
-  it("formDefaultsPayerToCurrentUserAndParticipantsToAll", () => {
+  it("formDefaultsPayerAndParticipantsToTheCurrentUserOnly", () => {
     renderForm();
 
     expect(screen.getByLabelText(/paid by/i)).toHaveValue("u2");
+    expect(screen.getByRole("checkbox", { name: "Bob" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Alice" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Carol" })).not.toBeChecked();
+  });
+
+  it("selectEveryoneTicksAllMembers", async () => {
+    // given
+    renderForm();
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: "Select everyone" }));
+
+    // then
     for (const name of ["Alice", "Bob", "Carol"]) {
       expect(screen.getByRole("checkbox", { name })).toBeChecked();
     }
   });
 
+  it("aMemberWhoJoinsWhileTheFormIsOpenIsNotInTheSplit", async () => {
+    // given Bob ticked everybody and typed an expense
+    const { rerender } = render(<ExpenseForm groupId="g1" members={members} currentUserId="u2" onRecorded={vi.fn()} />);
+    await userEvent.click(screen.getByRole("button", { name: "Select everyone" }));
+    await fill("Hotel", "900");
+
+    // when Dave accepts an invitation and the group page hands the form the new member list
+    const dave = { userId: "u4", displayName: "Dave", role: "MEMBER" as const };
+    rerender(<ExpenseForm groupId="g1" members={[...members, dave]} currentUserId="u2" onRecorded={vi.fn()} />);
+
+    // then Dave is listed but not ticked, the split is still over the three, and what Bob typed is still there
+    expect(screen.getByRole("checkbox", { name: "Dave" })).not.toBeChecked();
+    const rows = within(screen.getByRole("list", { name: /shares/i })).getAllByRole("listitem");
+    expect(rows.map((r) => r.textContent)).toEqual(["Alice300,00 €", "Bob300,00 €", "Carol300,00 €"]);
+    expect(screen.getByLabelText(/title/i)).toHaveValue("Hotel");
+  });
+
   it("theRecorderCannotUntickThemselvesButOthersCanBeUnticked", async () => {
-    // given Bob (u2) is signed in
+    // given Bob (u2) is signed in and ticked everybody
     renderForm();
+    await userEvent.click(screen.getByRole("button", { name: "Select everyone" }));
 
     // when everybody else is unticked and Bob tries to untick himself
     await userEvent.click(screen.getByRole("checkbox", { name: "Alice" }));
@@ -98,7 +129,7 @@ describe("ExpenseForm", () => {
     const onRecorded = renderForm();
 
     await fill("Hotel", "900");
-    await userEvent.click(screen.getByRole("checkbox", { name: "Carol" }));
+    await userEvent.click(screen.getByRole("checkbox", { name: "Alice" }));
     await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
 
     expect(apiMock.mock.calls[0][0]).toBe("/groups/g1/expenses");
@@ -115,6 +146,7 @@ describe("ExpenseForm", () => {
 
   it("showsSharePreviewPerParticipant", async () => {
     renderForm();
+    await userEvent.click(screen.getByRole("button", { name: "Select everyone" }));
 
     await fill("Taxi", "10");
 
