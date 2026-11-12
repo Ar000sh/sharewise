@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trip: Members and group status</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0E7468}a:hover{color:#0A4F46}
+</style>
+</helmet>
+<div style="min-height:900px; background:#EEF6F4; color:#10312D; font-family:'Plus Jakarta Sans',system-ui,sans-serif; font-size:15px; line-height:1.5; font-variant-numeric:tabular-nums">
+
+<header style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; padding:18px 40px">
+<div style="display:flex; align-items:center; gap:10px">
+<div style="position:relative; width:40px; height:30px"><span style="position:absolute; left:0; top:0; width:30px; height:30px; border-radius:15px; background:#D64527"></span><span style="position:absolute; left:12px; top:0; width:30px; height:30px; border-radius:15px; background:#0E7468; opacity:.9"></span></div>
+<div style="font-size:20px; font-weight:800; letter-spacing:-.02em">ShareWise</div>
+</div>
+<nav aria-label="Main" style="display:flex; gap:6px; padding:5px; border-radius:999px; background:#FFFFFF; box-shadow:0 2px 8px rgba(16,49,45,.06)">
+<a href="#" style="padding:9px 20px; border-radius:999px; background:#10312D; color:#FFFFFF; font-weight:700; text-decoration:none">My groups</a>
+<a href="#" style="display:flex; align-items:center; gap:8px; padding:9px 20px; border-radius:999px; color:#10312D; font-weight:600; text-decoration:none">Inbox<span style="min-width:20px; box-sizing:border-box; padding:0 6px; border-radius:10px; background:#D64527; color:#FFFFFF; font-size:12px; font-weight:700; text-align:center">3</span></a>
+<a href="#" style="padding:9px 20px; border-radius:999px; color:#10312D; font-weight:600; text-decoration:none">Activity</a>
+</nav>
+<div style="width:44px; height:44px; border-radius:22px; background:#D64527; color:#FFFFFF; font-weight:800; display:flex; align-items:center; justify-content:center">A</div>
+</header>
+
+<main style="box-sizing:border-box; max-width:1180px; margin:0 auto; padding:6px 40px 44px; display:flex; flex-direction:column; gap:22px">
+
+<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap"><h1 style="margin:0; font-size:30px; font-weight:800; letter-spacing:-.03em">Mallorca 2027</h1><span style="padding:4px 12px; border-radius:999px; background:#D8F0EB; color:#0A4F46; font-size:12px; font-weight:700">Open</span><span style="color:#55726E">EUR · 5 members · up to date</span></div>
+
+<div role="tablist" aria-label="Group sections" style="display:flex; flex-wrap:wrap; gap:8px">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="5"><a href="#" role="tab" style="display:flex; align-items:center; gap:8px; min-height:42px; padding:0 20px; border-radius:999px; font-weight:700; text-decoration:none; {{t.style}}">{{t.name}}<sc-if value="{{t.badge}}" hint-placeholder-val="{{false}}"><span style="min-width:20px; box-sizing:border-box; padding:0 6px; border-radius:10px; background:#D64527; color:#FFFFFF; font-size:12px; text-align:center">{{t.badge}}</span></sc-if></a></sc-for>
+</div>
+
+<div style="display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start">
+
+<div style="flex:1 1 520px; max-width:860px; min-width:0; display:flex; flex-direction:column; gap:22px">
+
+<section aria-labelledby="mem" style="display:flex; flex-direction:column; gap:12px">
+<h2 id="mem" style="margin:0; font-size:18px; font-weight:800">Members</h2>
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px">
+<sc-for list="{{members}}" as="m" hint-placeholder-count="5">
+<div style="padding:16px 18px; border-radius:24px; background:#FFFFFF; box-shadow:0 4px 14px rgba(16,49,45,.06); display:flex; flex-direction:column; gap:10px">
+<div style="display:flex; align-items:center; gap:12px"><span style="width:52px; height:52px; border-radius:26px; background:{{m.c}}; color:#FFFFFF; font-size:20px; font-weight:800; display:flex; align-items:center; justify-content:center">{{m.i}}</span><div style="flex:1; min-width:0"><div style="font-weight:800">{{m.name}}</div><span style="display:inline-block; padding:1px 10px; border-radius:999px; font-size:12px; font-weight:700; {{m.roleStyle}}">{{m.role}}</span></div></div>
+<div style="font-size:13px; color:#55726E">{{m.note}}</div>
+<div style="display:flex; gap:8px; flex-wrap:wrap"><button type="button" disabled="{{m.noPromote}}" style="min-height:38px; padding:0 14px; border:2px solid #C5DAD5; border-radius:999px; background:#FFFFFF; color:#10312D; font:inherit; font-size:13px; font-weight:700; {{m.promoteStyle}}">Make admin</button><button type="button" disabled="{{true}}" style="min-height:38px; padding:0 14px; border:2px solid #E3ECE9; border-radius:999px; background:#F4F8F7; color:#7A918D; font:inherit; font-size:13px; font-weight:700">Remove</button></div>
+</div>
+</sc-for>
+<div style="padding:16px 18px; border-radius:24px; background:#E3EFEC; display:flex; flex-direction:column; gap:10px">
+<div style="display:flex; align-items:center; gap:12px"><span style="width:52px; height:52px; border-radius:26px; background:#8FA5A1; color:#FFFFFF; font-size:20px; font-weight:800; display:flex; align-items:center; justify-content:center">F</span><div><div style="font-weight:800; color:#35534F">Frank (left)</div><div style="font-size:12px; color:#55726E">Former member</div></div></div>
+<div style="font-size:13px; color:#55726E">Left on 12 Jun. Still shown in old expenses.</div>
+</div>
+</div>
+<div style="font-size:13px; color:#55726E">Members can leave or be removed only at 0,00 €. Everybody in this group still owes or is owed money.</div>
+</section>
+
+<section aria-labelledby="inv" style="padding:22px 24px; border-radius:28px; background:#FFFFFF; box-shadow:0 4px 14px rgba(16,49,45,.06); display:flex; flex-direction:column; gap:14px">
+<h2 id="inv" style="margin:0; font-size:18px; font-weight:800">Invite friends</h2>
+<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:8px 8px 8px 18px; border-radius:999px; background:#EEF6F4"><span style="flex:1 1 200px; min-width:0; color:#35534F; font-weight:600">sharewise.example/join/k7Qm-2x9Tf</span><button type="button" style="min-height:44px; padding:0 22px; border:0; border-radius:999px; background:#D64527; color:#FFFFFF; font:inherit; font-weight:700">Copy link</button></div>
+<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center">
+<label style="flex:1 1 200px; display:flex; flex-direction:column; gap:6px; font-weight:700">Or invite by username or email<input type="text" value="" placeholder="gina@example.com" style="min-width:0; min-height:48px; box-sizing:border-box; padding:0 16px; border:2px solid #C5DAD5; border-radius:16px; font:inherit; font-weight:500; color:#10312D"></label>
+</div>
+<div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap"><span style="font-weight:700">Joins as</span><button type="button" aria-pressed="true" style="min-height:40px; padding:0 18px; border:2px solid #0E7468; border-radius:999px; background:#D8F0EB; color:#0A4F46; font:inherit; font-weight:700">Member</button><button type="button" aria-pressed="false" style="min-height:40px; padding:0 18px; border:2px solid #C5DAD5; border-radius:999px; background:#FFFFFF; color:#10312D; font:inherit; font-weight:700">Admin</button><span style="flex:1"></span><button type="button" style="min-height:44px; padding:0 24px; border:0; border-radius:999px; background:#0E7468; color:#FFFFFF; font:inherit; font-weight:700">Send invitation</button></div>
+<div style="padding:10px 16px; border-radius:16px; background:#EEF6F4; font-size:14px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap"><span><strong style="font-weight:700">hugo@example.com</strong> · invited 3 days ago · expires in 4 days</span><a href="#" style="font-weight:700">Cancel</a></div>
+</section>
+
+<section aria-labelledby="stat" style="padding:22px 24px; border-radius:28px; background:#FFFFFF; box-shadow:0 4px 14px rgba(16,49,45,.06); display:flex; flex-direction:column; gap:14px">
+<h2 id="stat" style="margin:0; font-size:18px; font-weight:800">Group status</h2>
+<ol style="margin:0; padding:0; list-style:none; display:flex; align-items:center; gap:8px; flex-wrap:wrap">
+<li style="padding:8px 18px; border-radius:999px; background:#0E7468; color:#FFFFFF; font-weight:700">Open</li>
+<li aria-hidden="true" style="width:24px; height:2px; background:#C5DAD5"></li>
+<li style="padding:8px 18px; border-radius:999px; border:2px solid #C5DAD5; color:#35534F; font-weight:700">Closed for settlement</li>
+<li aria-hidden="true" style="width:24px; height:2px; background:#C5DAD5"></li>
+<li style="padding:8px 18px; border-radius:999px; border:2px solid #C5DAD5; color:#35534F; font-weight:700">Archived</li>
+</ol>
+<div style="color:#35534F">Closing freezes the expenses and fixes the final plan. Payments still work, and an admin can reopen the group. Archiving is final and needs every balance at 0,00 €.</div>
+<div style="display:flex; gap:10px; flex-wrap:wrap"><button type="button" style="min-height:46px; padding:0 22px; border:2px solid #B8391C; border-radius:999px; background:#FFFFFF; color:#8A2410; font:inherit; font-weight:700">Close for settlement</button><button type="button" disabled="{{true}}" style="min-height:46px; padding:0 22px; border:2px solid #E3ECE9; border-radius:999px; background:#F4F8F7; color:#7A918D; font:inherit; font-weight:700">Archive</button><button type="button" disabled="{{true}}" style="min-height:46px; padding:0 22px; border:2px solid #E3ECE9; border-radius:999px; background:#F4F8F7; color:#7A918D; font:inherit; font-weight:700">Leave group</button></div>
+<div style="font-size:13px; color:#55726E">Leave: you are the only admin, make someone else an admin first.</div>
+</section>
+
+</div>
+
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const tabOn = 'background:#10312D; color:#FFFFFF';
+const tabOff = 'background:#FFFFFF; color:#10312D';
+const admin = 'background:#FFE8E1; color:#8A2410';
+const member = 'background:#E3EFEC; color:#35534F';
+const off = 'opacity:.45';
+const A = { i: 'A', c: '#D64527' };
+const B = { i: 'B', c: '#0E7468' };
+const C = { i: 'C', c: '#5B45C9' };
+const D = { i: 'D', c: '#9A6200' };
+const E = { i: 'E', c: '#1E64B7' };
+return {
+tabs: [
+{ name: 'Expenses', style: tabOff, badge: '' },
+{ name: 'Balances', style: tabOff, badge: '' },
+{ name: 'Settle up', style: tabOff, badge: '1' },
+{ name: 'Members', style: tabOn, badge: '' },
+{ name: 'Activity', style: tabOff, badge: '' }
+],
+members: [
+{ ...A, name: 'Alice Tester (you)', note: 'Started the group on 14 Jun', role: 'Admin', roleStyle: admin, noPromote: true, promoteStyle: off },
+{ ...B, name: 'Bob', note: 'Owes 202,00 €, settle up before removing', role: 'Member', roleStyle: member, noPromote: false, promoteStyle: '' },
+{ ...C, name: 'Carol', note: 'Owes 72,00 €', role: 'Member', roleStyle: member, noPromote: false, promoteStyle: '' },
+{ ...D, name: 'David', note: 'Owes 437,00 €', role: 'Member', roleStyle: member, noPromote: false, promoteStyle: '' },
+{ ...E, name: 'Eve', note: 'Joined on 17 Jun, shares only in later expenses', role: 'Member', roleStyle: member, noPromote: false, promoteStyle: '' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

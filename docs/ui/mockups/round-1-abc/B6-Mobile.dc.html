@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trip: Mobile, dark</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#5ED6C5}a:hover{color:#8CE6D9}
+</style>
+</helmet>
+<div style="width:1340px; height:900px; box-sizing:border-box; padding:28px 35px; display:flex; gap:40px; background:#CFE0DC; font-family:'Plus Jakarta Sans',system-ui,sans-serif; font-size:15px; line-height:1.5; font-variant-numeric:tabular-nums">
+
+<div style="position:relative; width:390px; height:844px; box-sizing:border-box; border-radius:38px; border:1px solid #24504A; background:#0C1F1D; color:#EAF7F4; overflow:hidden; display:flex; flex-direction:column">
+<div style="position:relative; overflow:hidden; margin:14px 14px 0; padding:20px 20px 18px; border-radius:28px; background:#C2401F; color:#FFFFFF">
+<span style="position:absolute; right:-24px; top:-34px; width:120px; height:120px; border-radius:60px; background:#FFFFFF; opacity:.14"></span>
+<div style="position:relative; display:flex; align-items:center; gap:10px; flex-wrap:wrap"><h1 style="margin:0; font-size:26px; font-weight:800; letter-spacing:-.03em">Mallorca 2027</h1><span style="padding:3px 10px; border-radius:999px; background:#FFFFFF; color:#10312D; font-size:12px; font-weight:700">Open</span></div>
+<div style="position:relative; margin-top:10px; font-size:13px; opacity:.95">You get back</div>
+<div style="position:relative; font-size:32px; font-weight:800; letter-spacing:-.02em">+573,00 €</div>
+</div>
+<div role="tablist" aria-label="Group sections" style="display:flex; gap:8px; padding:14px 14px 4px; overflow-x:auto">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="5"><a href="#" role="tab" style="flex:0 0 auto; display:flex; align-items:center; min-height:44px; padding:0 18px; border-radius:999px; font-weight:700; text-decoration:none; white-space:nowrap; {{t.style}}">{{t.name}}</a></sc-for>
+</div>
+<div style="flex:1; min-height:0; padding:8px 14px; display:flex; flex-direction:column; gap:10px; overflow:hidden">
+<sc-for list="{{expenses}}" as="e" hint-placeholder-count="5">
+<div style="display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:20px; background:#12302C">
+<span style="flex:0 0 auto; width:40px; height:40px; border-radius:20px; background:{{e.c}}; color:#FFFFFF; font-weight:800; display:flex; align-items:center; justify-content:center">{{e.i}}</span>
+<div style="flex:1; min-width:0"><div style="font-weight:700">{{e.title}}</div><div style="font-size:12px; color:#8FB0AB">{{e.meta}}</div></div>
+<div style="text-align:right"><div style="font-weight:800">{{e.amount}}</div><div style="font-size:12px; font-weight:600; {{e.partColor}}">{{e.part}}</div></div>
+</div>
+</sc-for>
+</div>
+<nav aria-label="Main" style="position:relative; display:flex; align-items:center; justify-content:space-around; min-height:76px; border-top:1px solid #24504A; background:#0F2927">
+<a href="#" style="display:flex; flex-direction:column; align-items:center; gap:2px; min-width:72px; min-height:44px; font-size:12px; font-weight:700; color:#5ED6C5; text-decoration:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/></svg>Groups</a>
+<button type="button" aria-label="Add expense" style="margin-top:-30px; width:58px; height:58px; border:4px solid #0C1F1D; border-radius:29px; background:#FF8A6B; color:#2A0E06; display:flex; align-items:center; justify-content:center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+<a href="#" style="display:flex; flex-direction:column; align-items:center; gap:2px; min-width:72px; min-height:44px; font-size:12px; font-weight:600; color:#B5D3CE; text-decoration:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg>Inbox 3</a>
+</nav>
+</div>
+
+<div style="position:relative; width:390px; height:844px; box-sizing:border-box; border-radius:38px; border:1px solid #24504A; background:#0C1F1D; color:#EAF7F4; overflow:hidden">
+<div style="padding:22px 20px; opacity:.5"><h1 style="margin:0; font-size:26px; font-weight:800">Mallorca 2027</h1><div style="margin-top:12px; padding:14px 16px; border-radius:20px; background:#12302C">Farewell dinner · 250,00 €</div></div>
+<div style="position:absolute; top:0; right:0; bottom:0; left:0; background:rgba(4,14,13,.6)"></div>
+<div role="dialog" aria-label="Add expense" style="position:absolute; left:0; right:0; bottom:0; top:96px; box-sizing:border-box; padding:10px 20px 20px; border-radius:30px 30px 0 0; background:#12302C; display:flex; flex-direction:column; gap:12px; overflow:hidden">
+<div style="align-self:center; width:44px; height:5px; border-radius:3px; background:#3A6B63"></div>
+<div style="display:flex; align-items:center; justify-content:space-between"><h2 style="margin:0; font-size:22px; font-weight:800; letter-spacing:-.02em">Add expense</h2><button type="button" style="min-height:44px; padding:0 8px; border:0; background:transparent; color:#B5D3CE; font:inherit; font-weight:600">Cancel</button></div>
+<label style="display:flex; flex-direction:column; gap:4px; font-weight:700; color:#B5D3CE">Title<input type="text" value="Taxi to the airport" style="min-height:48px; box-sizing:border-box; padding:0 14px; border:2px solid #24504A; border-radius:16px; background:#0C1F1D; color:#EAF7F4; font:inherit; font-weight:500"></label>
+<label style="display:flex; flex-direction:column; gap:4px; font-weight:700; color:#B5D3CE">Amount (€)<input type="text" inputmode="decimal" value="84,00" style="min-height:56px; box-sizing:border-box; padding:0 16px; border:2px solid #5ED6C5; border-radius:16px; background:#0C1F1D; color:#EAF7F4; font:inherit; font-size:28px; font-weight:800; text-align:right"></label>
+<fieldset style="margin:0; padding:0; border:0"><legend style="padding:0; margin-bottom:6px; font-weight:700; color:#B5D3CE">Paid by</legend>
+<div style="display:flex; gap:8px; overflow:hidden">
+<sc-for list="{{payers}}" as="p" hint-placeholder-count="3"><button type="button" aria-pressed="{{p.on}}" style="flex:0 0 auto; display:flex; align-items:center; gap:8px; min-height:44px; padding:0 14px 0 5px; border-radius:999px; font:inherit; font-weight:700; {{p.style}}"><span style="width:32px; height:32px; border-radius:16px; background:{{p.c}}; color:#FFFFFF; font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center">{{p.i}}</span>{{p.name}}</button></sc-for>
+</div></fieldset>
+<div role="group" aria-label="Split" style="display:flex; padding:4px; border-radius:999px; background:#0C1F1D">
+<button type="button" aria-pressed="true" style="flex:1; min-height:42px; border:0; border-radius:999px; background:#5ED6C5; color:#06231F; font:inherit; font-weight:800">Equal</button>
+<button type="button" aria-pressed="false" style="flex:1; min-height:42px; border:0; border-radius:999px; background:transparent; color:#B5D3CE; font:inherit; font-weight:600">Exact</button>
+<button type="button" aria-pressed="false" style="flex:1; min-height:42px; border:0; border-radius:999px; background:transparent; color:#B5D3CE; font:inherit; font-weight:600">Percentage</button>
+</div>
+<fieldset style="margin:0; padding:0; border:0"><div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px"><legend style="padding:0; font-weight:700; color:#B5D3CE; float:left">Split equally between</legend><button type="button" style="min-height:44px; padding:0 14px; border:2px solid #5ED6C5; border-radius:999px; background:transparent; color:#5ED6C5; font:inherit; font-weight:700">Everyone</button></div>
+<div style="display:flex; gap:8px; flex-wrap:wrap; clear:both">
+<sc-for list="{{split}}" as="p" hint-placeholder-count="5"><button type="button" aria-pressed="{{p.on}}" style="display:flex; align-items:center; gap:6px; min-height:44px; padding:0 12px 0 5px; border-radius:999px; font:inherit; font-weight:700; {{p.style}}"><span style="width:32px; height:32px; border-radius:16px; background:{{p.c}}; color:#FFFFFF; font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center">{{p.i}}</span>{{p.name}}</button></sc-for>
+</div></fieldset>
+<div style="margin-top:auto; font-weight:700; color:#8CE6D9">4 people · 21,00 € each</div>
+<button type="button" style="min-height:52px; border:0; border-radius:999px; background:#FF8A6B; color:#2A0E06; font:inherit; font-size:16px; font-weight:800">Add expense</button>
+</div>
+</div>
+
+<div style="width:390px; height:844px; box-sizing:border-box; border-radius:38px; border:1px solid #24504A; background:#0C1F1D; color:#EAF7F4; overflow:hidden; display:flex; flex-direction:column">
+<div style="padding:24px 20px 8px; display:flex; align-items:baseline; justify-content:space-between"><h1 style="margin:0; font-size:28px; font-weight:800; letter-spacing:-.03em">Inbox</h1><span style="color:#8FB0AB">3 new</span></div>
+<div style="flex:1; min-height:0; padding:6px 16px; display:flex; flex-direction:column; gap:12px; overflow:hidden">
+<div style="font-size:13px; font-weight:800; color:#8FB0AB">Needs your answer</div>
+<div style="padding:16px; border-radius:24px; background:#12302C; display:flex; flex-direction:column; gap:12px">
+<div style="display:flex; align-items:center; gap:12px"><span style="width:44px; height:44px; border-radius:22px; background:#0E7468; color:#FFFFFF; font-weight:800; display:flex; align-items:center; justify-content:center">B</span><div><div style="font-weight:700">Bob says he paid you 136,00 €</div><div style="font-size:12px; color:#8FB0AB">Mallorca 2027 · “Cash at the airport”</div></div></div>
+<div style="display:flex; gap:8px"><button type="button" style="flex:1; min-height:46px; border:0; border-radius:999px; background:#5ED6C5; color:#06231F; font:inherit; font-weight:800">Confirm</button><button type="button" style="flex:1; min-height:46px; border:2px solid #3A6B63; border-radius:999px; background:transparent; color:#EAF7F4; font:inherit; font-weight:700">Reject</button></div>
+</div>
+<div style="padding:16px; border-radius:24px; background:#12302C; display:flex; flex-direction:column; gap:12px">
+<div style="display:flex; align-items:center; gap:12px"><span style="width:44px; height:44px; border-radius:22px; background:#B0508A; color:#FFFFFF; font-weight:800; display:flex; align-items:center; justify-content:center">D</span><div><div style="font-weight:700">Dora invited you to Cabin weekend</div><div style="font-size:12px; color:#8FB0AB">As an admin · expires in 5 days</div></div></div>
+<div style="display:flex; gap:8px"><button type="button" style="flex:1; min-height:46px; border:0; border-radius:999px; background:#FF8A6B; color:#2A0E06; font:inherit; font-weight:800">Accept</button><button type="button" style="flex:1; min-height:46px; border:2px solid #3A6B63; border-radius:999px; background:transparent; color:#EAF7F4; font:inherit; font-weight:700">Decline</button></div>
+</div>
+<div style="margin-top:4px; font-size:13px; font-weight:800; color:#8FB0AB">Earlier</div>
+<sc-for list="{{entries}}" as="n" hint-placeholder-count="3">
+<div style="display:flex; align-items:center; gap:12px; padding:6px 4px"><span style="flex:0 0 auto; width:8px; height:8px; border-radius:4px; background:{{n.dot}}"></span><div style="flex:1"><div style="{{n.style}}">{{n.text}}</div><div style="font-size:12px; color:#8FB0AB">{{n.when}}</div></div></div>
+</sc-for>
+<button type="button" style="align-self:flex-start; min-height:44px; padding:0 4px; border:0; background:transparent; color:#5ED6C5; font:inherit; font-weight:700">Mark all as read</button>
+</div>
+<nav aria-label="Main" style="position:relative; display:flex; align-items:center; justify-content:space-around; min-height:76px; border-top:1px solid #24504A; background:#0F2927">
+<a href="#" style="display:flex; flex-direction:column; align-items:center; gap:2px; min-width:72px; min-height:44px; font-size:12px; font-weight:600; color:#B5D3CE; text-decoration:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/></svg>Groups</a>
+<button type="button" aria-label="Add expense" style="margin-top:-30px; width:58px; height:58px; border:4px solid #0C1F1D; border-radius:29px; background:#FF8A6B; color:#2A0E06; display:flex; align-items:center; justify-content:center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+<a href="#" style="display:flex; flex-direction:column; align-items:center; gap:2px; min-width:72px; min-height:44px; font-size:12px; font-weight:700; color:#5ED6C5; text-decoration:none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg>Inbox 3</a>
+</nav>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1340,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const A = { i: 'A', c: '#D64527' };
+const B = { i: 'B', c: '#0E7468' };
+const C = { i: 'C', c: '#5B45C9' };
+const D = { i: 'D', c: '#9A6200' };
+const E = { i: 'E', c: '#1E64B7' };
+const on = 'background:#5ED6C5; color:#06231F';
+const off = 'background:#12302C; color:#B5D3CE';
+const chipOn = 'border:2px solid #5ED6C5; background:#194039; color:#EAF7F4';
+const chipOff = 'border:2px solid #24504A; background:transparent; color:#B5D3CE';
+return {
+tabs: [
+{ name: 'Expenses', style: on },
+{ name: 'Balances', style: off },
+{ name: 'Settle up', style: off },
+{ name: 'Members', style: off },
+{ name: 'Activity', style: off }
+],
+expenses: [
+{ ...A, title: 'Farewell dinner', meta: '19 Jun · Alice paid', amount: '250,00 €', part: 'You lent 200,00 €', partColor: 'color:#5ED6C5' },
+{ ...B, title: 'Groceries', meta: '18 Jun · Bob paid', amount: '60,00 €', part: 'You owe 12,00 €', partColor: 'color:#FFA98F' },
+{ ...E, title: 'Boat trip', meta: '17 Jun · Eve paid', amount: '300,00 €', part: 'You owe 100,00 €', partColor: 'color:#FFA98F' },
+{ ...C, title: 'Rental car', meta: '16 Jun · Carol paid', amount: '420,00 €', part: 'You owe 140,00 €', partColor: 'color:#FFA98F' },
+{ ...B, title: 'Dinner · corrected', meta: '15 Jun · Bob paid', amount: '200,00 €', part: 'You owe 50,00 €', partColor: 'color:#FFA98F' }
+],
+payers: [
+{ ...A, name: 'You', on: true, style: chipOn },
+{ ...B, name: 'Bob', on: false, style: chipOff },
+{ ...C, name: 'Carol', on: false, style: chipOff }
+],
+split: [
+{ ...A, name: 'You', on: true, style: chipOn },
+{ ...B, name: 'Bob', on: true, style: chipOn },
+{ ...C, name: 'Carol', on: true, style: chipOn },
+{ ...D, name: 'David', on: true, style: chipOn },
+{ ...E, name: 'Eve', on: false, style: chipOff }
+],
+entries: [
+{ text: 'Eve recorded an expense in Mallorca 2027', when: 'Yesterday', dot: '#FF8A6B', style: 'font-weight:700' },
+{ text: 'Bob joined Mallorca 2027', when: '15 Jun', dot: 'transparent', style: 'color:#B5D3CE' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

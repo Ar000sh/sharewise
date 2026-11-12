@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger: Activity</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1238A5}
+</style>
+</helmet>
+<div style="display:flex; flex-wrap:wrap; min-height:900px; background:#F4F6F9; color:#121821; font-family:'Inter',system-ui,sans-serif; font-size:14px; line-height:1.45; font-variant-numeric:tabular-nums">
+
+<nav aria-label="Main" style="flex:0 0 248px; box-sizing:border-box; background:#FFFFFF; border-right:1px solid #E2E6EC; padding:20px 14px; display:flex; flex-direction:column; gap:24px">
+<div style="display:flex; align-items:center; gap:10px; padding:0 8px"><div style="width:28px; height:28px; border-radius:8px; background:#1D4ED8; color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:700">S</div><div style="font-size:16px; font-weight:700">ShareWise</div></div>
+<div style="display:flex; flex-direction:column; gap:2px">
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; color:#121821; text-decoration:none">My groups</a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; color:#121821; text-decoration:none"><span>Inbox</span><span style="min-width:20px; box-sizing:border-box; padding:0 6px; border-radius:10px; background:#1D4ED8; color:#FFFFFF; font-size:12px; font-weight:600; text-align:center">3</span></a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; color:#121821; text-decoration:none">Activity</a>
+</div>
+<div style="display:flex; flex-direction:column; gap:4px">
+<div style="padding:0 10px 4px; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:#5B6678">Groups</div>
+<a href="#" style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; color:#121821; text-decoration:none; background:#E8EEFE; font-weight:600"><span style="width:8px; height:8px; border-radius:4px; background:#1D4ED8"></span>Mallorca 2027</a>
+<a href="#" style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; color:#121821; text-decoration:none"><span style="width:8px; height:8px; border-radius:4px; background:#C77A00"></span>Ski weekend</a>
+<a href="#" style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; color:#121821; text-decoration:none"><span style="width:8px; height:8px; border-radius:4px; background:#7B8697"></span>Flat 12</a>
+</div>
+<div style="margin-top:auto; display:flex; align-items:center; gap:10px; padding:12px 10px 0; border-top:1px solid #E2E6EC"><div style="width:32px; height:32px; border-radius:16px; background:#1D4ED8; color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:600">A</div><div style="flex:1; min-width:0"><div style="font-weight:600">Alice Tester</div><div style="font-size:12px; color:#5B6678">@alice</div></div><a href="#" style="font-size:12px">Sign out</a></div>
+</nav>
+
+<main style="flex:999 1 560px; min-width:0; box-sizing:border-box; padding:24px 36px 28px; display:flex; flex-direction:column; gap:20px">
+
+<header style="display:flex; flex-direction:column; gap:14px">
+<div style="font-size:13px; color:#5B6678"><a href="#" style="color:#5B6678">My groups</a> / Mallorca 2027</div>
+<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap"><h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-.01em">Mallorca 2027</h1><span style="padding:3px 10px; border-radius:999px; background:#E5EEFF; color:#12409E; font-size:12px; font-weight:600">Open</span><span style="font-size:13px; color:#5B6678">EUR · 5 members</span></div>
+<div role="tablist" aria-label="Group sections" style="display:flex; flex-wrap:wrap; gap:4px; border-bottom:1px solid #E2E6EC">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="5"><a href="#" role="tab" style="display:flex; align-items:center; gap:8px; padding:10px 14px; margin-bottom:-1px; text-decoration:none; {{t.style}}">{{t.name}}<sc-if value="{{t.badge}}" hint-placeholder-val="{{false}}"><span style="min-width:18px; box-sizing:border-box; padding:0 5px; border-radius:9px; background:#1D4ED8; color:#FFFFFF; font-size:11px; font-weight:600; text-align:center">{{t.badge}}</span></sc-if></a></sc-for>
+</div>
+</header>
+
+<section aria-labelledby="act" style="max-width:760px; display:flex; flex-direction:column; gap:12px">
+<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap"><h2 id="act" style="margin:0; font-size:15px; font-weight:600">Everything that happened in this group</h2>
+<div role="group" aria-label="Filter" style="display:flex; padding:3px; border-radius:10px; background:#E8ECF1"><button type="button" aria-pressed="true" style="padding:5px 12px; border:0; border-radius:8px; background:#FFFFFF; color:#121821; font:inherit; font-size:13px; font-weight:600; box-shadow:0 1px 2px rgba(18,24,33,.12)">All</button><button type="button" aria-pressed="false" style="padding:5px 12px; border:0; border-radius:8px; background:transparent; color:#4A5565; font:inherit; font-size:13px">Expenses</button><button type="button" aria-pressed="false" style="padding:5px 12px; border:0; border-radius:8px; background:transparent; color:#4A5565; font:inherit; font-size:13px">Payments</button><button type="button" aria-pressed="false" style="padding:5px 12px; border:0; border-radius:8px; background:transparent; color:#4A5565; font:inherit; font-size:13px">Members</button></div></div>
+<div style="background:#FFFFFF; border:1px solid #E2E6EC; border-radius:12px; padding:6px 20px 14px">
+<sc-for list="{{days}}" as="d" hint-placeholder-count="4">
+<div>
+<div style="padding:14px 0 6px; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:#5B6678">{{d.label}}</div>
+<sc-for list="{{d.items}}" as="a" hint-placeholder-count="2">
+<div style="display:flex; gap:12px; padding:9px 0; border-top:1px solid #EEF1F5; align-items:flex-start">
+<span style="flex:0 0 auto; width:28px; height:28px; border-radius:14px; background:{{a.c}}; color:#FFFFFF; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center">{{a.i}}</span>
+<div style="flex:1; min-width:0">{{a.text}}<div style="margin-top:1px; font-size:12px; color:#5B6678">{{a.kind}}</div></div>
+<div style="flex:0 0 auto; font-size:12px; color:#5B6678">{{a.time}}</div>
+</div>
+</sc-for>
+</div>
+</sc-for>
+<div style="padding-top:12px; border-top:1px solid #EEF1F5"><a href="#" style="font-weight:600">Show earlier</a></div>
+</div>
+</section>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const tabOn = 'color:#12409E; font-weight:600; border-bottom:2px solid #1D4ED8';
+const tabOff = 'color:#4A5565; border-bottom:2px solid transparent';
+const A = { i: 'A', c: '#1D4ED8' };
+const B = { i: 'B', c: '#0B7A75' };
+const C = { i: 'C', c: '#7A3FB5' };
+const D = { i: 'D', c: '#A8480A' };
+const E = { i: 'E', c: '#2F6F2F' };
+return {
+tabs: [
+{ name: 'Expenses', style: tabOff, badge: '' },
+{ name: 'Balances', style: tabOff, badge: '' },
+{ name: 'Settle up', style: tabOff, badge: '1' },
+{ name: 'Members', style: tabOff, badge: '' },
+{ name: 'Activity', style: tabOn, badge: '' }
+],
+days: [
+{ label: 'Today · 19 Jun', items: [
+{ ...B, text: 'Bob reported a payment of 136,00 € to Alice', kind: 'Payment', time: '21:40' },
+{ ...A, text: 'Alice recorded Farewell dinner · 250,00 €', kind: 'Expense', time: '21:14' }
+] },
+{ label: '18 Jun', items: [
+{ ...B, text: 'Bob removed Groceries: entered twice', kind: 'Expense', time: '20:02' },
+{ ...B, text: 'Bob recorded Groceries · 60,00 €', kind: 'Expense', time: '19:55' }
+] },
+{ label: '17 Jun', items: [
+{ ...E, text: 'Eve recorded Boat trip · 300,00 €', kind: 'Expense', time: '18:30' },
+{ ...E, text: 'Eve joined the group, invited by Alice', kind: 'Member', time: '18:05' }
+] },
+{ label: '16 Jun', items: [
+{ ...B, text: 'Bob corrected Dinner from 180,00 € to 200,00 €', kind: 'Expense', time: '22:10' },
+{ ...D, text: 'David recorded Museum · 75,00 €', kind: 'Expense', time: '15:12' },
+{ ...C, text: 'Carol recorded Rental car · 420,00 €', kind: 'Expense', time: '13:40' }
+] },
+{ label: '14 Jun', items: [
+{ ...A, text: 'Alice created the group Mallorca 2027', kind: 'Group', time: '10:02' }
+] }
+]
+};
+}
+}
+</script>
+</body>
+</html>

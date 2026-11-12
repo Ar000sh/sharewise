@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Console: Inbox</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#7AA2FF}a:hover{color:#A9C2FF}
+</style>
+</helmet>
+<div style="display:flex; flex-direction:column; min-height:900px; background:#0D1117; color:#E6EDF5; font-family:'Space Grotesk',system-ui,sans-serif; font-size:14px; line-height:1.45">
+
+<header style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; min-height:48px; box-sizing:border-box; padding:6px 16px; border-bottom:1px solid #263040">
+<div style="display:flex; align-items:center; gap:10px; font-weight:600"><span style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#7AA2FF">sw/</span><span style="color:#B4C0CF">inbox</span></div>
+<div style="margin-left:auto; display:flex; align-items:center; gap:16px">
+<span style="display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#8B98A9"><span style="width:8px; height:8px; border-radius:4px; background:#5CE1E6"></span>live · updated 3 s ago</span>
+<span style="display:flex; align-items:center; gap:8px"><span style="width:28px; height:28px; border-radius:6px; background:#2A3A58; color:#CFE0FF; font-weight:700; display:flex; align-items:center; justify-content:center">A</span>alice</span>
+</div>
+</header>
+
+<div style="flex:1; display:flex; flex-wrap:wrap; min-height:0">
+
+<nav aria-label="Main" style="flex:0 0 220px; box-sizing:border-box; padding:14px 10px; border-right:1px solid #263040; background:#111720; display:flex; flex-direction:column; gap:2px">
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; min-height:32px; padding:0 10px; border-radius:6px; text-decoration:none; color:#B4C0CF"><span>My groups</span><kbd style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">G G</kbd></a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; min-height:32px; padding:0 10px; border-radius:6px; text-decoration:none; background:#1D2735; color:#E6EDF5; font-weight:600"><span>Inbox · 3</span><kbd style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">G I</kbd></a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; min-height:32px; padding:0 10px; border-radius:6px; text-decoration:none; color:#B4C0CF"><span>Activity</span><kbd style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">G A</kbd></a>
+</nav>
+
+<main style="flex:999 1 560px; min-width:0; box-sizing:border-box; padding:20px 24px; display:flex; flex-direction:column; gap:20px">
+<div style="max-width:820px; display:flex; flex-direction:column; gap:20px">
+
+<div style="display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap"><div><h1 style="margin:0; font-size:22px; font-weight:700; letter-spacing:-.01em">Inbox</h1><div style="color:#8B98A9">2 waiting for you · 1 unread</div></div><button type="button" style="min-height:34px; padding:0 14px; border:1px solid #2F3B4D; border-radius:5px; background:transparent; color:#E6EDF5; font:inherit; font-weight:600">Mark all as read <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">⇧R</span></button></div>
+
+<section aria-labelledby="w" style="display:flex; flex-direction:column; gap:8px">
+<h2 id="w" style="margin:0; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:#FFB454">Waiting for you · 2</h2>
+<div style="border:1px solid #263040; border-radius:6px; background:#141A22">
+<div style="display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:10px 14px">
+<span style="font-family:'JetBrains Mono',monospace; color:#FFB454">!</span>
+<div style="flex:1 1 260px"><strong style="font-weight:600">bob</strong> says he paid you <span style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#5CE1E6">136,00 €</span> <span style="color:#8B98A9">· mallorca-2027 · today 21:40 · “Cash at the airport”</span></div>
+<button type="button" style="min-height:30px; padding:0 12px; border:0; border-radius:5px; background:#7AA2FF; color:#0B1220; font:inherit; font-weight:700">Confirm <span style="font-family:'JetBrains Mono',monospace; font-size:11px">Y</span></button>
+<button type="button" style="min-height:30px; padding:0 12px; border:1px solid #2F3B4D; border-radius:5px; background:transparent; color:#E6EDF5; font:inherit; font-weight:600">Reject… <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">N</span></button>
+</div>
+<div style="display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:10px 14px; border-top:1px solid #263040">
+<span style="font-family:'JetBrains Mono',monospace; color:#FFB454">!</span>
+<div style="flex:1 1 260px"><strong style="font-weight:600">dora</strong> invited you to <strong style="font-weight:600">cabin-weekend</strong> as an admin <span style="color:#8B98A9">· expires in 5 days</span></div>
+<button type="button" style="min-height:30px; padding:0 12px; border:0; border-radius:5px; background:#7AA2FF; color:#0B1220; font:inherit; font-weight:700">Accept <span style="font-family:'JetBrains Mono',monospace; font-size:11px">A</span></button>
+<button type="button" style="min-height:30px; padding:0 12px; border:1px solid #2F3B4D; border-radius:5px; background:transparent; color:#E6EDF5; font:inherit; font-weight:600">Decline <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">D</span></button>
+</div>
+</div>
+</section>
+
+<section aria-labelledby="n" style="display:flex; flex-direction:column; gap:8px">
+<h2 id="n" style="margin:0; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">Notifications</h2>
+<div style="border:1px solid #263040; border-radius:6px; background:#141A22">
+<sc-for list="{{notes}}" as="n" hint-placeholder-count="4">
+<a href="#" style="display:flex; gap:12px; align-items:flex-start; padding:9px 14px; border-top:1px solid #1E2733; color:#E6EDF5; text-decoration:none; {{n.row}}">
+<span style="flex:0 0 8px; margin-top:7px; width:8px; height:8px; border-radius:4px; {{n.dot}}"></span>
+<div style="flex:1; min-width:0"><div style="{{n.weight}}">{{n.text}}</div><div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">{{n.meta}}</div></div>
+<span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#8B98A9">{{n.when}}</span>
+</a>
+</sc-for>
+</div>
+<div style="font-size:12px; color:#8B98A9">Filled dot: unread. Opening a notification marks it as read.</div>
+</section>
+
+</div>
+</main>
+</div>
+
+<footer style="display:flex; flex-wrap:wrap; gap:18px; padding:8px 16px; border-top:1px solid #263040; background:#111720; font-family:'JetBrains Mono',monospace; font-size:12px; color:#8B98A9"><span>↑↓ move</span><span>Y confirm</span><span>N reject</span><span>A accept</span><span>D decline</span><span>⇧R mark all read</span></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const unread = { dot: 'background:#7AA2FF', weight: 'font-weight:600', row: 'background:#1D2735' };
+const read = { dot: 'border:1px solid #3A4658; box-sizing:border-box', weight: 'color:#B4C0CF', row: '' };
+return {
+notes: [
+{ ...unread, text: 'eve joined mallorca-2027', meta: 'MEMBER JOINED', when: 'today 08:12' },
+{ ...read, text: 'hugo rejected your payment of 20,00 €: “Money has not arrived”', meta: 'PAYMENT REJECTED · ski-weekend', when: '12 Jan' },
+{ ...read, text: 'bob recorded Groceries · 60,00 €', meta: 'EXPENSE RECORDED · mallorca-2027', when: '18 Jun' },
+{ ...read, text: 'ivan declined your invitation to mallorca-2027', meta: 'INVITATION DECLINED', when: '14 Jun' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

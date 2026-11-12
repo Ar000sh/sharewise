@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Console: Settle up merged</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#7AA2FF}a:hover{color:#A9C2FF}
+</style>
+</helmet>
+<div style="display:flex; flex-direction:column; min-height:1150px; background:#0D1117; color:#E6EDF5; font-family:'Space Grotesk',system-ui,sans-serif; font-size:14px; line-height:1.45">
+
+<header style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; min-height:48px; box-sizing:border-box; padding:6px 16px; border-bottom:1px solid #263040">
+<div style="display:flex; align-items:center; gap:10px; font-weight:600"><span style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#7AA2FF">sw/</span><span style="color:#8B98A9">my-groups /</span><span>mallorca-2027</span><span style="padding:1px 8px; border:1px solid #2B6E73; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#5CE1E6">OPEN</span></div>
+<span style="padding:2px 10px; border:1px solid #7A5A1A; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#FFB454">DESIGN PREVIEW · bob’s and alice’s views combined · a real user sees one</span>
+<div style="margin-left:auto; display:flex; align-items:center; gap:16px">
+<span style="display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#8B98A9"><span style="width:8px; height:8px; border-radius:4px; background:#5CE1E6"></span>live · up to date</span>
+<button type="button" aria-label="Inbox, 3 new" style="display:flex; align-items:center; gap:6px; min-height:32px; padding:0 10px; border:1px solid #263040; border-radius:6px; background:#141A22; color:#E6EDF5; font:inherit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg><span style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#FFB454">3</span></button>
+<span style="display:flex; align-items:center; gap:8px"><span style="width:28px; height:28px; border-radius:6px; background:#2A3A58; color:#CFE0FF; font-weight:700; display:flex; align-items:center; justify-content:center">A</span>alice</span>
+</div>
+</header>
+
+<div style="flex:1; display:flex; flex-wrap:wrap; min-height:0">
+
+<nav aria-label="Group sections" style="flex:0 0 200px; box-sizing:border-box; padding:14px 10px; border-right:1px solid #263040; background:#111720; display:flex; flex-direction:column; gap:2px">
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; min-height:32px; padding:0 10px; border-radius:6px; text-decoration:none; color:#B4C0CF"><span>Expenses</span><kbd style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">1</kbd></a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; min-height:32px; padding:0 10px; border-radius:6px; text-decoration:none; color:#B4C0CF"><span>Balances</span><kbd style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">2</kbd></a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; min-height:32px; padding:0 10px; border-radius:6px; text-decoration:none; background:#1D2735; color:#E6EDF5; font-weight:600"><span>Settle up · 1</span><kbd style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">3</kbd></a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; min-height:32px; padding:0 10px; border-radius:6px; text-decoration:none; color:#B4C0CF"><span>Members</span><kbd style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">4</kbd></a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; min-height:32px; padding:0 10px; border-radius:6px; text-decoration:none; color:#B4C0CF"><span>Activity</span><kbd style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">5</kbd></a>
+<div style="margin-top:20px; padding:10px; border:1px solid #263040; border-radius:6px; font-size:13px; color:#B4C0CF"><div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">Group</div><div style="margin-top:4px">EUR · 5 members</div><div style="color:#8B98A9">started 14 Jun</div></div>
+</nav>
+
+<main style="flex:999 1 520px; min-width:0; box-sizing:border-box; padding:16px 20px; display:flex; flex-wrap:wrap; gap:20px; align-items:flex-start; align-content:flex-start">
+
+<div style="flex:1 1 520px; min-width:0; display:flex; flex-direction:column; gap:18px">
+
+<section aria-label="Your position" style="display:flex; gap:10px; flex-wrap:wrap">
+<div style="flex:1 1 200px; padding:10px 14px; border:1px solid #263040; border-radius:6px; background:#141A22"><div style="font-size:12px; color:#8B98A9">You owe · <span style="font-family:'JetBrains Mono',monospace">bob’s role</span></div><div style="font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; color:#FFB454">202,00 €</div><div style="font-size:12px; color:#8B98A9">136,00 € reported, waiting for alice</div></div>
+<div style="flex:1 1 200px; padding:10px 14px; border:1px solid #263040; border-radius:6px; background:#141A22"><div style="font-size:12px; color:#8B98A9">You are owed · <span style="font-family:'JetBrains Mono',monospace">alice’s role</span></div><div style="font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; color:#5CE1E6">573,00 €</div><div style="font-size:12px; color:#8B98A9">1 payment waits for your answer</div></div>
+</section>
+
+<section aria-labelledby="ans" style="display:flex; flex-direction:column; gap:8px">
+<h2 id="ans" style="margin:0; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:#FFB454">Needs your answer · 1</h2>
+<div style="border:1px solid #3A4F7A; border-radius:6px; background:#1D2735; padding:12px 14px; display:flex; flex-direction:column; gap:10px">
+<div><strong style="font-weight:600">bob</strong> says he paid you <span style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#5CE1E6">136,00 €</span></div>
+<div style="font-size:13px; color:#B4C0CF">today 21:40 · “Cash at the airport” · confirm only after the money has arrived</div>
+<div style="display:flex; gap:8px"><button type="button" style="min-height:34px; padding:0 14px; border:0; border-radius:5px; background:#7AA2FF; color:#0B1220; font:inherit; font-weight:700">Confirm payment <span style="font-family:'JetBrains Mono',monospace; font-size:11px">Y</span></button><button type="button" style="min-height:34px; padding:0 14px; border:1px solid #2F3B4D; border-radius:5px; background:transparent; color:#E6EDF5; font:inherit; font-weight:600">Reject… <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">N</span></button></div>
+</div>
+</section>
+
+<section aria-labelledby="pay" style="display:flex; flex-direction:column; gap:8px">
+<h2 id="pay" style="margin:0; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">You pay</h2>
+<div style="border:1px solid #263040; border-radius:6px; background:#141A22">
+<div style="display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:11px 14px">
+<div style="flex:1 1 200px"><div style="font-weight:600">alice</div><div style="font-size:13px; color:#B4C0CF">you owe <span style="font-family:'JetBrains Mono',monospace">136,00 €</span> in total</div><div style="font-size:12px; color:#8B98A9">last: you reported 136,00 € today 21:40</div></div>
+<div style="text-align:right"><span style="padding:1px 8px; border:1px solid #7A5A1A; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#FFB454">136,00 € REPORTED</span><div style="margin-top:2px; font-size:12px; color:#8B98A9">waiting for alice to confirm</div></div>
+</div>
+<div style="display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:11px 14px; border-top:1px solid #1E2733">
+<div style="flex:1 1 200px"><div style="font-weight:600">eve</div><div style="font-size:13px; color:#B4C0CF">you owe <span style="font-family:'JetBrains Mono',monospace">66,00 €</span> in total</div></div>
+<div style="display:flex; align-items:center; gap:12px"><span style="font-size:13px; color:#8B98A9">open <span style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#E6EDF5">66,00 €</span></span><button type="button" style="min-height:34px; padding:0 14px; border:0; border-radius:5px; background:#7AA2FF; color:#0B1220; font:inherit; font-weight:700">I paid… <span style="font-family:'JetBrains Mono',monospace; font-size:11px">P</span></button></div>
+</div>
+</div>
+<div style="font-size:12px; color:#8B98A9">ShareWise does not move money. “I paid” tells the other person you paid outside the app; they confirm it, then your balance changes.</div>
+</section>
+
+<section aria-labelledby="rec" style="display:flex; flex-direction:column; gap:8px">
+<h2 id="rec" style="margin:0; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">You receive</h2>
+<div style="border:1px solid #263040; border-radius:6px; background:#141A22">
+<div style="display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:11px 14px">
+<div style="flex:1 1 200px"><div style="font-weight:600">david</div><div style="font-size:13px; color:#B4C0CF">owes you <span style="font-family:'JetBrains Mono',monospace">437,00 €</span> in total</div><div style="font-size:12px; color:#8B98A9">no payment reported yet</div></div>
+<div style="display:flex; align-items:center; gap:12px"><span style="font-size:13px; color:#8B98A9">open <span style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#E6EDF5">437,00 €</span></span><button type="button" style="min-height:34px; padding:0 14px; border:1px solid #2F3B4D; border-radius:5px; background:transparent; color:#E6EDF5; font:inherit; font-weight:600">Waive… <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">W</span></button></div>
+</div>
+<div style="display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:11px 14px; border-top:1px solid #1E2733">
+<div style="flex:1 1 200px"><div style="font-weight:600">bob</div><div style="font-size:13px; color:#B4C0CF">owes you <span style="font-family:'JetBrains Mono',monospace">136,00 €</span> in total</div><div style="font-size:12px; color:#8B98A9">last: bob reported 136,00 € today 21:40</div></div>
+<div style="text-align:right"><span style="padding:1px 8px; border:1px solid #3A4F7A; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#7AA2FF">136,00 € WAITS FOR YOUR ANSWER</span><div style="margin-top:2px; font-size:12px; color:#8B98A9">answer it above first</div></div>
+</div>
+</div>
+</section>
+
+</div>
+
+<aside aria-label="Plan and payments" style="flex:0 1 380px; min-width:280px; display:flex; flex-direction:column; gap:18px">
+
+<section aria-labelledby="plan" style="display:flex; flex-direction:column; gap:8px">
+<h2 id="plan" style="margin:0; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:#7AA2FF">The whole plan · 4 payments</h2>
+<div style="border:1px solid #263040; border-radius:6px; background:#141A22">
+<div style="padding:10px 14px"><div style="font-size:13px; color:#8B98A9">The plan never changes a balance. Highlighted rows are where you can act.</div>
+<div style="margin-top:8px; height:6px; border-radius:3px; background:#263040; overflow:hidden"><div style="width:25%; height:6px; background:#7AA2FF"></div></div>
+<div style="margin-top:4px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">1/4 reported · 0 confirmed</div></div>
+<sc-for list="{{plan}}" as="e" hint-placeholder-count="4">
+<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 14px; border-top:1px solid #1E2733; {{e.row}}">
+<div><div style="{{e.weight}}">{{e.fromName}} → {{e.toName}}</div><div style="font-size:12px; color:#8B98A9">{{e.state}}</div><sc-if value="{{e.tag}}" hint-placeholder-val="{{false}}"><span style="display:inline-block; margin-top:4px; padding:0 7px; border:1px solid #7AA2FF; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.04em; text-transform:uppercase; color:#A9C2FF">{{e.tag}}</span></sc-if></div>
+<div style="font-family:'JetBrains Mono',monospace; font-weight:700">{{e.amount}}</div>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section aria-labelledby="his" style="display:flex; flex-direction:column; gap:8px">
+<div style="display:flex; align-items:center; justify-content:space-between; gap:10px"><h2 id="his" style="margin:0; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">Payments</h2>
+<div role="group" aria-label="Filter" style="display:flex; border:1px solid #2F3B4D; border-radius:5px; overflow:hidden"><button type="button" aria-pressed="false" style="min-height:26px; padding:0 12px; border:0; background:transparent; color:#B4C0CF; font:inherit; font-size:13px">Mine</button><button type="button" aria-pressed="true" style="min-height:26px; padding:0 12px; border:0; border-left:1px solid #2F3B4D; background:#2A3A58; color:#E6EDF5; font:inherit; font-size:13px; font-weight:600">Everyone</button></div></div>
+<div style="border:1px solid #263040; border-radius:6px; background:#141A22">
+<div style="padding:10px 14px; display:flex; flex-direction:column; gap:3px">
+<div style="display:flex; justify-content:space-between; gap:10px"><span style="font-weight:600">bob reported a payment to alice</span><span style="font-family:'JetBrains Mono',monospace; font-weight:700">136,00 €</span></div>
+<div style="display:flex; justify-content:space-between; gap:10px; align-items:center"><span style="font-size:12px; color:#8B98A9">today 21:40 · “Cash at the airport”</span><span style="padding:0 7px; border:1px solid #7A5A1A; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:10px; color:#FFB454">PENDING</span></div>
+</div>
+<div style="padding:10px 14px; border-top:1px solid #1E2733; display:flex; flex-direction:column; gap:3px">
+<div style="display:flex; justify-content:space-between; gap:10px"><span style="font-weight:600">carol reported a payment to eve</span><span style="font-family:'JetBrains Mono',monospace; font-weight:700">72,00 €</span></div>
+<div style="display:flex; justify-content:space-between; gap:10px; align-items:center"><span style="font-size:12px; color:#8B98A9">19 Jun 14:05 · “Bank transfer”</span><span style="padding:0 7px; border:1px solid #7A3B3B; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:10px; color:#FF9C9C">REJECTED</span></div>
+<div style="font-size:12px; color:#FF9C9C">eve rejected it: “Money has not arrived”</div>
+</div>
+</div>
+</section>
+
+</aside>
+</main>
+</div>
+
+<footer style="display:flex; flex-wrap:wrap; gap:18px; padding:8px 16px; border-top:1px solid #263040; background:#111720; font-family:'JetBrains Mono',monospace; font-size:12px; color:#8B98A9"><span>Y confirm</span><span>N reject</span><span>P I paid</span><span>W waive</span><span>1–5 sections</span><span style="margin-left:auto">group is open</span></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1150}}'>
+class Component extends DCLogic {
+renderVals() {
+const on = 'background:#1D2735';
+const act = 'font-weight:600';
+const idle = 'color:#8B98A9';
+return {
+plan: [
+{ fromName: 'david', toName: 'alice', amount: '437,00 €', state: 'not reported yet', tag: 'you can waive', row: on, weight: act },
+{ fromName: 'bob', toName: 'alice', amount: '136,00 €', state: 'reported, waiting for confirmation', tag: 'needs your answer', row: on, weight: act },
+{ fromName: 'bob', toName: 'eve', amount: '66,00 €', state: 'not reported yet', tag: 'you can pay', row: on, weight: act },
+{ fromName: 'carol', toName: 'eve', amount: '72,00 €', state: 'not reported yet', tag: '', row: '', weight: idle }
+]
+};
+}
+}
+</script>
+</body>
+</html>

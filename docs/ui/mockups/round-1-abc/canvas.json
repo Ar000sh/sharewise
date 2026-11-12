@@ -1,0 +1,67 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-12T08:00:00Z" },
+  "title": "ShareWise design directions",
+  "launch": { "view": "canvas" },
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 360, "w": 1280, "h": 900, "title": "A1 · My groups", "expand": "fill" },
+    "A1b-CreateGroup.dc.html": { "x": 1360, "y": 360, "w": 1280, "h": 700, "title": "A2 · Create group", "expand": "fill" },
+    "A1c-Inbox.dc.html": { "x": 2720, "y": 360, "w": 1280, "h": 900, "title": "A3 · Inbox", "expand": "fill" },
+    "A2-Expenses.dc.html": { "x": 4080, "y": 360, "w": 1280, "h": 900, "title": "A4 · Expenses and add expense", "expand": "fill" },
+    "A3-Balances.dc.html": { "x": 5440, "y": 360, "w": 1280, "h": 900, "title": "A5 · Balances", "expand": "fill" },
+    "E1-SettleUp-Merged.dc.html": { "x": 6800, "y": 360, "w": 1280, "h": 1250, "title": "A6 · Settle up", "expand": "fill" },
+    "A4-Members.dc.html": { "x": 0, "y": 1780, "w": 1280, "h": 900, "title": "A7 · Members, invite and group status", "expand": "fill" },
+    "A4b-Activity.dc.html": { "x": 1360, "y": 1780, "w": 1280, "h": 900, "title": "A8 · Activity", "expand": "fill" },
+    "D4-SettleUp-Pieces.dc.html": { "x": 2720, "y": 1780, "w": 1280, "h": 1500, "title": "A9 · Payment dialogs and states", "expand": "fill" },
+    "A5-Entry.dc.html": { "x": 4080, "y": 1780, "w": 1280, "h": 900, "title": "A10 · Sign in, invitation and group states", "expand": "fill" },
+    "A6-Mobile.dc.html": { "x": 5440, "y": 1780, "w": 1340, "h": 900, "title": "A11 · Mobile (dark)" },
+
+    "B1-Groups.dc.html": { "x": 0, "y": 3680, "w": 1280, "h": 900, "title": "B1 · My groups", "expand": "fill" },
+    "B1b-CreateGroup.dc.html": { "x": 1360, "y": 3680, "w": 1280, "h": 700, "title": "B2 · Create group", "expand": "fill" },
+    "B1c-Inbox.dc.html": { "x": 2720, "y": 3680, "w": 1280, "h": 900, "title": "B3 · Inbox", "expand": "fill" },
+    "B2-Expenses.dc.html": { "x": 4080, "y": 3680, "w": 1280, "h": 900, "title": "B4 · Expenses and add expense", "expand": "fill" },
+    "B3-Balances.dc.html": { "x": 5440, "y": 3680, "w": 1280, "h": 900, "title": "B5 · Balances", "expand": "fill" },
+    "E2-SettleUp-Merged-Trip.dc.html": { "x": 6800, "y": 3680, "w": 1280, "h": 1350, "title": "B6 · Settle up", "expand": "fill" },
+    "B4-Members.dc.html": { "x": 0, "y": 5150, "w": 1280, "h": 900, "title": "B7 · Members, invite and group status", "expand": "fill" },
+    "B4b-Activity.dc.html": { "x": 1360, "y": 5150, "w": 1280, "h": 900, "title": "B8 · Activity", "expand": "fill" },
+    "B7-Dialogs.dc.html": { "x": 2720, "y": 5150, "w": 1280, "h": 1500, "title": "B9 · Payment dialogs and states", "expand": "fill" },
+    "B5-Entry.dc.html": { "x": 4080, "y": 5150, "w": 1280, "h": 900, "title": "B10 · Sign in, invitation and group states", "expand": "fill" },
+    "B6-Mobile.dc.html": { "x": 5440, "y": 5150, "w": 1340, "h": 900, "title": "B11 · Mobile (dark)" },
+
+    "C1-Groups.dc.html": { "x": 0, "y": 7160, "w": 1280, "h": 900, "title": "C1 · My groups", "expand": "fill" },
+    "C1b-CreateGroup.dc.html": { "x": 1360, "y": 7160, "w": 1280, "h": 700, "title": "C2 · Create group", "expand": "fill" },
+    "C1c-Inbox.dc.html": { "x": 2720, "y": 7160, "w": 1280, "h": 900, "title": "C3 · Inbox", "expand": "fill" },
+    "C2-Expenses.dc.html": { "x": 4080, "y": 7160, "w": 1280, "h": 900, "title": "C4 · Expenses, quick add and history", "expand": "fill" },
+    "C3-Balances.dc.html": { "x": 5440, "y": 7160, "w": 1280, "h": 900, "title": "C5 · Balances", "expand": "fill" },
+    "E3-SettleUp-Merged-Console.dc.html": { "x": 6800, "y": 7160, "w": 1280, "h": 1150, "title": "C6 · Settle up", "expand": "fill" },
+    "C4-Members.dc.html": { "x": 0, "y": 8430, "w": 1280, "h": 900, "title": "C7 · Members, invite and group status", "expand": "fill" },
+    "C4b-Activity.dc.html": { "x": 1360, "y": 8430, "w": 1280, "h": 900, "title": "C8 · Activity", "expand": "fill" },
+    "C7-Dialogs.dc.html": { "x": 2720, "y": 8430, "w": 1280, "h": 1500, "title": "C9 · Payment dialogs and states", "expand": "fill" },
+    "C5-Entry.dc.html": { "x": 4080, "y": 8430, "w": 1280, "h": 900, "title": "C10 · Sign in, invitation and group states", "expand": "fill" },
+    "C6-Mobile.dc.html": { "x": 5440, "y": 8430, "w": 1340, "h": 900, "title": "C11 · Mobile (dark)" },
+
+    "D1-SettleUp-List.dc.html": { "x": 0, "y": 10430, "w": 1280, "h": 1150, "title": "D1 · Action list, as Bob (pays)", "expand": "fill" },
+    "D2-SettleUp-Split.dc.html": { "x": 1360, "y": 10430, "w": 1280, "h": 1150, "title": "D2 · Actions plus whole plan, as Bob (pays)", "expand": "fill" },
+    "D3-SettleUp-People.dc.html": { "x": 2720, "y": 10430, "w": 1280, "h": 1150, "title": "D3 · By person, as Bob (pays)", "expand": "fill" },
+    "D1b-SettleUp-List-Alice.dc.html": { "x": 0, "y": 11700, "w": 1280, "h": 1150, "title": "D1 · Action list, as Alice (answers and waives)", "expand": "fill" },
+    "D2b-SettleUp-Split-Alice.dc.html": { "x": 1360, "y": 11700, "w": 1280, "h": 1150, "title": "D2 · Actions plus whole plan, as Alice (answers and waives)", "expand": "fill" },
+    "D3b-SettleUp-People-Alice.dc.html": { "x": 2720, "y": 11700, "w": 1280, "h": 1150, "title": "D3 · By person, as Alice (answers and waives)", "expand": "fill" }
+  },
+  "order": [
+    "Main.dc.html", "A1b-CreateGroup.dc.html", "A1c-Inbox.dc.html", "A2-Expenses.dc.html", "A3-Balances.dc.html", "E1-SettleUp-Merged.dc.html",
+    "A4-Members.dc.html", "A4b-Activity.dc.html", "D4-SettleUp-Pieces.dc.html", "A5-Entry.dc.html", "A6-Mobile.dc.html",
+    "B1-Groups.dc.html", "B1b-CreateGroup.dc.html", "B1c-Inbox.dc.html", "B2-Expenses.dc.html", "B3-Balances.dc.html", "E2-SettleUp-Merged-Trip.dc.html",
+    "B4-Members.dc.html", "B4b-Activity.dc.html", "B7-Dialogs.dc.html", "B5-Entry.dc.html", "B6-Mobile.dc.html",
+    "C1-Groups.dc.html", "C1b-CreateGroup.dc.html", "C1c-Inbox.dc.html", "C2-Expenses.dc.html", "C3-Balances.dc.html", "E3-SettleUp-Merged-Console.dc.html",
+    "C4-Members.dc.html", "C4b-Activity.dc.html", "C7-Dialogs.dc.html", "C5-Entry.dc.html", "C6-Mobile.dc.html",
+    "D1-SettleUp-List.dc.html", "D2-SettleUp-Split.dc.html", "D3-SettleUp-People.dc.html",
+    "D1b-SettleUp-List-Alice.dc.html", "D2b-SettleUp-Split-Alice.dc.html", "D3b-SettleUp-People-Alice.dc.html"
+  ],
+  "notes": {
+    "rowA": { "x": 0, "y": 100, "text": "A · Ledger: calm, precise, table-driven", "kind": "title1", "maxW": 8080 },
+    "rowB": { "x": 0, "y": 3420, "text": "B · Trip: warm, social, mobile-first", "kind": "title1", "maxW": 8080 },
+    "rowC": { "x": 0, "y": 6900, "text": "C · Console: dark, dense, keyboard-first", "kind": "title1", "maxW": 8080 },
+    "rowD": { "x": 0, "y": 10170, "text": "D · Settle up layout studies (reference; the chosen layout is merged into each direction)", "kind": "title1", "maxW": 4000 }
+  },
+  "designSystems": []
+}

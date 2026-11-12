@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trip: Sign in, invitation and states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0E7468}a:hover{color:#0A4F46}
+</style>
+</helmet>
+<div style="min-height:900px; box-sizing:border-box; background:#EEF6F4; color:#10312D; font-family:'Plus Jakarta Sans',system-ui,sans-serif; font-size:15px; line-height:1.5; font-variant-numeric:tabular-nums; padding:24px 40px 40px; display:flex; flex-direction:column; gap:24px">
+
+<div style="display:flex; align-items:center; gap:10px">
+<div style="position:relative; width:40px; height:30px"><span style="position:absolute; left:0; top:0; width:30px; height:30px; border-radius:15px; background:#D64527"></span><span style="position:absolute; left:12px; top:0; width:30px; height:30px; border-radius:15px; background:#0E7468; opacity:.9"></span></div>
+<div style="font-size:20px; font-weight:800; letter-spacing:-.02em">ShareWise</div>
+<div style="margin-left:12px; color:#55726E">Entry points and states</div>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:24px; align-items:start">
+
+<section aria-labelledby="s1">
+<div id="s1" style="margin-bottom:8px; font-size:13px; font-weight:800; color:#55726E">Welcome</div>
+<div style="position:relative; overflow:hidden; padding:28px; border-radius:30px; background:#0E7468; color:#FFFFFF; display:flex; flex-direction:column; gap:16px; min-height:330px; box-sizing:border-box">
+<span style="position:absolute; right:-40px; top:-40px; width:170px; height:170px; border-radius:85px; background:#D64527"></span>
+<span style="position:absolute; right:70px; top:60px; width:70px; height:70px; border-radius:35px; background:#FFFFFF; opacity:.18"></span>
+<h2 style="position:relative; margin:46px 0 0; max-width:300px; font-size:30px; font-weight:800; letter-spacing:-.03em; line-height:1.15">Shared expenses made simple</h2>
+<div style="position:relative; max-width:320px; opacity:.95">Add what everyone paid. See who owes whom. Settle up in a few payments.</div>
+<div style="position:relative; display:flex; gap:10px; flex-wrap:wrap; margin-top:auto"><a href="#" style="display:flex; align-items:center; min-height:46px; padding:0 24px; border-radius:999px; background:#FFFFFF; color:#0A4F46; font-weight:800; text-decoration:none">Sign in</a><a href="#" style="display:flex; align-items:center; min-height:46px; padding:0 22px; border:2px solid #FFFFFF; border-radius:999px; color:#FFFFFF; font-weight:700; text-decoration:none">Create an account</a></div>
+</div>
+</section>
+
+<section aria-labelledby="s2">
+<div id="s2" style="margin-bottom:8px; font-size:13px; font-weight:800; color:#55726E">Invitation</div>
+<div style="overflow:hidden; border-radius:30px; background:#FFFFFF; box-shadow:0 8px 24px rgba(16,49,45,.08)">
+<div style="position:relative; overflow:hidden; box-sizing:border-box; padding:20px 24px; height:120px; background:#D64527; color:#FFFFFF; display:flex; flex-direction:column; justify-content:flex-end"><span style="position:absolute; right:-20px; top:-30px; width:120px; height:120px; border-radius:60px; background:#FFFFFF; opacity:.14"></span><span style="position:relative; font-size:13px; font-weight:600">Alice Tester invited you to join</span><span style="position:relative; font-size:26px; font-weight:800; letter-spacing:-.02em">Mallorca 2027</span></div>
+<div style="padding:20px 24px 24px; display:flex; flex-direction:column; gap:14px">
+<div style="display:flex; align-items:center; gap:12px"><div style="display:flex; padding-left:10px"><sc-for list="{{people}}" as="m" hint-placeholder-count="5"><span style="width:34px; height:34px; margin-left:-10px; box-sizing:border-box; border:3px solid #FFFFFF; border-radius:17px; background:{{m.c}}; color:#FFFFFF; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center">{{m.i}}</span></sc-for></div><span style="color:#55726E">EUR · 5 members</span></div>
+<div style="font-size:14px; color:#35534F">You would join as a member and share only in expenses recorded after you join. Expires in 5 days.</div>
+<div style="display:flex; gap:10px"><button type="button" style="flex:1; min-height:48px; border:0; border-radius:999px; background:#D64527; color:#FFFFFF; font:inherit; font-weight:800">Join</button><button type="button" style="flex:1; min-height:48px; border:2px solid #C5DAD5; border-radius:999px; background:#FFFFFF; color:#10312D; font:inherit; font-weight:700">Decline</button></div>
+</div>
+</div>
+</section>
+
+<section aria-labelledby="s3">
+<div id="s3" style="margin-bottom:8px; font-size:13px; font-weight:800; color:#55726E">Empty state</div>
+<div style="padding:34px 26px; border-radius:30px; background:#FFFFFF; box-shadow:0 8px 24px rgba(16,49,45,.08); display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center">
+<div style="position:relative; width:96px; height:64px"><span style="position:absolute; left:0; top:0; width:64px; height:64px; border-radius:32px; background:#FFE8E1"></span><span style="position:absolute; left:32px; top:0; width:64px; height:64px; border-radius:32px; background:#D8F0EB"></span></div>
+<h2 style="margin:0; font-size:22px; font-weight:800; letter-spacing:-.02em">No groups yet</h2>
+<div style="max-width:260px; color:#35534F">Create a group for your trip, your flat or your dinner club, and invite the others.</div>
+<button type="button" style="min-height:48px; padding:0 26px; border:0; border-radius:999px; background:#D64527; color:#FFFFFF; font:inherit; font-weight:800">Create your first group</button>
+</div>
+</section>
+
+<section aria-labelledby="s4">
+<div id="s4" style="margin-bottom:8px; font-size:13px; font-weight:800; color:#55726E">Closed for settlement</div>
+<div style="overflow:hidden; border-radius:30px; background:#FFFFFF; box-shadow:0 8px 24px rgba(16,49,45,.08)">
+<div style="padding:18px 24px; background:#1E64B7; color:#FFFFFF; display:flex; align-items:center; justify-content:space-between; gap:10px"><span style="font-size:20px; font-weight:800">Ski weekend</span><span style="padding:3px 12px; border-radius:999px; background:#FFFFFF; color:#10312D; font-size:12px; font-weight:700">Closed for settlement</span></div>
+<div style="margin:16px 20px 0; padding:14px 16px; border-radius:20px; background:#FFF1DB; color:#5C3300"><div style="font-weight:800">Expenses are frozen</div><div style="margin-top:2px; font-size:14px">Nobody can add, correct or remove an expense. Payments still work. An admin can reopen the group.</div><div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap"><button type="button" style="min-height:42px; padding:0 18px; border:2px solid #8A4B00; border-radius:999px; background:#FFFFFF; color:#5C3300; font:inherit; font-weight:700">Reopen group</button><button type="button" disabled="{{true}}" style="min-height:42px; padding:0 18px; border:2px solid #E3ECE9; border-radius:999px; background:#F4F8F7; color:#7A918D; font:inherit; font-weight:700">Add expense</button></div></div>
+<div style="padding:16px 24px 20px; display:flex; justify-content:space-between; align-items:center"><span>Final plan: you owe Hugo</span><strong style="font-size:20px; font-weight:800; color:#B8391C">48,50 €</strong></div>
+</div>
+</section>
+
+<section aria-labelledby="s5">
+<div id="s5" style="margin-bottom:8px; font-size:13px; font-weight:800; color:#55726E">Archived</div>
+<div style="overflow:hidden; border-radius:30px; background:#FFFFFF; box-shadow:0 8px 24px rgba(16,49,45,.08)">
+<div style="padding:18px 24px; background:#5F7571; color:#FFFFFF; display:flex; align-items:center; justify-content:space-between; gap:10px"><span style="font-size:20px; font-weight:800">Flat 12</span><span style="padding:3px 12px; border-radius:999px; background:#FFFFFF; color:#10312D; font-size:12px; font-weight:700">Archived</span></div>
+<div style="margin:16px 20px 0; padding:14px 16px; border-radius:20px; background:#E3EFEC; color:#2B4642"><div style="font-weight:800">This group is read-only</div><div style="margin-top:2px; font-size:14px">It was archived automatically on 28 Mar, when the last balance reached 0,00 €. Archiving is final.</div></div>
+<div style="padding:16px 24px 20px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap"><span style="color:#35534F">3 members · all settled</span><button type="button" disabled="{{true}}" style="min-height:42px; padding:0 18px; border:2px solid #E3ECE9; border-radius:999px; background:#F4F8F7; color:#7A918D; font:inherit; font-weight:700">Export, coming later</button></div>
+</div>
+</section>
+
+<section aria-labelledby="s6">
+<div id="s6" style="margin-bottom:8px; font-size:13px; font-weight:800; color:#55726E">Leave refused</div>
+<div role="alertdialog" aria-labelledby="d6" style="padding:26px; border-radius:30px; background:#FFFFFF; box-shadow:0 24px 60px rgba(16,49,45,.22); display:flex; flex-direction:column; gap:12px">
+<div style="width:48px; height:48px; border-radius:24px; background:#FFE8E1; color:#8A2410; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800">!</div>
+<h2 id="d6" style="margin:0; font-size:22px; font-weight:800; letter-spacing:-.02em">You can’t leave yet</h2>
+<div style="color:#35534F">You owe 202,00 € in Mallorca 2027. A member can leave only at 0,00 €. Settle up first, then try again.</div>
+<div style="display:flex; gap:10px; margin-top:4px; flex-wrap:wrap"><a href="#" style="display:flex; align-items:center; min-height:46px; padding:0 22px; border-radius:999px; background:#0E7468; color:#FFFFFF; font-weight:800; text-decoration:none">Go to settle up</a><button type="button" style="min-height:46px; padding:0 22px; border:2px solid #C5DAD5; border-radius:999px; background:#FFFFFF; color:#10312D; font:inherit; font-weight:700">Close</button></div>
+</div>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {
+people: [
+{ i: 'A', c: '#D64527' },
+{ i: 'B', c: '#0E7468' },
+{ i: 'C', c: '#5B45C9' },
+{ i: 'D', c: '#9A6200' },
+{ i: 'E', c: '#1E64B7' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

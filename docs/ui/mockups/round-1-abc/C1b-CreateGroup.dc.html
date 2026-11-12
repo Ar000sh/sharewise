@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Console: Create group</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#7AA2FF}a:hover{color:#A9C2FF}
+</style>
+</helmet>
+<div style="min-height:700px; box-sizing:border-box; background:#05080C; color:#E6EDF5; font-family:'Space Grotesk',system-ui,sans-serif; font-size:14px; line-height:1.45; padding:40px 36px; display:grid; grid-template-columns:repeat(auto-fit, minmax(380px, 1fr)); gap:32px; align-items:start; justify-items:center">
+
+<section aria-labelledby="t1" style="width:100%; max-width:460px">
+<div style="margin-bottom:6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">New group <span style="margin-left:8px; padding:1px 6px; border:1px solid #2F3B4D; border-radius:4px">N</span></div>
+<div role="dialog" aria-labelledby="t1" style="border:1px solid #3A4F7A; border-radius:6px; background:#141A22; padding:22px; display:flex; flex-direction:column; gap:14px; box-shadow:0 12px 36px rgba(0,0,0,.5)">
+<h2 id="t1" style="margin:0; font-size:20px; font-weight:700">Create a group</h2>
+<div style="color:#B4C0CF">One shared pot for a trip, a flat or an event. You become its admin and invite people next.</div>
+<label style="display:flex; flex-direction:column; gap:4px; font-size:13px; color:#B4C0CF">Group name<input type="text" value="cabin-weekend" style="min-height:40px; box-sizing:border-box; padding:0 12px; border:1px solid #7AA2FF; border-radius:6px; background:#0D1117; color:#E6EDF5; font-family:'JetBrains Mono',monospace; font-size:14px"></label>
+<label style="display:flex; flex-direction:column; gap:4px; font-size:13px; color:#B4C0CF">Currency<input type="text" readonly value="EUR" style="min-height:40px; box-sizing:border-box; padding:0 12px; border:1px solid #263040; border-radius:6px; background:#111720; color:#8B98A9; font-family:'JetBrains Mono',monospace; font-size:14px"><span style="font-size:12px; color:#8B98A9">All amounts are in euros. Other currencies are not supported yet.</span></label>
+<div style="display:flex; gap:10px; justify-content:flex-end"><button type="button" style="min-height:38px; padding:0 16px; border:1px solid #2F3B4D; border-radius:5px; background:transparent; color:#E6EDF5; font:inherit; font-weight:600">Cancel <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">Esc</span></button><button type="button" style="min-height:38px; padding:0 16px; border:0; border-radius:5px; background:#7AA2FF; color:#0B1220; font:inherit; font-weight:700">Create group <span style="font-family:'JetBrains Mono',monospace; font-size:11px">↵</span></button></div>
+</div>
+</section>
+
+<section aria-labelledby="t2" style="width:100%; max-width:460px">
+<div style="margin-bottom:6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">Name missing (error)</div>
+<div role="dialog" aria-labelledby="t2" style="border:1px solid #3A4F7A; border-radius:6px; background:#141A22; padding:22px; display:flex; flex-direction:column; gap:14px; box-shadow:0 12px 36px rgba(0,0,0,.5)">
+<h2 id="t2" style="margin:0; font-size:20px; font-weight:700">Create a group</h2>
+<label style="display:flex; flex-direction:column; gap:4px; font-size:13px; color:#B4C0CF">Group name<input type="text" value="" aria-invalid="true" style="min-height:40px; box-sizing:border-box; padding:0 12px; border:1px solid #FF9C9C; border-radius:6px; background:#0D1117; color:#E6EDF5; font-family:'JetBrains Mono',monospace; font-size:14px"><span style="font-size:13px; color:#FF9C9C">Give the group a name.</span></label>
+<label style="display:flex; flex-direction:column; gap:4px; font-size:13px; color:#B4C0CF">Currency<input type="text" readonly value="EUR" style="min-height:40px; box-sizing:border-box; padding:0 12px; border:1px solid #263040; border-radius:6px; background:#111720; color:#8B98A9; font-family:'JetBrains Mono',monospace; font-size:14px"></label>
+<div style="display:flex; gap:10px; justify-content:flex-end"><button type="button" style="min-height:38px; padding:0 16px; border:1px solid #2F3B4D; border-radius:5px; background:transparent; color:#E6EDF5; font:inherit; font-weight:600">Cancel</button><button type="button" style="min-height:38px; padding:0 16px; border:0; border-radius:5px; background:#7AA2FF; color:#0B1220; font:inherit; font-weight:700">Create group</button></div>
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":700}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

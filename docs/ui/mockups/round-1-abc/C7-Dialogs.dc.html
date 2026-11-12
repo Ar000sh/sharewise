@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Console: Payment dialogs and states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#7AA2FF}a:hover{color:#A9C2FF}
+</style>
+</helmet>
+<div style="min-height:1500px; box-sizing:border-box; background:#0D1117; color:#E6EDF5; font-family:'Space Grotesk',system-ui,sans-serif; font-size:14px; line-height:1.45; padding:24px 28px 36px; display:flex; flex-direction:column; gap:22px">
+
+<div style="display:flex; align-items:baseline; gap:14px; flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#7AA2FF">sw/</span><span style="font-size:18px; font-weight:700">payment dialogs and states</span><span style="color:#8B98A9">used by settle up · amounts come from the plan</span></div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(360px, 1fr)); gap:22px; align-items:start">
+
+<section aria-labelledby="p1"><div id="p1" style="margin-bottom:6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">1 · i paid (bob pays eve)</div>
+<div role="dialog" aria-labelledby="t1" style="border:1px solid #3A4F7A; border-radius:6px; background:#141A22; padding:20px; display:flex; flex-direction:column; gap:12px">
+<h2 id="t1" style="margin:0; font-size:18px; font-weight:700">I paid eve</h2>
+<div style="color:#B4C0CF; font-size:13px">Tell eve you paid outside ShareWise. Your balance changes only after eve confirms.</div>
+<label style="display:flex; flex-direction:column; gap:4px; font-size:13px; color:#B4C0CF">Amount (€)<input type="text" inputmode="decimal" value="66,00" style="min-height:44px; box-sizing:border-box; padding:0 12px; border:1px solid #7AA2FF; border-radius:6px; background:#0D1117; color:#E6EDF5; font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; text-align:right"><span style="font-size:12px; color:#8B98A9">Up to 66,00 €, what is still open between you and eve.</span></label>
+<label style="display:flex; flex-direction:column; gap:4px; font-size:13px; color:#B4C0CF">Note (optional)<input type="text" value="" placeholder="Bank transfer" style="min-height:38px; box-sizing:border-box; padding:0 12px; border:1px solid #2F3B4D; border-radius:6px; background:#0D1117; color:#E6EDF5; font:inherit"></label>
+<div style="display:flex; gap:10px; justify-content:flex-end"><button type="button" style="min-height:36px; padding:0 14px; border:1px solid #2F3B4D; border-radius:5px; background:transparent; color:#E6EDF5; font:inherit; font-weight:600">Cancel <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">Esc</span></button><button type="button" style="min-height:36px; padding:0 14px; border:0; border-radius:5px; background:#7AA2FF; color:#0B1220; font:inherit; font-weight:700">Report payment <span style="font-family:'JetBrains Mono',monospace; font-size:11px">↵</span></button></div>
+</div></section>
+
+<section aria-labelledby="p2"><div id="p2" style="margin-bottom:6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">2 · amount too high</div>
+<div role="dialog" aria-labelledby="t2" style="border:1px solid #3A4F7A; border-radius:6px; background:#141A22; padding:20px; display:flex; flex-direction:column; gap:12px">
+<h2 id="t2" style="margin:0; font-size:18px; font-weight:700">I paid eve</h2>
+<label style="display:flex; flex-direction:column; gap:4px; font-size:13px; color:#B4C0CF">Amount (€)<input type="text" inputmode="decimal" value="90,00" aria-invalid="true" style="min-height:44px; box-sizing:border-box; padding:0 12px; border:1px solid #FF9C9C; border-radius:6px; background:#0D1117; color:#E6EDF5; font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; text-align:right"><span style="font-size:13px; color:#FF9C9C">You can report at most 66,00 € to eve.</span></label>
+<div style="display:flex; gap:10px; justify-content:flex-end"><button type="button" style="min-height:36px; padding:0 14px; border:1px solid #2F3B4D; border-radius:5px; background:transparent; color:#E6EDF5; font:inherit; font-weight:600">Cancel</button><button type="button" style="min-height:36px; padding:0 14px; border:0; border-radius:5px; background:#7AA2FF; color:#0B1220; font:inherit; font-weight:700">Report payment</button></div>
+</div></section>
+
+<section aria-labelledby="p3"><div id="p3" style="margin-bottom:6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">3 · reject (alice rejects bob)</div>
+<div role="dialog" aria-labelledby="t3" style="border:1px solid #3A4F7A; border-radius:6px; background:#141A22; padding:20px; display:flex; flex-direction:column; gap:12px">
+<h2 id="t3" style="margin:0; font-size:18px; font-weight:700">Reject bob’s payment of 136,00 €?</h2>
+<div style="color:#B4C0CF; font-size:13px">Bob sees your reason. The 136,00 € becomes open again and bob can report it again.</div>
+<label style="display:flex; flex-direction:column; gap:4px; font-size:13px; color:#B4C0CF">Reason (required)<input type="text" value="Money has not arrived" style="min-height:38px; box-sizing:border-box; padding:0 12px; border:1px solid #2F3B4D; border-radius:6px; background:#0D1117; color:#E6EDF5; font:inherit"></label>
+<div style="display:flex; gap:10px; justify-content:flex-end"><button type="button" style="min-height:36px; padding:0 14px; border:1px solid #2F3B4D; border-radius:5px; background:transparent; color:#E6EDF5; font:inherit; font-weight:600">Keep waiting</button><button type="button" style="min-height:36px; padding:0 14px; border:1px solid #7A3B3B; border-radius:5px; background:transparent; color:#FF9C9C; font:inherit; font-weight:700">Reject payment</button></div>
+</div></section>
+
+<section aria-labelledby="p4"><div id="p4" style="margin-bottom:6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">4 · waive (alice waives david)</div>
+<div role="dialog" aria-labelledby="t4" style="border:1px solid #3A4F7A; border-radius:6px; background:#141A22; padding:20px; display:flex; flex-direction:column; gap:12px">
+<h2 id="t4" style="margin:0; font-size:18px; font-weight:700">Waive what david owes you?</h2>
+<div style="color:#B4C0CF; font-size:13px">David no longer has to pay this amount. It takes effect at once; david does not need to confirm.</div>
+<label style="display:flex; flex-direction:column; gap:4px; font-size:13px; color:#B4C0CF">Amount (€)<input type="text" inputmode="decimal" value="437,00" style="min-height:44px; box-sizing:border-box; padding:0 12px; border:1px solid #7AA2FF; border-radius:6px; background:#0D1117; color:#E6EDF5; font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700; text-align:right"><span style="font-size:12px; color:#8B98A9">Up to 437,00 €. You can waive less.</span></label>
+<label style="display:flex; flex-direction:column; gap:4px; font-size:13px; color:#B4C0CF">Reason (optional)<input type="text" value="" placeholder="A gift for the trip" style="min-height:38px; box-sizing:border-box; padding:0 12px; border:1px solid #2F3B4D; border-radius:6px; background:#0D1117; color:#E6EDF5; font:inherit"></label>
+<div style="display:flex; gap:10px; justify-content:flex-end"><button type="button" style="min-height:36px; padding:0 14px; border:1px solid #2F3B4D; border-radius:5px; background:transparent; color:#E6EDF5; font:inherit; font-weight:600">Cancel</button><button type="button" style="min-height:36px; padding:0 14px; border:0; border-radius:5px; background:#7AA2FF; color:#0B1220; font:inherit; font-weight:700">Waive 437,00 €</button></div>
+</div></section>
+
+<section aria-labelledby="p5"><div id="p5" style="margin-bottom:6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">5 · everyone is settled</div>
+<div style="border:1px solid #263040; border-radius:6px; background:#141A22; padding:24px 20px; display:flex; flex-direction:column; gap:8px; align-items:flex-start">
+<span style="font-family:'JetBrains Mono',monospace; font-size:22px; color:#5CE1E6">✓</span>
+<h2 style="margin:0; font-size:18px; font-weight:700">Everyone is settled up</h2>
+<div style="color:#B4C0CF">All balances are 0,00 €. The group will be archived automatically.</div>
+<a href="#" style="font-weight:600">see payment history</a>
+</div></section>
+
+<section aria-labelledby="p6"><div id="p6" style="margin-bottom:6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">6 · closed for settlement</div>
+<div style="border:1px solid #263040; border-radius:6px; background:#141A22; overflow:hidden">
+<div style="padding:12px 16px; background:#1D2735; border-bottom:1px solid #263040"><div style="font-weight:600; color:#FFB454">Final plan</div><div style="margin-top:2px; font-size:13px; color:#B4C0CF">Expenses are frozen. Payments still work, and an admin can reopen the group.</div></div>
+<div style="padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap"><div><div style="font-weight:600">eve</div><div style="font-size:13px; color:#B4C0CF">you owe <span style="font-family:'JetBrains Mono',monospace">66,00 €</span></div></div><button type="button" style="min-height:34px; padding:0 14px; border:0; border-radius:5px; background:#7AA2FF; color:#0B1220; font:inherit; font-weight:700">I paid… <span style="font-family:'JetBrains Mono',monospace; font-size:11px">P</span></button></div>
+</div></section>
+
+<section aria-labelledby="p7"><div id="p7" style="margin-bottom:6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">7 · archived (read-only)</div>
+<div style="border:1px solid #263040; border-radius:6px; background:#141A22; overflow:hidden">
+<div style="padding:12px 16px; background:#1D2735; border-bottom:1px solid #263040"><div style="font-weight:600">This group is archived</div><div style="margin-top:2px; font-size:13px; color:#B4C0CF">Nothing can be paid, confirmed or waived any more. The history stays readable.</div></div>
+<div style="padding:12px 16px; display:flex; justify-content:space-between; gap:12px; align-items:center"><span>bob → alice, <span style="font-family:'JetBrains Mono',monospace">136,00 €</span></span><span style="padding:0 7px; border:1px solid #2B6E73; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:10px; color:#5CE1E6">CONFIRMED</span></div>
+</div></section>
+
+<section aria-labelledby="p8"><div id="p8" style="margin-bottom:6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">8 · loading</div>
+<div aria-busy="true" style="border:1px solid #263040; border-radius:6px; background:#141A22; padding:18px 20px; display:flex; flex-direction:column; gap:12px"><div style="color:#8B98A9; font-family:'JetBrains Mono',monospace; font-size:13px">loading the plan…</div><div style="height:12px; width:60%; border-radius:3px; background:#263040"></div><div style="height:12px; width:85%; border-radius:3px; background:#263040"></div><div style="height:12px; width:45%; border-radius:3px; background:#263040"></div></div></section>
+
+<section aria-labelledby="p9"><div id="p9" style="margin-bottom:6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">9 · error</div>
+<div role="alert" style="border:1px solid #7A3B3B; border-radius:6px; background:#2A1A1D; padding:16px 18px; color:#FF9C9C; display:flex; flex-direction:column; gap:8px"><div style="font-weight:600">The plan could not be loaded</div><div style="font-size:13px">The server did not answer. Your payments are safe; try again in a moment.</div><button type="button" style="align-self:flex-start; min-height:34px; padding:0 14px; border:1px solid #FF9C9C; border-radius:5px; background:transparent; color:#FF9C9C; font:inherit; font-weight:600">Try again <span style="font-family:'JetBrains Mono',monospace; font-size:11px">R</span></button></div></section>
+
+<section aria-labelledby="p10"><div id="p10" style="margin-bottom:6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">10 · empty: no groups yet</div>
+<div style="border:1px solid #263040; border-radius:6px; background:#141A22; padding:24px 20px; display:flex; flex-direction:column; gap:8px; align-items:flex-start"><h2 style="margin:0; font-size:18px; font-weight:700">No groups yet</h2><div style="color:#B4C0CF">Create a group for your next trip or flat, or accept an invitation from a friend.</div><button type="button" style="min-height:38px; padding:0 14px; border:0; border-radius:5px; background:#7AA2FF; color:#0B1220; font:inherit; font-weight:700">Create a group <span style="font-family:'JetBrains Mono',monospace; font-size:11px">N</span></button></div></section>
+
+<section aria-labelledby="p11"><div id="p11" style="margin-bottom:6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">11 · empty: no expenses yet</div>
+<div style="border:1px solid #263040; border-radius:6px; background:#141A22; padding:24px 20px; display:flex; flex-direction:column; gap:8px; align-items:flex-start"><h2 style="margin:0; font-size:18px; font-weight:700">No expenses yet</h2><div style="color:#B4C0CF">Record the first thing someone paid for. Balances appear as soon as there is one.</div><button type="button" style="min-height:38px; padding:0 14px; border:0; border-radius:5px; background:#7AA2FF; color:#0B1220; font:inherit; font-weight:700">Add expense <span style="font-family:'JetBrains Mono',monospace; font-size:11px">A</span></button></div></section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1500}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

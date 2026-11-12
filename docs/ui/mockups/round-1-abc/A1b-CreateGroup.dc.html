@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger: Create group</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1238A5}
+</style>
+</helmet>
+<div style="min-height:700px; box-sizing:border-box; background:#4A5565; color:#121821; font-family:'Inter',system-ui,sans-serif; font-size:14px; line-height:1.45; padding:40px 36px; display:grid; grid-template-columns:repeat(auto-fit, minmax(380px, 1fr)); gap:32px; align-items:start; justify-items:center">
+
+<section aria-labelledby="t1" style="width:100%; max-width:460px">
+<div style="margin-bottom:8px; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:#E6EAF0">New group</div>
+<div role="dialog" aria-labelledby="t1" style="background:#FFFFFF; border-radius:14px; padding:26px; display:flex; flex-direction:column; gap:16px; box-shadow:0 12px 36px rgba(18,24,33,.30)">
+<h2 id="t1" style="margin:0; font-size:20px; font-weight:700; letter-spacing:-.01em">Create a group</h2>
+<div style="color:#4A5565">A group is a shared pot for a trip, a flat or an event. You become its admin and can invite people afterwards.</div>
+<label style="display:flex; flex-direction:column; gap:5px; font-weight:500">Group name<input type="text" value="Cabin weekend" style="min-height:44px; box-sizing:border-box; padding:0 12px; border:1px solid #CBD2DC; border-radius:8px; font:inherit; color:#121821"></label>
+<label style="display:flex; flex-direction:column; gap:5px; font-weight:500">Currency<input type="text" readonly value="Euro (EUR)" style="min-height:44px; box-sizing:border-box; padding:0 12px; border:1px solid #E2E6EC; border-radius:8px; background:#F4F6F9; font:inherit; color:#4A5565"><span style="font-size:12px; font-weight:400; color:#5B6678">All amounts are in euros. Other currencies are not supported yet.</span></label>
+<div style="display:flex; gap:10px; justify-content:flex-end"><button type="button" style="min-height:44px; padding:0 18px; border:1px solid #CBD2DC; border-radius:8px; background:#FFFFFF; color:#121821; font:inherit; font-weight:600">Cancel</button><button type="button" style="min-height:44px; padding:0 18px; border:0; border-radius:8px; background:#1D4ED8; color:#FFFFFF; font:inherit; font-weight:600">Create group</button></div>
+</div>
+</section>
+
+<section aria-labelledby="t2" style="width:100%; max-width:460px">
+<div style="margin-bottom:8px; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:#E6EAF0">Name missing (error)</div>
+<div role="dialog" aria-labelledby="t2" style="background:#FFFFFF; border-radius:14px; padding:26px; display:flex; flex-direction:column; gap:16px; box-shadow:0 12px 36px rgba(18,24,33,.30)">
+<h2 id="t2" style="margin:0; font-size:20px; font-weight:700; letter-spacing:-.01em">Create a group</h2>
+<label style="display:flex; flex-direction:column; gap:5px; font-weight:500">Group name<input type="text" value="" aria-invalid="true" style="min-height:44px; box-sizing:border-box; padding:0 12px; border:2px solid #B42318; border-radius:8px; font:inherit; color:#121821"><span style="font-size:13px; font-weight:500; color:#B42318">Give the group a name.</span></label>
+<label style="display:flex; flex-direction:column; gap:5px; font-weight:500">Currency<input type="text" readonly value="Euro (EUR)" style="min-height:44px; box-sizing:border-box; padding:0 12px; border:1px solid #E2E6EC; border-radius:8px; background:#F4F6F9; font:inherit; color:#4A5565"></label>
+<div style="display:flex; gap:10px; justify-content:flex-end"><button type="button" style="min-height:44px; padding:0 18px; border:1px solid #CBD2DC; border-radius:8px; background:#FFFFFF; color:#121821; font:inherit; font-weight:600">Cancel</button><button type="button" style="min-height:44px; padding:0 18px; border:0; border-radius:8px; background:#1D4ED8; color:#FFFFFF; font:inherit; font-weight:600">Create group</button></div>
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":700}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

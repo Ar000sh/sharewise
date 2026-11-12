@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settle up: by person</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1238A5}
+summary{cursor:pointer}
+</style>
+</helmet>
+<div style="min-height:1150px; background:#F4F6F9; color:#121821; font-family:'Inter',system-ui,sans-serif; font-size:14px; line-height:1.45; font-variant-numeric:tabular-nums">
+
+<header style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding:12px 36px; background:#FFFFFF; border-bottom:1px solid #E2E6EC">
+<div style="display:flex; align-items:center; gap:10px"><div style="width:28px; height:28px; border-radius:8px; background:#1D4ED8; color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:700">S</div><div style="font-size:16px; font-weight:700">ShareWise</div></div>
+<div style="font-size:13px; color:#4A5565">Mockup viewer: <strong style="font-weight:600; color:#121821">{{viewerName}}</strong> (change it in Tweaks)</div>
+</header>
+
+<main style="box-sizing:border-box; max-width:1100px; margin:0 auto; padding:24px 36px 44px; display:flex; flex-direction:column; gap:22px">
+
+<div style="display:flex; flex-direction:column; gap:12px">
+<div style="font-size:13px; color:#4A5565">My groups / Mallorca 2027</div>
+<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap"><h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-.01em">Mallorca 2027</h1><span style="padding:3px 10px; border-radius:999px; background:#E5EEFF; color:#12409E; font-size:12px; font-weight:600">Open</span><span style="font-size:13px; color:#4A5565">EUR · 5 members</span></div>
+<div role="tablist" aria-label="Group sections" style="display:flex; flex-wrap:wrap; gap:4px; border-bottom:1px solid #E2E6EC">
+<a href="#" role="tab" style="padding:10px 14px; margin-bottom:-1px; text-decoration:none; color:#4A5565; border-bottom:2px solid transparent">Expenses</a>
+<a href="#" role="tab" style="padding:10px 14px; margin-bottom:-1px; text-decoration:none; color:#4A5565; border-bottom:2px solid transparent">Balances</a>
+<a href="#" role="tab" style="padding:10px 14px; margin-bottom:-1px; text-decoration:none; color:#12409E; font-weight:600; border-bottom:2px solid #1D4ED8">Settle up</a>
+<a href="#" role="tab" style="padding:10px 14px; margin-bottom:-1px; text-decoration:none; color:#4A5565; border-bottom:2px solid transparent">Members</a>
+<a href="#" role="tab" style="padding:10px 14px; margin-bottom:-1px; text-decoration:none; color:#4A5565; border-bottom:2px solid transparent">Activity</a>
+</div>
+</div>
+
+<section aria-label="Your position" style="display:flex; flex-wrap:wrap; align-items:baseline; gap:12px 20px">
+<div style="font-size:30px; font-weight:700; letter-spacing:-.02em">{{lead}} {{total}}</div>
+<div style="font-size:13px; color:#4A5565">{{sub}}</div>
+</section>
+
+<section aria-labelledby="ppl" style="display:flex; flex-direction:column; gap:12px">
+<h2 id="ppl" style="margin:0; font-size:15px; font-weight:600">Settle with</h2>
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(420px, 1fr)); gap:18px; align-items:start">
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="2">
+<div style="background:#FFFFFF; border:1px solid #E2E6EC; border-radius:14px; overflow:hidden">
+
+<div style="padding:18px 20px; display:flex; align-items:center; gap:14px">
+<span style="width:44px; height:44px; border-radius:22px; background:{{c.c}}; color:#FFFFFF; font-size:16px; font-weight:600; display:flex; align-items:center; justify-content:center">{{c.i}}</span>
+<div style="flex:1"><div style="font-size:16px; font-weight:700">{{c.name}}</div><div style="color:#4A5565">{{c.line}}</div></div>
+<div style="text-align:right"><div style="font-size:20px; font-weight:700; letter-spacing:-.01em">{{c.amount}}</div><div style="font-size:12px; color:#4A5565">{{c.amountNote}}</div></div>
+</div>
+
+<sc-if value="{{c.hasAnswer}}" hint-placeholder-val="{{false}}">
+<div style="padding:14px 20px; background:#F3F7FF; border-top:1px solid #BFD0F7">
+<div style="font-weight:600">{{c.name}} says they paid you {{c.pending}}</div>
+<div style="font-size:13px; color:#4A5565">{{c.pendingWhen}} · “{{c.pendingNote}}”. Confirm only after the money has arrived.</div>
+<div style="margin-top:10px; display:flex; gap:8px"><button type="button" style="min-height:40px; padding:0 16px; border:0; border-radius:8px; background:#1D4ED8; color:#FFFFFF; font:inherit; font-weight:600">Confirm payment</button><button type="button" style="min-height:40px; padding:0 16px; border:1px solid #CBD2DC; border-radius:8px; background:#FFFFFF; color:#121821; font:inherit; font-weight:600">Reject…</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{c.waiting}}" hint-placeholder-val="{{false}}">
+<div style="padding:14px 20px; background:#FFF8EC; border-top:1px solid #F1DDB8; color:#5C3300">
+<div style="font-weight:600">You reported {{c.pending}}</div>
+<div style="font-size:13px">{{c.pendingWhen}} · “{{c.pendingNote}}”. Waiting for {{c.name}} to confirm.</div>
+</div>
+</sc-if>
+
+<sc-if value="{{c.canPay}}" hint-placeholder-val="{{true}}">
+<div style="padding:14px 20px; border-top:1px solid #E2E6EC; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap"><span style="color:#4A5565">Open: <strong style="font-weight:600; color:#121821">{{c.payable}}</strong></span><button type="button" style="min-height:40px; padding:0 18px; border:0; border-radius:8px; background:#1D4ED8; color:#FFFFFF; font:inherit; font-weight:600">I paid {{c.name}}…</button></div>
+</sc-if>
+
+<sc-if value="{{c.canWaive}}" hint-placeholder-val="{{false}}">
+<div style="padding:14px 20px; border-top:1px solid #E2E6EC; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap"><span style="color:#4A5565">Open: <strong style="font-weight:600; color:#121821">{{c.payable}}</strong></span><button type="button" style="min-height:40px; padding:0 16px; border:1px solid #CBD2DC; border-radius:8px; background:#FFFFFF; color:#121821; font:inherit; font-weight:600">Waive…</button></div>
+</sc-if>
+
+<sc-if value="{{c.hasHist}}" hint-placeholder-val="{{false}}">
+<div style="padding:12px 20px 14px; border-top:1px solid #E2E6EC; background:#F8F9FB">
+<div style="font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:#4A5565">History with {{c.name}}</div>
+<sc-for list="{{c.hist}}" as="h" hint-placeholder-count="1">
+<div style="margin-top:8px; display:flex; justify-content:space-between; gap:10px; align-items:flex-start"><div><div>{{h.text}} · <strong style="font-weight:600">{{h.amount}}</strong></div><div style="font-size:13px; color:#4A5565">{{h.when}}</div></div><span style="padding:2px 10px; border-radius:999px; font-size:12px; font-weight:600; {{h.chip}}">{{h.status}}</span></div>
+</sc-for>
+</div>
+</sc-if>
+
+</div>
+</sc-for>
+</div>
+<div style="font-size:12px; color:#4A5565">ShareWise does not move money. “I paid” tells the other person you paid outside the app; they confirm it, then your balance changes.</div>
+</section>
+
+<details style="background:#FFFFFF; border:1px solid #E2E6EC; border-radius:12px">
+<summary style="padding:14px 20px; font-weight:600">Between other people · {{restCount}} payments in the plan</summary>
+<div>
+<sc-for list="{{rest}}" as="x" hint-placeholder-count="2">
+<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 20px; border-top:1px solid #E2E6EC; color:#4A5565"><span>{{x.fromName}} pays {{x.toName}}</span><span style="font-weight:600; color:#121821">{{x.amount}}</span></div>
+</sc-for>
+</div>
+</details>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"viewer":{"editor":"enum","options":["bob","alice","carol","david","eve"],"default":"bob"},"$preview":{"width":1280,"height":1150}}'>
+class Component extends DCLogic {
+renderVals() {
+const v = this.props.viewer ?? 'bob';
+const P = {
+alice: { n: 'Alice', c: '#1D4ED8' }, bob: { n: 'Bob', c: '#0B7A75' }, carol: { n: 'Carol', c: '#7A3FB5' },
+david: { n: 'David', c: '#A8480A' }, eve: { n: 'Eve', c: '#2F6F2F' }
+};
+const E = [
+{ from: 'david', to: 'alice', amount: '437,00 €', pending: '', payable: '437,00 €', canPay: true },
+{ from: 'bob', to: 'alice', amount: '136,00 €', pending: '136,00 €', payable: '0,00 €', canPay: false },
+{ from: 'bob', to: 'eve', amount: '66,00 €', pending: '', payable: '66,00 €', canPay: true },
+{ from: 'carol', to: 'eve', amount: '72,00 €', pending: '', payable: '72,00 €', canPay: true }
+];
+const H = [
+{ from: 'bob', to: 'alice', amount: '136,00 €', status: 'Pending', chip: 'background:#FFF1DB; color:#8A4B00', note: 'Cash at the airport', when: 'Today, 21:40' },
+{ from: 'carol', to: 'eve', amount: '72,00 €', status: 'Rejected', chip: 'background:#FDE8E8; color:#9B1C1C', note: 'Bank transfer', when: '19 Jun, 14:05 · Eve: “Money has not arrived”' }
+];
+const cards = E.filter((e) => e.from === v || e.to === v).map((e) => {
+const isPay = e.from === v;
+const other = isPay ? e.to : e.from;
+const hist = H.filter((h) => (h.from === e.from && h.to === e.to)).map((h) => ({
+...h,
+text: h.from === v ? 'You reported a payment' : P[h.from].n + ' reported a payment to ' + (h.to === v ? 'you' : P[h.to].n)
+}));
+const hasPending = e.pending !== '';
+const p = hist.find((h) => h.status === 'Pending');
+return {
+name: P[other].n, i: P[other].n[0], c: P[other].c,
+line: isPay ? 'You owe ' + P[other].n : P[other].n + ' owes you',
+amount: e.amount, amountNote: 'in total',
+pending: e.pending, pendingWhen: p ? p.when : '', pendingNote: p ? p.note : '',
+hasAnswer: !isPay && hasPending,
+waiting: isPay && hasPending,
+canPay: isPay && e.canPay,
+canWaive: !isPay && e.canPay,
+payable: e.payable,
+hist, hasHist: hist.length > 0
+};
+});
+const rest = E.filter((e) => e.from !== v && e.to !== v).map((e) => ({ ...e, fromName: P[e.from].n, toName: P[e.to].n }));
+const S = {
+alice: { lead: 'You are owed', total: '573,00 €', sub: '1 payment waits for your answer' },
+bob: { lead: 'You owe', total: '202,00 €', sub: '136,00 € of it is reported and waiting for Alice' },
+carol: { lead: 'You owe', total: '72,00 €', sub: 'Eve rejected your last report. You can report again.' },
+david: { lead: 'You owe', total: '437,00 €', sub: 'Nothing reported yet' },
+eve: { lead: 'You are owed', total: '138,00 €', sub: 'Nothing waits for your answer' }
+}[v];
+return { viewerName: P[v].n, lead: S.lead, total: S.total, sub: S.sub, cards, rest, restCount: String(rest.length) };
+}
+}
+</script>
+</body>
+</html>

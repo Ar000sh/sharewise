@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger: Balances</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1238A5}
+</style>
+</helmet>
+<div style="display:flex; flex-wrap:wrap; min-height:900px; background:#F4F6F9; color:#121821; font-family:'Inter',system-ui,sans-serif; font-size:14px; line-height:1.45; font-variant-numeric:tabular-nums">
+
+<nav aria-label="Main" style="flex:0 0 248px; box-sizing:border-box; background:#FFFFFF; border-right:1px solid #E2E6EC; padding:20px 14px; display:flex; flex-direction:column; gap:24px">
+<div style="display:flex; align-items:center; gap:10px; padding:0 8px"><div style="width:28px; height:28px; border-radius:8px; background:#1D4ED8; color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:700">S</div><div style="font-size:16px; font-weight:700">ShareWise</div></div>
+<div style="display:flex; flex-direction:column; gap:2px">
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; color:#121821; text-decoration:none">My groups</a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; color:#121821; text-decoration:none"><span>Inbox</span><span style="min-width:20px; box-sizing:border-box; padding:0 6px; border-radius:10px; background:#1D4ED8; color:#FFFFFF; font-size:12px; font-weight:600; text-align:center">3</span></a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; color:#121821; text-decoration:none">Activity</a>
+</div>
+<div style="display:flex; flex-direction:column; gap:4px">
+<div style="padding:0 10px 4px; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:#5B6678">Groups</div>
+<a href="#" style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; color:#121821; text-decoration:none; background:#E8EEFE; font-weight:600"><span style="width:8px; height:8px; border-radius:4px; background:#1D4ED8"></span>Mallorca 2027</a>
+<a href="#" style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; color:#121821; text-decoration:none"><span style="width:8px; height:8px; border-radius:4px; background:#C77A00"></span>Ski weekend</a>
+<a href="#" style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; color:#121821; text-decoration:none"><span style="width:8px; height:8px; border-radius:4px; background:#7B8697"></span>Flat 12</a>
+</div>
+<div style="margin-top:auto; display:flex; align-items:center; gap:10px; padding:12px 10px 0; border-top:1px solid #E2E6EC"><div style="width:32px; height:32px; border-radius:16px; background:#1D4ED8; color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:600">A</div><div style="flex:1; min-width:0"><div style="font-weight:600">Alice Tester</div><div style="font-size:12px; color:#5B6678">@alice</div></div><a href="#" style="font-size:12px">Sign out</a></div>
+</nav>
+
+<main style="flex:999 1 560px; min-width:0; box-sizing:border-box; padding:24px 36px 28px; display:flex; flex-direction:column; gap:20px">
+
+<header style="display:flex; flex-direction:column; gap:14px">
+<div style="font-size:13px; color:#5B6678"><a href="#" style="color:#5B6678">My groups</a> / Mallorca 2027</div>
+<div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px">
+<div style="display:flex; align-items:center; gap:12px"><h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-.01em">Mallorca 2027</h1><span style="padding:3px 10px; border-radius:999px; background:#E5EEFF; color:#12409E; font-size:12px; font-weight:600">Open</span><span style="font-size:13px; color:#5B6678">EUR · 5 members</span></div>
+<span style="font-size:12px; color:#5B6678">Up to date · checked just now</span>
+</div>
+<div role="tablist" aria-label="Group sections" style="display:flex; flex-wrap:wrap; gap:4px; border-bottom:1px solid #E2E6EC">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="5"><a href="#" role="tab" style="display:flex; align-items:center; gap:8px; padding:10px 14px; margin-bottom:-1px; text-decoration:none; {{t.style}}">{{t.name}}<sc-if value="{{t.badge}}" hint-placeholder-val="{{false}}"><span style="min-width:18px; box-sizing:border-box; padding:0 5px; border-radius:9px; background:#1D4ED8; color:#FFFFFF; font-size:11px; font-weight:600; text-align:center">{{t.badge}}</span></sc-if></a></sc-for>
+</div>
+</header>
+
+<div style="display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start">
+
+<section aria-labelledby="bal" style="flex:1.6 1 520px; min-width:0; display:flex; flex-direction:column; gap:10px">
+<h2 id="bal" style="margin:0; font-size:15px; font-weight:600">Everyone’s balance</h2>
+<div style="background:#FFFFFF; border:1px solid #E2E6EC; border-radius:12px; overflow-x:auto">
+<div style="min-width:520px">
+<div style="display:grid; grid-template-columns:minmax(110px, 1.2fr) 90px 90px 220px; gap:12px; padding:12px 18px; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:#5B6678"><div>Member</div><div style="text-align:right">Paid</div><div style="text-align:right">Share</div><div style="text-align:right">Balance</div></div>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+<div style="display:grid; grid-template-columns:minmax(110px, 1.2fr) 90px 90px 220px; gap:12px; align-items:center; padding:12px 18px; border-top:1px solid #E2E6EC; {{r.row}}">
+<div style="display:flex; align-items:center; gap:10px"><span style="width:26px; height:26px; border-radius:13px; background:{{r.c}}; color:#FFFFFF; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center">{{r.i}}</span>{{r.name}}</div>
+<div style="text-align:right; color:#4A5565">{{r.paid}}</div>
+<div style="text-align:right; color:#4A5565">{{r.owed}}</div>
+<div style="display:flex; align-items:center; justify-content:flex-end; gap:10px">
+<div style="display:flex; align-items:center"><div style="width:80px; display:flex; justify-content:flex-end"><div style="height:10px; width:{{r.neg}}px; background:#A8480A; border-radius:5px 0 0 5px"></div></div><div style="width:1px; height:18px; background:#CBD2DC"></div><div style="width:80px"><div style="height:10px; width:{{r.pos}}px; background:#1D4ED8; border-radius:0 5px 5px 0"></div></div></div>
+<div style="width:84px; text-align:right; font-weight:700; {{r.color}}">{{r.balance}}</div>
+</div>
+</div>
+</sc-for>
+<div style="display:flex; justify-content:space-between; padding:12px 18px; border-top:1px solid #CBD2DC; background:#F8F9FB; font-weight:600"><span>Sum of all balances</span><span>0,00 €</span></div>
+</div>
+</div>
+<div style="font-size:13px; color:#5B6678">A positive balance means the group owes that person. A negative balance means that person owes the group.</div>
+</section>
+
+<aside style="flex:1 1 320px; min-width:280px; display:flex; flex-direction:column; gap:16px">
+<section aria-labelledby="mine" style="background:#FFFFFF; border:1px solid #E2E6EC; border-radius:12px; padding:18px 20px; display:flex; flex-direction:column; gap:12px">
+<h2 id="mine" style="margin:0; font-size:15px; font-weight:600">How your balance is made</h2>
+<div style="display:flex; justify-content:space-between"><span style="color:#4A5565">You paid for the group</span><span>1.150,00 €</span></div>
+<div style="display:flex; justify-content:space-between"><span style="color:#4A5565">Your share of all expenses</span><span>− 577,00 €</span></div>
+<div style="display:flex; justify-content:space-between; padding-top:10px; border-top:1px solid #E2E6EC; font-weight:700"><span>Your balance</span><span style="color:#0B5CAD">+ 573,00 €</span></div>
+<div style="padding:10px 12px; border-radius:8px; background:#FFF8EC; color:#5C3300; font-size:13px">Bob reported 136,00 €, waiting for your answer. It changes balances only after you confirm it.</div>
+<div style="font-size:13px; color:#5B6678">Confirmed payments and waived debts are added to the numbers above. Expenses you are not part of do not change your share.</div>
+<a href="#" style="font-weight:600">See who pays whom →</a>
+</section>
+</aside>
+
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const pos = 'color:#0B5CAD';
+const neg = 'color:#A8480A';
+const tabOn = 'color:#12409E; font-weight:600; border-bottom:2px solid #1D4ED8';
+const tabOff = 'color:#4A5565; border-bottom:2px solid transparent';
+return {
+tabs: [
+{ name: 'Expenses', style: tabOff, badge: '' },
+{ name: 'Balances', style: tabOn, badge: '' },
+{ name: 'Settle up', style: tabOff, badge: '1' },
+{ name: 'Members', style: tabOff, badge: '' },
+{ name: 'Activity', style: tabOff, badge: '' }
+],
+rows: [
+{ name: 'Alice (you)', i: 'A', c: '#1D4ED8', paid: '1.150,00 €', owed: '577,00 €', balance: '+573,00 €', color: pos, neg: 0, pos: 80, row: 'background:#F3F7FF' },
+{ name: 'Bob', i: 'B', c: '#0B7A75', paid: '260,00 €', owed: '462,00 €', balance: '−202,00 €', color: neg, neg: 28, pos: 0, row: '' },
+{ name: 'Carol', i: 'C', c: '#7A3FB5', paid: '420,00 €', owed: '492,00 €', balance: '−72,00 €', color: neg, neg: 10, pos: 0, row: '' },
+{ name: 'David', i: 'D', c: '#A8480A', paid: '75,00 €', owed: '512,00 €', balance: '−437,00 €', color: neg, neg: 61, pos: 0, row: '' },
+{ name: 'Eve', i: 'E', c: '#2F6F2F', paid: '300,00 €', owed: '162,00 €', balance: '+138,00 €', color: pos, neg: 0, pos: 19, row: '' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

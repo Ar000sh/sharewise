@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Console: Activity</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#7AA2FF}a:hover{color:#A9C2FF}
+</style>
+</helmet>
+<div style="display:flex; flex-direction:column; min-height:900px; background:#0D1117; color:#E6EDF5; font-family:'Space Grotesk',system-ui,sans-serif; font-size:14px; line-height:1.45">
+
+<header style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; min-height:48px; box-sizing:border-box; padding:6px 16px; border-bottom:1px solid #263040">
+<div style="display:flex; align-items:center; gap:10px; font-weight:600"><span style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#7AA2FF">sw/</span><span style="color:#8B98A9">my-groups /</span><span>mallorca-2027</span><span style="padding:1px 8px; border:1px solid #2B6E73; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#5CE1E6">OPEN</span></div>
+<div style="margin-left:auto; display:flex; align-items:center; gap:16px">
+<span style="display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#8B98A9"><span style="width:8px; height:8px; border-radius:4px; background:#5CE1E6"></span>live · up to date</span>
+<button type="button" aria-label="Inbox, 3 new" style="display:flex; align-items:center; gap:6px; min-height:32px; padding:0 10px; border:1px solid #263040; border-radius:6px; background:#141A22; color:#E6EDF5; font:inherit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg><span style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#FFB454">3</span></button>
+<span style="display:flex; align-items:center; gap:8px"><span style="width:28px; height:28px; border-radius:6px; background:#2A3A58; color:#CFE0FF; font-weight:700; display:flex; align-items:center; justify-content:center">A</span>alice</span>
+</div>
+</header>
+
+<div style="flex:1; display:flex; flex-wrap:wrap; min-height:0">
+
+<nav aria-label="Group sections" style="flex:0 0 200px; box-sizing:border-box; padding:14px 10px; border-right:1px solid #263040; background:#111720; display:flex; flex-direction:column; gap:2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="5"><a href="#" style="display:flex; align-items:center; justify-content:space-between; min-height:32px; padding:0 10px; border-radius:6px; text-decoration:none; {{n.style}}"><span>{{n.name}}</span><kbd style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">{{n.keys}}</kbd></a></sc-for>
+</nav>
+
+<main style="flex:999 1 520px; min-width:0; box-sizing:border-box; padding:16px 20px; display:flex; flex-direction:column; gap:10px">
+<div style="max-width:780px; display:flex; flex-direction:column; gap:10px">
+<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap"><h2 style="margin:0; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">Activity · all</h2>
+<div role="group" aria-label="Filter" style="display:flex; border:1px solid #2F3B4D; border-radius:5px; overflow:hidden"><button type="button" aria-pressed="true" style="min-height:28px; padding:0 12px; border:0; background:#2A3A58; color:#E6EDF5; font:inherit; font-size:13px; font-weight:600">All</button><button type="button" aria-pressed="false" style="min-height:28px; padding:0 12px; border:0; border-left:1px solid #2F3B4D; background:transparent; color:#B4C0CF; font:inherit; font-size:13px">Expenses</button><button type="button" aria-pressed="false" style="min-height:28px; padding:0 12px; border:0; border-left:1px solid #2F3B4D; background:transparent; color:#B4C0CF; font:inherit; font-size:13px">Payments</button><button type="button" aria-pressed="false" style="min-height:28px; padding:0 12px; border:0; border-left:1px solid #2F3B4D; background:transparent; color:#B4C0CF; font:inherit; font-size:13px">Members</button></div></div>
+<div style="border:1px solid #263040; border-radius:6px; background:#141A22; padding:0 14px 10px">
+<sc-for list="{{days}}" as="d" hint-placeholder-count="4">
+<div>
+<div style="padding:12px 0 6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#7AA2FF">{{d.label}}</div>
+<sc-for list="{{d.items}}" as="a" hint-placeholder-count="2">
+<div style="display:flex; gap:12px; padding:6px 0; border-top:1px solid #1E2733">
+<span style="flex:0 0 46px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#8B98A9">{{a.time}}</span>
+<span style="flex:0 0 74px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:#8B98A9">{{a.kind}}</span>
+<div style="flex:1; min-width:0; color:#E6EDF5">{{a.text}}</div>
+</div>
+</sc-for>
+</div>
+</sc-for>
+<div style="padding-top:8px; border-top:1px solid #1E2733"><a href="#" style="font-weight:600">Show earlier</a></div>
+</div>
+</div>
+</main>
+</div>
+
+<footer style="display:flex; flex-wrap:wrap; gap:18px; padding:8px 16px; border-top:1px solid #263040; background:#111720; font-family:'JetBrains Mono',monospace; font-size:12px; color:#8B98A9"><span>F filter</span><span>1–5 sections</span><span style="margin-left:auto">group is open</span></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const on = 'background:#1D2735; color:#E6EDF5; font-weight:600';
+const off = 'color:#B4C0CF';
+return {
+nav: [
+{ name: 'Expenses', keys: '1', style: off },
+{ name: 'Balances', keys: '2', style: off },
+{ name: 'Settle up · 1', keys: '3', style: off },
+{ name: 'Members', keys: '4', style: off },
+{ name: 'Activity', keys: '5', style: on }
+],
+days: [
+{ label: 'Today · 19 Jun', items: [
+{ time: '21:40', kind: 'payment', text: 'bob reported a payment of 136,00 € to alice' },
+{ time: '21:14', kind: 'expense', text: 'alice recorded Farewell dinner · 250,00 €' }
+] },
+{ label: '18 Jun', items: [
+{ time: '20:02', kind: 'expense', text: 'bob removed Groceries: entered twice' },
+{ time: '19:55', kind: 'expense', text: 'bob recorded Groceries · 60,00 €' }
+] },
+{ label: '17 Jun', items: [
+{ time: '18:30', kind: 'expense', text: 'eve recorded Boat trip · 300,00 €' },
+{ time: '18:05', kind: 'member', text: 'eve joined the group, invited by alice' }
+] },
+{ label: '16 Jun', items: [
+{ time: '22:10', kind: 'expense', text: 'bob corrected Dinner from 180,00 € to 200,00 €' },
+{ time: '15:12', kind: 'expense', text: 'david recorded Museum · 75,00 €' },
+{ time: '13:40', kind: 'expense', text: 'carol recorded Rental car · 420,00 €' }
+] },
+{ label: '14 Jun', items: [
+{ time: '10:02', kind: 'group', text: 'alice created the group mallorca-2027' }
+] }
+]
+};
+}
+}
+</script>
+</body>
+</html>

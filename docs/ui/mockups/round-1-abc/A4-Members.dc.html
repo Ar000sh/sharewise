@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger: Members and group status</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1238A5}
+</style>
+</helmet>
+<div style="display:flex; flex-wrap:wrap; min-height:900px; background:#F4F6F9; color:#121821; font-family:'Inter',system-ui,sans-serif; font-size:14px; line-height:1.45; font-variant-numeric:tabular-nums">
+
+<nav aria-label="Main" style="flex:0 0 248px; box-sizing:border-box; background:#FFFFFF; border-right:1px solid #E2E6EC; padding:20px 14px; display:flex; flex-direction:column; gap:24px">
+<div style="display:flex; align-items:center; gap:10px; padding:0 8px">
+<div style="width:28px; height:28px; border-radius:8px; background:#1D4ED8; color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:700">S</div>
+<div style="font-size:16px; font-weight:700">ShareWise</div>
+</div>
+<div style="display:flex; flex-direction:column; gap:2px">
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; color:#121821; text-decoration:none">My groups</a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; color:#121821; text-decoration:none"><span>Inbox</span><span style="min-width:20px; box-sizing:border-box; padding:0 6px; border-radius:10px; background:#1D4ED8; color:#FFFFFF; font-size:12px; font-weight:600; text-align:center">3</span></a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; color:#121821; text-decoration:none">Activity</a>
+</div>
+<div style="display:flex; flex-direction:column; gap:4px">
+<div style="padding:0 10px 4px; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:#5B6678">Groups</div>
+<sc-for list="{{sideGroups}}" as="g" hint-placeholder-count="3">
+<a href="#" style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; color:#121821; text-decoration:none; {{g.on}}"><span style="width:8px; height:8px; border-radius:4px; background:{{g.dot}}"></span>{{g.name}}</a>
+</sc-for>
+</div>
+<div style="margin-top:auto; display:flex; align-items:center; gap:10px; padding:12px 10px 0; border-top:1px solid #E2E6EC">
+<div style="width:32px; height:32px; border-radius:16px; background:#1D4ED8; color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:600">A</div>
+<div style="flex:1; min-width:0"><div style="font-weight:600">Alice Tester</div><div style="font-size:12px; color:#5B6678">@alice</div></div>
+<a href="#" style="font-size:12px">Sign out</a>
+</div>
+</nav>
+
+<main style="flex:999 1 560px; min-width:0; box-sizing:border-box; padding:24px 36px 28px; display:flex; flex-direction:column; gap:20px">
+
+<header style="display:flex; flex-direction:column; gap:14px">
+<div style="font-size:13px; color:#5B6678"><a href="#" style="color:#5B6678">My groups</a> / Mallorca 2027</div>
+<div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px">
+<div style="display:flex; align-items:center; gap:12px">
+<h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-.01em">Mallorca 2027</h1>
+<span style="padding:3px 10px; border-radius:999px; background:#E5EEFF; color:#12409E; font-size:12px; font-weight:600">Open</span>
+<span style="font-size:13px; color:#5B6678">EUR · 5 members</span>
+</div>
+<span style="font-size:12px; color:#5B6678">Up to date · checked just now</span>
+</div>
+<div role="tablist" aria-label="Group sections" style="display:flex; flex-wrap:wrap; gap:4px; border-bottom:1px solid #E2E6EC">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+<a href="#" role="tab" style="display:flex; align-items:center; gap:8px; padding:10px 14px; margin-bottom:-1px; text-decoration:none; {{t.style}}">{{t.name}}<sc-if value="{{t.badge}}" hint-placeholder-val="{{false}}"><span style="min-width:18px; box-sizing:border-box; padding:0 5px; border-radius:9px; background:#1D4ED8; color:#FFFFFF; font-size:11px; font-weight:600; text-align:center">{{t.badge}}</span></sc-if></a>
+</sc-for>
+</div>
+</header>
+
+<div style="display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start">
+
+<div style="flex:1 1 480px; max-width:820px; min-width:0; display:flex; flex-direction:column; gap:20px">
+
+<section aria-labelledby="mem" style="display:flex; flex-direction:column; gap:10px">
+<h2 id="mem" style="margin:0; font-size:15px; font-weight:600">Members</h2>
+<div style="background:#FFFFFF; border:1px solid #E2E6EC; border-radius:12px">
+<sc-for list="{{members}}" as="m" hint-placeholder-count="5">
+<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:12px 18px; border-top:1px solid #E2E6EC">
+<span style="width:30px; height:30px; border-radius:15px; background:{{m.c}}; color:#FFFFFF; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center">{{m.i}}</span>
+<div style="flex:1 1 140px; min-width:0"><div style="font-weight:600">{{m.name}}</div><div style="font-size:13px; color:#5B6678">{{m.note}}</div></div>
+<span style="padding:2px 10px; border-radius:999px; font-size:12px; font-weight:600; {{m.roleStyle}}">{{m.role}}</span>
+<div style="display:flex; gap:8px; align-items:center">
+<button type="button" disabled="{{m.noPromote}}" style="padding:6px 10px; border:1px solid #CBD2DC; border-radius:8px; background:#FFFFFF; color:#121821; font:inherit; font-size:13px; font-weight:600; {{m.promoteStyle}}">Make admin</button>
+<button type="button" disabled="{{m.noRemove}}" style="padding:6px 10px; border:1px solid #CBD2DC; border-radius:8px; background:#FFFFFF; color:#121821; font:inherit; font-size:13px; font-weight:600; {{m.removeStyle}}">Remove</button>
+</div>
+</div>
+</sc-for>
+<div style="padding:12px 18px; border-top:1px solid #E2E6EC; background:#F8F9FB; border-radius:0 0 12px 12px">
+<div style="font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:#5B6678">Former members</div>
+<div style="margin-top:6px; display:flex; align-items:center; gap:10px; color:#4A5565"><span style="width:24px; height:24px; border-radius:12px; background:#7B8697; color:#FFFFFF; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center">F</span>Frank (left) · left on 12 Jun · still shown in old expenses</div>
+</div>
+</div>
+<div style="font-size:13px; color:#5B6678">A member can leave or be removed only when their balance is 0,00 €. Bob owes 202,00 €.</div>
+</section>
+
+<section aria-labelledby="inv" style="background:#FFFFFF; border:1px solid #E2E6EC; border-radius:12px; padding:18px; display:flex; flex-direction:column; gap:12px">
+<h2 id="inv" style="margin:0; font-size:15px; font-weight:600">Invite people</h2>
+<label style="display:flex; flex-direction:column; gap:5px; font-weight:500">Invite link
+<span style="display:flex; gap:8px"><input type="text" readonly value="sharewise.example/join/k7Qm-2x9Tf" style="flex:1; min-width:0; padding:9px 12px; border:1px solid #CBD2DC; border-radius:8px; background:#F8F9FB; font:inherit; color:#121821"><button type="button" style="padding:9px 14px; border:1px solid #CBD2DC; border-radius:8px; background:#FFFFFF; color:#121821; font:inherit; font-weight:600">Copy</button></span></label>
+<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end">
+<label style="flex:2 1 180px; display:flex; flex-direction:column; gap:5px; font-weight:500">Username or email<input type="text" value="" placeholder="gina@example.com" style="min-width:0; padding:9px 12px; border:1px solid #CBD2DC; border-radius:8px; font:inherit; color:#121821"></label>
+<label style="flex:1 1 110px; display:flex; flex-direction:column; gap:5px; font-weight:500">Joins as<select style="padding:9px 12px; border:1px solid #CBD2DC; border-radius:8px; background:#FFFFFF; font:inherit; color:#121821"><option>Member</option><option>Admin</option></select></label>
+<button type="button" style="padding:9px 16px; border:0; border-radius:8px; background:#1D4ED8; color:#FFFFFF; font:inherit; font-weight:600">Invite</button>
+</div>
+<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border-radius:8px; background:#F4F6F9; font-size:13px"><span><strong style="font-weight:600">hugo@example.com</strong> · invited 3 days ago as member · expires in 4 days</span><a href="#" style="font-weight:600">Cancel</a></div>
+</section>
+
+<section aria-labelledby="stat" style="background:#FFFFFF; border:1px solid #E2E6EC; border-radius:12px; padding:18px; display:flex; flex-direction:column; gap:12px">
+<h2 id="stat" style="margin:0; font-size:15px; font-weight:600">Group status</h2>
+<div style="font-size:13px; color:#4A5565">Only admins can change the status. Closing freezes expenses and fixes the final plan. Payments still work, and you can reopen the group later.</div>
+<div style="display:flex; gap:10px; flex-wrap:wrap">
+<button type="button" style="padding:9px 16px; border:1px solid #A8480A; border-radius:8px; background:#FFFFFF; color:#8A3D08; font:inherit; font-weight:600">Close for settlement</button>
+<button type="button" disabled="{{true}}" style="padding:9px 16px; border:1px solid #CBD2DC; border-radius:8px; background:#F4F6F9; color:#667085; font:inherit; font-weight:600">Archive</button>
+<button type="button" disabled="{{true}}" style="padding:9px 16px; border:1px solid #CBD2DC; border-radius:8px; background:#F4F6F9; color:#667085; font:inherit; font-weight:600">Leave group</button>
+</div>
+<div style="font-size:13px; color:#5B6678">Archive needs every balance at 0,00 €. Leave: you are the only admin, make someone else an admin first.</div>
+</section>
+
+</div>
+
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const tabOn = 'color:#12409E; font-weight:600; border-bottom:2px solid #1D4ED8';
+const tabOff = 'color:#4A5565; border-bottom:2px solid transparent';
+const admin = 'background:#E5EEFF; color:#12409E';
+const member = 'background:#ECEFF3; color:#46505F';
+const off = 'opacity:.45';
+const A = { i: 'A', c: '#1D4ED8' };
+const B = { i: 'B', c: '#0B7A75' };
+const C = { i: 'C', c: '#7A3FB5' };
+const D = { i: 'D', c: '#A8480A' };
+const E = { i: 'E', c: '#2F6F2F' };
+return {
+sideGroups: [
+{ name: 'Mallorca 2027', dot: '#1D4ED8', on: 'background:#E8EEFE; font-weight:600' },
+{ name: 'Ski weekend', dot: '#C77A00', on: '' },
+{ name: 'Flat 12', dot: '#7B8697', on: '' }
+],
+tabs: [
+{ name: 'Expenses', style: tabOff, badge: '' },
+{ name: 'Balances', style: tabOff, badge: '' },
+{ name: 'Settle up', style: tabOff, badge: '1' },
+{ name: 'Members', style: tabOn, badge: '' },
+{ name: 'Activity', style: tabOff, badge: '' }
+],
+members: [
+{ name: 'Alice Tester (you)', i: 'A', c: '#1D4ED8', note: 'Started the group on 14 Jun', role: 'Admin', roleStyle: admin, noPromote: true, promoteStyle: off, noRemove: true, removeStyle: off },
+{ name: 'Bob', i: 'B', c: '#0B7A75', note: 'Owes 202,00 €. Settle up before removing', role: 'Member', roleStyle: member, noPromote: false, promoteStyle: '', noRemove: true, removeStyle: off },
+{ name: 'Carol', i: 'C', c: '#7A3FB5', note: 'Owes 72,00 €', role: 'Member', roleStyle: member, noPromote: false, promoteStyle: '', noRemove: true, removeStyle: off },
+{ name: 'David', i: 'D', c: '#A8480A', note: 'Owes 437,00 €', role: 'Member', roleStyle: member, noPromote: false, promoteStyle: '', noRemove: true, removeStyle: off },
+{ name: 'Eve', i: 'E', c: '#2F6F2F', note: 'Joined on 17 Jun, shares only in later expenses', role: 'Member', roleStyle: member, noPromote: false, promoteStyle: '', noRemove: true, removeStyle: off }
+]
+};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Console: Expenses, quick add and history</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#7AA2FF}a:hover{color:#A9C2FF}
+</style>
+</helmet>
+<div style="display:flex; flex-direction:column; min-height:900px; background:#0D1117; color:#E6EDF5; font-family:'Space Grotesk',system-ui,sans-serif; font-size:14px; line-height:1.45">
+
+<header style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; min-height:48px; box-sizing:border-box; padding:6px 16px; border-bottom:1px solid #263040">
+<div style="display:flex; align-items:center; gap:10px; font-weight:600"><span style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#7AA2FF">sw/</span><span style="color:#8B98A9">my-groups /</span><span>mallorca-2027</span><span style="padding:1px 8px; border:1px solid #2B6E73; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#5CE1E6">OPEN</span></div>
+<div style="margin-left:auto; display:flex; align-items:center; gap:16px">
+<span style="display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#8B98A9"><span style="width:8px; height:8px; border-radius:4px; background:#5CE1E6"></span>live · updated 3 s ago</span>
+<button type="button" aria-label="Inbox, 3 new" style="display:flex; align-items:center; gap:6px; min-height:32px; padding:0 10px; border:1px solid #263040; border-radius:6px; background:#141A22; color:#E6EDF5; font:inherit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg><span style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#FFB454">3</span></button>
+<span style="display:flex; align-items:center; gap:8px"><span style="width:28px; height:28px; border-radius:6px; background:#2A3A58; color:#CFE0FF; font-weight:700; display:flex; align-items:center; justify-content:center">A</span>alice</span>
+</div>
+</header>
+
+<div style="flex:1; display:flex; flex-wrap:wrap; min-height:0">
+
+<nav aria-label="Group sections" style="flex:0 0 200px; box-sizing:border-box; padding:14px 10px; border-right:1px solid #263040; background:#111720; display:flex; flex-direction:column; gap:2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="5"><a href="#" style="display:flex; align-items:center; justify-content:space-between; min-height:32px; padding:0 10px; border-radius:6px; text-decoration:none; {{n.style}}"><span>{{n.name}}</span><kbd style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">{{n.keys}}</kbd></a></sc-for>
+<div style="margin-top:20px; padding:10px; border:1px solid #263040; border-radius:6px; font-size:13px; color:#B4C0CF"><div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">Group</div><div style="margin-top:4px">EUR · 5 members</div><div style="color:#8B98A9">started 14 Jun</div></div>
+</nav>
+
+<main style="flex:999 1 520px; min-width:0; box-sizing:border-box; padding:16px 20px; display:flex; flex-direction:column; gap:16px">
+
+<section aria-labelledby="quick" style="padding:12px 14px; border:1px solid #3A4F7A; border-radius:6px; background:#141A22; display:flex; flex-direction:column; gap:10px">
+<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap"><h2 id="quick" style="margin:0; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:#7AA2FF">Add expense</h2>
+<div role="group" aria-label="Split" style="display:flex; border:1px solid #2F3B4D; border-radius:5px; overflow:hidden"><button type="button" aria-pressed="true" style="min-height:26px; padding:0 12px; border:0; background:#2A3A58; color:#E6EDF5; font:inherit; font-size:13px; font-weight:600">Equal</button><button type="button" aria-pressed="false" style="min-height:26px; padding:0 12px; border:0; border-left:1px solid #2F3B4D; background:transparent; color:#B4C0CF; font:inherit; font-size:13px">Exact</button><button type="button" aria-pressed="false" style="min-height:26px; padding:0 12px; border:0; border-left:1px solid #2F3B4D; background:transparent; color:#B4C0CF; font:inherit; font-size:13px">Percentage</button></div></div>
+<label style="display:flex; align-items:center; gap:10px; min-height:42px; box-sizing:border-box; padding:0 12px; border:1px solid #2F3B4D; border-radius:6px; background:#0D1117"><span style="font-family:'JetBrains Mono',monospace; color:#7AA2FF">›</span><span style="position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)">Quick add</span><input type="text" value="Taxi to the airport 84 paid alice split alice bob carol david" style="flex:1; min-width:0; border:0; outline:0; background:transparent; color:#E6EDF5; font-family:'JetBrains Mono',monospace; font-size:13px"></label>
+<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:13px">
+<sc-for list="{{tokens}}" as="t" hint-placeholder-count="5"><span style="padding:2px 9px; border:1px solid #2F3B4D; border-radius:4px; background:#1A222C"><span style="color:#8B98A9">{{t.k}}</span> <span style="font-family:'JetBrains Mono',monospace; {{t.v}}">{{t.val}}</span></span></sc-for>
+<span style="margin-left:auto; display:flex; align-items:center; gap:10px; color:#8B98A9"><span><kbd style="padding:1px 6px; border:1px solid #2F3B4D; border-radius:4px; background:#1A222C; font-family:'JetBrains Mono',monospace; font-size:11px">↵</kbd> add</span><span><kbd style="padding:1px 6px; border:1px solid #2F3B4D; border-radius:4px; background:#1A222C; font-family:'JetBrains Mono',monospace; font-size:11px">⇧↵</kbd> full form</span></span>
+</div>
+<div style="font-size:12px; color:#8B98A9">You are always part of what you record. eve joined on 17 Jun and is not in this split.</div>
+</section>
+
+<section aria-labelledby="list" style="display:flex; flex-direction:column; gap:8px">
+<div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px"><h2 id="list" style="margin:0; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">Expenses · 7</h2><span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#8B98A9">total 2.205,00 €</span></div>
+<div style="border:1px solid #263040; border-radius:6px; background:#141A22; overflow-x:auto">
+<div style="min-width:560px">
+<div style="display:grid; grid-template-columns:56px minmax(150px, 2fr) 70px 110px 100px 100px; gap:12px; padding:7px 14px; border-bottom:1px solid #263040; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9"><div>Date</div><div>Expense</div><div>Paid by</div><div>Split</div><div style="text-align:right">Amount</div><div style="text-align:right">You</div></div>
+<sc-for list="{{expenses}}" as="e" hint-placeholder-count="6">
+<div style="display:grid; grid-template-columns:56px minmax(150px, 2fr) 70px 110px 100px 100px; gap:12px; align-items:center; padding:9px 14px; border-top:1px solid #1E2733; {{e.row}}">
+<div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#8B98A9">{{e.date}}</div>
+<div style="display:flex; align-items:center; gap:8px; min-width:0"><span style="font-weight:600; {{e.titleStyle}}">{{e.title}}</span><sc-if value="{{e.tag}}" hint-placeholder-val="{{false}}"><span style="padding:0 6px; border:1px solid; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:10px; {{e.tagStyle}}">{{e.tag}}</span></sc-if></div>
+<div style="color:#B4C0CF">{{e.paid}}</div>
+<div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#B4C0CF">{{e.split}}</div>
+<div style="text-align:right; font-family:'JetBrains Mono',monospace; {{e.titleStyle}}">{{e.amount}}</div>
+<div style="text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; {{e.partColor}}">{{e.part}}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+</main>
+
+<aside aria-labelledby="insp" style="flex:0 1 340px; min-width:280px; box-sizing:border-box; padding:16px 18px; border-left:1px solid #263040; background:#111720; display:flex; flex-direction:column; gap:14px">
+<div style="display:flex; align-items:center; justify-content:space-between; gap:8px"><h2 id="insp" style="margin:0; font-size:18px; font-weight:700">Dinner</h2><span style="padding:1px 8px; border:1px solid #7A5A1A; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#FFB454">CORRECTED</span></div>
+<div style="font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:700">200,00 €</div>
+<div style="color:#B4C0CF; font-size:13px">paid by bob · recorded by bob · 15 Jun · split equally between 4</div>
+<div style="border:1px solid #263040; border-radius:6px; background:#141A22">
+<div style="padding:8px 12px; border-bottom:1px solid #263040; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">Shares</div>
+<sc-for list="{{shares}}" as="s" hint-placeholder-count="4"><div style="display:flex; justify-content:space-between; padding:7px 12px; border-top:1px solid #1E2733"><span>{{s.name}}</span><span style="font-family:'JetBrains Mono',monospace">{{s.share}}</span></div></sc-for>
+</div>
+<div style="border:1px solid #263040; border-radius:6px; background:#141A22">
+<div style="padding:8px 12px; border-bottom:1px solid #263040; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">History</div>
+<div style="padding:10px 12px; display:flex; gap:10px"><span style="margin-top:6px; width:8px; height:8px; border-radius:4px; background:#7AA2FF"></span><div><div><strong style="font-weight:600">v2</strong> <span style="font-family:'JetBrains Mono',monospace">200,00 €</span> · current</div><div style="font-size:12px; color:#8B98A9">16 Jun 22:10 · bob corrected it: “The receipt was wrong”</div></div></div>
+<div style="padding:10px 12px; border-top:1px solid #1E2733; display:flex; gap:10px"><span style="margin-top:6px; width:8px; height:8px; border-radius:4px; background:#3A4658"></span><div><div style="color:#B4C0CF"><strong style="font-weight:600">v1</strong> <span style="font-family:'JetBrains Mono',monospace">180,00 €</span></div><div style="font-size:12px; color:#8B98A9">15 Jun 19:20 · bob recorded it</div></div></div>
+</div>
+<div style="display:flex; gap:8px; flex-wrap:wrap"><button type="button" style="min-height:34px; padding:0 14px; border:0; border-radius:5px; background:#7AA2FF; color:#0B1220; font:inherit; font-weight:700">Correct <span style="font-family:'JetBrains Mono',monospace; font-size:11px">E</span></button><button type="button" style="min-height:34px; padding:0 14px; border:1px solid #6B3B3B; border-radius:5px; background:transparent; color:#FF9C9C; font:inherit; font-weight:600">Remove <span style="font-family:'JetBrains Mono',monospace; font-size:11px">⌫</span></button></div>
+<div style="font-size:12px; color:#8B98A9">The recorder, the payer or an admin can correct or remove. A correction keeps the old version; a removed expense stays visible but no longer counts.</div>
+</aside>
+
+</div>
+
+<footer style="display:flex; flex-wrap:wrap; gap:18px; padding:8px 16px; border-top:1px solid #263040; background:#111720; font-family:'JetBrains Mono',monospace; font-size:12px; color:#8B98A9"><span>A add</span><span>↑↓ select</span><span>E correct</span><span>⌫ remove</span><span>1–5 sections</span><span style="margin-left:auto">group is open</span></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const pos = 'color:#5CE1E6';
+const neg = 'color:#FFB454';
+const none = 'color:#8B98A9';
+const on = 'background:#1D2735; color:#E6EDF5; font-weight:600';
+const off = 'color:#B4C0CF';
+return {
+nav: [
+{ name: 'Expenses', keys: '1', style: on },
+{ name: 'Balances', keys: '2', style: off },
+{ name: 'Settle up · 1', keys: '3', style: off },
+{ name: 'Members', keys: '4', style: off },
+{ name: 'Activity', keys: '5', style: off }
+],
+tokens: [
+{ k: 'title', val: 'Taxi to the airport', v: '' },
+{ k: 'amount', val: '84,00 €', v: 'color:#5CE1E6' },
+{ k: 'paid by', val: 'alice', v: '' },
+{ k: 'split', val: 'equal · 4 · 21,00 € each', v: '' },
+{ k: 'date', val: '19 Jun', v: '' }
+],
+expenses: [
+{ date: '19 Jun', title: 'Farewell dinner', paid: 'alice', split: 'exact · 5', amount: '250,00 €', part: '+200,00 €', partColor: pos, tag: '', tagStyle: '', titleStyle: '', row: '' },
+{ date: '18 Jun', title: 'Groceries', paid: 'bob', split: 'equal · 5', amount: '60,00 €', part: '−12,00 €', partColor: neg, tag: '', tagStyle: '', titleStyle: '', row: '' },
+{ date: '18 Jun', title: 'Groceries', paid: 'bob', split: '–', amount: '60,00 €', part: '0,00 €', partColor: none, tag: 'REMOVED', tagStyle: 'color:#8B98A9; border-color:#3A4658', titleStyle: 'text-decoration:line-through; color:#8B98A9', row: '' },
+{ date: '17 Jun', title: 'Boat trip', paid: 'eve', split: 'equal · 3', amount: '300,00 €', part: '−100,00 €', partColor: neg, tag: '', tagStyle: '', titleStyle: '', row: '' },
+{ date: '16 Jun', title: 'Museum', paid: 'david', split: 'equal · 3', amount: '75,00 €', part: '–', partColor: none, tag: '', tagStyle: '', titleStyle: '', row: '' },
+{ date: '16 Jun', title: 'Rental car', paid: 'carol', split: 'equal · 3', amount: '420,00 €', part: '−140,00 €', partColor: neg, tag: '', tagStyle: '', titleStyle: '', row: '' },
+{ date: '15 Jun', title: 'Dinner', paid: 'bob', split: 'equal · 4', amount: '200,00 €', part: '−50,00 €', partColor: neg, tag: 'CORRECTED', tagStyle: 'color:#FFB454; border-color:#7A5A1A', titleStyle: '', row: 'background:#1D2735; box-shadow:inset 2px 0 0 #7AA2FF' },
+{ date: '15 Jun', title: 'Hotel', paid: 'alice', split: 'equal · 4', amount: '900,00 €', part: '+675,00 €', partColor: pos, tag: '', tagStyle: '', titleStyle: '', row: '' }
+],
+shares: [
+{ name: 'alice (you)', share: '50,00 €' },
+{ name: 'bob', share: '50,00 €' },
+{ name: 'carol', share: '50,00 €' },
+{ name: 'david', share: '50,00 €' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

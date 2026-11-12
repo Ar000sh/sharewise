@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger: Expenses and add expense</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1238A5}
+</style>
+</helmet>
+<div style="display:flex; flex-wrap:wrap; min-height:900px; background:#F4F6F9; color:#121821; font-family:'Inter',system-ui,sans-serif; font-size:14px; line-height:1.45; font-variant-numeric:tabular-nums">
+
+<nav aria-label="Main" style="flex:0 0 248px; box-sizing:border-box; background:#FFFFFF; border-right:1px solid #E2E6EC; padding:20px 14px; display:flex; flex-direction:column; gap:24px">
+<div style="display:flex; align-items:center; gap:10px; padding:0 8px">
+<div style="width:28px; height:28px; border-radius:8px; background:#1D4ED8; color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:700">S</div>
+<div style="font-size:16px; font-weight:700">ShareWise</div>
+</div>
+<div style="display:flex; flex-direction:column; gap:2px">
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; color:#121821; text-decoration:none">My groups</a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; color:#121821; text-decoration:none"><span>Inbox</span><span style="min-width:20px; box-sizing:border-box; padding:0 6px; border-radius:10px; background:#1D4ED8; color:#FFFFFF; font-size:12px; font-weight:600; text-align:center">3</span></a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; color:#121821; text-decoration:none">Activity</a>
+</div>
+<div style="display:flex; flex-direction:column; gap:4px">
+<div style="padding:0 10px 4px; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:#5B6678">Groups</div>
+<sc-for list="{{sideGroups}}" as="g" hint-placeholder-count="3">
+<a href="#" style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; color:#121821; text-decoration:none; {{g.on}}"><span style="width:8px; height:8px; border-radius:4px; background:{{g.dot}}"></span>{{g.name}}</a>
+</sc-for>
+</div>
+<div style="margin-top:auto; display:flex; align-items:center; gap:10px; padding:12px 10px 0; border-top:1px solid #E2E6EC">
+<div style="width:32px; height:32px; border-radius:16px; background:#1D4ED8; color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:600">A</div>
+<div style="flex:1; min-width:0"><div style="font-weight:600">Alice Tester</div><div style="font-size:12px; color:#5B6678">@alice</div></div>
+<a href="#" style="font-size:12px">Sign out</a>
+</div>
+</nav>
+
+<main style="flex:999 1 560px; min-width:0; box-sizing:border-box; padding:24px 36px 28px; display:flex; flex-direction:column; gap:20px">
+
+<header style="display:flex; flex-direction:column; gap:14px">
+<div style="font-size:13px; color:#5B6678"><a href="#" style="color:#5B6678">My groups</a> / Mallorca 2027</div>
+<div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px">
+<div style="display:flex; align-items:center; gap:12px">
+<h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-.01em">Mallorca 2027</h1>
+<span style="padding:3px 10px; border-radius:999px; background:#E5EEFF; color:#12409E; font-size:12px; font-weight:600">Open</span>
+<span style="font-size:13px; color:#5B6678">EUR · 5 members</span>
+</div>
+<div style="display:flex; align-items:center; gap:14px">
+<span style="font-size:12px; color:#5B6678">Up to date · checked just now</span>
+<button type="button" aria-label="Inbox, 3 new" style="position:relative; width:40px; height:40px; border:1px solid #CBD2DC; border-radius:8px; background:#FFFFFF; color:#121821; display:flex; align-items:center; justify-content:center">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg>
+<span style="position:absolute; top:-6px; right:-6px; min-width:18px; box-sizing:border-box; padding:0 5px; border-radius:9px; background:#1D4ED8; color:#FFFFFF; font-size:11px; font-weight:600; text-align:center">3</span>
+</button>
+</div>
+</div>
+<div role="tablist" aria-label="Group sections" style="display:flex; flex-wrap:wrap; gap:4px; border-bottom:1px solid #E2E6EC">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+<a href="#" role="tab" style="display:flex; align-items:center; gap:8px; padding:10px 14px; margin-bottom:-1px; text-decoration:none; {{t.style}}">{{t.name}}<sc-if value="{{t.badge}}" hint-placeholder-val="{{false}}"><span style="min-width:18px; box-sizing:border-box; padding:0 5px; border-radius:9px; background:#1D4ED8; color:#FFFFFF; font-size:11px; font-weight:600; text-align:center">{{t.badge}}</span></sc-if></a>
+</sc-for>
+</div>
+</header>
+
+<div style="display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start">
+
+<section aria-labelledby="list" style="flex:1 1 520px; min-width:0; display:flex; flex-direction:column; gap:10px">
+<div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px">
+<h2 id="list" style="margin:0; font-size:15px; font-weight:600">Expenses</h2>
+<div style="font-size:13px; color:#5B6678">7 expenses · 2.205,00 € in total</div>
+</div>
+<div style="background:#FFFFFF; border:1px solid #E2E6EC; border-radius:12px">
+<sc-for list="{{expenses}}" as="e" hint-placeholder-count="5">
+<div style="padding:14px 18px; border-top:1px solid #E2E6EC">
+<div style="display:grid; grid-template-columns:minmax(0, 1fr) 96px 120px; gap:12px; align-items:center">
+<div style="min-width:0">
+<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap"><span style="font-weight:600; {{e.titleStyle}}">{{e.title}}</span><sc-if value="{{e.tag}}" hint-placeholder-val="{{false}}"><span style="padding:1px 8px; border-radius:999px; font-size:11px; font-weight:600; {{e.tagStyle}}">{{e.tag}}</span></sc-if></div>
+<div style="margin-top:1px; font-size:13px; color:#5B6678">{{e.meta}}</div>
+</div>
+<div style="text-align:right; font-weight:600; {{e.titleStyle}}">{{e.amount}}</div>
+<div style="text-align:right"><div style="font-size:12px; color:#5B6678">{{e.partLabel}}</div><div style="font-weight:600; {{e.partColor}}">{{e.part}}</div></div>
+</div>
+<sc-if value="{{e.history}}" hint-placeholder-val="{{false}}">
+<div style="margin:10px 0 0; padding:10px 12px; border-radius:8px; background:#F4F6F9; font-size:13px; display:flex; flex-direction:column; gap:4px">
+<div><strong style="font-weight:600">Version 2</strong> · 16 Jun · Bob corrected 180,00 € to 200,00 € · “The receipt was wrong”</div>
+<div style="color:#5B6678">Version 1 · 15 Jun · Bob recorded 180,00 €</div>
+<div style="display:flex; gap:14px; margin-top:4px"><a href="#" style="font-weight:600">Correct</a><a href="#" style="font-weight:600">Remove</a></div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</section>
+
+<aside aria-labelledby="add" style="flex:0 1 380px; min-width:300px; box-sizing:border-box; background:#FFFFFF; border:1px solid #CBD2DC; border-radius:12px; padding:20px; display:flex; flex-direction:column; gap:14px; box-shadow:0 8px 24px rgba(18,24,33,.08)">
+<div style="display:flex; align-items:center; justify-content:space-between">
+<h2 id="add" style="margin:0; font-size:16px; font-weight:700">Add expense</h2>
+<button type="button" aria-label="Close" style="width:32px; height:32px; border:0; border-radius:8px; background:transparent; color:#5B6678"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+</div>
+<label style="display:flex; flex-direction:column; gap:5px; font-weight:500">Title<input type="text" value="Taxi to the airport" style="padding:9px 12px; border:1px solid #CBD2DC; border-radius:8px; font:inherit; color:#121821"></label>
+<div style="display:flex; gap:12px">
+<label style="flex:1; display:flex; flex-direction:column; gap:5px; font-weight:500">Amount (€)<input type="text" inputmode="decimal" value="84,00" style="min-width:0; padding:9px 12px; border:1px solid #CBD2DC; border-radius:8px; font:inherit; color:#121821; text-align:right"></label>
+<label style="flex:1; display:flex; flex-direction:column; gap:5px; font-weight:500">Date<input type="text" value="19 Jun 2027" style="min-width:0; padding:9px 12px; border:1px solid #CBD2DC; border-radius:8px; font:inherit; color:#121821"></label>
+</div>
+<label style="display:flex; flex-direction:column; gap:5px; font-weight:500">Paid by<select style="padding:9px 12px; border:1px solid #CBD2DC; border-radius:8px; background:#FFFFFF; font:inherit; color:#121821"><option>Alice (you)</option><option>Bob</option><option>Carol</option><option>David</option><option>Eve</option></select></label>
+<div role="group" aria-label="Split" style="display:flex; padding:3px; border-radius:10px; background:#EEF1F5">
+<button type="button" aria-pressed="true" style="flex:1; padding:7px 0; border:0; border-radius:8px; background:#FFFFFF; color:#121821; font:inherit; font-weight:600; box-shadow:0 1px 2px rgba(18,24,33,.12)">Equal</button>
+<button type="button" aria-pressed="false" style="flex:1; padding:7px 0; border:0; border-radius:8px; background:transparent; color:#4A5565; font:inherit; font-weight:500">Exact</button>
+<button type="button" aria-pressed="false" style="flex:1; padding:7px 0; border:0; border-radius:8px; background:transparent; color:#4A5565; font:inherit; font-weight:500">Percentage</button>
+</div>
+<fieldset style="margin:0; padding:0; border:0; display:flex; flex-direction:column; gap:6px">
+<legend style="padding:0; font-weight:500; float:left; margin-bottom:6px">Split equally between</legend>
+<div style="display:flex; justify-content:flex-end"><button type="button" style="padding:5px 10px; border:1px solid #CBD2DC; border-radius:8px; background:#FFFFFF; color:#121821; font:inherit; font-size:13px; font-weight:600">Select everyone</button></div>
+<sc-for list="{{people}}" as="p" hint-placeholder-count="5">
+<label style="display:flex; align-items:center; gap:10px; padding:6px 2px; clear:both"><input type="checkbox" checked="{{p.checked}}" disabled="{{p.locked}}" style="width:16px; height:16px; margin:0"><span style="flex:1">{{p.name}}</span><span style="font-size:13px; color:#5B6678">{{p.share}}</span></label>
+</sc-for>
+</fieldset>
+<div style="font-size:13px; color:#5B6678">You always take part in what you record. Eve joined on 17 Jun and is not ticked.</div>
+<button type="button" style="padding:11px 16px; border:0; border-radius:8px; background:#1D4ED8; color:#FFFFFF; font:inherit; font-weight:600">Add expense</button>
+</aside>
+
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const pos = 'color:#0B5CAD';
+const neg = 'color:#A8480A';
+const none = 'color:#5B6678';
+const tabOn = 'color:#12409E; font-weight:600; border-bottom:2px solid #1D4ED8';
+const tabOff = 'color:#4A5565; border-bottom:2px solid transparent';
+return {
+sideGroups: [
+{ name: 'Mallorca 2027', dot: '#1D4ED8', on: 'background:#E8EEFE; font-weight:600' },
+{ name: 'Ski weekend', dot: '#C77A00', on: '' },
+{ name: 'Flat 12', dot: '#7B8697', on: '' }
+],
+tabs: [
+{ name: 'Expenses', style: tabOn, badge: '' },
+{ name: 'Balances', style: tabOff, badge: '' },
+{ name: 'Settle up', style: tabOff, badge: '1' },
+{ name: 'Members', style: tabOff, badge: '' },
+{ name: 'Activity', style: tabOff, badge: '' }
+],
+expenses: [
+{ title: 'Farewell dinner', meta: '19 Jun · Alice paid · Exact split between 5', amount: '250,00 €', partLabel: 'You lent', part: '200,00 €', partColor: pos, tag: '', tagStyle: '', titleStyle: '', history: false },
+{ title: 'Groceries', meta: '18 Jun · Bob paid · Split equally between 5', amount: '60,00 €', partLabel: 'You owe', part: '12,00 €', partColor: neg, tag: '', tagStyle: '', titleStyle: '', history: false },
+{ title: 'Groceries', meta: '18 Jun · Bob removed it: entered twice', amount: '60,00 €', partLabel: 'Not counted', part: '0,00 €', partColor: none, tag: 'Removed', tagStyle: 'background:#ECEFF3; color:#46505F', titleStyle: 'text-decoration:line-through; color:#5B6678', history: false },
+{ title: 'Boat trip', meta: '17 Jun · Eve paid · Split equally between 3', amount: '300,00 €', partLabel: 'You owe', part: '100,00 €', partColor: neg, tag: '', tagStyle: '', titleStyle: '', history: false },
+{ title: 'Museum', meta: '16 Jun · David paid · Split equally between 3', amount: '75,00 €', partLabel: 'Not involved', part: '–', partColor: none, tag: '', tagStyle: '', titleStyle: '', history: false },
+{ title: 'Rental car', meta: '16 Jun · Carol paid · Split equally between 3', amount: '420,00 €', partLabel: 'You owe', part: '140,00 €', partColor: neg, tag: '', tagStyle: '', titleStyle: '', history: false },
+{ title: 'Dinner', meta: '15 Jun · Bob paid · Split equally between 4', amount: '200,00 €', partLabel: 'You owe', part: '50,00 €', partColor: neg, tag: 'Corrected', tagStyle: 'background:#FFF1DB; color:#8A4B00', titleStyle: '', history: true },
+{ title: 'Hotel', meta: '15 Jun · Alice paid · Split equally between 4', amount: '900,00 €', partLabel: 'You lent', part: '675,00 €', partColor: pos, tag: '', tagStyle: '', titleStyle: '', history: false }
+],
+people: [
+{ name: 'Alice (you)', checked: true, locked: true, share: '21,00 €' },
+{ name: 'Bob', checked: true, locked: false, share: '21,00 €' },
+{ name: 'Carol', checked: true, locked: false, share: '21,00 €' },
+{ name: 'David', checked: true, locked: false, share: '21,00 €' },
+{ name: 'Eve', checked: false, locked: false, share: '' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

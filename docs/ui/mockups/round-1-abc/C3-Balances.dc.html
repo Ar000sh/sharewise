@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Console: Balances</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#7AA2FF}a:hover{color:#A9C2FF}
+</style>
+</helmet>
+<div style="display:flex; flex-direction:column; min-height:900px; background:#0D1117; color:#E6EDF5; font-family:'Space Grotesk',system-ui,sans-serif; font-size:14px; line-height:1.45">
+
+<header style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; min-height:48px; box-sizing:border-box; padding:6px 16px; border-bottom:1px solid #263040">
+<div style="display:flex; align-items:center; gap:10px; font-weight:600"><span style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#7AA2FF">sw/</span><span style="color:#8B98A9">my-groups /</span><span>mallorca-2027</span><span style="padding:1px 8px; border:1px solid #2B6E73; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#5CE1E6">OPEN</span></div>
+<div style="margin-left:auto; display:flex; align-items:center; gap:16px">
+<span style="display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#8B98A9"><span style="width:8px; height:8px; border-radius:4px; background:#5CE1E6"></span>live · up to date</span>
+<button type="button" aria-label="Inbox, 3 new" style="display:flex; align-items:center; gap:6px; min-height:32px; padding:0 10px; border:1px solid #263040; border-radius:6px; background:#141A22; color:#E6EDF5; font:inherit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg><span style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#FFB454">3</span></button>
+<span style="display:flex; align-items:center; gap:8px"><span style="width:28px; height:28px; border-radius:6px; background:#2A3A58; color:#CFE0FF; font-weight:700; display:flex; align-items:center; justify-content:center">A</span>alice</span>
+</div>
+</header>
+
+<div style="flex:1; display:flex; flex-wrap:wrap; min-height:0">
+
+<nav aria-label="Group sections" style="flex:0 0 200px; box-sizing:border-box; padding:14px 10px; border-right:1px solid #263040; background:#111720; display:flex; flex-direction:column; gap:2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="5"><a href="#" style="display:flex; align-items:center; justify-content:space-between; min-height:32px; padding:0 10px; border-radius:6px; text-decoration:none; {{n.style}}"><span>{{n.name}}</span><kbd style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">{{n.keys}}</kbd></a></sc-for>
+<div style="margin-top:20px; padding:10px; border:1px solid #263040; border-radius:6px; font-size:13px; color:#B4C0CF"><div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">Group</div><div style="margin-top:4px">EUR · 5 members</div><div style="color:#8B98A9">started 14 Jun</div></div>
+</nav>
+
+<main style="flex:999 1 520px; min-width:0; box-sizing:border-box; padding:16px 20px; display:flex; flex-wrap:wrap; gap:20px; align-items:flex-start; align-content:flex-start">
+
+<section aria-labelledby="bal" style="flex:1.6 1 480px; min-width:0; display:flex; flex-direction:column; gap:8px">
+<div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px"><h2 id="bal" style="margin:0; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">Balances</h2><span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#8B98A9">sum 0,00 €</span></div>
+<div style="border:1px solid #263040; border-radius:6px; background:#141A22; overflow-x:auto">
+<div style="min-width:500px">
+<div style="display:grid; grid-template-columns:minmax(90px, 1fr) 90px 90px 190px; gap:12px; padding:7px 14px; border-bottom:1px solid #263040; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9"><div>Member</div><div style="text-align:right">Paid</div><div style="text-align:right">Share</div><div style="text-align:right">Balance</div></div>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+<div style="display:grid; grid-template-columns:minmax(90px, 1fr) 90px 90px 190px; gap:12px; align-items:center; padding:9px 14px; border-top:1px solid #1E2733; {{r.row}}">
+<div style="font-weight:600">{{r.name}}</div>
+<div style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:13px; color:#B4C0CF">{{r.paid}}</div>
+<div style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:13px; color:#B4C0CF">{{r.owed}}</div>
+<div style="display:flex; align-items:center; justify-content:flex-end; gap:10px">
+<div style="display:flex; align-items:center"><div style="width:50px; display:flex; justify-content:flex-end"><div style="height:8px; width:{{r.neg}}px; background:#FFB454; border-radius:2px 0 0 2px"></div></div><div style="width:1px; height:16px; background:#3A4658"></div><div style="width:50px"><div style="height:8px; width:{{r.pos}}px; background:#5CE1E6; border-radius:0 2px 2px 0"></div></div></div>
+<div style="width:82px; text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; {{r.color}}">{{r.balance}}</div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="font-size:12px; color:#8B98A9">Positive: the group owes that person. Negative: that person owes the group.</div>
+</section>
+
+<aside style="flex:1 1 300px; min-width:260px; display:flex; flex-direction:column; gap:12px">
+<section aria-labelledby="mine" style="border:1px solid #263040; border-radius:6px; background:#141A22; padding:12px 14px; display:flex; flex-direction:column; gap:10px">
+<h2 id="mine" style="margin:0; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:#7AA2FF">How your balance is made</h2>
+<div style="display:flex; justify-content:space-between"><span style="color:#B4C0CF">you paid</span><span style="font-family:'JetBrains Mono',monospace">1.150,00 €</span></div>
+<div style="display:flex; justify-content:space-between"><span style="color:#B4C0CF">your share</span><span style="font-family:'JetBrains Mono',monospace">− 577,00 €</span></div>
+<div style="display:flex; justify-content:space-between; padding-top:8px; border-top:1px solid #263040; font-weight:700"><span>your balance</span><span style="font-family:'JetBrains Mono',monospace; color:#5CE1E6">+ 573,00 €</span></div>
+<div style="padding:8px 10px; border:1px solid #7A5A1A; border-radius:5px; color:#FFB454; font-size:13px">bob reported 136,00 €. It counts only after you confirm it.</div>
+<div style="font-size:12px; color:#8B98A9">Confirmed payments and waived debts are added. Expenses you are not part of do not change your share.</div>
+<a href="#" style="font-weight:600">go to settle up <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">3</span></a>
+</section>
+</aside>
+
+</main>
+</div>
+
+<footer style="display:flex; flex-wrap:wrap; gap:18px; padding:8px 16px; border-top:1px solid #263040; background:#111720; font-family:'JetBrains Mono',monospace; font-size:12px; color:#8B98A9"><span>↑↓ select member</span><span>1–5 sections</span><span style="margin-left:auto">group is open</span></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const on = 'background:#1D2735; color:#E6EDF5; font-weight:600';
+const off = 'color:#B4C0CF';
+const pos = 'color:#5CE1E6';
+const neg = 'color:#FFB454';
+return {
+nav: [
+{ name: 'Expenses', keys: '1', style: off },
+{ name: 'Balances', keys: '2', style: on },
+{ name: 'Settle up · 1', keys: '3', style: off },
+{ name: 'Members', keys: '4', style: off },
+{ name: 'Activity', keys: '5', style: off }
+],
+rows: [
+{ name: 'alice (you)', paid: '1.150,00 €', owed: '577,00 €', balance: '+573,00 €', color: pos, neg: 0, pos: 50, row: 'background:#1D2735' },
+{ name: 'bob', paid: '260,00 €', owed: '462,00 €', balance: '−202,00 €', color: neg, neg: 18, pos: 0, row: '' },
+{ name: 'carol', paid: '420,00 €', owed: '492,00 €', balance: '−72,00 €', color: neg, neg: 7, pos: 0, row: '' },
+{ name: 'david', paid: '75,00 €', owed: '512,00 €', balance: '−437,00 €', color: neg, neg: 38, pos: 0, row: '' },
+{ name: 'eve', paid: '300,00 €', owed: '162,00 €', balance: '+138,00 €', color: pos, neg: 0, pos: 12, row: '' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

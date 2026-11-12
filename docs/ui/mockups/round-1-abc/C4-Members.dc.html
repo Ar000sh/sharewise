@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Console: Members and group status</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#7AA2FF}a:hover{color:#A9C2FF}
+</style>
+</helmet>
+<div style="display:flex; flex-direction:column; min-height:900px; background:#0D1117; color:#E6EDF5; font-family:'Space Grotesk',system-ui,sans-serif; font-size:14px; line-height:1.45">
+
+<header style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; min-height:48px; box-sizing:border-box; padding:6px 16px; border-bottom:1px solid #263040">
+<div style="display:flex; align-items:center; gap:10px; font-weight:600"><span style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#7AA2FF">sw/</span><span style="color:#8B98A9">my-groups /</span><span>mallorca-2027</span><span style="padding:1px 8px; border:1px solid #2B6E73; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:11px; color:#5CE1E6">OPEN</span></div>
+<div style="margin-left:auto; display:flex; align-items:center; gap:16px">
+<span style="display:flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#8B98A9"><span style="width:8px; height:8px; border-radius:4px; background:#5CE1E6"></span>live · up to date</span>
+<button type="button" aria-label="Inbox, 3 new" style="display:flex; align-items:center; gap:6px; min-height:32px; padding:0 10px; border:1px solid #263040; border-radius:6px; background:#141A22; color:#E6EDF5; font:inherit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg><span style="font-family:'JetBrains Mono',monospace; font-weight:700; color:#FFB454">3</span></button>
+<span style="display:flex; align-items:center; gap:8px"><span style="width:28px; height:28px; border-radius:6px; background:#2A3A58; color:#CFE0FF; font-weight:700; display:flex; align-items:center; justify-content:center">A</span>alice</span>
+</div>
+</header>
+
+<div style="flex:1; display:flex; flex-wrap:wrap; min-height:0">
+
+<nav aria-label="Group sections" style="flex:0 0 200px; box-sizing:border-box; padding:14px 10px; border-right:1px solid #263040; background:#111720; display:flex; flex-direction:column; gap:2px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="5"><a href="#" style="display:flex; align-items:center; justify-content:space-between; min-height:32px; padding:0 10px; border-radius:6px; text-decoration:none; {{n.style}}"><span>{{n.name}}</span><kbd style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8B98A9">{{n.keys}}</kbd></a></sc-for>
+<div style="margin-top:20px; padding:10px; border:1px solid #263040; border-radius:6px; font-size:13px; color:#B4C0CF"><div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">Group</div><div style="margin-top:4px">EUR · 5 members</div><div style="color:#8B98A9">started 14 Jun</div></div>
+</nav>
+
+<main style="flex:999 1 520px; min-width:0; box-sizing:border-box; padding:16px 20px; display:flex; flex-wrap:wrap; gap:20px; align-items:flex-start; align-content:flex-start">
+
+<div style="flex:1 1 480px; max-width:820px; min-width:0; display:flex; flex-direction:column; gap:16px">
+
+<section aria-labelledby="mem" style="display:flex; flex-direction:column; gap:8px">
+<h2 id="mem" style="margin:0; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">Members · 5</h2>
+<div style="border:1px solid #263040; border-radius:6px; background:#141A22">
+<sc-for list="{{members}}" as="m" hint-placeholder-count="5">
+<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:9px 14px; border-top:1px solid #1E2733">
+<div style="flex:1 1 150px; min-width:0"><div style="font-weight:600">{{m.name}}</div><div style="font-size:13px; color:#8B98A9">{{m.note}}</div></div>
+<span style="padding:1px 8px; border:1px solid; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:11px; {{m.roleStyle}}">{{m.role}}</span>
+<div style="display:flex; gap:8px; align-items:center">
+<button type="button" disabled="{{m.noPromote}}" style="min-height:28px; padding:0 10px; border:1px solid #2F3B4D; border-radius:5px; background:transparent; color:#E6EDF5; font:inherit; font-size:13px; font-weight:600; {{m.promoteStyle}}">Make admin</button>
+<button type="button" disabled="{{m.noRemove}}" style="min-height:28px; padding:0 10px; border:1px solid #2F3B4D; border-radius:5px; background:transparent; color:#E6EDF5; font:inherit; font-size:13px; font-weight:600; {{m.removeStyle}}">Remove</button>
+</div>
+</div>
+</sc-for>
+<div style="padding:9px 14px; border-top:1px solid #263040; font-size:13px; color:#8B98A9"><span style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase">Former</span> &nbsp;frank (left 12 Jun) · still shown in old expenses</div>
+</div>
+<div style="font-size:12px; color:#8B98A9">Leave or removal needs a balance of 0,00 €. bob owes 202,00 €.</div>
+</section>
+
+<section aria-labelledby="inv" style="border:1px solid #263040; border-radius:6px; background:#141A22; padding:12px 14px; display:flex; flex-direction:column; gap:10px">
+<h2 id="inv" style="margin:0; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:#7AA2FF">Invite</h2>
+<label style="display:flex; flex-direction:column; gap:4px; font-size:13px; color:#B4C0CF">Invite link
+<span style="display:flex; gap:8px"><input type="text" readonly value="sharewise.example/join/k7Qm-2x9Tf" style="flex:1; min-width:0; min-height:36px; box-sizing:border-box; padding:0 10px; border:1px solid #2F3B4D; border-radius:6px; background:#0D1117; color:#E6EDF5; font-family:'JetBrains Mono',monospace; font-size:13px"><button type="button" style="min-height:36px; padding:0 14px; border:1px solid #2F3B4D; border-radius:6px; background:transparent; color:#E6EDF5; font:inherit; font-weight:600">Copy</button></span></label>
+<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end">
+<label style="flex:2 1 170px; display:flex; flex-direction:column; gap:4px; font-size:13px; color:#B4C0CF">Username or email<input type="text" value="" placeholder="gina@example.com" style="min-width:0; min-height:36px; box-sizing:border-box; padding:0 10px; border:1px solid #2F3B4D; border-radius:6px; background:#0D1117; color:#E6EDF5; font:inherit"></label>
+<label style="flex:1 1 100px; display:flex; flex-direction:column; gap:4px; font-size:13px; color:#B4C0CF">Joins as<select style="min-height:36px; padding:0 10px; border:1px solid #2F3B4D; border-radius:6px; background:#0D1117; color:#E6EDF5; font:inherit"><option>Member</option><option>Admin</option></select></label>
+<button type="button" style="min-height:36px; padding:0 16px; border:0; border-radius:6px; background:#7AA2FF; color:#0B1220; font:inherit; font-weight:700">Invite</button>
+</div>
+<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:8px 10px; border-radius:5px; background:#1D2735; font-size:13px"><span><strong style="font-weight:600">hugo@example.com</strong> <span style="color:#8B98A9">· member · invited 3 days ago · expires in 4 days</span></span><a href="#" style="font-weight:600">Cancel</a></div>
+</section>
+
+<section aria-labelledby="stat" style="border:1px solid #263040; border-radius:6px; background:#141A22; padding:12px 14px; display:flex; flex-direction:column; gap:10px">
+<h2 id="stat" style="margin:0; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:#8B98A9">Group status</h2>
+<div style="font-size:13px; color:#B4C0CF">Only admins change the status. Closing freezes expenses and fixes the final plan. Payments still work; the group can be reopened.</div>
+<div style="display:flex; gap:10px; flex-wrap:wrap">
+<button type="button" style="min-height:34px; padding:0 14px; border:1px solid #7A5A1A; border-radius:5px; background:transparent; color:#FFB454; font:inherit; font-weight:600">Close for settlement</button>
+<button type="button" disabled="{{true}}" style="min-height:34px; padding:0 14px; border:1px solid #263040; border-radius:5px; background:transparent; color:#8B98A9; font:inherit; font-weight:600; opacity:.7">Archive</button>
+<button type="button" disabled="{{true}}" style="min-height:34px; padding:0 14px; border:1px solid #263040; border-radius:5px; background:transparent; color:#8B98A9; font:inherit; font-weight:600; opacity:.7">Leave group</button>
+</div>
+<div style="font-size:12px; color:#8B98A9">Archive needs every balance at 0,00 €. Leave: you are the only admin, make someone else an admin first.</div>
+</section>
+
+</div>
+
+</main>
+</div>
+
+<footer style="display:flex; flex-wrap:wrap; gap:18px; padding:8px 16px; border-top:1px solid #263040; background:#111720; font-family:'JetBrains Mono',monospace; font-size:12px; color:#8B98A9"><span>I invite</span><span>↑↓ select</span><span>M make admin</span><span>1–5 sections</span><span style="margin-left:auto">group is open</span></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const on = 'background:#1D2735; color:#E6EDF5; font-weight:600';
+const off = 'color:#B4C0CF';
+const admin = 'color:#7AA2FF; border-color:#3A4F7A';
+const member = 'color:#B4C0CF; border-color:#3A4658';
+const dim = 'opacity:.4';
+return {
+nav: [
+{ name: 'Expenses', keys: '1', style: off },
+{ name: 'Balances', keys: '2', style: off },
+{ name: 'Settle up · 1', keys: '3', style: off },
+{ name: 'Members', keys: '4', style: on },
+{ name: 'Activity', keys: '5', style: off }
+],
+members: [
+{ name: 'alice (you)', note: 'started the group on 14 Jun', role: 'ADMIN', roleStyle: admin, noPromote: true, promoteStyle: dim, noRemove: true, removeStyle: dim },
+{ name: 'bob', note: 'owes 202,00 € · settle up before removing', role: 'MEMBER', roleStyle: member, noPromote: false, promoteStyle: '', noRemove: true, removeStyle: dim },
+{ name: 'carol', note: 'owes 72,00 €', role: 'MEMBER', roleStyle: member, noPromote: false, promoteStyle: '', noRemove: true, removeStyle: dim },
+{ name: 'david', note: 'owes 437,00 €', role: 'MEMBER', roleStyle: member, noPromote: false, promoteStyle: '', noRemove: true, removeStyle: dim },
+{ name: 'eve', note: 'joined 17 Jun · shares only in later expenses', role: 'MEMBER', roleStyle: member, noPromote: false, promoteStyle: '', noRemove: true, removeStyle: dim }
+]
+};
+}
+}
+</script>
+</body>
+</html>

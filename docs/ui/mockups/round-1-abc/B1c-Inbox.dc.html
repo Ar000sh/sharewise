@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trip: Inbox</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0E7468}a:hover{color:#0A4F46}
+</style>
+</helmet>
+<div style="min-height:900px; background:#EEF6F4; color:#10312D; font-family:'Plus Jakarta Sans',system-ui,sans-serif; font-size:15px; line-height:1.5; font-variant-numeric:tabular-nums">
+
+<header style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; padding:18px 40px">
+<div style="display:flex; align-items:center; gap:10px"><div style="position:relative; width:40px; height:30px"><span style="position:absolute; left:0; top:0; width:30px; height:30px; border-radius:15px; background:#D64527"></span><span style="position:absolute; left:12px; top:0; width:30px; height:30px; border-radius:15px; background:#0E7468; opacity:.9"></span></div><div style="font-size:20px; font-weight:800; letter-spacing:-.02em">ShareWise</div></div>
+<nav aria-label="Main" style="display:flex; gap:6px; padding:5px; border-radius:999px; background:#FFFFFF; box-shadow:0 2px 8px rgba(16,49,45,.06)">
+<a href="#" style="padding:9px 20px; border-radius:999px; color:#10312D; font-weight:600; text-decoration:none">My groups</a>
+<a href="#" style="display:flex; align-items:center; gap:8px; padding:9px 20px; border-radius:999px; background:#10312D; color:#FFFFFF; font-weight:700; text-decoration:none">Inbox<span style="min-width:20px; box-sizing:border-box; padding:0 6px; border-radius:10px; background:#D64527; color:#FFFFFF; font-size:12px; font-weight:700; text-align:center">3</span></a>
+<a href="#" style="padding:9px 20px; border-radius:999px; color:#10312D; font-weight:600; text-decoration:none">Activity</a>
+</nav>
+<div style="width:44px; height:44px; border-radius:22px; background:#D64527; color:#FFFFFF; font-weight:800; display:flex; align-items:center; justify-content:center">A</div>
+</header>
+
+<main style="box-sizing:border-box; max-width:880px; margin:0 auto; padding:10px 40px 44px; display:flex; flex-direction:column; gap:26px">
+
+<section style="display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap"><div><h1 style="margin:0; font-size:38px; font-weight:800; letter-spacing:-.03em">Inbox</h1><div style="margin-top:4px; color:#35534F">2 things wait for you · 1 unread notification</div></div><button type="button" style="min-height:44px; padding:0 20px; border:2px solid #C5DAD5; border-radius:999px; background:#FFFFFF; color:#10312D; font:inherit; font-weight:700">Mark all as read</button></section>
+
+<section aria-labelledby="w" style="display:flex; flex-direction:column; gap:12px">
+<h2 id="w" style="margin:0; font-size:18px; font-weight:800">Waiting for you</h2>
+<div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:18px 20px; border-radius:24px; background:#FFFFFF; box-shadow:0 8px 24px rgba(16,49,45,.08)">
+<div style="width:52px; height:52px; border-radius:26px; background:#0E7468; color:#FFFFFF; font-size:20px; font-weight:800; display:flex; align-items:center; justify-content:center">B</div>
+<div style="flex:1 1 220px"><div style="font-weight:700">Bob says he paid you 136,00 €</div><div style="font-size:13px; color:#55726E">Mallorca 2027 · today 21:40 · “Cash at the airport”</div></div>
+<div style="display:flex; gap:8px"><button type="button" style="min-height:44px; padding:0 20px; border:0; border-radius:999px; background:#0E7468; color:#FFFFFF; font:inherit; font-weight:700">Confirm payment</button><button type="button" style="min-height:44px; padding:0 18px; border:2px solid #C5DAD5; border-radius:999px; background:#FFFFFF; color:#10312D; font:inherit; font-weight:700">Reject…</button></div>
+</div>
+<div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:18px 20px; border-radius:24px; background:#FFFFFF; box-shadow:0 8px 24px rgba(16,49,45,.08)">
+<div style="width:52px; height:52px; border-radius:26px; background:#8A3B66; color:#FFFFFF; font-size:20px; font-weight:800; display:flex; align-items:center; justify-content:center">D</div>
+<div style="flex:1 1 220px"><div style="font-weight:700">Dora invited you to Cabin weekend</div><div style="font-size:13px; color:#55726E">You would join as an admin · expires in 5 days</div></div>
+<div style="display:flex; gap:8px"><button type="button" style="min-height:44px; padding:0 20px; border:0; border-radius:999px; background:#D64527; color:#FFFFFF; font:inherit; font-weight:700">Accept</button><button type="button" style="min-height:44px; padding:0 18px; border:2px solid #C5DAD5; border-radius:999px; background:#FFFFFF; color:#10312D; font:inherit; font-weight:700">Decline</button></div>
+</div>
+</section>
+
+<section aria-labelledby="n" style="display:flex; flex-direction:column; gap:12px">
+<h2 id="n" style="margin:0; font-size:18px; font-weight:800">Notifications</h2>
+<div style="display:flex; flex-direction:column; gap:10px">
+<sc-for list="{{notes}}" as="n" hint-placeholder-count="4">
+<a href="#" style="display:flex; gap:14px; align-items:flex-start; padding:14px 20px; border-radius:22px; background:#FFFFFF; box-shadow:0 4px 14px rgba(16,49,45,.06); color:#10312D; text-decoration:none">
+<span style="flex:0 0 12px; margin-top:6px; width:12px; height:12px; border-radius:6px; {{n.dot}}"></span>
+<div style="flex:1; min-width:0"><div style="{{n.weight}}">{{n.text}}</div><div style="font-size:13px; color:#55726E">{{n.meta}}</div></div>
+<span style="font-size:12px; color:#55726E">{{n.when}}</span>
+</a>
+</sc-for>
+</div>
+<div style="font-size:13px; color:#55726E">Unread notifications have a filled dot. Opening one marks it as read.</div>
+</section>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const unread = { dot: 'background:#D64527', weight: 'font-weight:800' };
+const read = { dot: 'border:2px solid #C5DAD5; box-sizing:border-box', weight: 'font-weight:600' };
+return {
+notes: [
+{ ...unread, text: 'Eve joined Mallorca 2027', meta: 'Member joined', when: 'Today, 08:12' },
+{ ...read, text: 'Hugo rejected your payment of 20,00 €: “Money has not arrived”', meta: 'Payment rejected · Ski weekend', when: '12 Jan' },
+{ ...read, text: 'Bob recorded Groceries · 60,00 €', meta: 'Expense recorded · Mallorca 2027', when: '18 Jun' },
+{ ...read, text: 'Ivan declined your invitation to Mallorca 2027', meta: 'Invitation declined', when: '14 Jun' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

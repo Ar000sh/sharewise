@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger: Settle up merged</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1238A5}
+</style>
+</helmet>
+<div style="display:flex; flex-wrap:wrap; min-height:1250px; background:#F4F6F9; color:#121821; font-family:'Inter',system-ui,sans-serif; font-size:14px; line-height:1.45; font-variant-numeric:tabular-nums">
+
+<nav aria-label="Main" style="flex:0 0 248px; box-sizing:border-box; background:#FFFFFF; border-right:1px solid #E2E6EC; padding:20px 14px; display:flex; flex-direction:column; gap:24px">
+<div style="display:flex; align-items:center; gap:10px; padding:0 8px"><div style="width:28px; height:28px; border-radius:8px; background:#1D4ED8; color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:700">S</div><div style="font-size:16px; font-weight:700">ShareWise</div></div>
+<div style="display:flex; flex-direction:column; gap:2px">
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; color:#121821; text-decoration:none">My groups</a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; color:#121821; text-decoration:none"><span>Inbox</span><span style="min-width:20px; box-sizing:border-box; padding:0 6px; border-radius:10px; background:#1D4ED8; color:#FFFFFF; font-size:12px; font-weight:600; text-align:center">3</span></a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; color:#121821; text-decoration:none">Activity</a>
+</div>
+<div style="display:flex; flex-direction:column; gap:4px">
+<div style="padding:0 10px 4px; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:#5B6678">Groups</div>
+<a href="#" style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; color:#121821; text-decoration:none; background:#E8EEFE; font-weight:600"><span style="width:8px; height:8px; border-radius:4px; background:#1D4ED8"></span>Mallorca 2027</a>
+<a href="#" style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; color:#121821; text-decoration:none"><span style="width:8px; height:8px; border-radius:4px; background:#C77A00"></span>Ski weekend</a>
+<a href="#" style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; color:#121821; text-decoration:none"><span style="width:8px; height:8px; border-radius:4px; background:#7B8697"></span>Flat 12</a>
+</div>
+<div style="margin-top:auto; display:flex; align-items:center; gap:10px; padding:12px 10px 0; border-top:1px solid #E2E6EC"><div style="width:32px; height:32px; border-radius:16px; background:#1D4ED8; color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:600">A</div><div style="flex:1; min-width:0"><div style="font-weight:600">Alice Tester</div><div style="font-size:12px; color:#5B6678">@alice</div></div><a href="#" style="font-size:12px">Sign out</a></div>
+</nav>
+
+<main style="flex:999 1 560px; min-width:0; box-sizing:border-box; padding:20px 36px 36px; display:flex; flex-direction:column; gap:20px">
+
+<div style="align-self:flex-start; padding:5px 12px; border-radius:999px; background:#FFF1DB; color:#8A4B00; font-size:12px; font-weight:600">Design preview: Bob’s and Alice’s views combined. A real user sees one of them.</div>
+
+<header style="display:flex; flex-direction:column; gap:14px">
+<div style="font-size:13px; color:#5B6678"><a href="#" style="color:#5B6678">My groups</a> / Mallorca 2027</div>
+<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap"><h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-.01em">Mallorca 2027</h1><span style="padding:3px 10px; border-radius:999px; background:#E5EEFF; color:#12409E; font-size:12px; font-weight:600">Open</span><span style="font-size:13px; color:#5B6678">EUR · 5 members · up to date</span></div>
+<div role="tablist" aria-label="Group sections" style="display:flex; flex-wrap:wrap; gap:4px; border-bottom:1px solid #E2E6EC">
+<a href="#" role="tab" style="padding:10px 14px; margin-bottom:-1px; text-decoration:none; color:#4A5565; border-bottom:2px solid transparent">Expenses</a>
+<a href="#" role="tab" style="padding:10px 14px; margin-bottom:-1px; text-decoration:none; color:#4A5565; border-bottom:2px solid transparent">Balances</a>
+<a href="#" role="tab" style="padding:10px 14px; margin-bottom:-1px; text-decoration:none; color:#12409E; font-weight:600; border-bottom:2px solid #1D4ED8; display:flex; gap:8px; align-items:center">Settle up<span style="min-width:18px; box-sizing:border-box; padding:0 5px; border-radius:9px; background:#1D4ED8; color:#FFFFFF; font-size:11px; font-weight:600; text-align:center">1</span></a>
+<a href="#" role="tab" style="padding:10px 14px; margin-bottom:-1px; text-decoration:none; color:#4A5565; border-bottom:2px solid transparent">Members</a>
+<a href="#" role="tab" style="padding:10px 14px; margin-bottom:-1px; text-decoration:none; color:#4A5565; border-bottom:2px solid transparent">Activity</a>
+</div>
+</header>
+
+<div style="display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start">
+
+<div style="flex:1 1 560px; min-width:0; display:flex; flex-direction:column; gap:22px">
+
+<section aria-label="Your position" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px">
+<div style="background:#FFFFFF; border:1px solid #E2E6EC; border-radius:12px; padding:16px 20px"><div style="font-size:13px; color:#4A5565">You owe <span style="font-size:11px; font-weight:600; padding:1px 8px; border-radius:999px; background:#ECEFF3; color:#46505F">Bob’s role</span></div><div style="font-size:28px; font-weight:700; letter-spacing:-.02em">202,00 €</div><div style="font-size:13px; color:#4A5565">136,00 € reported, waiting for Alice</div></div>
+<div style="background:#FFFFFF; border:1px solid #E2E6EC; border-radius:12px; padding:16px 20px"><div style="font-size:13px; color:#4A5565">You are owed <span style="font-size:11px; font-weight:600; padding:1px 8px; border-radius:999px; background:#ECEFF3; color:#46505F">Alice’s role</span></div><div style="font-size:28px; font-weight:700; letter-spacing:-.02em">573,00 €</div><div style="font-size:13px; color:#4A5565">1 payment waits for your answer</div></div>
+</section>
+
+<section aria-labelledby="ans" style="display:flex; flex-direction:column; gap:10px">
+<h2 id="ans" style="margin:0; font-size:15px; font-weight:600">Needs your answer</h2>
+<div style="background:#F3F7FF; border:1px solid #BFD0F7; border-radius:12px; padding:16px 20px; display:flex; flex-direction:column; gap:12px">
+<div style="display:flex; align-items:center; gap:14px"><span style="width:36px; height:36px; border-radius:18px; background:#0B7A75; color:#FFFFFF; font-weight:600; display:flex; align-items:center; justify-content:center">B</span><div><div style="font-weight:600">Bob says he paid you 136,00 €</div><div style="font-size:13px; color:#4A5565">Today, 21:40 · “Cash at the airport”</div></div></div>
+<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center"><button type="button" style="min-height:40px; padding:0 16px; border:0; border-radius:8px; background:#1D4ED8; color:#FFFFFF; font:inherit; font-weight:600">Confirm payment</button><button type="button" style="min-height:40px; padding:0 16px; border:1px solid #CBD2DC; border-radius:8px; background:#FFFFFF; color:#121821; font:inherit; font-weight:600">Reject…</button><span style="font-size:12px; color:#4A5565">Confirm only after the money has arrived.</span></div>
+</div>
+</section>
+
+<section aria-labelledby="pay" style="display:flex; flex-direction:column; gap:10px">
+<h2 id="pay" style="margin:0; font-size:15px; font-weight:600">You pay</h2>
+<div style="background:#FFFFFF; border:1px solid #E2E6EC; border-radius:12px">
+<div style="padding:16px 20px; display:flex; flex-wrap:wrap; align-items:center; gap:14px">
+<span style="width:36px; height:36px; border-radius:18px; background:#1D4ED8; color:#FFFFFF; font-weight:600; display:flex; align-items:center; justify-content:center">A</span>
+<div style="flex:1 1 200px"><div style="font-weight:600">Alice</div><div style="font-size:13px; color:#4A5565">You owe 136,00 € in total</div><div style="margin-top:2px; font-size:12px; color:#4A5565">Last: you reported 136,00 € today, 21:40</div></div>
+<div style="text-align:right"><span style="display:inline-block; padding:3px 10px; border-radius:999px; background:#FFF1DB; color:#8A4B00; font-size:12px; font-weight:600">136,00 € reported</span><div style="margin-top:2px; font-size:12px; color:#4A5565">Waiting for Alice to confirm</div></div>
+</div>
+<div style="padding:16px 20px; border-top:1px solid #E2E6EC; display:flex; flex-wrap:wrap; align-items:center; gap:14px">
+<span style="width:36px; height:36px; border-radius:18px; background:#2F6F2F; color:#FFFFFF; font-weight:600; display:flex; align-items:center; justify-content:center">E</span>
+<div style="flex:1 1 200px"><div style="font-weight:600">Eve</div><div style="font-size:13px; color:#4A5565">You owe 66,00 € in total</div></div>
+<div style="display:flex; align-items:center; gap:14px"><span style="font-size:13px; color:#4A5565">Open: <strong style="font-weight:600; color:#121821">66,00 €</strong></span><button type="button" style="min-height:40px; padding:0 18px; border:0; border-radius:8px; background:#1D4ED8; color:#FFFFFF; font:inherit; font-weight:600">I paid…</button></div>
+</div>
+</div>
+<div style="font-size:12px; color:#4A5565">ShareWise does not move money. “I paid” tells the other person you paid outside the app; they confirm it, then your balance changes.</div>
+</section>
+
+<section aria-labelledby="rec" style="display:flex; flex-direction:column; gap:10px">
+<h2 id="rec" style="margin:0; font-size:15px; font-weight:600">You receive</h2>
+<div style="background:#FFFFFF; border:1px solid #E2E6EC; border-radius:12px">
+<div style="padding:16px 20px; display:flex; flex-wrap:wrap; align-items:center; gap:14px">
+<span style="width:36px; height:36px; border-radius:18px; background:#A8480A; color:#FFFFFF; font-weight:600; display:flex; align-items:center; justify-content:center">D</span>
+<div style="flex:1 1 200px"><div style="font-weight:600">David</div><div style="font-size:13px; color:#4A5565">Owes you 437,00 € in total</div><div style="margin-top:2px; font-size:12px; color:#4A5565">No payment reported yet</div></div>
+<div style="display:flex; align-items:center; gap:14px"><span style="font-size:13px; color:#4A5565">Open: <strong style="font-weight:600; color:#121821">437,00 €</strong></span><button type="button" style="min-height:40px; padding:0 16px; border:1px solid #CBD2DC; border-radius:8px; background:#FFFFFF; color:#121821; font:inherit; font-weight:600">Waive…</button></div>
+</div>
+<div style="padding:16px 20px; border-top:1px solid #E2E6EC; display:flex; flex-wrap:wrap; align-items:center; gap:14px">
+<span style="width:36px; height:36px; border-radius:18px; background:#0B7A75; color:#FFFFFF; font-weight:600; display:flex; align-items:center; justify-content:center">B</span>
+<div style="flex:1 1 200px"><div style="font-weight:600">Bob</div><div style="font-size:13px; color:#4A5565">Owes you 136,00 € in total</div><div style="margin-top:2px; font-size:12px; color:#4A5565">Last: Bob reported 136,00 € today, 21:40</div></div>
+<div style="text-align:right"><span style="display:inline-block; padding:3px 10px; border-radius:999px; background:#E5EEFF; color:#12409E; font-size:12px; font-weight:600">136,00 € waits for your answer</span><div style="margin-top:2px; font-size:12px; color:#4A5565">Answer it above first</div></div>
+</div>
+</div>
+</section>
+
+</div>
+
+<aside aria-label="Plan and payments" style="flex:0 1 400px; min-width:300px; display:flex; flex-direction:column; gap:22px">
+
+<section aria-labelledby="plan" style="background:#FFFFFF; border:1px solid #E2E6EC; border-radius:12px; padding:16px 0 6px">
+<div style="padding:0 20px"><h2 id="plan" style="margin:0; font-size:15px; font-weight:600">The whole plan</h2><div style="margin-top:2px; font-size:13px; color:#4A5565">4 payments settle everyone. The plan never changes a balance.</div>
+<div style="margin-top:10px; height:8px; border-radius:4px; background:#E2E6EC; overflow:hidden"><div style="width:25%; height:8px; background:#1D4ED8"></div></div>
+<div style="margin-top:4px; font-size:12px; color:#4A5565">1 of 4 reported · 0 confirmed</div>
+<div style="margin-top:8px; font-size:12px; color:#4A5565">Highlighted rows are where you can act.</div></div>
+<div style="margin-top:10px">
+<sc-for list="{{plan}}" as="e" hint-placeholder-count="4">
+<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 20px; border-top:1px solid #E2E6EC; {{e.row}}">
+<div><div style="{{e.weight}}">{{e.fromName}} → {{e.toName}}</div><div style="font-size:12px; color:#4A5565">{{e.state}}</div><sc-if value="{{e.tag}}" hint-placeholder-val="{{false}}"><span style="display:inline-block; margin-top:4px; padding:1px 8px; border-radius:999px; background:#DCE7FF; color:#12409E; font-size:11px; font-weight:600">{{e.tag}}</span></sc-if></div>
+<div style="font-weight:600">{{e.amount}}</div>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section aria-labelledby="his" style="display:flex; flex-direction:column; gap:10px">
+<div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px"><h2 id="his" style="margin:0; font-size:15px; font-weight:600">Payments</h2>
+<div role="group" aria-label="Filter" style="display:flex; padding:3px; border-radius:10px; background:#E8ECF1"><button type="button" aria-pressed="false" style="padding:5px 12px; border:0; border-radius:8px; background:transparent; color:#4A5565; font:inherit; font-size:13px">Mine</button><button type="button" aria-pressed="true" style="padding:5px 12px; border:0; border-radius:8px; background:#FFFFFF; color:#121821; font:inherit; font-size:13px; font-weight:600; box-shadow:0 1px 2px rgba(18,24,33,.12)">Everyone</button></div></div>
+<div style="background:#FFFFFF; border:1px solid #E2E6EC; border-radius:12px">
+<div style="padding:14px 20px; display:flex; flex-direction:column; gap:4px">
+<div style="display:flex; justify-content:space-between; gap:12px"><span style="font-weight:600">Bob reported a payment to Alice</span><span style="font-weight:600">136,00 €</span></div>
+<div style="display:flex; justify-content:space-between; gap:12px; align-items:center"><span style="font-size:13px; color:#4A5565">Today, 21:40 · “Cash at the airport”</span><span style="padding:2px 10px; border-radius:999px; background:#FFF1DB; color:#8A4B00; font-size:12px; font-weight:600">Pending</span></div>
+</div>
+<div style="padding:14px 20px; border-top:1px solid #E2E6EC; display:flex; flex-direction:column; gap:4px">
+<div style="display:flex; justify-content:space-between; gap:12px"><span style="font-weight:600">Carol reported a payment to Eve</span><span style="font-weight:600">72,00 €</span></div>
+<div style="display:flex; justify-content:space-between; gap:12px; align-items:center"><span style="font-size:13px; color:#4A5565">19 Jun, 14:05 · “Bank transfer”</span><span style="padding:2px 10px; border-radius:999px; background:#FDE8E8; color:#9B1C1C; font-size:12px; font-weight:600">Rejected</span></div>
+<div style="font-size:13px; color:#9B1C1C">Eve rejected it: “Money has not arrived”</div>
+</div>
+</div>
+</section>
+
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1250}}'>
+class Component extends DCLogic {
+renderVals() {
+const on = 'background:#F3F7FF';
+const act = 'font-weight:600';
+const idle = 'color:#4A5565';
+return {
+plan: [
+{ fromName: 'David', toName: 'Alice', amount: '437,00 €', state: 'Not reported yet', tag: 'You can waive', row: on, weight: act },
+{ fromName: 'Bob', toName: 'Alice', amount: '136,00 €', state: 'Reported, waiting for confirmation', tag: 'Needs your answer', row: on, weight: act },
+{ fromName: 'Bob', toName: 'Eve', amount: '66,00 €', state: 'Not reported yet', tag: 'You can pay', row: on, weight: act },
+{ fromName: 'Carol', toName: 'Eve', amount: '72,00 €', state: 'Not reported yet', tag: '', row: '', weight: idle }
+]
+};
+}
+}
+</script>
+</body>
+</html>

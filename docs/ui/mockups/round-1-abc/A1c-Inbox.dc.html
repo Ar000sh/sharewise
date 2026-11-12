@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ledger: Inbox</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1D4ED8}a:hover{color:#1238A5}
+</style>
+</helmet>
+<div style="display:flex; flex-wrap:wrap; min-height:900px; background:#F4F6F9; color:#121821; font-family:'Inter',system-ui,sans-serif; font-size:14px; line-height:1.45; font-variant-numeric:tabular-nums">
+
+<nav aria-label="Main" style="flex:0 0 248px; box-sizing:border-box; background:#FFFFFF; border-right:1px solid #E2E6EC; padding:20px 14px; display:flex; flex-direction:column; gap:24px">
+<div style="display:flex; align-items:center; gap:10px; padding:0 8px"><div style="width:28px; height:28px; border-radius:8px; background:#1D4ED8; color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:700">S</div><div style="font-size:16px; font-weight:700">ShareWise</div></div>
+<div style="display:flex; flex-direction:column; gap:2px">
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; color:#121821; text-decoration:none">My groups</a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; background:#E8EEFE; color:#12409E; font-weight:600; text-decoration:none"><span>Inbox</span><span style="min-width:20px; box-sizing:border-box; padding:0 6px; border-radius:10px; background:#1D4ED8; color:#FFFFFF; font-size:12px; font-weight:600; text-align:center">3</span></a>
+<a href="#" style="display:flex; align-items:center; justify-content:space-between; padding:9px 10px; border-radius:8px; color:#121821; text-decoration:none">Activity</a>
+</div>
+<div style="margin-top:auto; display:flex; align-items:center; gap:10px; padding:12px 10px 0; border-top:1px solid #E2E6EC"><div style="width:32px; height:32px; border-radius:16px; background:#1D4ED8; color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:600">A</div><div style="flex:1; min-width:0"><div style="font-weight:600">Alice Tester</div><div style="font-size:12px; color:#5B6678">@alice</div></div><a href="#" style="font-size:12px">Sign out</a></div>
+</nav>
+
+<main style="flex:999 1 560px; min-width:0; box-sizing:border-box; padding:28px 36px; display:flex; flex-direction:column; gap:24px">
+<div style="max-width:820px; display:flex; flex-direction:column; gap:24px">
+
+<header style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap"><div><h1 style="margin:0; font-size:24px; font-weight:700; letter-spacing:-.01em">Inbox</h1><div style="margin-top:2px; color:#5B6678">2 things wait for you · 1 unread notification</div></div><button type="button" style="min-height:40px; padding:0 16px; border:1px solid #CBD2DC; border-radius:8px; background:#FFFFFF; color:#121821; font:inherit; font-weight:600">Mark all as read</button></header>
+
+<section aria-labelledby="w" style="display:flex; flex-direction:column; gap:10px">
+<h2 id="w" style="margin:0; font-size:15px; font-weight:600">Waiting for you</h2>
+<div style="background:#F3F7FF; border:1px solid #BFD0F7; border-radius:12px; padding:16px 20px; display:flex; flex-wrap:wrap; align-items:center; gap:14px">
+<span style="width:36px; height:36px; border-radius:18px; background:#0B7A75; color:#FFFFFF; font-weight:600; display:flex; align-items:center; justify-content:center">B</span>
+<div style="flex:1 1 240px"><div style="font-weight:600">Bob says he paid you 136,00 €</div><div style="font-size:13px; color:#4A5565">Mallorca 2027 · today 21:40 · “Cash at the airport”</div></div>
+<div style="display:flex; gap:8px"><button type="button" style="min-height:40px; padding:0 16px; border:0; border-radius:8px; background:#1D4ED8; color:#FFFFFF; font:inherit; font-weight:600">Confirm payment</button><button type="button" style="min-height:40px; padding:0 16px; border:1px solid #CBD2DC; border-radius:8px; background:#FFFFFF; color:#121821; font:inherit; font-weight:600">Reject…</button></div>
+</div>
+<div style="background:#F3F7FF; border:1px solid #BFD0F7; border-radius:12px; padding:16px 20px; display:flex; flex-wrap:wrap; align-items:center; gap:14px">
+<span style="width:36px; height:36px; border-radius:18px; background:#9B2C66; color:#FFFFFF; font-weight:600; display:flex; align-items:center; justify-content:center">D</span>
+<div style="flex:1 1 240px"><div style="font-weight:600">Dora invited you to Cabin weekend</div><div style="font-size:13px; color:#4A5565">You would join as an admin · expires in 5 days</div></div>
+<div style="display:flex; gap:8px"><button type="button" style="min-height:40px; padding:0 16px; border:0; border-radius:8px; background:#1D4ED8; color:#FFFFFF; font:inherit; font-weight:600">Accept</button><button type="button" style="min-height:40px; padding:0 16px; border:1px solid #CBD2DC; border-radius:8px; background:#FFFFFF; color:#121821; font:inherit; font-weight:600">Decline</button></div>
+</div>
+</section>
+
+<section aria-labelledby="n" style="display:flex; flex-direction:column; gap:10px">
+<h2 id="n" style="margin:0; font-size:15px; font-weight:600">Notifications</h2>
+<div style="background:#FFFFFF; border:1px solid #E2E6EC; border-radius:12px">
+<sc-for list="{{notes}}" as="n" hint-placeholder-count="4">
+<a href="#" style="display:flex; gap:12px; align-items:flex-start; padding:14px 20px; border-top:1px solid #E2E6EC; color:#121821; text-decoration:none; {{n.row}}">
+<span style="flex:0 0 10px; margin-top:6px; width:10px; height:10px; border-radius:5px; {{n.dot}}"></span>
+<div style="flex:1; min-width:0"><div style="{{n.weight}}">{{n.text}}</div><div style="font-size:12px; color:#5B6678">{{n.meta}}</div></div>
+<span style="font-size:12px; color:#5B6678">{{n.when}}</span>
+</a>
+</sc-for>
+</div>
+<div style="font-size:12px; color:#5B6678">Unread notifications have a filled dot. Opening one marks it as read.</div>
+</section>
+
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+const unread = { dot: 'background:#1D4ED8', weight: 'font-weight:600', row: 'background:#F8FAFF' };
+const read = { dot: 'border:2px solid #CBD2DC; box-sizing:border-box', weight: '', row: '' };
+return {
+notes: [
+{ ...unread, text: 'Eve joined Mallorca 2027', meta: 'Member joined', when: 'Today, 08:12' },
+{ ...read, text: 'Hugo rejected your payment of 20,00 €: “Money has not arrived”', meta: 'Payment rejected · Ski weekend', when: '12 Jan' },
+{ ...read, text: 'Bob recorded Groceries · 60,00 €', meta: 'Expense recorded · Mallorca 2027', when: '18 Jun' },
+{ ...read, text: 'Ivan declined your invitation to Mallorca 2027', meta: 'Invitation declined', when: '14 Jun' }
+]
+};
+}
+}
+</script>
+</body>
+</html>
