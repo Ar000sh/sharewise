@@ -36,7 +36,7 @@ sequenceDiagram
 - **Promotion is one way** (no demotion): nothing in the requirements asks for it, and it avoids a "last admin" rule.
 - **The role rides on the invitation** and is applied when the invitee accepts; `MemberInvited` and `MemberJoined` carry it.
 - **The UI hiding is only a hint**; the backend 403 is the rule. Promotion is not blocked in closed groups (call).
-- Full reasons and history: `docs/2026-11-09-admin-invites-design.md` and `git log`.
+- Full reasons and history: `docs/specs/2026-11-09-admin-invites/design.md` and `git log`.
 
 ## Diff and run
 
@@ -52,5 +52,5 @@ cd frontend && npm test && npm run build
 ## Open
 
 - `npm run e2e` (Playwright) was not run; the push gate ran backend verify, frontend lint, typecheck, tests, build and contract lint (green).
-- Parked review nits: `MemberList` does not reload after a failed promote (409), `InboxBell.describe` falls back to the "declined" text for unknown types, the 403 response block is written twice in `openapi.yaml`, `docs/2026-11-03-notifications-design.md:90` still names `requireActiveMember`.
+- Parked review nits: `MemberList` does not reload after a failed promote (409), `InboxBell.describe` falls back to the "declined" text for unknown types, the 403 response block is written twice in `openapi.yaml`, `docs/specs/2026-11-03-notifications/design.md:90` still names `requireActiveMember`.
 - Parked until leave/remove exist: the inviter's admin role is not re-checked at accept time.

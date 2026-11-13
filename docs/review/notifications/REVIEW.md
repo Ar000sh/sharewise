@@ -41,7 +41,7 @@ sequenceDiagram
 - **Order in `GroupService.inviteMember`:** lock → is the inviter a member → find the account → invite. Membership comes before the lookup so a non-member learns nothing about who has an account.
 - **`Username` never contains `@`** (the lookup tells email from username by it) and is checked in the domain, because the name comes from the Keycloak token, not from our own endpoint.
 - **`notification` is a leaf:** it uses `account` and `group`, nothing uses it. It stores ids only; names are looked up on read.
-- Full reasons and the review history: `docs/2026-11-03-notifications-design.md` (section 3) and `git log`.
+- Full reasons and the review history: `docs/specs/2026-11-03-notifications/design.md` (section 3) and `git log`.
 
 ## Diff and run
 

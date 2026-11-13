@@ -24,7 +24,7 @@ The pair cap restricts exactly two things: (a) you may only pay a partner the pl
 3. It is **not** what makes A3 necessary. In the section 9 example (Bob reserved towards Alice, the plan now says Bob pays Carol) the debtor cap already gives 0. `payableAmount` stays necessary either way.
 4. `record` and `waive` run the plan search under the group lock on every call; the payment use case depends on the plan algorithm for this one cap only.
 
-**Stale text to fix whatever is decided:** D3 (`2026-11-02-settlements-design.md`) and the `OpenDebtPolicy` Javadoc justify the person caps with "no balance ever crosses zero even when the plan changes later". Money-flow section 8 says that is **not** an invariant. Also money-flow section 6.2 says "two reports of the same debtor wait for each other"; the lock is group-wide, and the realistic two-tab case is handled by the reservation.
+**Stale text to fix whatever is decided:** D3 (`docs/specs/2026-11-02-settlements/design.md`) and the `OpenDebtPolicy` Javadoc justify the person caps with "no balance ever crosses zero even when the plan changes later". Money-flow section 8 says that is **not** an invariant. Also money-flow section 6.2 says "two reports of the same debtor wait for each other"; the lock is group-wide, and the realistic two-tab case is handled by the reservation.
 
 The coupling is **logical only**: plan, payment and ledger are all inside `settlement`, no module boundary is crossed. For the service split it does not matter. The real hazard when splitting is elsewhere: `reserved` joins `LedgerEntry` of another aggregate (decision D5), and the synchronous `GroupMembership` calls.
 

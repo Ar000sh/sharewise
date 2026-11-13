@@ -10,7 +10,7 @@ These rules exist because the parallel build produced four slightly different co
 | [04_FRONTEND.md](04_FRONTEND.md) | Next.js and TypeScript rules, file naming, API access, money, errors, tests |
 
 ## Source of truth, in this order
-1. **The domain diagram** (`docs/domain/ShareWise_Domain_Model.drawio`: team version 17.10.26 plus the Account context with an external identity provider) decides the *names* of aggregates, entities, value objects, enumerations, events, operations and fields. Code follows it. Where the code needs something the diagram lacks, the diagram is updated in the same change (see the list "diagram deltas" in `docs/2026-10-27-diagram-alignment-design.md`).
+1. **The domain diagram** (`docs/domain/ShareWise_Domain_Model.drawio`: team version 17.10.26 plus the Account context with an external identity provider) decides the *names* of aggregates, entities, value objects, enumerations, events, operations and fields. Code follows it. Where the code needs something the diagram lacks, the diagram is updated in the same change (see the list "diagram deltas" in `docs/specs/2026-10-27-diagram-alignment/design.md`).
 2. **`docs/api/openapi.yaml`** decides the HTTP interface. It is changed first, in its own commit.
 3. **These conventions** decide everything else.
 

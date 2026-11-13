@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js 16, React 19, `@tanstack/react-query` 5, Vitest + Testing Library, Playwright.
 
-**Spec:** `docs/2026-11-11-live-group-views-design.md` (decisions L1 to L6, D1, D2, failure modes F1 to F10).
+**Spec:** `docs/specs/2026-11-11-live-group-views/design.md` (decisions L1 to L6, D1, D2, failure modes F1 to F10).
 
 ## Global Constraints
 
@@ -173,7 +173,7 @@
 
 ### Task 6: Finish
 
-- [ ] **Step 1:** Design doc `docs/2026-11-11-live-group-views-design.md`: F7 row gets "`GroupDetail` kept the page only after the `error && !group` guard (plan Task 3)"; F2 and D1 wording checked against the built form. Commit `docs(frontend): design notes match the built live group views`, together with the CATALOG row already in the working tree (`docs/devsetup/CATALOG.md`) in its own `docs(devsetup): ...` commit.
+- [ ] **Step 1:** Design doc `docs/specs/2026-11-11-live-group-views/design.md`: F7 row gets "`GroupDetail` kept the page only after the `error && !group` guard (plan Task 3)"; F2 and D1 wording checked against the built form. Commit `docs(frontend): design notes match the built live group views`, together with the CATALOG row already in the working tree (`docs/devsetup/CATALOG.md`) in its own `docs(devsetup): ...` commit.
 - [ ] **Step 2:** `grep -rn "No global state library\|lastRecordedAt\|PAYMENT_ANSWERED\|reloads until the booking" docs frontend/src frontend/e2e` → nothing.
 - [ ] **Step 3:** Full gate `npm run lint && npm run typecheck && npm test && npm run build`; `npm run e2e` if a backend runs (else CI).
 - [ ] **Step 4:** Look at the expense form and the waiver placeholder in light and dark mode (04 section 5).

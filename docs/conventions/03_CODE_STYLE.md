@@ -46,7 +46,8 @@ The code says *how*; comments say *why* and *which rule*. Language: English, ful
 |---|---|---|
 | `docs/api/openapi.yaml` | the HTTP contract | changed first, in its own commit |
 | `docs/conventions/*` | these rules | changed together with the code that breaks them |
-| `docs/2026-…-design.md`, `…-plan.md` | design decisions and plans for a piece of work | written before the work, not edited afterwards except to mark a decision changed |
+| `docs/specs/<date>-<topic>/` with `design.md` (always this name, also for a small change), `plan.md`, further designs as `<name>-design.md` | design decisions and the plan for one piece of work, one folder per feature | written before the work, not edited afterwards except to mark a decision changed |
+| `docs/notes/<date>-<topic>.md` | write-ups that belong to no single feature (money flow, handover, a decision, messaging) | written once; corrected when the code changes |
 | `RUNNING.md` | how a stranger starts, tests and demos the app | updated in the same commit as any change to setup or commands |
 | `docs/domain/ShareWise_Domain_Model.drawio` | the domain diagram shown to the professor | updated in the same change as a rename or new concept; a code name the diagram lacks is a defect in one of the two |
 

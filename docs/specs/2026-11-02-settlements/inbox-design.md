@@ -1,6 +1,6 @@
 # Design: settlements on the new main (one inbox, simpler checks)
 
-**Date:** 04.11.26 · **Status:** v1, decisions taken with the user, waiting for the failure-mode and design review · **Branch:** `feature/settlements` (main merged in, `dd8492a`) · **Builds on:** `2026-11-02-settlements-design.md`, `2026-11-03-settlements-handover.md`, `2026-11-03-notifications-design.md`
+**Date:** 04.11.26 · **Status:** v1, decisions taken with the user, waiting for the failure-mode and design review · **Branch:** `feature/settlements` (main merged in, `dd8492a`) · **Builds on:** `design.md` (this folder), `docs/specs/2026-11-03-notifications/design.md`
 
 Marks: **(decided)** the user decided it, **(call)** our choice taken without asking, can be overruled.
 

@@ -201,7 +201,7 @@ Marks: **design** = handled by a rule in this document; **test** = a test from t
 | F27 | Accept and decline at the same moment. | **design**: the group lock serializes them; the second answers 404. No extra test (same status check as F26). |
 | F28 | Decline an expired invitation. | **design**: 410 `INVITATION_EXPIRED`, same checks as accept. **test**. |
 | F29 | Group closed or archived while an invitation is open. | **parked, trigger `closeForSettlement`/`archiveGroup`** (section 8). Cannot happen on `main` today. |
-| F30 | A former member is invited again and accepts: `uq_memberships_group_user` rejects the second row (500). | **parked, trigger `leaveGroup`/`removeMember`** (section 8, R10, `2026-10-28-membership-copy-decision.md`). Unreachable on `main` today. |
+| F30 | A former member is invited again and accepts: `uq_memberships_group_user` rejects the second row (500). | **parked, trigger `leaveGroup`/`removeMember`** (section 8, R10, `docs/notes/2026-10-28-membership-copy-decision.md`). Unreachable on `main` today. |
 
 ### Abuse and display
 | # | Case | Handling |
