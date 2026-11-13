@@ -1,4 +1,4 @@
-# The pipeline (design: docs/2026-11-10-cicd-pipeline-design.md).
+# The pipeline (design: docs/specs/2026-11-10-cicd-pipeline/design.md).
 #
 #   backend  ┐                  ┌ image-backend  ┐
 #   frontend ├─ (all green) ───┤                ├─ e2e on the images ─ publish (main only) ─ ci-passed

@@ -10,7 +10,7 @@
 
 **Tech Stack:** Spring Boot modulith (Java, JPA, Flyway, Spring Modulith events, ArchUnit), Postgres 17 (Testcontainers), Next.js + TypeScript (Vitest, Playwright), OpenAPI contract-first.
 
-**Spec:** `docs/2026-11-02-settlements-design.md` (decisions D1 to D14, failure modes in section 8, review findings in 8b). Package 2 (correct and remove expense, ledger reversals) gets its own plan after this branch is merged; the group lifecycle and auto-archive (L5) are not in this plan.
+**Spec:** `docs/specs/2026-11-02-settlements/design.md` (decisions D1 to D14, failure modes in section 8, review findings in 8b). Package 2 (correct and remove expense, ledger reversals) gets its own plan after this branch is merged; the group lifecycle and auto-archive (L5) are not in this plan.
 
 ## Global Constraints
 - Names come from the domain diagram: `SettlementPayment`, `PaymentStatus` (PENDING, CONFIRMED, REJECTED, WAIVED), `SettlementPaymentId`, `DirectedDebt(fromDebtor, toCreditor, amount)`, `SettlementPlan`, events `SettlementPaymentRecorded`, `SettlementPaymentConfirmed`, `SettlementPaymentRejected`, `DebtWaived`, `MemberBalanceStatusChanged`, `AllBalancesSettled`, ledger types `PAYMENT_SENT`, `PAYMENT_RECEIVED`, `DEBT_WAIVED`. Always "settlement payment", never "payment" alone in code names and docs.
@@ -36,7 +36,7 @@
 
 **Files:**
 - Modify: `docs/api/openapi.yaml`
-- Commit as is: `docs/2026-11-02-settlements-design.md`, this plan
+- Commit as is: `docs/specs/2026-11-02-settlements/design.md`, this plan
 
 **Interfaces:**
 - Produces (JSON field names, final): 

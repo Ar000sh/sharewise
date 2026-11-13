@@ -34,7 +34,7 @@ sequenceDiagram
 - **Enforced twice on purpose.** The disabled checkbox is a convenience; any direct API call would bypass it, so the aggregate holds the rule (conventions 01, 2.3).
 - **Check order.** The new check sits after the participant checks and before the amount check, so the earlier error codes are unchanged.
 - **Only existing test touched for the rule:** `thePayerNeedNotTakePartInTheSplit` (Bob records it now); two other domain tests use Alice as the only share holder.
-- **Full reasons:** `docs/2026-11-09-recorder-stays-participant-spec.md` and `git log`.
+- **Full reasons:** `docs/specs/2026-11-09-recorder-stays-participant/design.md` and `git log`.
 
 ## Diff and run
 

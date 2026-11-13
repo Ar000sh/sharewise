@@ -32,7 +32,7 @@ sequenceDiagram
 - **No `/login` guard in `api()` (S4 dropped).** Nothing on `/login` calls `api()`; `PUBLIC_PATHS` stays in `currentUser.tsx`. Parked trigger: a backend call on the sign-in page.
 - **`next` is not checked where it is written.** It is our own location; the reader (`login/page.tsx`) checks it with `safeReturnTo`, a server module.
 - **The banner flashes briefly** while the browser leaves; accepted, as is losing an unsent form after a week-old session.
-- Full reasons: `docs/2026-11-11-session-redirect-spec.md`, review triage in `git log`.
+- Full reasons: `docs/specs/2026-11-11-session-redirect/design.md`, review triage in `git log`.
 
 ## Diff and run
 

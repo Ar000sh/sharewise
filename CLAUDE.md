@@ -26,7 +26,7 @@
 ## Workflow by stage
 | Stage | Do |
 |---|---|
-| New feature (an exercise, a journey) | superpowers brainstorming → design doc `docs/YYYY-MM-DD-<topic>-design.md` → `/edge-case-probe` plan mode; `/design-review` when it touches statuses, money or several writers → plan |
+| New feature (an exercise, a journey) | superpowers brainstorming → design doc `docs/specs/YYYY-MM-DD-<topic>/design.md` (always `design.md`, even for a small change; the plan goes next to it as `plan.md`, the same folder for everything of one feature; this overrides the superpowers default `docs/superpowers/`) → `/edge-case-probe` plan mode; `/design-review` when it touches statuses, money or several writers → plan |
 | HTTP interface changes | `/contract-change` |
 | New aggregate operation | `/backend:domain-operation` |
 | Before merging a branch | `/review-branch` (conventions, duplication, diagram names, fresh reviewer), then `/review-doc` (the short jump-start guide `docs/review/<feature>/REVIEW.md` for the user's own review), then the pull request |

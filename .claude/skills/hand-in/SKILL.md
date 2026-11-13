@@ -10,7 +10,7 @@ Argument: the tag, e.g. `ex5`. A tag marks what was submitted and is never moved
 
 ## Steps
 1. **State:** on `main`, clean working tree, up to date with `origin/main` (`git pull`). The latest `CI` run on `main` is green (`gh run list --branch main --limit 1`). No open feature branch that belongs to this exercise (ask if there is one).
-2. **Scope check:** read the exercise's design doc in `docs/` (and the exercise text if the user has it) and list each required item with where it is implemented and tested. Show gaps before going on.
+2. **Scope check:** read the exercise's design doc in `docs/specs/<date>-<topic>/` (and the exercise text if the user has it) and list each required item with where it is implemented and tested. Show gaps before going on.
 3. **All gates:** `node .githooks/gate.mjs pre-push < /dev/null` (Docker must run). Then the e2e tests: database and backend running (`RUNNING.md`), `cd frontend && npm run e2e`.
 4. **Docs against code:** `RUNNING.md` (commands, test counts, demo steps actually work), the conventions (any rule the exercise changed), `TODO` search (`grep -rn "TODO" backend/src frontend/src`: only `TODO(ExN)` for later exercises may remain). Fix drift in a `docs:` commit.
 5. **Edge cases:** if `/edge-case-probe` attack mode has not run on the new modules of this exercise, say so and ask whether to run it first.

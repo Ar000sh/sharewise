@@ -14,7 +14,7 @@ pushed image is the tested one.
 **Tech Stack:** GitHub Actions, Docker (Buildx), ghcr.io, Spring Boot 4.1 / Java 21 (Temurin), Next.js 16 / Node 24,
 Playwright, existing `docker-compose.yml` (Postgres 17, Keycloak 26.8.1).
 
-**Spec:** `docs/2026-11-10-cicd-pipeline-design.md`
+**Spec:** `docs/specs/2026-11-10-cicd-pipeline/design.md`
 
 ## Global Constraints
 - Branch `feature/cicd-pipeline`; commits `<type>(<scope>): <subject>`, one concern each, trailer

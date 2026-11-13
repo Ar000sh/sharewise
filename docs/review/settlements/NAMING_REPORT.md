@@ -84,6 +84,6 @@ Ordered by importance. The first line of "What it actually is" says why the curr
 ## 6. Limits of this review
 
 - Outside the branch's own changes, but seen: `MallorcaSliceTest.recordExpense(..., long cents, String payer, ...)` (`backend/src/test/java/de/hsh/favs/sharewise/MallorcaSliceTest.java:302`) uses two forbidden words (`payer` -> `paidBy`, `cents` -> `Money` text or `minorUnits`). It comes from `main`; the branch only calls it.
-- The design docs (`docs/2026-11-0*`), `REVIEW.md` and the drawio file were only **grepped** for the cluster terms, not read in full. They use "open debt" 31 times, "payable" 16, "reserved" 25, "edge" many times. Any rename from section 3 needs a grep there too.
+- The design docs (`docs/specs/2026-11-0*`), `REVIEW.md` and the drawio file were only **grepped** for the cluster terms, not read in full. They use "open debt" 31 times, "payable" 16, "reserved" 25, "edge" many times. Any rename from section 3 needs a grep there too.
 - The frontend test files were checked for test names and helper signatures, not line by line. Their helpers `edge(...)` and `serve(...)` read acceptably.
-- Line numbers refer to the working tree on 2026-11-09, including the uncommitted edits to `SettlementPaymentService.java`, `SettlementPaymentServiceTest.java` and `docs/2026-11-04-money-flow.md`.
+- Line numbers refer to the working tree on 2026-11-09, including the uncommitted edits to `SettlementPaymentService.java`, `SettlementPaymentServiceTest.java` and `docs/notes/2026-11-04-money-flow.md`.

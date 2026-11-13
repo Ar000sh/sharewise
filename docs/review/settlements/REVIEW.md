@@ -2,7 +2,7 @@
 
 Branch `feature/settlements` (52 commits on top of `main`). Before: the app recorded expenses and showed balances, but nobody could settle a debt. Now: a debtor reports a payment, the creditor confirms or rejects it, the creditor can waive a debt, and the group sees the fewest transfers that settle everybody; waiting payments and their outcomes arrive in the one bell. New: `SettlementPayment` aggregate, the plan, the reservation of open debt, `shared.events`, three notification types.
 
-How the money works (diagrams, verified numbers): `docs/2026-11-04-money-flow.md`. Read it first.
+How the money works (diagrams, verified numbers): `docs/notes/2026-11-04-money-flow.md`. Read it first.
 
 ## Features and where to start
 
@@ -42,7 +42,7 @@ sequenceDiagram
 - **`shared.events` is the one exception** to "events live in the publisher's `api`" (group would otherwise depend on settlement, a cycle); `ConventionTests` pins it.
 - **State is a query, history is an event:** payments waiting for me come from `GET /me/settlement-payments`, outcomes are notification entries; `notification` now depends on `settlement::api` and stays a leaf.
 - **Exact minimum plan up to 16 people, greedy above** (R15; our choice, not from the slides); `Membership.balanceStatusAt` ignores an older zero-flag event (D12).
-- Reasons and the independent design review: `docs/2026-11-04-settlements-inbox-design.md`.
+- Reasons and the independent design review: `docs/specs/2026-11-02-settlements/inbox-design.md`.
 
 ## Diff and run
 

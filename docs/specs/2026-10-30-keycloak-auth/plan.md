@@ -8,7 +8,7 @@
 
 **Tech Stack:** Keycloak (pin the latest stable 26.x image), Spring Security resource server (Spring Boot 4.1.2; check the starter's artifact name in the BOM), Testcontainers Keycloak, Next.js 16.4.3 route handlers (read `frontend/node_modules/next/dist/docs/` before writing any, `frontend/AGENTS.md` says the APIs differ from what you know), Playwright.
 
-**Spec:** `docs/2026-10-30-keycloak-auth-design.md` (decisions D1 to D10, builder calls C1 to C8, failure modes F1 to F20). Read it first; this plan does not repeat it.
+**Spec:** `docs/specs/2026-10-30-keycloak-auth/design.md` (decisions D1 to D10, builder calls C1 to C8, failure modes F1 to F20). Read it first; this plan does not repeat it.
 
 ## Global Constraints
 - ShareWise never sees, stores or logs a password; no `passwordHash`, `Hasher`, `RawPassword` anywhere after Task 4.

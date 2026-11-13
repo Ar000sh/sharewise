@@ -34,7 +34,7 @@ sequenceDiagram
 - **A failed poll keeps the page.** Only a failed first load replaces it; the banner shows above the data. 4xx answers are not retried (`queryClient.ts`).
 - **Forms must not follow the plan blindly.** Waiver: once the user chose or typed, the form stays on that debtor, and if he leaves the plan nothing is selected. Expense: only the recorder is ticked at first (R18), so a member who joins meanwhile can never slip into the split.
 - **`package-lock.json` was edited by hand** (npm on Windows drops other platforms' entries); only the two `@tanstack` entries were added.
-- Full reasons and the failure-mode table: `docs/2026-11-11-live-group-views-design.md`; the plan: `docs/2026-11-11-live-group-views.md`.
+- Full reasons and the failure-mode table: `docs/specs/2026-11-11-live-group-views/design.md`; the plan: `docs/specs/2026-11-11-live-group-views/plan.md`.
 
 ## Diff and run
 

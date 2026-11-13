@@ -8,7 +8,7 @@
 
 **Tech Stack:** Java 21, Spring Boot 4.1, Spring Modulith 2.1, JPA + Flyway, Postgres 17, Keycloak (Testcontainers); Next.js 16, React 19, Vitest, Playwright, openapi-typescript.
 
-**Spec:** `docs/2026-11-03-notifications-design.md` (read it with this plan; section numbers below refer to it). Branch: `feature/notifications`, cut from `main`.
+**Spec:** `docs/specs/2026-11-03-notifications/design.md` (read it with this plan; section numbers below refer to it). Branch: `feature/notifications`, cut from `main`.
 
 **Paths:** relative to the repo root. `<pkg>` = `backend/src/main/java/de/hsh/favs/sharewise`, `<test>` = `backend/src/test/java/de/hsh/favs/sharewise`, `<res>` = `backend/src/main/resources`. Backend commands run in `backend/` with `./mvnw` (Docker Desktop must run); frontend commands in `frontend/`.
 
@@ -75,7 +75,7 @@ Each task ends green (`./mvnw -q verify` for backend tasks, the frontend checks 
 - Modify: `docker/keycloak/sharewise-realm.json`, `<pkg>/account/domain/Account.java`, `<pkg>/account/persistence/AccountRepository.java`, `<pkg>/account/api/UserProfile.java`, `<pkg>/account/api/UserProfiles.java`, `<pkg>/account/application/AccountService.java`, `<pkg>/account/application/UserProfilesImpl.java`, `<pkg>/account/web/UserResponse.java`
 - Create: `<pkg>/account/domain/Username.java`, `<res>/db/migration/account/V106__account_username.sql`
 - Test: `<test>/account/domain/UsernameTest.java`, `AccountTest.java`, `AccountFixture.java`, `<test>/account/application/AccountServiceTest.java`, `UserProfilesImplTest.java`, `<test>/account/web/AccountControllerTest.java`, `<test>/KeycloakUsers.java`, `KeycloakUsersTest.java`
-- Docs: `RUNNING.md`, `docs/2026-10-30-keycloak-auth.md` (claim list), `docs/conventions/01_ARCHITECTURE_AND_NAMING.md` section 3.4, `docs/diagram-deltas.md`, `docs/domain/ShareWise_Domain_Model.drawio`
+- Docs: `RUNNING.md`, `docs/specs/2026-10-30-keycloak-auth/plan.md` (claim list), `docs/conventions/01_ARCHITECTURE_AND_NAMING.md` section 3.4, `docs/diagram-deltas.md`, `docs/domain/ShareWise_Domain_Model.drawio`
 
 **Interfaces:**
 - Produces:

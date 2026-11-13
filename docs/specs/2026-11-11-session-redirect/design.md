@@ -1,6 +1,6 @@
 # Spec: a 401 anywhere sends the visitor to sign in
 
-**Date:** 11.11.26 · **Type:** fix (code does not follow a convention) · **Branch:** `fix/session-redirect` (worktree `.claude/worktrees/fix-session-redirect`, from `origin/main` at `d8f91ac`) · **Status:** ready to build · **Found by:** the design review of `docs/2026-11-11-live-group-views-design.md` (lives untracked in the main checkout until its own branch)
+**Date:** 11.11.26 · **Type:** fix (code does not follow a convention) · **Branch:** `fix/session-redirect` (worktree `.claude/worktrees/fix-session-redirect`, from `origin/main` at `d8f91ac`) · **Status:** ready to build · **Found by:** the design review of `docs/specs/2026-11-11-live-group-views/design.md` (lives untracked in the main checkout until its own branch)
 
 This file is the hand-off to the session that implements it. Facts marked *(verified)* were read from the code at `d8f91ac`; the rest are decisions.
 

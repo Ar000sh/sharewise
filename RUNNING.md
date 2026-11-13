@@ -48,7 +48,7 @@ If port 5432 is taken by another local Postgres, stop that one first (the compos
   other people type to invite you, together with your email. You can sign in with the username or the email. There is
   no email verification locally.
 - The ShareWise account is created on the first authenticated request after sign-in (display name and username from
-  the token, see the design doc `docs/2026-10-30-keycloak-auth-design.md`). A person who signed up at Keycloak but
+  the token, see the design doc `docs/specs/2026-10-30-keycloak-auth/design.md`). A person who signed up at Keycloak but
   never opened ShareWise has no account yet and cannot be invited.
 - **After the username change (migration V106 and the changed realm) delete the old local data once:** `docker compose
   down -v`. The realm is imported again and the database starts empty; there is no backfill.
@@ -166,8 +166,8 @@ volumes.
 
 ## Where things are
 - `docs/api/openapi.yaml` the API contract (change it first, then code)
-- `docs/2026-10-24-sharewise-modulith-ex4-design.md` design decisions, `docs/...-ex4.md` the plan
-- `docs/2026-10-30-keycloak-auth-design.md` sign-in with Keycloak (decisions, failure modes)
-- `docs/2026-11-04-money-flow.md` how expenses, balances, the plan and settlement payments work (with diagrams); `docs/2026-11-02-settlements-design.md` is the first design, `docs/2026-11-04-settlements-inbox-design.md` what changed
+- `docs/specs/2026-10-24-sharewise-modulith-ex4/design.md` design decisions, `plan.md` in the same folder the plan
+- `docs/specs/2026-10-30-keycloak-auth/design.md` sign-in with Keycloak (decisions, failure modes)
+- `docs/notes/2026-11-04-money-flow.md` how expenses, balances, the plan and settlement payments work (with diagrams); `docs/specs/2026-11-02-settlements/design.md` is the first design, `docs/specs/2026-11-02-settlements/inbox-design.md` what changed
 - `docs/diagram-deltas.md` where the code differs from the domain diagram, and why
 - `backend/src/main/java/de/hsh/favs/sharewise/{account,group,expense,settlement,shared}` the modules

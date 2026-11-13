@@ -8,7 +8,7 @@
 
 **Tech Stack:** Java 21, Spring Boot, JPA, Flyway; Next.js, TypeScript, Vitest.
 
-**Spec:** `docs/2026-11-09-admin-invites-design.md` (read it first; decisions A1 to A6).
+**Spec:** `docs/specs/2026-11-09-admin-invites/design.md` (read it first; decisions A1 to A6).
 
 ## Global Constraints
 - Names: `NOT_AN_ADMIN` (403), `MEMBER_NOT_FOUND` (404), `ALREADY_ADMIN` (409), `MEMBER_PROMOTED`, `MemberPromoted(groupId, userId, promotedBy, occurredAt)`, `GroupRole {ADMIN, MEMBER}`.
