@@ -356,23 +356,24 @@ paths:
     post:
       tags: [expense]
       operationId: recordExpense
-      summary: Record an expense. Only splitStrategy EQUAL is supported in Ex4.
+      summary: Record an expense.
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: "#/components/schemas/RecordExpenseRequest" }
             example:
-              title: Hotel
-              totalAmount: "900.00"
-              date: "2027-06-01"
+              title: Farewell dinner
+              totalAmount: "250.00"
+              date: "2027-06-05"
               paidBy: "aaaaaaaa-0000-0000-0000-000000000001"
-              participantIds:
-                - "aaaaaaaa-0000-0000-0000-000000000001"
-                - "aaaaaaaa-0000-0000-0000-000000000002"
-                - "aaaaaaaa-0000-0000-0000-000000000003"
-                - "aaaaaaaa-0000-0000-0000-000000000004"
-              splitStrategy: EQUAL
+              participants:
+                - { userId: "aaaaaaaa-0000-0000-0000-000000000001", value: "50.00" }
+                - { userId: "aaaaaaaa-0000-0000-0000-000000000002", value: "50.00" }
+                - { userId: "aaaaaaaa-0000-0000-0000-000000000003", value: "40.00" }
+                - { userId: "aaaaaaaa-0000-0000-0000-000000000004", value: "60.00" }
+                - { userId: "aaaaaaaa-0000-0000-0000-000000000005", value: "50.00" }
+              splitStrategy: EXACT
       responses:
         "201":
           description: Recorded
@@ -381,18 +382,19 @@ paths:
               schema: { $ref: "#/components/schemas/Expense" }
               example:
                 id: "cccccccc-0000-0000-0000-000000000001"
-                title: Hotel
-                totalAmount: "900.00"
-                date: "2027-06-01"
+                title: Farewell dinner
+                totalAmount: "250.00"
+                date: "2027-06-05"
                 paidBy: "aaaaaaaa-0000-0000-0000-000000000001"
                 recordedBy: "aaaaaaaa-0000-0000-0000-000000000001"
-                splitStrategy: EQUAL
+                splitStrategy: EXACT
                 status: ACTIVE
                 shares:
-                  - { participantId: "aaaaaaaa-0000-0000-0000-000000000001", owedShare: "225.00" }
-                  - { participantId: "aaaaaaaa-0000-0000-0000-000000000002", owedShare: "225.00" }
-                  - { participantId: "aaaaaaaa-0000-0000-0000-000000000003", owedShare: "225.00" }
-                  - { participantId: "aaaaaaaa-0000-0000-0000-000000000004", owedShare: "225.00" }
+                  - { participantId: "aaaaaaaa-0000-0000-0000-000000000001", owedShare: "50.00" }
+                  - { participantId: "aaaaaaaa-0000-0000-0000-000000000002", owedShare: "50.00" }
+                  - { participantId: "aaaaaaaa-0000-0000-0000-000000000003", owedShare: "40.00" }
+                  - { participantId: "aaaaaaaa-0000-0000-0000-000000000004", owedShare: "60.00" }
+                  - { participantId: "aaaaaaaa-0000-0000-0000-000000000005", owedShare: "50.00" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/NotAMember" }
@@ -400,7 +402,10 @@ paths:
         "422":
           description: >
             A domain rule was violated (see the DomainRule response for the codes). RECORDER_NOT_PARTICIPANT:
-            the member who records the expense must be one of its participants (R18).
+            the member who records the expense must be one of its participants (R18). SHARES_NOT_TOTAL:
+            with EXACT the amounts do not add up to the total (R4). PERCENTAGES_NOT_100: with PERCENTAGE
+            the percentages do not add up to 100 (R4). AMOUNT_NOT_POSITIVE also covers a zero or negative
+            value per participant.
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
@@ -776,7 +781,7 @@ components:
     DomainRule:
       description: >
         A domain rule was violated. code is one of AMOUNT_NOT_POSITIVE, PAYER_NOT_IN_GROUP,
-        PARTICIPANT_NOT_IN_GROUP, NO_PARTICIPANTS, RECORDER_NOT_PARTICIPANT, GROUP_NOT_OPEN, SPLIT_NOT_SUPPORTED.
+        PARTICIPANT_NOT_IN_GROUP, NO_PARTICIPANTS, RECORDER_NOT_PARTICIPANT, GROUP_NOT_OPEN, SHARES_NOT_TOTAL, PERCENTAGES_NOT_100.
         GROUP_NOT_OPEN means the group is archived (also for settlement calls).
       content:
         application/problem+json:
@@ -834,7 +839,8 @@ components:
             - NO_PARTICIPANTS
             - RECORDER_NOT_PARTICIPANT
             - GROUP_NOT_OPEN
-            - SPLIT_NOT_SUPPORTED
+            - SHARES_NOT_TOTAL
+            - PERCENTAGES_NOT_100
             - PAYMENT_EXCEEDS_OPEN_DEBT
             - SETTLEMENT_PAYMENT_NOT_FOUND
             - PAYMENT_NOT_PENDING
@@ -991,7 +997,10 @@ components:
     SplitStrategy:
       type: string
       enum: [EQUAL, EXACT, PERCENTAGE]
-      description: Only EQUAL is accepted in Ex4. The others answer 422 SPLIT_NOT_SUPPORTED.
+      description: >
+        EQUAL divides the total; EXACT takes an amount per participant (they must add up to the total,
+        SHARES_NOT_TOTAL); PERCENTAGE takes a percentage per participant (they must add up to 100,
+        PERCENTAGES_NOT_100). Leftover cents go to the largest dropped fraction, ties by order (R4).
 
     ExpenseStatus:
       type: string
@@ -999,7 +1008,7 @@ components:
 
     RecordExpenseRequest:
       type: object
-      required: [title, totalAmount, date, paidBy, participantIds, splitStrategy]
+      required: [title, totalAmount, date, paidBy, participants, splitStrategy]
       properties:
         title: { type: string, minLength: 1, maxLength: 200 }
         totalAmount:
@@ -1007,11 +1016,25 @@ components:
           description: Must be greater than zero (AMOUNT_NOT_POSITIVE otherwise).
         date: { type: string, format: date }
         paidBy: { type: string, format: uuid }
-        participantIds:
+        participants:
           type: array
-          items: { type: string, format: uuid }
-          description: Distinct member ids, at least one. Order decides who gets the remainder cents.
+          minItems: 1
+          items: { $ref: "#/components/schemas/SplitParticipant" }
+          description: >
+            Distinct members, at least one. `value` is the amount for EXACT, the percentage for PERCENTAGE
+            (at most two decimals), absent for EQUAL (400 otherwise). Order decides ties for leftover cents.
         splitStrategy: { $ref: "#/components/schemas/SplitStrategy" }
+
+    SplitParticipant:
+      type: object
+      required: [userId]
+      properties:
+        userId: { type: string, format: uuid }
+        value:
+          type: string
+          pattern: '^-?\d+(\.\d{1,2})?$'
+          description: Amount (EXACT) or percentage (PERCENTAGE), point as separator, at most two decimals. Absent for EQUAL.
+          example: "50.00"
 
     ExpenseShare:
       type: object
