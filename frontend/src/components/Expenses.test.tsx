@@ -145,10 +145,11 @@ describe("ExpenseForm", () => {
       title: "Hotel",
       totalAmount: "900.00",
       paidBy: "u2",
-      participants: [{ userId: "u1" }, { userId: "u2" }],
       splitStrategy: "EQUAL",
       date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
     });
+    // toEqual, not toMatchObject: an EQUAL entry must carry no value at all
+    expect(postedBody().participants).toEqual([{ userId: "u1" }, { userId: "u2" }]);
     expect(onRecorded).toHaveBeenCalledTimes(1);
     expect(screen.getByLabelText(/title/i)).toHaveValue("");
   });
@@ -290,6 +291,21 @@ describe("ExpenseForm", () => {
     expect(apiMock).not.toHaveBeenCalled();
   });
 
+  it("aMalformedPercentageShowsAMessageAndSendsNothing", async () => {
+    // given Bob's percentage box holds three decimals (an empty box is stopped by the browser: required)
+    renderForm();
+    await fill("Dinner", "10");
+    await choose("Percentages");
+    await type("Percentage for Bob", "33,333");
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
+
+    // then
+    expect(screen.getByRole("alert")).toHaveTextContent("Please enter a valid percentage for Bob.");
+    expect(apiMock).not.toHaveBeenCalled();
+  });
+
   it("anUntickedMemberNeitherCountsNorIsSent", async () => {
     // given Alice is ticked and both typed an amount
     apiMock.mockResolvedValue({});
@@ -326,14 +342,17 @@ describe("ExpenseForm", () => {
     expect(screen.getByLabelText("Amount for Bob")).toHaveValue("");
   });
 
-  it("theSplitSumsErrorCodeIsShownAsMessage", async () => {
-    apiMock.mockRejectedValue(new ApiError(422, "SHARES_NOT_TOTAL", "raw"));
+  it.each([
+    ["SHARES_NOT_TOTAL", "The amounts must add up to the total."],
+    ["PERCENTAGES_NOT_100", "The percentages must add up to 100 %."],
+  ])("theSplitSumErrorCode%sIsShownAsMessage", async (code, message) => {
+    apiMock.mockRejectedValue(new ApiError(422, code, "raw"));
     renderForm();
 
     await fill("Taxi", "10");
     await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("The amounts must add up to the total.");
+    expect(await screen.findByRole("alert")).toHaveTextContent(message);
   });
 
   it("rejectsInvalidAmountWithoutCallingTheServer", async () => {
