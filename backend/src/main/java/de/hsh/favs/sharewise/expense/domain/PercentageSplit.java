@@ -31,6 +31,9 @@ public final class PercentageSplit {
 	 * (R18), PERCENTAGES_NOT_100 when the percentages do not add up to exactly 100
 	 */
 	public static List<ExpenseShare> split(Money total, List<SplitEntry> entries) {
+		if (entries.isEmpty()) {
+			return List.of();
+		}
 		BigDecimal sum = BigDecimal.ZERO;
 		for (SplitEntry entry : entries) {
 			if (entry.value().signum() <= 0) {
@@ -38,13 +41,12 @@ public final class PercentageSplit {
 			}
 			sum = sum.add(entry.value());
 		}
-		if (!entries.isEmpty() && sum.compareTo(HUNDRED) != 0) {
+		if (sum.compareTo(HUNDRED) != 0) {
 			throw new DomainException(ErrorCode.PERCENTAGES_NOT_100,
 					"The percentages add up to " + sum + ", not to 100");
 		}
 
-		// exact = total * pct / 100 (exact in BigDecimal, no rounding yet); floor to
-		// cents
+		// exact = total * pct / 100, exact in BigDecimal; then floor to cents
 		int count = entries.size();
 		var exact = new ArrayList<BigDecimal>(count);
 		var floors = new ArrayList<BigDecimal>(count);

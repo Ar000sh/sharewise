@@ -50,6 +50,11 @@ class PercentageSplitTest {
 	}
 
 	@Test
+	void noEntriesGiveNoShares() {
+		assertThat(PercentageSplit.split(Money.eur("10.00"), List.of())).isEmpty();
+	}
+
+	@Test
 	void percentagesThatDoNotAddUpTo100AreRefused() {
 		// given
 		List<SplitEntry> entries = entries(people(2), "50 49.99");
