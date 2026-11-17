@@ -94,11 +94,11 @@ public class Expense {
 	 * active members (PAYER_NOT_IN_GROUP, NOT_A_MEMBER, R2), there is at least one
 	 * participant and none twice (NO_PARTICIPANTS), every participant is an active member
 	 * (PARTICIPANT_NOT_IN_GROUP, R3), the person recording it is one of the participants
-	 * (RECORDER_NOT_PARTICIPANT, R18), the total is positive (AMOUNT_NOT_POSITIVE, R1).
+	 * (RECORDER_NOT_PARTICIPANT, R18), the total is positive (AMOUNT_NOT_POSITIVE, R1),
+	 * the shares add up to the total (SHARES_NOT_TOTAL, R4).
 	 * @param view who is in the group and whether it is open, at this moment
 	 * @param shares what each participant owes; they must add up to the total (R4)
-	 * @throws IllegalArgumentException when the shares do not add up to the total, which
-	 * means the split was calculated wrongly
+	 * @throws DomainException with the code of the first rule above that fails
 	 */
 	public static Recorded record(GroupMembershipView view, ExpenseTitle title, UserId paidBy, UserId recordedBy,
 			Money totalAmount, LocalDate date, List<ExpenseShare> shares, SplitStrategy splitStrategy, Instant now) {
@@ -135,7 +135,8 @@ public class Expense {
 			.map(ExpenseShare::owedShare)
 			.reduce(Money.zero(totalAmount.currency()), Money::plus);
 		if (!sum.equals(totalAmount)) {
-			throw new IllegalArgumentException("The shares add up to " + sum + ", not to " + totalAmount);
+			throw new DomainException(ErrorCode.SHARES_NOT_TOTAL,
+					"The shares add up to " + sum + ", not to " + totalAmount);
 		}
 
 		Expense expense = new Expense();
