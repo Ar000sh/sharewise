@@ -27,12 +27,15 @@ import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.Money;
 import java.time.Clock;
 import java.time.ZoneOffset;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -98,12 +101,41 @@ class ExpenseServiceTest {
 	}
 
 	@ParameterizedTest
-	@EnumSource(value = SplitStrategy.class, names = { "EXACT", "PERCENTAGE" })
-	void aSplitStrategyOtherThanEqualIsRefusedAndNothingIsSaved(SplitStrategy strategy) {
-		assertThatThrownBy(
-				() -> service.recordExpense(new RecordExpenseCommandFixture().withSplitStrategy(strategy).build()))
+	@MethodSource("typedSplits")
+	void eachStrategyTurnsTheInputIntoShares(SplitStrategy strategy, String[] values, String[] expectedShares) {
+		// given
+		groupIsOpenWithTheFourFriends();
+
+		// when
+		service.recordExpense(new RecordExpenseCommandFixture().withSplitStrategy(strategy).withValues(values).build());
+
+		// then
+		ArgumentCaptor<ExpenseRecorded> published = ArgumentCaptor.forClass(ExpenseRecorded.class);
+		verify(events).publishEvent(published.capture());
+		assertThat(published.getValue().shares()).extracting(ExpenseShare::owedShare)
+			.containsExactly(Arrays.stream(expectedShares).map(Money::eur).toArray(Money[]::new));
+	}
+
+	static Stream<Arguments> typedSplits() {
+		return Stream.of(
+				Arguments.of(SplitStrategy.EXACT, new String[] { "300", "200", "200", "200" },
+						new String[] { "300.00", "200.00", "200.00", "200.00" }),
+				Arguments.of(SplitStrategy.PERCENTAGE, new String[] { "40", "20", "20", "20" },
+						new String[] { "360.00", "180.00", "180.00", "180.00" }));
+	}
+
+	@Test
+	void aRefusedSplitSavesAndPublishesNothing() {
+		// given
+		groupIsOpenWithTheFourFriends();
+
+		// when / then
+		assertThatThrownBy(() -> service
+			.recordExpense(new RecordExpenseCommandFixture().withSplitStrategy(SplitStrategy.PERCENTAGE)
+				.withValues("50", "30", "10", "9.99")
+				.build()))
 			.isInstanceOfSatisfying(DomainException.class,
-					e -> assertThat(e.code()).isEqualTo(ErrorCode.SPLIT_NOT_SUPPORTED));
+					e -> assertThat(e.code()).isEqualTo(ErrorCode.PERCENTAGES_NOT_100));
 		verifyNoInteractions(expenses, events);
 	}
 

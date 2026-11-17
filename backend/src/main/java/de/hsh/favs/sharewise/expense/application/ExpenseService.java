@@ -1,12 +1,13 @@
 package de.hsh.favs.sharewise.expense.application;
 
 import de.hsh.favs.sharewise.expense.domain.EqualSplit;
+import de.hsh.favs.sharewise.expense.domain.ExactSplit;
 import de.hsh.favs.sharewise.expense.domain.Expense;
-import de.hsh.favs.sharewise.expense.domain.SplitStrategy;
+import de.hsh.favs.sharewise.expense.domain.PercentageSplit;
+import de.hsh.favs.sharewise.expense.domain.SplitEntry;
 import de.hsh.favs.sharewise.expense.persistence.ExpenseRepository;
 import de.hsh.favs.sharewise.group.api.GroupMembership;
 import de.hsh.favs.sharewise.shared.DomainException;
-import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Clock;
@@ -39,20 +40,24 @@ public class ExpenseService {
 	}
 
 	/**
-	 * Records an expense split equally. The order of the checks: the caller is a member
-	 * of the group (GROUP_NOT_FOUND, NOT_A_MEMBER), the split is supported
-	 * (SPLIT_NOT_SUPPORTED), then the rules of the aggregate.
+	 * Records an expense, split by the command's strategy (EQUAL, EXACT or PERCENTAGE).
+	 * The order of the checks: the caller is a member of the group (GROUP_NOT_FOUND,
+	 * NOT_A_MEMBER), then the split turns the typed values into shares
+	 * (PERCENTAGES_NOT_100 and the rules of the split), then the rules of the aggregate.
 	 * @throws DomainException with one of the codes above, or those of
 	 * {@link Expense#record}
 	 */
 	@Transactional
 	public Expense recordExpense(RecordExpenseCommand command) {
 		groups.requireMember(command.groupId(), command.caller());
-		if (command.splitStrategy() != SplitStrategy.EQUAL) {
-			throw new DomainException(ErrorCode.SPLIT_NOT_SUPPORTED, "Only the EQUAL split is supported");
-		}
 		var view = groups.view(command.groupId());
-		var shares = EqualSplit.split(command.totalAmount(), command.participants());
+		var total = command.totalAmount();
+		var entries = command.participants();
+		var shares = switch (command.splitStrategy()) {
+			case EQUAL -> EqualSplit.split(total, entries.stream().map(SplitEntry::participantId).toList());
+			case EXACT -> ExactSplit.split(total, entries);
+			case PERCENTAGE -> PercentageSplit.split(total, entries);
+		};
 		var recorded = Expense.record(view, command.title(), command.paidBy(), command.caller(), command.totalAmount(),
 				command.date(), shares, command.splitStrategy(), clock.instant());
 		expenses.save(recorded.expense());

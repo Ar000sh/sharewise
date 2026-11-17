@@ -7,12 +7,14 @@ import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import de.hsh.favs.sharewise.expense.api.ExpenseShare;
 import de.hsh.favs.sharewise.expense.domain.Expense;
 import de.hsh.favs.sharewise.expense.domain.ExpenseTitle;
+import de.hsh.favs.sharewise.expense.domain.SplitEntry;
 import de.hsh.favs.sharewise.expense.domain.SplitStrategy;
 import de.hsh.favs.sharewise.group.web.GroupRequests;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.Money;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
@@ -45,7 +47,8 @@ class ExpenseServiceDatabaseTest {
 		// when 100.00 is recorded with carol first, and read back in a separate call
 		service.recordExpense(new RecordExpenseCommand(group, alice.userId(), new ExpenseTitle("Tapas"),
 				Money.eur("100.00"), LocalDate.parse("2027-06-01"), alice.userId(),
-				List.of(carol.userId(), alice.userId(), bob.userId()), SplitStrategy.EQUAL));
+				Stream.of(carol, alice, bob).map(person -> new SplitEntry(person.userId(), null)).toList(),
+				SplitStrategy.EQUAL));
 		List<Expense> listed = service.listExpenses(group, bob.userId());
 
 		// then

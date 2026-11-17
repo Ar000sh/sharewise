@@ -168,11 +168,13 @@ class ExpenseControllerTest {
 	}
 
 	@Test
-	void noParticipantsAndAnAmountOfZeroAre422() throws Exception {
-		expenses.paidBy(alice)
-			.record(alice)
-			.andExpect(status().isUnprocessableEntity())
-			.andExpect(jsonPath("$.code").value("NO_PARTICIPANTS"));
+	void noParticipantsIs400AndAnAmountOfZeroIs422() throws Exception {
+		mvc.perform(post("/groups/" + group + "/expenses").header("Authorization", alice.bearer())
+			.contentType(APPLICATION_JSON)
+			.content("{\"title\":\"Hotel\",\"totalAmount\":\"10.00\",\"date\":\"2027-06-01\",\"paidBy\":\""
+					+ alice.idString() + "\",\"participants\":[],\"splitStrategy\":\"EQUAL\"}"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
 		expenses.paidBy(alice)
 			.splitBetween(alice, bob)
 			.withTotalAmount("0.00")
@@ -181,15 +183,88 @@ class ExpenseControllerTest {
 			.andExpect(jsonPath("$.code").value("AMOUNT_NOT_POSITIVE"));
 	}
 
-	@ParameterizedTest
-	@ValueSource(strings = { "EXACT", "PERCENTAGE" })
-	void aSplitStrategyOtherThanEqualIs422(String strategy) throws Exception {
+	@Test
+	void anExactSplitIs201WithTheTypedShares() throws Exception {
 		expenses.paidBy(alice)
 			.splitBetween(alice, bob)
-			.withSplitStrategy(strategy)
+			.withSplitStrategy("EXACT")
+			.withValues("6.00", "4.00")
+			.record(alice)
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.splitStrategy").value("EXACT"))
+			.andExpect(jsonPath("$.shares[0].owedShare").value("6.00"))
+			.andExpect(jsonPath("$.shares[1].owedShare").value("4.00"));
+	}
+
+	@Test
+	void aPercentageSplitIs201AndTheLeftoverCentFollowsTheLargestFraction() throws Exception {
+		expenses.paidBy(alice)
+			.splitBetween(alice, bob, carol)
+			.withSplitStrategy("PERCENTAGE")
+			.withValues("33.33", "33.33", "33.34")
+			.record(alice)
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.splitStrategy").value("PERCENTAGE"))
+			.andExpect(jsonPath("$.shares[0].owedShare").value("3.33"))
+			.andExpect(jsonPath("$.shares[1].owedShare").value("3.33"))
+			.andExpect(jsonPath("$.shares[2].owedShare").value("3.34"));
+	}
+
+	@Test
+	void exactAmountsThatDoNotAddUpAre422SharesNotTotal() throws Exception {
+		expenses.paidBy(alice)
+			.splitBetween(alice, bob)
+			.withSplitStrategy("EXACT")
+			.withValues("6.00", "3.00")
 			.record(alice)
 			.andExpect(status().isUnprocessableEntity())
-			.andExpect(jsonPath("$.code").value("SPLIT_NOT_SUPPORTED"));
+			.andExpect(jsonPath("$.code").value("SHARES_NOT_TOTAL"));
+		expenses.list(alice).andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+	}
+
+	@Test
+	void percentagesThatDoNotAddUpAre422() throws Exception {
+		expenses.paidBy(alice)
+			.splitBetween(alice, bob)
+			.withSplitStrategy("PERCENTAGE")
+			.withValues("60", "39.99")
+			.record(alice)
+			.andExpect(status().isUnprocessableEntity())
+			.andExpect(jsonPath("$.code").value("PERCENTAGES_NOT_100"));
+		expenses.list(alice).andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+	}
+
+	@Test
+	void aValueWithEqualOrNoValueWithExactOrPercentageIs400() throws Exception {
+		expenses.paidBy(alice)
+			.splitBetween(alice, bob)
+			.withValues("5.00", "5.00")
+			.record(alice)
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+		for (String strategy : new String[] { "EXACT", "PERCENTAGE" }) {
+			expenses.paidBy(alice)
+				.splitBetween(alice, bob)
+				.withSplitStrategy(strategy)
+				.withValues()
+				.record(alice)
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "33.333", "abc", "1,5" })
+	void aValueThatIsNotANumberWithAtMostTwoDecimalsIs400(String value) throws Exception {
+		for (String strategy : new String[] { "EXACT", "PERCENTAGE" }) {
+			expenses.paidBy(alice)
+				.splitBetween(alice)
+				.withSplitStrategy(strategy)
+				.withValues(value)
+				.record(alice)
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+		}
 	}
 
 	@ParameterizedTest

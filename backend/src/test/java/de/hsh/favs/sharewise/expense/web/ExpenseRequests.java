@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,6 +37,8 @@ public class ExpenseRequests {
 	private String paidBy;
 
 	private List<String> participants = List.of();
+
+	private List<String> values = List.of();
 
 	private String splitStrategy = "EQUAL";
 
@@ -74,6 +77,14 @@ public class ExpenseRequests {
 		return this;
 	}
 
+	/**
+	 * Types a value (amount or percentage) per participant, in the order of splitBetween.
+	 */
+	public ExpenseRequests withValues(String... values) {
+		this.values = Arrays.asList(values);
+		return this;
+	}
+
 	public ExpenseRequests withSplitStrategy(String splitStrategy) {
 		this.splitStrategy = splitStrategy;
 		return this;
@@ -85,7 +96,16 @@ public class ExpenseRequests {
 		body.put("totalAmount", totalAmount);
 		body.put("date", date);
 		body.put("paidBy", paidBy != null ? paidBy : participants.get(0));
-		body.put("participantIds", participants);
+		List<Map<String, Object>> entries = new ArrayList<>();
+		for (int i = 0; i < participants.size(); i++) {
+			Map<String, Object> entry = new LinkedHashMap<>();
+			entry.put("userId", participants.get(i));
+			if (i < values.size()) {
+				entry.put("value", values.get(i));
+			}
+			entries.add(entry);
+		}
+		body.put("participants", entries);
 		body.put("splitStrategy", splitStrategy);
 		return mvc.perform(post("/groups/{id}/expenses", groupId).header("Authorization", caller.bearer())
 			.contentType(APPLICATION_JSON)

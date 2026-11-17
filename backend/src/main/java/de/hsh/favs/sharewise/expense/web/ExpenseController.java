@@ -4,12 +4,18 @@ import de.hsh.favs.sharewise.account.api.CurrentUser;
 import de.hsh.favs.sharewise.expense.application.ExpenseService;
 import de.hsh.favs.sharewise.expense.application.RecordExpenseCommand;
 import de.hsh.favs.sharewise.expense.domain.ExpenseTitle;
+import de.hsh.favs.sharewise.expense.domain.SplitEntry;
+import de.hsh.favs.sharewise.expense.domain.SplitStrategy;
+import de.hsh.favs.sharewise.shared.DomainException;
+import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.Money;
 import de.hsh.favs.sharewise.shared.UserId;
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,6 +30,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/groups/{groupId}/expenses")
 class ExpenseController {
 
+	/** At most three digits before the point and two after, as in "33.33" or "100". */
+	private static final Pattern PERCENTAGE = Pattern.compile("^-?\\d{1,3}(\\.\\d{1,2})?$");
+
 	private final ExpenseService expenses;
 
 	private final CurrentUser currentUser;
@@ -36,10 +45,39 @@ class ExpenseController {
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
 	ExpenseResponse recordExpense(@PathVariable UUID groupId, @Valid @RequestBody RecordExpenseRequest request) {
+		var participants = request.participants()
+			.stream()
+			.map(participant -> new SplitEntry(new UserId(participant.userId()),
+					typedValue(request.splitStrategy(), participant.value())))
+			.toList();
 		var command = new RecordExpenseCommand(new GroupId(groupId), caller(), new ExpenseTitle(request.title()),
-				Money.eur(request.totalAmount()), request.date(), new UserId(request.paidBy()),
-				request.participantIds().stream().map(UserId::new).toList(), request.splitStrategy());
+				Money.eur(request.totalAmount()), request.date(), new UserId(request.paidBy()), participants,
+				request.splitStrategy());
 		return ExpenseResponse.of(expenses.recordExpense(command));
+	}
+
+	/**
+	 * The value typed for one participant: absent for EQUAL, an amount for EXACT, a
+	 * percentage for PERCENTAGE. Any other shape is a malformed request (400).
+	 */
+	private static BigDecimal typedValue(SplitStrategy strategy, String value) {
+		if (strategy == SplitStrategy.EQUAL) {
+			if (value != null) {
+				throw new DomainException(ErrorCode.BAD_REQUEST, "An EQUAL split takes no value per participant");
+			}
+			return null;
+		}
+		if (value == null) {
+			throw new DomainException(ErrorCode.BAD_REQUEST, "Every participant needs a value for this split");
+		}
+		return strategy == SplitStrategy.EXACT ? Money.eur(value).amount() : percentage(value);
+	}
+
+	private static BigDecimal percentage(String text) {
+		if (!PERCENTAGE.matcher(text).matches()) {
+			throw new DomainException(ErrorCode.BAD_REQUEST, "Not a valid percentage");
+		}
+		return new BigDecimal(text);
 	}
 
 	@GetMapping

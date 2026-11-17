@@ -7,11 +7,15 @@ import static de.hsh.favs.sharewise.expense.domain.ExpenseFixture.DAVID;
 
 import de.hsh.favs.sharewise.expense.domain.ExpenseFixture;
 import de.hsh.favs.sharewise.expense.domain.ExpenseTitle;
+import de.hsh.favs.sharewise.expense.domain.SplitEntry;
 import de.hsh.favs.sharewise.expense.domain.SplitStrategy;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.Money;
 import de.hsh.favs.sharewise.shared.UserId;
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -28,7 +32,7 @@ public class RecordExpenseCommandFixture {
 
 	private UserId paidBy = ALICE;
 
-	private List<UserId> participants = List.of(ALICE, BOB, CAROL, DAVID);
+	private List<SplitEntry> participants = entries(ALICE, BOB, CAROL, DAVID);
 
 	private SplitStrategy splitStrategy = SplitStrategy.EQUAL;
 
@@ -48,8 +52,22 @@ public class RecordExpenseCommandFixture {
 	}
 
 	public RecordExpenseCommandFixture withParticipants(UserId... participants) {
-		this.participants = List.of(participants);
+		this.participants = entries(participants);
 		return this;
+	}
+
+	/** Pairs the typed values (amounts or percentages) with the participants in order. */
+	public RecordExpenseCommandFixture withValues(String... values) {
+		var entries = new ArrayList<SplitEntry>();
+		for (int i = 0; i < values.length; i++) {
+			entries.add(new SplitEntry(participants.get(i).participantId(), new BigDecimal(values[i])));
+		}
+		this.participants = entries;
+		return this;
+	}
+
+	private static List<SplitEntry> entries(UserId... people) {
+		return Arrays.stream(people).map(person -> new SplitEntry(person, null)).toList();
 	}
 
 	public RecordExpenseCommandFixture withSplitStrategy(SplitStrategy splitStrategy) {
