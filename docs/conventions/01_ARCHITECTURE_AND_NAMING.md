@@ -64,7 +64,7 @@ Value objects wrap every id and every concept the diagram draws as a value objec
 
 - Ids are records with one field `value` of type `UUID`: `record GroupId(UUID value)`.
 - **There is exactly one identity type for a person: `UserId`.** There is no `MemberId`. A person's role in a group is the `Membership` entity, which holds a `UserId`.
-- `Money` is `record Money(BigDecimal amount, Currency currency)`. The amount always has the currency's number of fraction digits (EUR: 2) and is rounded `HALF_EVEN` only where a rule says so (equal split: the remainder goes to the first participants, in order, so shares always add up exactly). The type offers `plus`, `minus`, `isPositive`, `isZero`, `negate`. Never `double`/`float`, never `new BigDecimal(double)`.
+- `Money` is `record Money(BigDecimal amount, Currency currency)`. The amount always has the currency's number of fraction digits (EUR: 2) and is never rounded implicitly; where a rule says so it is rounded down to cents and the leftover cents are distributed by largest dropped fraction, ties by the order given (R4; the equal split is the case where all fractions are equal, so the first participants get them and shares always add up exactly). The type offers `plus`, `minus`, `isPositive`, `isZero`, `negate`. Never `double`/`float`, never `new BigDecimal(double)`.
 - Value objects validate in their constructor and throw `DomainException` with a stable `ErrorCode`.
 - **Every event ends with `Instant occurredAt`** and carries ids and value objects only, never entities or names.
 - An `api` read model exposes shared value objects and plain text; a module's own domain value objects never leave it (`UserProfile.displayName` is a `String`, the account's `DisplayName` stays inside).

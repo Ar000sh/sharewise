@@ -1,6 +1,6 @@
 # Running ShareWise
 
-Sign up, create a group, invite friends, record an equal-split expense, see who owes what, settle up (report a payment,
+Sign up, create a group, invite friends, record an expense (split equally, by exact amounts or by percentages), see who owes what, settle up (report a payment,
 the creditor confirms or rejects it, or forgives a debt). Accounts and passwords
 belong to Keycloak (the identity provider); ShareWise never sees a password. The Next.js server keeps the tokens in an
 httpOnly cookie.
