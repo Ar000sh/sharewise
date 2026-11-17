@@ -217,7 +217,7 @@ export interface paths {
         /** Expenses of the group, newest first */
         get: operations["listExpenses"];
         put?: never;
-        /** Record an expense. Only splitStrategy EQUAL is supported in Ex4. */
+        /** Record an expense. */
         post: operations["recordExpense"];
         delete?: never;
         options?: never;
@@ -381,7 +381,7 @@ export interface components {
             title?: string;
             status: number;
             /** @enum {string} */
-            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "RECORDER_NOT_PARTICIPANT" | "GROUP_NOT_OPEN" | "SPLIT_NOT_SUPPORTED" | "PAYMENT_EXCEEDS_OPEN_DEBT" | "SETTLEMENT_PAYMENT_NOT_FOUND" | "PAYMENT_NOT_PENDING" | "NOT_THE_CREDITOR" | "ACCOUNT_NOT_FOUND" | "ALREADY_INVITED" | "NOTIFICATION_NOT_FOUND" | "NOT_AN_ADMIN" | "MEMBER_NOT_FOUND" | "ALREADY_ADMIN";
+            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "RECORDER_NOT_PARTICIPANT" | "GROUP_NOT_OPEN" | "SHARES_NOT_TOTAL" | "PERCENTAGES_NOT_100" | "PAYMENT_EXCEEDS_OPEN_DEBT" | "SETTLEMENT_PAYMENT_NOT_FOUND" | "PAYMENT_NOT_PENDING" | "NOT_THE_CREDITOR" | "ACCOUNT_NOT_FOUND" | "ALREADY_INVITED" | "NOTIFICATION_NOT_FOUND" | "NOT_AN_ADMIN" | "MEMBER_NOT_FOUND" | "ALREADY_ADMIN";
             detail?: string;
         };
         User: {
@@ -486,7 +486,7 @@ export interface components {
          */
         Amount: string;
         /**
-         * @description Only EQUAL is accepted in Ex4. The others answer 422 SPLIT_NOT_SUPPORTED.
+         * @description EQUAL divides the total; EXACT takes an amount per participant (they must add up to the total, SHARES_NOT_TOTAL); PERCENTAGE takes a percentage per participant (they must add up to 100, PERCENTAGES_NOT_100). Leftover cents go to the largest dropped fraction, ties by order (R4).
          * @enum {string}
          */
         SplitStrategy: "EQUAL" | "EXACT" | "PERCENTAGE";
@@ -500,9 +500,18 @@ export interface components {
             date: string;
             /** Format: uuid */
             paidBy: string;
-            /** @description Distinct member ids, at least one. Order decides who gets the remainder cents. */
-            participantIds: string[];
+            /** @description Distinct members, at least one. `value` is the amount for EXACT, the percentage for PERCENTAGE (at most two decimals), absent for EQUAL (400 otherwise). Order decides ties for leftover cents. */
+            participants: components["schemas"]["SplitParticipant"][];
             splitStrategy: components["schemas"]["SplitStrategy"];
+        };
+        SplitParticipant: {
+            /** Format: uuid */
+            userId: string;
+            /**
+             * @description Amount (EXACT) or percentage (PERCENTAGE), point as separator, at most two decimals. Absent for EQUAL.
+             * @example 50.00
+             */
+            value?: string;
         };
         ExpenseShare: {
             /** Format: uuid */
@@ -734,7 +743,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description A domain rule was violated. code is one of AMOUNT_NOT_POSITIVE, PAYER_NOT_IN_GROUP, PARTICIPANT_NOT_IN_GROUP, NO_PARTICIPANTS, RECORDER_NOT_PARTICIPANT, GROUP_NOT_OPEN, SPLIT_NOT_SUPPORTED. GROUP_NOT_OPEN means the group is archived (also for settlement calls). */
+        /** @description A domain rule was violated. code is one of AMOUNT_NOT_POSITIVE, PAYER_NOT_IN_GROUP, PARTICIPANT_NOT_IN_GROUP, NO_PARTICIPANTS, RECORDER_NOT_PARTICIPANT, GROUP_NOT_OPEN, SHARES_NOT_TOTAL, PERCENTAGES_NOT_100. GROUP_NOT_OPEN means the group is archived (also for settlement calls). */
         DomainRule: {
             headers: {
                 [name: string]: unknown;
@@ -1377,17 +1386,33 @@ export interface operations {
             content: {
                 /**
                  * @example {
-                 *       "title": "Hotel",
-                 *       "totalAmount": "900.00",
-                 *       "date": "2027-06-01",
+                 *       "title": "Farewell dinner",
+                 *       "totalAmount": "250.00",
+                 *       "date": "2027-06-05",
                  *       "paidBy": "aaaaaaaa-0000-0000-0000-000000000001",
-                 *       "participantIds": [
-                 *         "aaaaaaaa-0000-0000-0000-000000000001",
-                 *         "aaaaaaaa-0000-0000-0000-000000000002",
-                 *         "aaaaaaaa-0000-0000-0000-000000000003",
-                 *         "aaaaaaaa-0000-0000-0000-000000000004"
+                 *       "participants": [
+                 *         {
+                 *           "userId": "aaaaaaaa-0000-0000-0000-000000000001",
+                 *           "value": "50.00"
+                 *         },
+                 *         {
+                 *           "userId": "aaaaaaaa-0000-0000-0000-000000000002",
+                 *           "value": "50.00"
+                 *         },
+                 *         {
+                 *           "userId": "aaaaaaaa-0000-0000-0000-000000000003",
+                 *           "value": "40.00"
+                 *         },
+                 *         {
+                 *           "userId": "aaaaaaaa-0000-0000-0000-000000000004",
+                 *           "value": "60.00"
+                 *         },
+                 *         {
+                 *           "userId": "aaaaaaaa-0000-0000-0000-000000000005",
+                 *           "value": "50.00"
+                 *         }
                  *       ],
-                 *       "splitStrategy": "EQUAL"
+                 *       "splitStrategy": "EXACT"
                  *     }
                  */
                 "application/json": components["schemas"]["RecordExpenseRequest"];
@@ -1403,29 +1428,33 @@ export interface operations {
                     /**
                      * @example {
                      *       "id": "cccccccc-0000-0000-0000-000000000001",
-                     *       "title": "Hotel",
-                     *       "totalAmount": "900.00",
-                     *       "date": "2027-06-01",
+                     *       "title": "Farewell dinner",
+                     *       "totalAmount": "250.00",
+                     *       "date": "2027-06-05",
                      *       "paidBy": "aaaaaaaa-0000-0000-0000-000000000001",
                      *       "recordedBy": "aaaaaaaa-0000-0000-0000-000000000001",
-                     *       "splitStrategy": "EQUAL",
+                     *       "splitStrategy": "EXACT",
                      *       "status": "ACTIVE",
                      *       "shares": [
                      *         {
                      *           "participantId": "aaaaaaaa-0000-0000-0000-000000000001",
-                     *           "owedShare": "225.00"
+                     *           "owedShare": "50.00"
                      *         },
                      *         {
                      *           "participantId": "aaaaaaaa-0000-0000-0000-000000000002",
-                     *           "owedShare": "225.00"
+                     *           "owedShare": "50.00"
                      *         },
                      *         {
                      *           "participantId": "aaaaaaaa-0000-0000-0000-000000000003",
-                     *           "owedShare": "225.00"
+                     *           "owedShare": "40.00"
                      *         },
                      *         {
                      *           "participantId": "aaaaaaaa-0000-0000-0000-000000000004",
-                     *           "owedShare": "225.00"
+                     *           "owedShare": "60.00"
+                     *         },
+                     *         {
+                     *           "participantId": "aaaaaaaa-0000-0000-0000-000000000005",
+                     *           "owedShare": "50.00"
                      *         }
                      *       ]
                      *     }
@@ -1437,7 +1466,7 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["NotAMember"];
             404: components["responses"]["GroupNotFound"];
-            /** @description A domain rule was violated (see the DomainRule response for the codes). RECORDER_NOT_PARTICIPANT: the member who records the expense must be one of its participants (R18). */
+            /** @description A domain rule was violated (see the DomainRule response for the codes). RECORDER_NOT_PARTICIPANT: the member who records the expense must be one of its participants (R18). SHARES_NOT_TOTAL: with EXACT the amounts do not add up to the total (R4). PERCENTAGES_NOT_100: with PERCENTAGE the percentages do not add up to 100 (R4). AMOUNT_NOT_POSITIVE also covers a zero or negative value per participant. */
             422: {
                 headers: {
                     [name: string]: unknown;

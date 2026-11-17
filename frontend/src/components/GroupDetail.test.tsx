@@ -108,7 +108,7 @@ describe("GroupDetail", () => {
     serve({ userId: "u2", displayName: "Bob" });
     renderPage();
     await userEvent.type(await screen.findByLabelText(/title/i), "Dinner");
-    await userEvent.type(screen.getByLabelText(/amount/i), "180");
+    await userEvent.type(screen.getByLabelText("Amount (€)"), "180");
 
     // when
     await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
@@ -180,7 +180,7 @@ describe("GroupDetail", () => {
     serve({ userId: "u2", displayName: "Bob" });
     renderPage();
     await userEvent.type(await screen.findByLabelText(/title/i), "Dinner");
-    await userEvent.type(screen.getByLabelText(/amount/i), "180");
+    await userEvent.type(screen.getByLabelText("Amount (€)"), "180");
     await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
     await screen.findByRole("status");
     const planCalls = () => apiMock.mock.calls.filter(([path]) => path === "/groups/g1/settlement-plan").length;

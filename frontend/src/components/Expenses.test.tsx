@@ -24,7 +24,15 @@ function renderForm(onRecorded = vi.fn()) {
 
 async function fill(title: string, amount: string) {
   await userEvent.type(screen.getByLabelText(/title/i), title);
-  await userEvent.type(screen.getByLabelText(/amount/i), amount);
+  await userEvent.type(screen.getByLabelText("Amount (€)"), amount);
+}
+
+async function choose(mode: "Equally" | "Exact amounts" | "Percentages") {
+  await userEvent.click(screen.getByRole("radio", { name: mode }));
+}
+
+async function type(label: string, value: string) {
+  await userEvent.type(screen.getByLabelText(label), value);
 }
 
 function postedBody() {
@@ -137,7 +145,8 @@ describe("ExpenseForm", () => {
       title: "Hotel",
       totalAmount: "900.00",
       paidBy: "u2",
-      participantIds: ["u1", "u2"],
+      participants: [{ userId: "u1" }, { userId: "u2" }],
+      splitStrategy: "EQUAL",
       date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
     });
     expect(onRecorded).toHaveBeenCalledTimes(1);
@@ -168,6 +177,163 @@ describe("ExpenseForm", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("The payer is not a member of this group.");
     expect(onRecorded).not.toHaveBeenCalled();
+  });
+
+  it("anExactSplitPostsTheTypedAmounts", async () => {
+    // given Alice and Bob share a 10 euro expense
+    apiMock.mockResolvedValue({});
+    renderForm();
+    await userEvent.click(screen.getByRole("checkbox", { name: "Alice" }));
+    await fill("Dinner", "10");
+    await choose("Exact amounts");
+
+    // when they type 6 and 4
+    await type("Amount for Alice", "6");
+    await type("Amount for Bob", "4");
+
+    // then nothing is left and the typed amounts are sent
+    expect(screen.getByText("Remaining: 0,00 €")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
+    const body = postedBody();
+    expect(body.splitStrategy).toBe("EXACT");
+    expect(body.participants).toEqual([
+      { userId: "u1", value: "6.00" },
+      { userId: "u2", value: "4.00" },
+    ]);
+  });
+
+  it("aPercentageSplitPreviewsTheSharesAndPostsThePercentages", async () => {
+    // given three members share 10 euro
+    apiMock.mockResolvedValue({});
+    renderForm();
+    await userEvent.click(screen.getByRole("button", { name: "Select everyone" }));
+    await fill("Dinner", "10");
+    await choose("Percentages");
+
+    // when they type 33,33 / 33,33 / 33,34
+    await type("Percentage for Alice", "33,33");
+    await type("Percentage for Bob", "33,33");
+    await type("Percentage for Carol", "33,34");
+
+    // then the shares are previewed, the sum is 100 % and the percentages are sent
+    const rows = within(screen.getByRole("list", { name: /shares/i })).getAllByRole("listitem");
+    expect(rows.map((r) => r.textContent)).toEqual(["Alice3,33 €", "Bob3,33 €", "Carol3,34 €"]);
+    expect(screen.getByText("Sum: 100,00 %")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
+    const body = postedBody();
+    expect(body.splitStrategy).toBe("PERCENTAGE");
+    expect(body.participants.map((p: { value: string }) => p.value)).toEqual(["33.33", "33.33", "33.34"]);
+  });
+
+  it("aPercentageSplitThatIsNot100PercentShowsNoEuroPreview", async () => {
+    // given
+    renderForm();
+    await userEvent.click(screen.getByRole("checkbox", { name: "Alice" }));
+    await fill("Dinner", "10");
+    await choose("Percentages");
+
+    // when
+    await type("Percentage for Alice", "60");
+    await type("Percentage for Bob", "30");
+
+    // then
+    expect(screen.getByText("Sum: 90,00 %")).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: /shares/i })).not.toBeInTheDocument();
+  });
+
+  it("amountsThatDoNotAddUpShowAMessageAndSendNothing", async () => {
+    // given exact amounts 6 and 3 for 10 euro
+    renderForm();
+    await userEvent.click(screen.getByRole("checkbox", { name: "Alice" }));
+    await fill("Dinner", "10");
+    await choose("Exact amounts");
+    await type("Amount for Alice", "6");
+    await type("Amount for Bob", "3");
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
+
+    // then
+    expect(screen.getByRole("alert")).toHaveTextContent("The amounts must add up to 10,00 €.");
+    expect(apiMock).not.toHaveBeenCalled();
+  });
+
+  it("percentagesThatDoNotAddUpShowAMessageAndSendNothing", async () => {
+    // given
+    renderForm();
+    await userEvent.click(screen.getByRole("checkbox", { name: "Alice" }));
+    await fill("Dinner", "10");
+    await choose("Percentages");
+    await type("Percentage for Alice", "60");
+    await type("Percentage for Bob", "30");
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
+
+    // then
+    expect(screen.getByRole("alert")).toHaveTextContent("The percentages must add up to 100 %.");
+    expect(apiMock).not.toHaveBeenCalled();
+  });
+
+  it("aTypedValueThatIsNotANumberShowsAMessageAndSendsNothing", async () => {
+    // given
+    renderForm();
+    await fill("Dinner", "10");
+    await choose("Exact amounts");
+    await type("Amount for Bob", "1.000,50");
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
+
+    // then
+    expect(screen.getByRole("alert")).toHaveTextContent("Please enter a valid amount for Bob.");
+    expect(apiMock).not.toHaveBeenCalled();
+  });
+
+  it("anUntickedMemberNeitherCountsNorIsSent", async () => {
+    // given Alice is ticked and both typed an amount
+    apiMock.mockResolvedValue({});
+    renderForm();
+    await userEvent.click(screen.getByRole("checkbox", { name: "Alice" }));
+    await fill("Dinner", "10");
+    await choose("Exact amounts");
+    await type("Amount for Alice", "4");
+    await type("Amount for Bob", "10");
+    expect(screen.getByText("Remaining: -4,00 €")).toBeInTheDocument();
+
+    // when Alice is unticked
+    await userEvent.click(screen.getByRole("checkbox", { name: "Alice" }));
+
+    // then only Bob counts and only Bob is sent
+    expect(screen.getByText("Remaining: 0,00 €")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Amount for Alice")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
+    expect(postedBody().participants).toEqual([{ userId: "u2", value: "10.00" }]);
+  });
+
+  it("switchingTheModeClearsTheTypedValues", async () => {
+    // given
+    renderForm();
+    await choose("Exact amounts");
+    await type("Amount for Bob", "6");
+
+    // when
+    await choose("Percentages");
+
+    // then
+    expect(screen.getByLabelText("Percentage for Bob")).toHaveValue("");
+    await choose("Exact amounts");
+    expect(screen.getByLabelText("Amount for Bob")).toHaveValue("");
+  });
+
+  it("theSplitSumsErrorCodeIsShownAsMessage", async () => {
+    apiMock.mockRejectedValue(new ApiError(422, "SHARES_NOT_TOTAL", "raw"));
+    renderForm();
+
+    await fill("Taxi", "10");
+    await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("The amounts must add up to the total.");
   });
 
   it("rejectsInvalidAmountWithoutCallingTheServer", async () => {
