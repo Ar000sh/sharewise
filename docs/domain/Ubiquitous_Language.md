@@ -91,7 +91,7 @@ Same technique as slide 33's "policy" → "regulatory provision" / "insurance co
 | **Participant** | A member who takes part in (shares the cost of) one expense. The payer may or may not be a participant | Hotel: Alice, Bob, Carol, David |
 | **Share** | The part of the amount one participant owes for one expense | €225 each for the hotel |
 | **Split** | How the amount is divided among participants. One of: **equal**, **exact amounts**, **percentage** | Farewell dinner: exact (A 50, B 50, C 40, D 60, E 50) |
-| **Equal split** | Amount ÷ number of participants; remainder cents go to the first participant(s) | Dinner €200 / 4 = €50 |
+| **Equal split** | Amount ÷ number of participants; remainder cents per R4 | Dinner €200 / 4 = €50 |
 | **Exact split** | Each share given as an amount; the shares must add up to the amount | Farewell dinner €250 |
 | **Percentage split** | Each share given as a percentage; the percentages must add up to 100 % | – |
 | **Record (an expense)** | Enter a new expense in an open group | Bob records the dinner |

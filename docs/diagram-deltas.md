@@ -27,6 +27,7 @@ The code follows the diagram `docs/domain/ShareWise_Domain_Model.drawio` for eve
 | 19 | `MemberBalanceStatusChanged`, `AllBalancesSettled` | drawn among `SettlementDomainEvents` | published by settlement, but live in `shared.events`, not in `settlement.api` | the one exception to "events live in the publisher's `api`" (D12, convention 01 section 5.1): group consumes the first, and a group listener for a `settlement.api` type would make the module graph cyclic. The diagram keeps them under settlement because it shows who publishes, not the Java package |
 | 20 | `Invitation`, `MemberInvited`, `MemberPromoted` | `Invitation` has no role; `MemberInvited` has no role | `Invitation.role: GroupRole` (MEMBER by default) is applied when the invitee accepts; `MemberInvited.role`; `Group.inviteMember(invitee, inviter, role, now)`; only an admin may invite; `promoteToAdmin(user, promotedBy, now)` returns `MemberPromoted(groupId, userId, promotedBy, occurredAt)`; promotion is one way | design 2026-11-09: admins decide who joins and with which role; the diagram needs the field and the event's fields |
 | 21 | `NotificationType` | `MEMBER_JOINED`, `INVITATION_DECLINED` | adds `MEMBER_PROMOTED` (consumes `MemberPromoted`, recipient the promoted person) | design 2026-11-09, A6 |
+| 22 | `ExactSplit`, `PercentageSplit`, `SplitEntry` | the strategies `EXACT` and `PERCENTAGE` of `SplitStrategy`; no classes for them | domain functions `ExactSplit` and `PercentageSplit` (like `EqualSplit`) that turn the entries into shares, and the input record `SplitEntry(userId, value)`; none of the three is drawn | they compute the `shares` that `Expense.record` takes, they are not entities; design 2026-11-17, D4 |
 
 ## Deliberate changes made in the diagram (settlements, 03.11.26)
 
@@ -42,7 +43,7 @@ The team version of 17.10.26 drew these differently; the diagram now shows what 
 ## Known gaps (diagram is right, code comes later)
 
 - Group: `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, and their events; the enums already have all their values.
-- Expense: `correct`, `remove`, the `EXACT` and `PERCENTAGE` split strategies, `ExpenseCorrected`, `ExpenseRemoved`.
+- Expense: `correct`, `remove`, `ExpenseCorrected`, `ExpenseRemoved`.
 - Settlement: `appendCorrectionReversal`, `appendRemovalReversal` (they follow `correct` and `remove` of the expense context). `AllBalancesSettled` is published but has no consumer yet (auto-archive L5 is parked).
 - Account: `changeDisplayName`, `deactivate` (email verification, password reset and lock-out are Keycloak's).
 - Notification context (the in-app inbox): built with the `notification` module of design 2026-11-03.

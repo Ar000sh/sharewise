@@ -1,6 +1,6 @@
 # Design: exact and percentage splits (J4b, J4c)
 
-**Date:** 17.11.26 · **Type:** feature · **Branch:** `feature/split-strategies` · **Status:** draft, waiting for approval · **Checked by:** `/edge-case-probe` plan mode and `/design-review` (17.11., section 9)
+**Date:** 17.11.26 · **Type:** feature · **Branch:** `feature/split-strategies` · **Status:** built · **Checked by:** `/edge-case-probe` plan mode and `/design-review` (17.11., section 9)
 
 ## 1. Intent
 J4 says an expense is split **equal, exact or percentage**. Only EQUAL works today: the enum `SplitStrategy {EQUAL, EXACT, PERCENTAGE}` and the diagram already name all three, but the service refuses the other two (`SPLIT_NOT_SUPPORTED`) and the form hardcodes `"EQUAL"`. Mallorca step 11 (farewell dinner, exact: A 50, B 50, C 40, D 60, E 50 = 250) cannot run until EXACT exists. Why now: the P3 demo (15.12) and a complete J4.
@@ -51,7 +51,7 @@ Concept practised: the **aggregate keeps the one invariant** (R4: the shares add
 ## 5. Decisions
 | # | Decision | Why |
 |---|---|---|
-| D1 | **Wire shape (A).** `participants: [{ userId: uuid, value?: string }]`, at least one; `splitStrategy` unchanged. `value` is an amount (`"50.00"`) for EXACT, a percentage (`"33.33"`, point, at most two decimals) for PERCENTAGE and **absent** for EQUAL. | One place per person. |
+| D1 | **Wire shape (A).** `participants: [{ userId: uuid, value?: string }]`, at least one (`minItems: 1`: an empty list is a 400 at the HTTP layer, built that way in the contract); `splitStrategy` unchanged. `value` is an amount (`"50.00"`) for EXACT, a percentage (`"33.33"`, point, at most two decimals) for PERCENTAGE and **absent** for EQUAL. | One place per person. |
 | D2 | **Inside the backend.** The controller turns the request into `RecordExpenseCommand(..., List<SplitEntry> participants, splitStrategy)` with `SplitEntry(UserId participantId, BigDecimal value)` (value null for EQUAL). The controller parses each value (an amount with `Money.eur`, a percentage with a two-decimal parse) and answers **400 `BAD_REQUEST`** for a value that is not a number, has more than two decimals, is missing for EXACT/PERCENTAGE or present for EQUAL. (call) | Shape errors are request validation (`03` section 3); the same place already parses `totalAmount`. |
 | D3 | **Strategies** are domain functions next to `EqualSplit`, picked by a `switch` in the service: `ExactSplit.split(total, entries)` checks every amount is positive (`AMOUNT_NOT_POSITIVE`; a 0.00 recorder would undo R18) and maps to shares, **without a sum check**. `PercentageSplit.split(total, entries)` checks every percentage is positive (`AMOUNT_NOT_POSITIVE`) and that they sum to 100 (`PERCENTAGES_NOT_100`), then rounds per D4 in `BigDecimal`. `EqualSplit` unchanged. (call) | Same shape as `EqualSplit`; no new abstraction (`03` section 7). |
 | D4 | **Rounding (R4, new wording).** Each exact share is `total × percentage / 100` in `BigDecimal` (no overflow), rounded down to cents. The leftover cents (always fewer than the participants) go one each to the participants whose exact share lost the most to rounding; on a tie, to the first in the order given. Verified by script: 10.00 at 33.33 / 33.33 / 33.34 gives **3.33 / 3.33 / 3.34**; at 33.34 / 33.33 / 33.33 gives 3.34 / 3.33 / 3.33; 200.00 at 50 / 30 / 20 gives 100.00 / 60.00 / 40.00; 10.00 at 12.5 / 87.5 gives 1.25 / 8.75; 0.50 at 99 / 1 gives 0.50 / 0.00 (D10). For EQUAL every fraction is the same, so this is today's rule. | Matches what the recorder typed (user, 17.11.). |
@@ -106,7 +106,7 @@ From `/edge-case-probe` plan mode, updated after the design review. Only cases r
 | F5 | A percentage typed as `33,33` | Common | Parser accepts comma or point (D9) | **test** (unit) |
 | F6 | A huge total overflows the percentage arithmetic | Only a 13-digit amount | `BigDecimal` in `PercentageSplit` (D4): cannot happen | handled by design |
 | F7 | EXACT answers a different error than EQUAL for a closed group or a non-member | A hand-made request | The sum check runs last, in the aggregate (D5) | handled by design |
-| F8 | The same person twice | A hand-made request | `Expense.record` refuses duplicates (`NO_PARTICIPANTS`) | handled by design |
+| F8 | The same person twice, or an empty participant list | A hand-made request | An empty list is a 400 at the HTTP layer (`minItems: 1`, built that way). `NO_PARTICIPANTS` stays the domain answer: `Expense.record` refuses duplicates and an empty list from a direct domain call with it (422) | handled by design |
 | F9 | Old frontend against new backend for a moment during a deploy | The Ex8 deploy step only | Both are released together from one pull request | accepted |
 | F10 | A share below one cent rounds to 0.00 | Tiny totals or tiny percentages | D10 | accepted (user) |
 | F11 | The bigger percentage pays the smaller share | Every percentage split with a leftover cent | Largest-leftover rule (D4) | handled by design (user) |

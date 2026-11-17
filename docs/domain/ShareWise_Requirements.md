@@ -115,7 +115,7 @@ DDD slide 40: the **same person** plays a different role in each context. That i
 | **R1** | The amount of an expense is positive. | slide 69 |
 | **R2** | The payer is a member of the group at the moment the expense is recorded. | slide 69 |
 | **R3** | Every participant is a member of the group. An expense has at least 1 participant. The payer may or may not be a participant (the recorder must be one, see R18). ⚠ Slide 64 says 2..\*, see §8 | slide 69 + 🟢 |
-| **R4** | The shares add up exactly to the amount. With a percentage split, the percentages add up to 100 %. Remainder cents go to the first participant(s). | slide 69 + 🟢 rounding |
+| **R4** | The shares add up exactly to the amount. With a percentage split, the percentages add up to 100 %. Remainder cents go to the participants whose exact share lost the most to rounding; on a tie, to the first in the order given (so an equal split gives them to the first participants). | slide 69 + 🟢 rounding |
 | **R5** | Expenses can only be recorded, corrected or removed while the group is OPEN. | 🟢 |
 | **R6** | The recorder, the payer or an admin may correct or remove an expense. | 🟢 |
 | **R7** | A correction never overwrites silently. The old version stays in the history, the status becomes CORRECTED, and the participants are notified. | slide 69: "a finalized expense may not be changed directly" |
