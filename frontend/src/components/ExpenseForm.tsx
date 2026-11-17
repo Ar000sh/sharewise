@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { api } from "@/lib/api";
-import { centsToAmount, eurosToCents, formatEuro } from "@/lib/money";
+import { centsToAmount, equalShares, eurosToCents, formatEuro } from "@/lib/money";
 
 type Member = components["schemas"]["Member"];
 
@@ -19,13 +19,6 @@ function today(): string {
   const d = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
-/** Equal split in cents; the first participants get the remainder, like the backend. */
-function equalShares(totalCents: number, count: number): number[] {
-  const base = Math.floor(totalCents / count);
-  const remainder = totalCents - base * count;
-  return Array.from({ length: count }, (_, i) => base + (i < remainder ? 1 : 0));
 }
 
 export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Props) {

@@ -10,6 +10,44 @@ export function eurosToCents(input: string): number | null {
   return Number.isSafeInteger(cents) && cents > 0 ? cents : null;
 }
 
+/** Equal split in cents; the first participants get the remainder, like the backend. */
+export function equalShares(totalCents: number, count: number): number[] {
+  const base = Math.floor(totalCents / count);
+  const remainder = totalCents - base * count;
+  return Array.from({ length: count }, (_, i) => base + (i < remainder ? 1 : 0));
+}
+
+/**
+ * Parses a percentage typed by a user into hundredths of a percent ("33,33" and "33.33" give 3333) without floating
+ * point. One decimal separator, at most two decimals; zero, signs and anything else give null.
+ */
+export function percentToHundredths(input: string): number | null {
+  const match = /^(\d+)(?:[.,](\d{1,2}))?$/.exec(input.trim());
+  if (!match) return null;
+  const hundredths = Number(match[1]) * 100 + Number((match[2] ?? "").padEnd(2, "0"));
+  return Number.isSafeInteger(hundredths) && hundredths > 0 ? hundredths : null;
+}
+
+/**
+ * Percentage split in cents, the same rule as the backend (design D4): every share is rounded down, the cents that are
+ * left over go to the largest dropped fractions, ties to the earlier participant. Integers only.
+ */
+export function percentageShares(totalCents: number, hundredths: number[]): number[] {
+  const exact = hundredths.map((h) => totalCents * h);
+  const shares = exact.map((e) => Math.floor(e / 10000));
+  const leftover = totalCents - shares.reduce((sum, s) => sum + s, 0);
+  const byLargestRest = exact
+    .map((e, i) => ({ i, rest: e % 10000 }))
+    .sort((a, b) => b.rest - a.rest || a.i - b.i);
+  for (const { i } of byLargestRest.slice(0, leftover)) shares[i] += 1;
+  return shares;
+}
+
+/** Formats hundredths of a percent as "33,33 %". */
+export function formatPercent(hundredths: number): string {
+  return `${Math.trunc(hundredths / 100)},${String(hundredths % 100).padStart(2, "0")} %`;
+}
+
 /** Formats cents as "1.234,56 €" (German style), with a leading "-" when negative. */
 export function formatEuro(cents: number): string {
   const abs = Math.abs(cents);
