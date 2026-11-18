@@ -18,6 +18,9 @@ e2e/                   Playwright specs (*.spec.ts)
 
 ## 2. API access and types
 
+- Container deployments may set `KEYCLOAK_INTERNAL_ISSUER` for server-side token and availability requests.
+  Browser login/logout redirects retain `KEYCLOAK_ISSUER`; see `DEPLOYING.md`.
+
 - **Only `api<T>(path)`** (`lib/api.ts`) talks to the backend from the browser; **only `proxyToBackend`** (`lib/backend.ts`) talks to it from a route handler. No other `fetch` of the backend, no CORS. One exception: the sign-in callback (`/api/auth/callback`) calls `/me` directly, because the brand-new token is not in a cookie yet.
 - `proxyToBackend` also does the authentication: a request other than GET or HEAD whose `Origin` is not `APP_URL` is answered `403` with the frontend-only code `FORBIDDEN_ORIGIN` and never reaches the backend (CSRF, F2); the bearer token is the access token from the session cookie; an access token with less than 30 seconds left is refreshed first (one refresh at a time per refresh token) and the new tokens are set on the response; a refresh that fails clears the cookie and answers `401 UNAUTHENTICATED`.
 - Types come from the contract: `components["schemas"]["Expense"]`. Do not hand-write a type that the contract has.

@@ -1,5 +1,7 @@
 # Running ShareWise (Ex4 slice)
 
+For the complete four-container lab setup, GitHub image publishing and SSH access, see [DEPLOYING.md](DEPLOYING.md).
+
 Sign up, create a group, invite friends, record an equal-split expense, see who owes what. Accounts and passwords
 belong to Keycloak (the identity provider); ShareWise never sees a password. The Next.js server keeps the tokens in an
 httpOnly cookie.
