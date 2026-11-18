@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * The EXACT split strategy (R4): each typed amount becomes that participant's share, in
  * the order given. Whether the amounts add up to the total is not checked here but once,
- * in {@link Expense#record}, for every strategy (design D5).
+ * in {@link Expense#record}, for every strategy (split-strategies design D5).
  */
 public final class ExactSplit {
 

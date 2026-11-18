@@ -15,7 +15,7 @@ import java.util.stream.IntStream;
  * The PERCENTAGE split strategy (R4): each share is the total times its percentage,
  * floored to cents; the leftover cents go one each to the entries with the largest
  * dropped fraction (ties by list order), so the shares add up to the total exactly
- * (design D4).
+ * (split-strategies design D4).
  */
 public final class PercentageSplit {
 
@@ -31,6 +31,7 @@ public final class PercentageSplit {
 	 * (R18), PERCENTAGES_NOT_100 when the percentages do not add up to exactly 100
 	 */
 	public static List<ExpenseShare> split(Money total, List<SplitEntry> entries) {
+		// an empty list is answered by NO_PARTICIPANTS in Expense.record, not here
 		if (entries.isEmpty()) {
 			return List.of();
 		}
@@ -62,7 +63,7 @@ public final class PercentageSplit {
 		// leftover = total - sum(floors), in cents, always < entries.size()
 		int leftover = total.amount().subtract(floorSum).movePointRight(2).intValueExact();
 		// indices sorted by (exact - floor) descending, ties by index ascending (a
-		// stable sort); the first `leftover` of them get +0.01 (R4, design D4)
+		// stable sort); the first `leftover` of them get +0.01 (R4, split-strategies D4)
 		List<Integer> byDroppedFraction = IntStream.range(0, count)
 			.boxed()
 			.sorted(Comparator.comparing((Integer i) -> exact.get(i).subtract(floors.get(i))).reversed())
