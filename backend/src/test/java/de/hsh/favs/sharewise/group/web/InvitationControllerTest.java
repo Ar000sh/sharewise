@@ -180,6 +180,56 @@ class InvitationControllerTest {
 	}
 
 	@Test
+	void postAsAMemberWhoIsNotAdminIs403NotAnAdminAndNothingHappens() throws Exception {
+		// given Bob is a plain member
+		UUID group = groups.groupWith(alice, "Admins only", bob);
+
+		// when / then
+		groups.createInvitation(group, bob, carol.username())
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.code").value("NOT_AN_ADMIN"));
+		groups.createInvitation(group, bob, "nobody-by-that-name")
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.code").value("NOT_AN_ADMIN"));
+		groups.pending(carol).andExpect(jsonPath("$.length()").value(0));
+	}
+
+	@Test
+	void anInvitationWithRoleAdminMakesTheInviteeAnAdminOnAccepting() throws Exception {
+		// given
+		UUID group = groups.createGroup(alice, "Two admins");
+		String body = groups
+			.body(groups.createInvitation(group, alice, bob.username(), "ADMIN").andExpect(status().isCreated()));
+		UUID invitation = UUID.fromString(json.readTree(body).get("invitationId").asString());
+		groups.pending(bob).andExpect(jsonPath("$[0].role").value("ADMIN"));
+
+		// when
+		groups.accept(invitation, bob).andExpect(status().isOk());
+
+		// then
+		groups.detail(group, bob)
+			.andExpect(jsonPath("$.members[?(@.userId=='" + bob.idString() + "')].role").value("ADMIN"));
+		groups.createInvitation(group, bob, carol.username()).andExpect(status().isCreated());
+	}
+
+	@Test
+	void anInvitationWithoutARoleIsForAMember() throws Exception {
+		UUID group = groups.createGroup(alice, "Default role");
+		groups.invite(group, alice, bob);
+
+		groups.pending(bob).andExpect(jsonPath("$[0].role").value("MEMBER"));
+	}
+
+	@Test
+	void postWithAnUnknownRoleIs400() throws Exception {
+		UUID group = groups.createGroup(alice, "Bad role");
+
+		groups.createInvitation(group, alice, bob.username(), "OWNER")
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+	}
+
+	@Test
 	void postForAnUnknownGroupIs404() throws Exception {
 		groups.createInvitation(UUID.randomUUID(), alice, bob.username())
 			.andExpect(status().isNotFound())

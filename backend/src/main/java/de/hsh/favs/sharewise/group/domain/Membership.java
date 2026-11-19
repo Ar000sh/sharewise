@@ -34,11 +34,20 @@ public class Membership {
 	private MembershipStatus status;
 
 	/**
-	 * Kept up to date from the settlement context (later exercise); a member may only
-	 * leave at zero balance.
+	 * Kept up to date from the settlement ledger through
+	 * {@code MemberBalanceStatusChanged} (D12); a member may only leave at zero balance
+	 * (R11).
 	 */
 	@Column(name = "has_zero_balance", nullable = false)
 	private boolean hasZeroBalance;
+
+	/**
+	 * When the ledger event that last set {@link #hasZeroBalance} occurred, or null
+	 * before the first one. Events arrive asynchronously and possibly out of order; an
+	 * older one must not override a newer one.
+	 */
+	@Column(name = "balance_status_at")
+	private Instant balanceStatusAt;
 
 	@Column(name = "joined_at", nullable = false)
 	private Instant joinedAt;
@@ -53,6 +62,10 @@ public class Membership {
 		this.status = MembershipStatus.ACTIVE;
 		this.hasZeroBalance = true;
 		this.joinedAt = joinedAt;
+	}
+
+	void promoteToAdmin() {
+		this.role = GroupRole.ADMIN;
 	}
 
 	public UserId userId() {
@@ -77,6 +90,19 @@ public class Membership {
 
 	public boolean isActiveMember() {
 		return status == MembershipStatus.ACTIVE;
+	}
+
+	/**
+	 * Sets the flag unless a newer status is already stored. Equal instants apply, so a
+	 * later event with the same timestamp (a frozen clock) still wins. Called by the root
+	 * only.
+	 */
+	void updateBalanceStatus(boolean hasZeroBalance, Instant occurredAt) {
+		if (balanceStatusAt != null && occurredAt.isBefore(balanceStatusAt)) {
+			return;
+		}
+		this.hasZeroBalance = hasZeroBalance;
+		this.balanceStatusAt = occurredAt;
 	}
 
 }

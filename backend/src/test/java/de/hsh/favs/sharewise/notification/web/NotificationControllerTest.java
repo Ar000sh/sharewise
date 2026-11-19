@@ -11,10 +11,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import de.hsh.favs.sharewise.ModuleIntegrationTest;
 import de.hsh.favs.sharewise.MutableClock;
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
+import de.hsh.favs.sharewise.expense.web.ExpenseRequests;
 import de.hsh.favs.sharewise.group.web.GroupRequests;
 import de.hsh.favs.sharewise.notification.application.NotificationService;
 import de.hsh.favs.sharewise.notification.domain.Notification;
 import de.hsh.favs.sharewise.notification.domain.NotificationType;
+import de.hsh.favs.sharewise.settlement.application.GroupLedgerService;
+import de.hsh.favs.sharewise.settlement.web.SettlementRequests;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Duration;
@@ -47,6 +50,9 @@ class NotificationControllerTest {
 
 	@Autowired
 	NotificationService notifications;
+
+	@Autowired
+	GroupLedgerService ledgers;
 
 	GroupRequests groups;
 
@@ -104,6 +110,67 @@ class NotificationControllerTest {
 	}
 
 	@Test
+	void aConfirmedPaymentShowsAConfirmedEntryForTheDebtorPointingAtThePayment() throws Exception {
+		// given bob owes alice 50.00 and reports the payment
+		var settlement = new SettlementRequests(mvc, json);
+		UUID group = groups.groupWith(alice, "Trip", bob);
+		SettlementRequests.bookDebt(ledgers, group, alice, bob, "50.00");
+		UUID payment = settlement.recordedPayment(group, bob, alice, "50.00");
+
+		// when
+		settlement.confirm(payment, alice).andExpect(status().isOk());
+
+		// then the entry arrives through the settlement event (I2)
+		JsonNode entry = awaitEntries(bob, 1).get("items").get(0);
+		assertThat(entry.get("type").asString()).isEqualTo("PAYMENT_CONFIRMED");
+		assertThat(entry.get("actor").get("userId").asString()).isEqualTo(alice.idString());
+		assertThat(entry.get("group").get("id").asString()).isEqualTo(group.toString());
+		assertThat(entry.get("reference").asString()).isEqualTo(payment.toString());
+	}
+
+	@Test
+	void aRecordedExpenseShowsAnEntryForEveryoneInvolvedButNotForTheRecorder() throws Exception {
+		// given a group of three
+		UUID group = groups.groupWith(alice, "Trip", bob, carol);
+
+		// when alice records the hotel, pays it and shares it with both
+		new ExpenseRequests(mvc, json).inGroup(group)
+			.paidBy(alice)
+			.splitBetween(alice, bob, carol)
+			.record(alice)
+			.andExpect(status().isCreated());
+
+		// then bob and carol hear about it through the expense event, naming alice
+		for (AccountFixture other : new AccountFixture[] { bob, carol }) {
+			JsonNode entry = awaitEntries(other, 1).get("items").get(0);
+			assertThat(entry.get("type").asString()).isEqualTo("EXPENSE_RECORDED");
+			assertThat(entry.get("actor").get("userId").asString()).isEqualTo(alice.idString());
+			assertThat(entry.get("group").get("id").asString()).isEqualTo(group.toString());
+		}
+		// and alice, who recorded it, has only the entries for the two people who joined
+		inbox(alice, "").andExpect(jsonPath("$.items[?(@.type=='EXPENSE_RECORDED')]").isEmpty());
+	}
+
+	@Test
+	void aPromotionShowsAPromotedEntryToThePromotedPersonOnly() throws Exception {
+		// given Bob joined Alice's group
+		UUID group = groups.groupWith(alice, "Mallorca 2027", bob);
+
+		// when
+		groups.promote(group, alice, bob).andExpect(status().isOk());
+
+		// then Bob's only entry is the promotion; Alice's only entry is still Bob's join
+		JsonNode entry = awaitEntries(bob, 1).get("items").get(0);
+		assertThat(entry.get("type").asString()).isEqualTo("MEMBER_PROMOTED");
+		assertThat(entry.get("actor").get("userId").asString()).isEqualTo(alice.idString());
+		assertThat(entry.get("group").get("id").asString()).isEqualTo(group.toString());
+		assertThat(entry.get("reference").asString()).isEqualTo(bob.idString());
+		JsonNode alicesEntries = awaitEntries(alice, 1).get("items");
+		assertThat(alicesEntries).hasSize(1);
+		assertThat(alicesEntries.get(0).get("type").asString()).isEqualTo("MEMBER_JOINED");
+	}
+
+	@Test
 	void theCreatorsOwnGroupCreationAndAnInviteWithoutAnAnswerShowNothing() throws Exception {
 		// given
 		UUID group = groups.createGroup(alice, "Quiet");
@@ -139,9 +206,12 @@ class NotificationControllerTest {
 	@Test
 	void readAllMarksOnlyTheCallersEntries() throws Exception {
 		// given an entry for Alice (Bob joined) and one for Bob (Carol joined through
-		// Bob)
+		// Bob, who can invite because Alice invited him as an admin)
 		UUID group = groups.createGroup(alice, "Mallorca 2027");
-		groups.accept(groups.invite(group, alice, bob), bob).andExpect(status().isOk());
+		String invited = groups
+			.body(groups.createInvitation(group, alice, bob.username(), "ADMIN").andExpect(status().isCreated()));
+		groups.accept(UUID.fromString(json.readTree(invited).get("invitationId").asString()), bob)
+			.andExpect(status().isOk());
 		groups.accept(groups.invite(group, bob, carol), carol).andExpect(status().isOk());
 		awaitEntries(alice, 1);
 		awaitEntries(bob, 1);

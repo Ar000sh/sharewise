@@ -21,6 +21,7 @@ import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.InvitationId;
 import de.hsh.favs.sharewise.group.api.MemberInvited;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
+import de.hsh.favs.sharewise.group.api.MemberPromoted;
 import de.hsh.favs.sharewise.group.domain.Group;
 import de.hsh.favs.sharewise.group.domain.GroupFixture;
 import de.hsh.favs.sharewise.group.domain.GroupName;
@@ -150,7 +151,7 @@ class GroupServiceTest {
 		when(profiles.findByIdentifier("bob")).thenReturn(Optional.of(AccountFixture.bob().profile()));
 
 		// when
-		var invitation = service.inviteMember(trip.groupId(), alice, "bob");
+		var invitation = service.inviteMember(trip.groupId(), alice, "bob", GroupRole.ADMIN);
 
 		// then
 		assertThat(invitation.invitee()).isEqualTo(AccountFixture.bob().profile());
@@ -160,6 +161,7 @@ class GroupServiceTest {
 		verify(events).publishEvent(published.capture());
 		assertThat(published.getValue().invitee()).isEqualTo(bob);
 		assertThat(published.getValue().invitedBy()).isEqualTo(alice);
+		assertThat(published.getValue().role()).isEqualTo(GroupRole.ADMIN);
 		assertThat(published.getValue().groupId()).isEqualTo(trip.groupId());
 		assertThat(published.getValue().invitationId()).isEqualTo(invitation.id());
 	}
@@ -172,8 +174,9 @@ class GroupServiceTest {
 		when(profiles.findByIdentifier("nobody")).thenReturn(Optional.empty());
 
 		// when / then
-		assertThatThrownBy(() -> service.inviteMember(trip.groupId(), alice, "nobody")).isInstanceOfSatisfying(
-				DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.ACCOUNT_NOT_FOUND));
+		assertThatThrownBy(() -> service.inviteMember(trip.groupId(), alice, "nobody", GroupRole.MEMBER))
+			.isInstanceOfSatisfying(DomainException.class,
+					e -> assertThat(e.code()).isEqualTo(ErrorCode.ACCOUNT_NOT_FOUND));
 		verifyNoInteractions(events);
 	}
 
@@ -184,7 +187,7 @@ class GroupServiceTest {
 		when(groups.findByIdForUpdate(unknown.value())).thenReturn(Optional.empty());
 
 		// when / then
-		assertThatThrownBy(() -> service.inviteMember(unknown, alice, "bob")).isInstanceOfSatisfying(
+		assertThatThrownBy(() -> service.inviteMember(unknown, alice, "bob", GroupRole.MEMBER)).isInstanceOfSatisfying(
 				DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.GROUP_NOT_FOUND));
 		verifyNoInteractions(events, profiles);
 	}
@@ -196,16 +199,54 @@ class GroupServiceTest {
 		when(groups.findByIdForUpdate(trip.groupId().value())).thenReturn(Optional.of(trip));
 
 		// when / then
-		assertThatThrownBy(() -> service.inviteMember(trip.groupId(), bob, "carol"))
+		assertThatThrownBy(() -> service.inviteMember(trip.groupId(), bob, "carol", GroupRole.MEMBER))
 			.isInstanceOfSatisfying(DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
 		verifyNoInteractions(events, profiles);
+	}
+
+	@Test
+	void aMemberWhoIsNotAdminCannotInviteAndNothingIsLookedUpOrPublished() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+		when(groups.findByIdForUpdate(trip.groupId().value())).thenReturn(Optional.of(trip));
+
+		// when / then
+		assertThatThrownBy(() -> service.inviteMember(trip.groupId(), bob, "carol", GroupRole.MEMBER))
+			.isInstanceOfSatisfying(DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_AN_ADMIN));
+		verifyNoInteractions(events, profiles);
+	}
+
+	@Test
+	void promoteLocksTheGroupAndPublishesMemberPromoted() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+		when(groups.findByIdForUpdate(trip.groupId().value())).thenReturn(Optional.of(trip));
+
+		// when
+		var promoted = service.promoteToAdmin(trip.groupId(), alice, bob);
+
+		// then
+		assertThat(promoted.role()).isEqualTo(GroupRole.ADMIN);
+		verify(events).publishEvent(new MemberPromoted(trip.groupId(), bob, alice, MutableClock.START));
+	}
+
+	@Test
+	void aRefusedPromotionPublishesNothing() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+		when(groups.findByIdForUpdate(trip.groupId().value())).thenReturn(Optional.of(trip));
+
+		// when / then
+		assertThatThrownBy(() -> service.promoteToAdmin(trip.groupId(), bob, alice))
+			.isInstanceOfSatisfying(DomainException.class, e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_AN_ADMIN));
+		verifyNoInteractions(events);
 	}
 
 	@Test
 	void acceptLocksSavesAndPublishesMemberJoinedWithInvitedBy() {
 		// given
 		Group trip = new GroupFixture().withCreator(alice).build();
-		Invitation invitation = trip.inviteMember(bob, alice, MutableClock.START).invitation();
+		Invitation invitation = trip.inviteMember(bob, alice, GroupRole.MEMBER, MutableClock.START).invitation();
 		when(groups.findIdByInvitationId(invitation.id().value())).thenReturn(Optional.of(trip.groupId().value()));
 		when(groups.findByIdForUpdate(trip.groupId().value())).thenReturn(Optional.of(trip));
 
@@ -235,7 +276,7 @@ class GroupServiceTest {
 	void aRefusedAcceptSavesAndPublishesNothing() {
 		// given an invitation meant for bob, answered by somebody else
 		Group trip = new GroupFixture().withCreator(alice).build();
-		Invitation invitation = trip.inviteMember(bob, alice, MutableClock.START).invitation();
+		Invitation invitation = trip.inviteMember(bob, alice, GroupRole.MEMBER, MutableClock.START).invitation();
 		when(groups.findIdByInvitationId(invitation.id().value())).thenReturn(Optional.of(trip.groupId().value()));
 		when(groups.findByIdForUpdate(trip.groupId().value())).thenReturn(Optional.of(trip));
 		UserId carol = AccountFixture.carol().userId();
@@ -251,7 +292,7 @@ class GroupServiceTest {
 	void declineSavesAndPublishesInvitationDeclined() {
 		// given
 		Group trip = new GroupFixture().withCreator(alice).build();
-		Invitation invitation = trip.inviteMember(bob, alice, MutableClock.START).invitation();
+		Invitation invitation = trip.inviteMember(bob, alice, GroupRole.MEMBER, MutableClock.START).invitation();
 		when(groups.findIdByInvitationId(invitation.id().value())).thenReturn(Optional.of(trip.groupId().value()));
 		when(groups.findByIdForUpdate(trip.groupId().value())).thenReturn(Optional.of(trip));
 
@@ -272,9 +313,10 @@ class GroupServiceTest {
 		UUID newerGroup = UUID.randomUUID();
 		UUID olderGroup = UUID.randomUUID();
 		Instant expiry = MutableClock.START.plus(Duration.ofDays(7));
-		when(groups.findPendingInvitationsFor(bob.value(), MutableClock.START))
-			.thenReturn(List.of(new PendingInvitationRow(newerInvitation, newerGroup, "Newer", alice.value(), expiry),
-					new PendingInvitationRow(olderInvitation, olderGroup, "Older", alice.value(), expiry)));
+		when(groups.findPendingInvitationsFor(bob.value(), MutableClock.START)).thenReturn(List.of(
+				new PendingInvitationRow(newerInvitation, newerGroup, "Newer", alice.value(), GroupRole.ADMIN, expiry),
+				new PendingInvitationRow(olderInvitation, olderGroup, "Older", alice.value(), GroupRole.MEMBER,
+						expiry)));
 
 		// when
 		var pending = service.listPendingInvitations(bob);
@@ -283,6 +325,7 @@ class GroupServiceTest {
 		assertThat(pending).extracting(p -> p.id().value()).containsExactly(newerInvitation, olderInvitation);
 		assertThat(pending).extracting(p -> p.groupId().value()).containsExactly(newerGroup, olderGroup);
 		assertThat(pending).extracting(p -> p.groupName()).containsExactly("Newer", "Older");
+		assertThat(pending).extracting(p -> p.role()).containsExactly(GroupRole.ADMIN, GroupRole.MEMBER);
 		assertThat(pending).allSatisfy(p -> {
 			assertThat(p.invitedBy()).isEqualTo(alice);
 			assertThat(p.expiresAt()).isEqualTo(expiry);

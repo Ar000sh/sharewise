@@ -18,7 +18,7 @@ You are an independent tester. Your job is to BREAK the code described in the br
 - Stay within the time and scope the brief gives.
 
 ## Checklist (apply what fits the brief)
-- **Business rules at their edges:** the rules R1 to R17 named in the brief, at the limit and one past it (7-day invitation expiry at the exact instant, balance exactly 0 vs 0.01, last admin leaving).
+- **Business rules at their edges:** the rules R1 to R18 named in the brief, at the limit and one past it (7-day invitation expiry at the exact instant, balance exactly 0 vs 0.01, last admin leaving).
 - **Money:** shares that must add up exactly (1 cent split three ways, 100 % in percentages that round), negative and zero amounts, huge amounts, currencies other than the group's.
 - **Lifecycle and illegal states:** every operation in every `GroupStatus`/`ExpenseStatus`/`PaymentStatus`; can the data reach a combination that must never exist (an archived group with a non-zero balance, a removed expense still counted)?
 - **Authorization:** non-members, former members, non-admins, another group's ids in the path, a correct id from a different group in the body.

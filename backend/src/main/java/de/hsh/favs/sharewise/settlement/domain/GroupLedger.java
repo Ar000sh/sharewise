@@ -1,7 +1,9 @@
 package de.hsh.favs.sharewise.settlement.domain;
 
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.settlement.api.DebtWaived;
 import de.hsh.favs.sharewise.settlement.api.MemberBalance;
+import de.hsh.favs.sharewise.settlement.api.SettlementPaymentConfirmed;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.Money;
 import de.hsh.favs.sharewise.shared.UserId;
@@ -21,9 +23,10 @@ import java.util.UUID;
 /**
  * The append-only ledger of one group; aggregate root of the settlement context (core
  * subdomain). Every recorded expense books entries (the payer credited what they paid,
- * every participant debited their share, R14); a person's balance is the sum of their
- * entries, and the balances of a group always add up to zero. Booking an expense twice is
- * prevented by the service and, as a last line of defence, by a unique constraint.
+ * every participant debited their share, R14), and so does every confirmed settlement
+ * payment or waived debt (R16, R17); a person's balance is the sum of their entries, and
+ * the balances of a group always add up to zero. Booking an expense twice is prevented by
+ * the service and, as a last line of defence, by a unique constraint.
  */
 @Entity
 @Table(name = "settlement_ledgers")
@@ -57,6 +60,30 @@ public class GroupLedger {
 	}
 
 	/**
+	 * Books a confirmed settlement payment: the debtor's balance rises by the amount
+	 * ({@code PAYMENT_SENT}), the creditor's falls by it ({@code PAYMENT_RECEIVED}), so
+	 * the sum stays zero. Both entries reference the payment id (R14, R16, design D8).
+	 */
+	public void appendSettlementPayment(SettlementPaymentConfirmed event, Instant now) {
+		entries.add(new LedgerEntry(this, event.fromDebtor(), event.amount(), LedgerEntryType.PAYMENT_SENT,
+				event.paymentId().value(), now));
+		entries.add(new LedgerEntry(this, event.toCreditor(), event.amount().negate(), LedgerEntryType.PAYMENT_RECEIVED,
+				event.paymentId().value(), now));
+	}
+
+	/**
+	 * Books a waived debt: the debtor's balance rises by the amount, the creditor's falls
+	 * by it, both as {@code DEBT_WAIVED} referencing the payment id (R14, R17, design
+	 * D8).
+	 */
+	public void appendDebtWaiver(DebtWaived event, Instant now) {
+		entries.add(new LedgerEntry(this, event.fromDebtor(), event.amount(), LedgerEntryType.DEBT_WAIVED,
+				event.paymentId().value(), now));
+		entries.add(new LedgerEntry(this, event.toCreditor(), event.amount().negate(), LedgerEntryType.DEBT_WAIVED,
+				event.paymentId().value(), now));
+	}
+
+	/**
 	 * The balance of every person that has entries, in the order they first appear; the
 	 * sum is always zero. This is the definition of a balance. It loads every entry, so
 	 * the application reads balances with a database query instead (see
@@ -68,6 +95,14 @@ public class GroupLedger {
 			balances.merge(entry.userId(), entry.deltaAmount(), Money::plus);
 		}
 		return balances.entrySet().stream().map(e -> new MemberBalance(e.getKey(), e.getValue())).toList();
+	}
+
+	/**
+	 * The fewest payments that bring every balance to zero (R15), computed from
+	 * {@link #projectBalances()}. The ledger itself does not change.
+	 */
+	public SettlementPlan projectSimplifiedPlan() {
+		return SettlementPlan.of(projectBalances());
 	}
 
 	public GroupId groupId() {

@@ -2,6 +2,7 @@ package de.hsh.favs.sharewise.group.domain;
 
 import de.hsh.favs.sharewise.MutableClock;
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
+import de.hsh.favs.sharewise.group.api.GroupRole;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -57,7 +58,7 @@ public class GroupFixture {
 		Group group = Group.createGroup(new GroupName(name), Currency.getInstance("EUR"), creator, createdAt).group();
 		ReflectionTestUtils.setField(group, "id", id);
 		for (UserId joiner : joiners) {
-			Invitation invitation = group.inviteMember(joiner, creator, createdAt).invitation();
+			Invitation invitation = group.inviteMember(joiner, creator, GroupRole.MEMBER, createdAt).invitation();
 			group.acceptInvitation(invitation.id(), joiner, createdAt);
 		}
 		return group;

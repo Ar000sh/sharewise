@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import de.hsh.favs.sharewise.group.api.GroupCreated;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
+import de.hsh.favs.sharewise.group.api.MemberPromoted;
 import de.hsh.favs.sharewise.group.api.GroupRole;
 import de.hsh.favs.sharewise.shared.GroupId;
 import java.util.UUID;
@@ -144,6 +145,80 @@ class GroupControllerTest {
 	@Test
 	void getDetailOfAnUnknownGroupIs404() throws Exception {
 		groups.detail(UUID.randomUUID(), alice)
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value("GROUP_NOT_FOUND"));
+	}
+
+	@Test
+	void promoteMakesTheMemberAnAdminAndPublishesMemberPromoted() throws Exception {
+		// given
+		UUID group = groups.groupWith(alice, "Promotion", bob);
+
+		// when
+		groups.promote(group, alice, bob)
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.userId").value(bob.idString()))
+			.andExpect(jsonPath("$.displayName").value(bob.displayName()))
+			.andExpect(jsonPath("$.role").value("ADMIN"));
+
+		// then
+		groups.detail(group, bob)
+			.andExpect(jsonPath("$.members[?(@.userId=='" + bob.idString() + "')].role").value("ADMIN"));
+		assertThat(events.stream(MemberPromoted.class).filter(e -> e.groupId().value().equals(group))).singleElement()
+			.satisfies(e -> {
+				assertThat(e.userId()).isEqualTo(bob.userId());
+				assertThat(e.promotedBy()).isEqualTo(alice.userId());
+			});
+	}
+
+	@Test
+	void promoteAsAMemberWhoIsNotAdminIs403NotAnAdminAndChangesNothing() throws Exception {
+		// given
+		UUID group = groups.groupWith(alice, "Only admins promote", bob, carol);
+
+		// when / then
+		groups.promote(group, bob, carol)
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.code").value("NOT_AN_ADMIN"));
+		groups.detail(group, alice)
+			.andExpect(jsonPath("$.members[?(@.userId=='" + carol.idString() + "')].role").value("MEMBER"));
+		assertThat(events.stream(MemberPromoted.class).filter(e -> e.groupId().value().equals(group))).isEmpty();
+	}
+
+	@Test
+	void promoteAsANonMemberIs403NotAMember() throws Exception {
+		UUID group = groups.createGroup(alice, "Closed circle");
+
+		groups.promote(group, bob, alice)
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.code").value("NOT_A_MEMBER"));
+	}
+
+	@Test
+	void promoteSomebodyWhoIsNotInTheGroupIs404MemberNotFound() throws Exception {
+		UUID group = groups.createGroup(alice, "Outsider");
+
+		groups.promote(group, alice, bob)
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value("MEMBER_NOT_FOUND"));
+	}
+
+	@Test
+	void promoteAnAdminIs409AlreadyAdmin() throws Exception {
+		UUID group = groups.groupWith(alice, "Twice", bob);
+		groups.promote(group, alice, bob).andExpect(status().isOk());
+
+		groups.promote(group, alice, bob)
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("ALREADY_ADMIN"));
+		groups.promote(group, alice, alice)
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("ALREADY_ADMIN"));
+	}
+
+	@Test
+	void promoteInAnUnknownGroupIs404() throws Exception {
+		groups.promote(UUID.randomUUID(), alice, bob)
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("GROUP_NOT_FOUND"));
 	}

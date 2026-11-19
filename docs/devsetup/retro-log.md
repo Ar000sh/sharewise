@@ -33,6 +33,6 @@ One entry per retrospective (`/retro`), newest first: trigger, findings with whe
 | 5 | Rules were trust-only (green main, contract alone, migrations, generated types, lock file) | Written in conventions, no check | Git gates + guard hook | Built |
 | 6 | Explanations were asked for again and again ("I don't understand point 8", "why did you remove Lombok") | Several times in the Ex4 review sessions | Root `CLAUDE.md`: explain the why, overview first, "who decides what" | Built |
 | 7 | Commit trailer named the wrong model | Conventions said Sonnet, sessions ran Opus | Conventions 03: name the model that did the work | Built |
-| 8 | Domain sources (diagram, R1-R17) live outside the repo | Teammates and a fresh clone cannot open them | Held: moving them changes the single source of truth in the FAVS folder; the user decides | Waiting |
+| 8 | Domain sources (diagram, R1-R17) live outside the repo | Teammates and a fresh clone cannot open them | Diagram moved earlier (`docs/domain/`); on 12.11.26 the requirements and the glossary followed, next to it. The FAVS folder keeps a pointer file at each old path | Built |
 
 **Follow-ups for the next retro (after Ex5):** Did the gates ever block something real, and how long does pre-push take? Did `/review-branch` or `/edge-case-probe` find anything the build missed? Were explanations still asked for repeatedly? Decide finding 8.

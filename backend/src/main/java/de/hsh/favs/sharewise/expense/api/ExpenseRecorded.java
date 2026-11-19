@@ -7,10 +7,11 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * An expense was recorded. Carries everything the settlement context needs, so it never
- * calls back.
+ * An expense was recorded. Carries everything the settlement and notification contexts
+ * need, so they never call back: who paid, who recorded it (the notification context
+ * tells everybody involved except the recorder) and what each participant owes.
  */
-public record ExpenseRecorded(ExpenseId expenseId, GroupId groupId, UserId paidBy, Money totalAmount,
+public record ExpenseRecorded(ExpenseId expenseId, GroupId groupId, UserId paidBy, UserId recordedBy, Money totalAmount,
 		List<ExpenseShare> shares, Instant occurredAt) {
 
 	public ExpenseRecorded {

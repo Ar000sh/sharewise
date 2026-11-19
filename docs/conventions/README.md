@@ -10,7 +10,7 @@ These rules exist because the parallel build produced four slightly different co
 | [04_FRONTEND.md](04_FRONTEND.md) | Next.js and TypeScript rules, file naming, API access, money, errors, tests |
 
 ## Source of truth, in this order
-1. **The domain diagram** (`docs/domain/ShareWise_Domain_Model.drawio`: team version 17.10.26 plus the Account context with an external identity provider) decides the *names* of aggregates, entities, value objects, enumerations, events, operations and fields. Code follows it. Where the code needs something the diagram lacks, the diagram is updated in the same change (see the list "diagram deltas" in `docs/2026-10-27-diagram-alignment-design.md`).
+1. **The domain diagram** (`docs/domain/ShareWise_Domain_Model.drawio`: team version 17.10.26 plus the Account context with an external identity provider) decides the *names* of aggregates, entities, value objects, enumerations, events, operations and fields. Code follows it. Where the code needs something the diagram lacks, the diagram is updated in the same change (see the list "diagram deltas" in `docs/specs/2026-10-27-diagram-alignment/design.md`).
 2. **`docs/api/openapi.yaml`** decides the HTTP interface. It is changed first, in its own commit.
 3. **These conventions** decide everything else.
 
@@ -24,7 +24,8 @@ These rules exist because the parallel build produced four slightly different co
 | Theme rules (dark mode) | `frontend/src/lib/themeRules.test.ts` (in `npm test`) | a component or page uses a fixed black, white or grey, a fixed background without its own text colour, or a coloured text without its `dark:` counterpart (document 04, section 5) |
 | Contract lint | `npx @redocly/cli lint docs/api/openapi.yaml` | the contract is invalid |
 | Commit gate | `.githooks/pre-commit` | a secret or key is staged, the contract is mixed with code, the lock file lost platforms, an existing file flips its line endings (CRLF <-> LF), or the staged part fails format/lint/typecheck |
-| Push gate | `.githooks/pre-push` | any check above fails (full backend `verify`, Docker required) |
+| Push gate | `.githooks/pre-push` | any check above fails. Backend `verify` (Docker required), the frontend checks and the contract lint run at the same time; a group the push cannot affect is skipped (a frontend-only push skips the backend tests). CI runs all of them anyway |
+| CI pipeline | `.github/workflows/ci.yml` (runs `.githooks/gate.mjs ci <group>`) | any group of the push gate, the image build or the e2e test against the built images fails; required for every pull request into `main`, and `main` builds push the images to ghcr.io |
 | Guard hook (Claude only) | `.claude/hooks/guard.mjs` | Claude edits a secrets file, `schema.d.ts`, a migration on `main`, or uses `--no-verify` |
 
 Everything must be green before a commit lands on `main`:
@@ -33,10 +34,10 @@ cd backend  && ./mvnw verify
 cd frontend && npm run lint && npm run typecheck && npm test && npm run build
 npx @redocly/cli lint docs/api/openapi.yaml
 ```
-(`npm run e2e` before a release or demo; it needs the backend and Postgres running.)
+(`npm run e2e` before a release or demo; it needs the backend and Postgres running. The CI pipeline runs it on every pull request, against the built images, so nobody has to remember.)
 
 ## Definition of done for any change
-- [ ] Names come from the diagram and the glossary, not invented.
+- [ ] Names come from the diagram and the glossary (`docs/domain/Ubiquitous_Language.md`), not invented.
 - [ ] Contract changed first (if the HTTP interface changed), types regenerated (`npm run gen:api`).
 - [ ] New behaviour has a test at the right level (document 02); a rejected call is tested to leave nothing behind.
 - [ ] Public types and operations have the Javadoc described in document 03.

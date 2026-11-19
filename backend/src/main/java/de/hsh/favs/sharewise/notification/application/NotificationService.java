@@ -2,19 +2,25 @@ package de.hsh.favs.sharewise.notification.application;
 
 import de.hsh.favs.sharewise.account.api.UserProfile;
 import de.hsh.favs.sharewise.account.api.UserProfiles;
+import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import de.hsh.favs.sharewise.group.api.GroupDirectory;
 import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
+import de.hsh.favs.sharewise.group.api.MemberPromoted;
 import de.hsh.favs.sharewise.notification.domain.Notification;
 import de.hsh.favs.sharewise.notification.domain.NotificationId;
 import de.hsh.favs.sharewise.notification.domain.NotificationType;
 import de.hsh.favs.sharewise.notification.persistence.NotificationRepository;
+import de.hsh.favs.sharewise.settlement.api.DebtWaived;
+import de.hsh.favs.sharewise.settlement.api.SettlementPaymentConfirmed;
+import de.hsh.favs.sharewise.settlement.api.SettlementPaymentRejected;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -85,11 +91,56 @@ public class NotificationService {
 				event.userId().value(), event.occurredAt()));
 	}
 
+	/** Tells a member that an admin made them an admin. */
+	@Transactional
+	public void recordMemberPromoted(MemberPromoted event) {
+		record(Notification.notify(event.userId(), NotificationType.MEMBER_PROMOTED, event.groupId(),
+				event.promotedBy(), event.userId().value(), event.occurredAt()));
+	}
+
 	/** Tells the inviter that the invitation was turned down. */
 	@Transactional
 	public void recordInvitationDeclined(InvitationDeclined event) {
 		record(Notification.notify(event.invitedBy(), NotificationType.INVITATION_DECLINED, event.groupId(),
 				event.invitee(), event.invitationId().value(), event.occurredAt()));
+	}
+
+	/** Tells the debtor that the creditor confirmed the payment. */
+	@Transactional
+	public void recordPaymentConfirmed(SettlementPaymentConfirmed event) {
+		record(Notification.notify(event.fromDebtor(), NotificationType.PAYMENT_CONFIRMED, event.groupId(),
+				event.toCreditor(), event.paymentId().value(), event.occurredAt()));
+	}
+
+	/** Tells the debtor that the creditor rejected the payment. */
+	@Transactional
+	public void recordPaymentRejected(SettlementPaymentRejected event) {
+		record(Notification.notify(event.fromDebtor(), NotificationType.PAYMENT_REJECTED, event.groupId(),
+				event.toCreditor(), event.paymentId().value(), event.occurredAt()));
+	}
+
+	/** Tells the debtor that the creditor forgave part of the debt. */
+	@Transactional
+	public void recordDebtWaived(DebtWaived event) {
+		record(Notification.notify(event.fromDebtor(), NotificationType.DEBT_WAIVED, event.groupId(),
+				event.toCreditor(), event.paymentId().value(), event.occurredAt()));
+	}
+
+	/**
+	 * Tells everybody involved in an expense that somebody recorded it: the participants
+	 * and the payer, but not the recorder, who knows. One entry per person; a repeated
+	 * event adds none.
+	 */
+	@Transactional
+	public void recordExpenseRecorded(ExpenseRecorded event) {
+		Set<UserId> involved = new LinkedHashSet<>();
+		event.shares().forEach(share -> involved.add(share.participantId()));
+		involved.add(event.paidBy());
+		involved.remove(event.recordedBy());
+		for (UserId recipient : involved) {
+			record(Notification.notify(recipient, NotificationType.EXPENSE_RECORDED, event.groupId(),
+					event.recordedBy(), event.expenseId().value(), event.occurredAt()));
+		}
 	}
 
 	/**

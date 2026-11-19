@@ -1,4 +1,4 @@
-FROM node:22-bookworm-slim AS source
+FROM node:24-alpine AS source
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY package.json package-lock.json ./
@@ -10,15 +10,14 @@ CMD ["npm", "test", "--", "--maxWorkers=1"]
 
 FROM source AS build
 RUN npm run build
-RUN npm prune --omit=dev
 
-FROM node:22-bookworm-slim AS runtime
+FROM node:24-alpine AS runtime
+LABEL org.opencontainers.image.source="https://github.com/Ar000sh/sharewise"
 WORKDIR /app
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0
-COPY --from=build --chown=node:node /app/package.json /app/package-lock.json ./
-COPY --from=build --chown=node:node /app/node_modules ./node_modules
-COPY --from=build --chown=node:node /app/.next ./.next
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
+COPY --from=build --chown=node:node /app/.next/standalone ./
+COPY --from=build --chown=node:node /app/.next/static ./.next/static
 COPY --from=build --chown=node:node /app/public ./public
 USER node
 EXPOSE 3000
-CMD ["node", "node_modules/next/dist/bin/next", "start", "--hostname", "0.0.0.0"]
+CMD ["node", "server.js"]

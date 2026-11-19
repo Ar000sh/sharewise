@@ -6,7 +6,7 @@ Rule of thumb: **few tests that each protect a rule or a risk.** Do not test get
 
 | Level | Tools | Use it for | Where |
 |---|---|---|---|
-| **Domain unit** | plain JUnit 5 + AssertJ, no Spring | every business rule of an aggregate or value object (R1 to R17), including the rejected cases | `<module>/domain/` |
+| **Domain unit** | plain JUnit 5 + AssertJ, no Spring | every business rule of an aggregate or value object (R1 to R18), including the rejected cases | `<module>/domain/` |
 | **Service** | JUnit 5 + Mockito (`@ExtendWith(MockitoExtension.class)`), mocked repositories and ports | orchestration only: what is loaded, saved, published and in which order; that a rejected call saves and publishes nothing | `<module>/application/` |
 | **API contract** | `@ModuleIntegrationTest` + MockMvc, real Postgres | status codes, JSON shape (field names exactly as the contract), problem `code`s, 401/403/404, events recorded with `ApplicationEvents` | `<module>/web/` |
 | **Database behaviour** | same annotation, call the bean directly | what a mock cannot prove: lazy loading, locks, queries, constraints, `api` port implementations called with no transaction | `<module>/application/` or `persistence/` |
@@ -54,7 +54,7 @@ Where a rule lives decides where it is tested: a rule in an aggregate is tested 
 
 ## 6. What the architecture tests check
 
-`ConventionTests` fails when: `domain` imports Spring, web or another layer of its module; a class in `api` is not an interface, record or enumeration; a `*Controller` lies outside `web`, a `*Repository` outside `persistence`, a `*Service` outside `application`; `application`, `persistence` or `web` types are used by another module; a class is called `MemberId`, `*Dto`, `*Manager`, `*Util` or `*Helper`; a domain event does not live in `api`; any class outside `notification` depends on it (`nothingDependsOnTheNotificationModule`). A listener annotated `@ApplicationModuleListener` is asynchronous: its logic lives in a service method that tests call directly, and the asynchronous wiring is proven by a controller test with Awaitility. When you add a rule to document 01, add it to `ConventionTests` in the same commit.
+`ConventionTests` fails when: `domain` imports Spring, web or another layer of its module; a class in `api` is not an interface, record or enumeration; a `*Controller` lies outside `web`, a `*Repository` outside `persistence`, a `*Service` outside `application`; `application`, `persistence` or `web` types are used by another module; a class is called `MemberId`, `*Dto`, `*Manager`, `*Util` or `*Helper`; `shared.events` holds anything other than the records `MemberBalanceStatusChanged` and `AllBalancesSettled` (`sharedEventsAreExactlyTheTwoBalanceEvents`, the one exception of document 01, 5.1); a domain event does not live in `api`; any class outside `notification` depends on it (`nothingDependsOnTheNotificationModule`). A listener annotated `@ApplicationModuleListener` is asynchronous: its logic lives in a service method that tests call directly, and the asynchronous wiring is proven by a controller test with Awaitility. When you add a rule to document 01, add it to `ConventionTests` in the same commit.
 
 ## 7. Frontend tests
 See document 04: Vitest + Testing Library beside the component, Playwright for the user journeys.

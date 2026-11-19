@@ -27,9 +27,25 @@ describe("InviteForm", () => {
     expect(apiMock).toHaveBeenCalledWith("/groups/g1/invitations", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ identifier: "bob" }),
+      body: JSON.stringify({ identifier: "bob", role: "MEMBER" }),
     });
     expect(field).toHaveValue("");
+  });
+
+  it("sendsRoleAdminWhenTheAdminChoosesIt", async () => {
+    apiMock.mockResolvedValue(invitation);
+
+    render(<InviteForm groupId="g1" />);
+    await userEvent.type(screen.getByLabelText("Username or email"), "bob");
+    await userEvent.selectOptions(screen.getByLabelText("Joins as"), "ADMIN");
+    await userEvent.click(screen.getByRole("button", { name: "Invite" }));
+
+    await screen.findByRole("status");
+    expect(apiMock).toHaveBeenCalledWith("/groups/g1/invitations", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ identifier: "bob", role: "ADMIN" }),
+    });
   });
 
   it("showsTheMessageWhenTheInviteIsRefusedAndNoSuccess", async () => {

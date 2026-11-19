@@ -14,7 +14,7 @@ Start at the entry point and follow the path yourself: **controller → service 
 | **See my open invitations** | `GroupController.listPendingInvitations` `GET /invitations` → `GroupRepository.findPendingInvitationsFor` | `components/InboxBell.tsx` (via `app/api/inbox/route.ts`) | `InvitationControllerTest` |
 | **Accept an invitation** | `GroupController.acceptInvitation` → `GroupService.acceptInvitation` → `Group.acceptInvitation` → `Invitation.requireAnswerableBy` | `InboxBell.tsx` (Accept) | `GroupTest`, `InvitationControllerTest` |
 | **Decline an invitation** | `GroupController.declineInvitation` → `Group.declineInvitation` | `InboxBell.tsx` (Decline) | same |
-| **Hear about the answer** (inbox entry) | listeners `notification/application/MemberJoinedListener`, `InvitationDeclinedListener` → `NotificationService.record…` | – | `NotificationEventsTest` |
+| **Hear about the answer** (inbox entry) | `notification/application/NotificationListener` (`on(MemberJoined)`, `on(InvitationDeclined)`) → `NotificationService.record…` | – | `NotificationEventsTest` |
 | **Read the inbox** | `notification/web/NotificationController` `GET /notifications`, `POST …/read`, `…/read-all` | `InboxBell.tsx` | `NotificationControllerTest`, `InboxBell.test.tsx` |
 | **Readable in dark mode** | – | class swaps in 13 files | `lib/themeRules.test.ts` |
 
@@ -41,7 +41,7 @@ sequenceDiagram
 - **Order in `GroupService.inviteMember`:** lock → is the inviter a member → find the account → invite. Membership comes before the lookup so a non-member learns nothing about who has an account.
 - **`Username` never contains `@`** (the lookup tells email from username by it) and is checked in the domain, because the name comes from the Keycloak token, not from our own endpoint.
 - **`notification` is a leaf:** it uses `account` and `group`, nothing uses it. It stores ids only; names are looked up on read.
-- Full reasons and the review history: `docs/2026-11-03-notifications-design.md` (section 3) and `git log`.
+- Full reasons and the review history: `docs/specs/2026-11-03-notifications/design.md` (section 3) and `git log`.
 
 ## Diff and run
 

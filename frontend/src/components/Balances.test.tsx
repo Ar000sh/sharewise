@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api } from "@/lib/api";
 import { BalancesTab } from "@/components/BalancesTab";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { renderWithQueryClient, testQueryClient } from "@/lib/renderWithQueryClient";
+import { lastChangedKey } from "@/lib/useGroupChange";
 
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<typeof import("@/lib/api")>()), api: vi.fn() }));
 
@@ -11,6 +13,13 @@ afterEach(() => {
   vi.resetAllMocks();
   vi.useRealTimers();
 });
+
+/** The tab opens right after an expense was recorded on this page: the group's change time is now. */
+function renderAfterAnExpense() {
+  const client = testQueryClient();
+  client.setQueryData(lastChangedKey("g1"), Date.now());
+  return renderWithQueryClient(<BalancesTab groupId="g1" />, client);
+}
 
 const balances = [
   { userId: "u1", displayName: "Alice", netBalance: "630.00" },
@@ -23,7 +32,7 @@ describe("BalancesTab", () => {
   it("balancesShowSignedAmountsAndSumZero", async () => {
     apiMock.mockResolvedValue(balances);
 
-    render(<BalancesTab groupId="g1" />);
+    renderWithQueryClient(<BalancesTab groupId="g1" />);
 
     expect(await screen.findByText("+630,00 €")).toBeInTheDocument();
     expect(screen.getByText("-90,00 €")).toBeInTheDocument();
@@ -38,7 +47,7 @@ describe("BalancesTab", () => {
       { userId: "u2", displayName: "Bob", netBalance: "0.00" },
     ]);
 
-    render(<BalancesTab groupId="g1" />);
+    renderWithQueryClient(<BalancesTab groupId="g1" />);
 
     const rows = await screen.findAllByRole("listitem");
     expect(rows).toHaveLength(2);
@@ -49,7 +58,7 @@ describe("BalancesTab", () => {
   it("backendUnreachableShowsErrorBanner", async () => {
     apiMock.mockRejectedValue(new ApiError(502, "BACKEND_UNREACHABLE", "Backend is down"));
 
-    render(<BalancesTab groupId="g1" />);
+    renderWithQueryClient(<BalancesTab groupId="g1" />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/not reachable/i);
   });
@@ -57,7 +66,7 @@ describe("BalancesTab", () => {
   it("unauthenticatedPromptsToPickUser", async () => {
     apiMock.mockRejectedValue(new ApiError(401, "UNAUTHENTICATED", "Missing or invalid session"));
 
-    render(<BalancesTab groupId="g1" />);
+    renderWithQueryClient(<BalancesTab groupId="g1" />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/please sign in/i);
   });
@@ -79,7 +88,7 @@ describe("BalancesTab", () => {
       apiMock.mockResolvedValueOnce(before).mockResolvedValueOnce(before).mockResolvedValue(after);
 
       // when the tab opens right after an expense was recorded
-      render(<BalancesTab groupId="g1" lastRecordedAt={Date.now()} />);
+      renderAfterAnExpense();
       expect(await screen.findByText(/updating/i)).toBeInTheDocument();
       await act(() => vi.advanceTimersByTimeAsync(1200));
 
@@ -92,11 +101,12 @@ describe("BalancesTab", () => {
     it("stopsLookingAfterTheBoundedWindow", async () => {
       apiMock.mockResolvedValue(before);
 
-      render(<BalancesTab groupId="g1" lastRecordedAt={Date.now()} />);
+      renderAfterAnExpense();
       await screen.findByText("Sum: 0,00 €", { exact: false });
-      await act(() => vi.advanceTimersByTimeAsync(10_000));
+      // the last look is at 4 s; stay below the 10 s poll, which is a separate rule (GroupDetail.test.tsx)
+      await act(() => vi.advanceTimersByTimeAsync(5000));
       const calls = apiMock.mock.calls.length;
-      await act(() => vi.advanceTimersByTimeAsync(10_000));
+      await act(() => vi.advanceTimersByTimeAsync(4000));
 
       expect(apiMock.mock.calls.length).toBe(calls);
       expect(calls).toBeLessThanOrEqual(5);
@@ -105,9 +115,10 @@ describe("BalancesTab", () => {
     it("doesNotLookAgainWhenNothingWasRecordedRecently", async () => {
       apiMock.mockResolvedValue(before);
 
-      render(<BalancesTab groupId="g1" />);
+      renderWithQueryClient(<BalancesTab groupId="g1" />);
       await screen.findByText("Sum: 0,00 €", { exact: false });
-      await act(() => vi.advanceTimersByTimeAsync(10_000));
+      // stay below the 10 s poll, which is a separate rule (GroupDetail.test.tsx)
+      await act(() => vi.advanceTimersByTimeAsync(9000));
 
       expect(apiMock).toHaveBeenCalledTimes(1);
       expect(screen.queryByText(/updating/i)).not.toBeInTheDocument();

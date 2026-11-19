@@ -22,7 +22,7 @@ sequenceDiagram
 
 - **<decision>.** <the reason in one clause>
 - (at most six)
-- Full reasons and history: `docs/<date>-<topic>-design.md` and `git log`.
+- Full reasons and history: `docs/specs/<date>-<topic>/design.md` and `git log`.
 
 ## Diff and run
 

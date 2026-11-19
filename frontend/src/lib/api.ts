@@ -12,7 +12,8 @@ export class ApiError extends Error {
 
 /**
  * Calls the backend through the Next.js proxy. `path` is the backend path, e.g. "/groups";
- * it is requested as "/api/groups". Throws ApiError for non-2xx responses.
+ * it is requested as "/api/groups". Throws ApiError for non-2xx responses. A 401 (the session is gone) also sends
+ * the visitor to sign in and back to this page afterwards, so no caller handles it on its own.
  */
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
@@ -20,6 +21,10 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     res = await fetch(`/api${path}`, init);
   } catch {
     throw new ApiError(0, "NETWORK_ERROR", "Could not reach the server");
+  }
+  if (!res.ok && res.status === 401) {
+    const { pathname, search } = window.location;
+    window.location.replace(`/login?next=${encodeURIComponent(pathname + search)}`);
   }
   if (res.status === 204) return undefined as T;
   let body: unknown;
@@ -30,9 +35,15 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(res.status, res.ok ? "INVALID_RESPONSE" : "HTTP_ERROR");
   }
   if (!res.ok) {
-    const problem = body !== null && typeof body === "object" ? body as { code?: unknown; detail?: unknown } : {};
-    throw new ApiError(res.status, typeof problem.code === "string" ? problem.code : "HTTP_ERROR",
-      typeof problem.detail === "string" ? problem.detail : undefined);
+    const problem =
+      body !== null && typeof body === "object"
+        ? (body as { code?: unknown; detail?: unknown })
+        : {};
+    throw new ApiError(
+      res.status,
+      typeof problem.code === "string" ? problem.code : "HTTP_ERROR",
+      typeof problem.detail === "string" ? problem.detail : undefined,
+    );
   }
   return body as T;
 }

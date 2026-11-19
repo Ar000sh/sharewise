@@ -24,7 +24,7 @@ Optional, personal, not committed: `.claude/settings.local.json`, e.g.
 | File-type rules | `.claude/rules/*.md` (`paths:` frontmatter) | when Claude touches matching files | domain packages, backend tests, migrations, the contract, frontend tests. Never `@`-import a convention here: imports in a path-scoped rule are read at session start (measured 2026-11-04), so put them in the folder's `CLAUDE.md` |
 | Guard hook | `.claude/hooks/guard.mjs` | before every Write/Edit/Bash by Claude | blocks secrets files, `schema.d.ts`, migrations already on `main`, API keys, `--no-verify` |
 | Sound hook | `.claude/hooks/sound.mjs` + `.claude/sounds/` | when Claude stops or needs attention | on by default; off with `SHAREWISE_SOUNDS=0` |
-| Git gates | `.githooks/pre-commit`, `pre-push` → `gate.mjs` | every commit / push, people and Claude | see the header of `gate.mjs` |
+| Git gates | `.githooks/pre-commit`, `pre-push` → `gate.mjs` | every commit / push, people and Claude | see the header of `gate.mjs`. The push gate runs the groups backend, frontend and repo at the same time and skips a group the push cannot affect (`gate-groups.mjs`); CI (`.github/workflows/ci.yml`) runs every group on every pull request |
 | Skills (repo) | `.claude/skills/*` | on demand (`/name`) | `edge-case-probe`, `design-review`, `review-branch`, `review-doc`, `contract-change`, `retro`*, `hand-in`* |
 | Skills (backend) | `backend/.claude/skills/*` | on demand (`/backend:name`) | `domain-operation` |
 | Subagent prompts | `<skill>/*-prompt.md` | the skill dispatches a fresh `general-purpose` subagent with it | `edge-case-probe/attacker-prompt.md` (Opus, writes only gitignored probes), `design-review/reviewer-prompt.md` (Opus, read-only), `review-branch/reviewer-prompt.md` (Sonnet, read-only) |
@@ -37,5 +37,5 @@ Use the table in `.claude/skills/retro/SKILL.md` (step 2). In short: a rule for 
 
 ## Testing the setup
 ```sh
-node --test .claude/hooks/guard.test.mjs .githooks/line-endings.test.mjs   # the guard hook and the line-ending check of the gate (also run by the gates when hooks change)
+node --test .claude/hooks/guard.test.mjs .githooks/line-endings.test.mjs .githooks/gate-groups.test.mjs   # the guard hook, the line-ending check and the choice of check groups of the gate (also run by the gates)
 ```

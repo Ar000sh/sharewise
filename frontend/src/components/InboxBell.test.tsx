@@ -1,8 +1,10 @@
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api } from "@/lib/api";
 import { InboxBell } from "@/components/InboxBell";
+import { renderWithQueryClient } from "@/lib/renderWithQueryClient";
+import { lastChangedKey } from "@/lib/useGroupChange";
 
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<typeof import("@/lib/api")>()), api: vi.fn() }));
 const apiMock = vi.mocked(api);
@@ -25,7 +27,25 @@ const entry = {
   reference: "u2",
 };
 
-type Inbox = { invitations: unknown[] | null; notifications: { unreadCount: number; items: unknown[] } | null };
+const payment = {
+  id: "p1",
+  groupId: "g1",
+  fromDebtor: "u3",
+  fromDebtorName: "Carol Tester",
+  toCreditor: "u1",
+  toCreditorName: "Alice Tester",
+  amount: "360.00",
+  status: "PENDING",
+  note: "Cash at the airport",
+  createdAt: "2027-06-02T09:00:00Z",
+  resolvedAt: null,
+};
+
+type Inbox = {
+  invitations: unknown[] | null;
+  notifications: { unreadCount: number; items: unknown[] } | null;
+  payments: unknown[] | null;
+};
 let inbox: Inbox;
 
 /** Answers `/inbox` with the current `inbox` and everything else with `others`. */
@@ -42,14 +62,14 @@ async function openBell() {
 
 /** Renders the bell and opens its dropdown, the set-up of most tests. */
 async function renderOpened() {
-  const view = render(<InboxBell />);
+  const view = renderWithQueryClient(<InboxBell />);
   await openBell();
   return view;
 }
 
 beforeEach(() => {
   push.mockReset();
-  inbox = { invitations: [invitation], notifications: { unreadCount: 1, items: [entry] } };
+  inbox = { invitations: [invitation], notifications: { unreadCount: 1, items: [entry] }, payments: [] };
 });
 afterEach(() => {
   vi.resetAllMocks();
@@ -57,12 +77,212 @@ afterEach(() => {
 });
 
 describe("InboxBell", () => {
-  it("badgeIsPendingInvitationsPlusUnreadEntries", async () => {
+  it("badgeIsOpenInvitationsPlusWaitingPaymentsPlusUnreadEntries", async () => {
+    // given one invitation, one payment waiting and one unread entry
+    inbox = { ...inbox, payments: [payment] };
     backend();
 
-    render(<InboxBell />);
+    // when
+    renderWithQueryClient(<InboxBell />);
 
-    expect(await screen.findByRole("button", { name: /inbox/i })).toHaveTextContent("2");
+    // then
+    expect(await screen.findByRole("button", { name: /inbox/i })).toHaveTextContent("3");
+  });
+
+  it("showsAPaymentWaitingForMyAnswerBeforeTheEntries", async () => {
+    // given
+    inbox = { ...inbox, invitations: [], payments: [payment] };
+    backend();
+
+    // when
+    await renderOpened();
+
+    // then the sentence, the note and a link to the group come first, then the entry
+    const items = screen.getAllByRole("listitem");
+    expect(items[0]).toHaveTextContent("Carol Tester marked 360,00 € as paid to you");
+    expect(items[0]).toHaveTextContent("Cash at the airport");
+    expect(within(items[0]).getByRole("link", { name: "Open group" })).toHaveAttribute("href", "/groups/g1");
+    expect(items[1]).toHaveTextContent("Bob Tester joined Mallorca 2027");
+  });
+
+  it("confirmingAPaymentPostsToConfirmAndAsksAgain", async () => {
+    // given
+    inbox = { ...inbox, payments: [payment] };
+    backend((path) => {
+      if (path === "/settlement-payments/p1/confirm") inbox = { ...inbox, payments: [] };
+    });
+    await renderOpened();
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: "Confirm payment from Carol Tester" }));
+
+    // then
+    expect(apiMock).toHaveBeenCalledWith("/settlement-payments/p1/confirm", { method: "POST" });
+    await waitFor(() => expect(screen.queryByText(/marked 360,00/)).not.toBeInTheDocument());
+  });
+
+  it("rejectingAPaymentNeedsAReasonAndSendsItAsTheNote", async () => {
+    // given
+    inbox = { ...inbox, payments: [payment] };
+    backend((path) => {
+      if (path === "/settlement-payments/p1/reject") inbox = { ...inbox, payments: [] };
+    });
+    await renderOpened();
+    await userEvent.click(screen.getByRole("button", { name: "Reject payment from Carol Tester" }));
+
+    // when she has not typed a reason, nothing can be sent
+    const send = screen.getByRole("button", { name: "Send rejection" });
+    expect(send).toBeDisabled();
+    await userEvent.type(screen.getByLabelText("Reason"), "Not received");
+    await userEvent.click(send);
+
+    // then the reason goes out as the note
+    const [, init] = apiMock.mock.calls.find(([path]) => path === "/settlement-payments/p1/reject")!;
+    expect(init?.method).toBe("POST");
+    expect(JSON.parse(String(init?.body))).toEqual({ note: "Not received" });
+    await waitFor(() => expect(screen.queryByText(/marked 360,00/)).not.toBeInTheDocument());
+  });
+
+  it("noRejectionIsSentWhileTheReasonIsEmpty", async () => {
+    // given
+    inbox = { ...inbox, payments: [payment] };
+    backend();
+    await renderOpened();
+    await userEvent.click(screen.getByRole("button", { name: "Reject payment from Carol Tester" }));
+
+    // when the empty form is submitted
+    await userEvent.type(screen.getByLabelText("Reason"), "   {Enter}");
+
+    // then
+    expect(apiMock.mock.calls.filter(([path]) => String(path).includes("/reject"))).toHaveLength(0);
+  });
+
+  it("a404AfterConfirmCountsAsDoneAndShowsNoError", async () => {
+    // given the payment was answered in another tab
+    inbox = { ...inbox, payments: [payment] };
+    backend((path) => {
+      if (path === "/settlement-payments/p1/confirm") {
+        inbox = { ...inbox, payments: [] };
+        throw new ApiError(404, "PAYMENT_NOT_FOUND");
+      }
+    });
+    await renderOpened();
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: "Confirm payment from Carol Tester" }));
+
+    // then
+    await waitFor(() => expect(screen.queryByText(/marked 360,00/)).not.toBeInTheDocument());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("aPaymentThatIsNoLongerPendingCountsAsDoneAndShowsNoError", async () => {
+    // given a second tab answered the payment first
+    inbox = { ...inbox, payments: [payment] };
+    backend((path) => {
+      if (path === "/settlement-payments/p1/confirm") {
+        inbox = { ...inbox, payments: [] };
+        throw new ApiError(409, "PAYMENT_NOT_PENDING");
+      }
+    });
+    await renderOpened();
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: "Confirm payment from Carol Tester" }));
+
+    // then
+    await waitFor(() => expect(screen.queryByText(/marked 360,00/)).not.toBeInTheDocument());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("answeringAPaymentMarksItsGroupChangedSoOpenTabsLookAgain", async () => {
+    // given
+    inbox = { ...inbox, payments: [payment] };
+    backend();
+    const { client } = await renderOpened();
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: "Confirm payment from Carol Tester" }));
+
+    // then the payment's group has a change time
+    await waitFor(() => expect(client.getQueryData(lastChangedKey("g1"))).toEqual(expect.any(Number)));
+  });
+
+  it("failedAnswerMarksNothing", async () => {
+    // given the server refuses the confirm
+    inbox = { ...inbox, payments: [payment] };
+    backend((path) => {
+      if (path === "/settlement-payments/p1/confirm") throw new ApiError(403, "NOT_THE_CREDITOR");
+    });
+    const { client } = await renderOpened();
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: "Confirm payment from Carol Tester" }));
+
+    // then
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(client.getQueryData(lastChangedKey("g1"))).toBeUndefined();
+  });
+
+  it("openingTheGroupFromAPaymentClosesTheDropdown", async () => {
+    // given
+    inbox = { ...inbox, payments: [payment] };
+    backend();
+    await renderOpened();
+
+    // when
+    await userEvent.click(screen.getByRole("link", { name: "Open group" }));
+
+    // then
+    expect(screen.queryByRole("region", { name: "Inbox entries" })).not.toBeInTheDocument();
+  });
+
+  it("describesTheThreeSettlementEntries", async () => {
+    // given
+    const item = (id: string, type: string) => ({ ...entry, id, type });
+    inbox = {
+      invitations: [],
+      payments: [],
+      notifications: {
+        unreadCount: 3,
+        items: [item("n1", "PAYMENT_CONFIRMED"), item("n2", "PAYMENT_REJECTED"), item("n3", "DEBT_WAIVED")],
+      },
+    };
+    backend();
+
+    // when
+    await renderOpened();
+
+    // then
+    expect(screen.getByText("Bob Tester confirmed your payment in Mallorca 2027")).toBeInTheDocument();
+    expect(screen.getByText("Bob Tester rejected your payment in Mallorca 2027")).toBeInTheDocument();
+    expect(screen.getByText("Bob Tester waived part of your debt in Mallorca 2027")).toBeInTheDocument();
+  });
+
+  it("describesAnExpenseEntryWithWhoRecordedItAndWhere", async () => {
+    // given
+    inbox = {
+      invitations: [],
+      payments: [],
+      notifications: { unreadCount: 1, items: [{ ...entry, id: "n1", type: "EXPENSE_RECORDED" }] },
+    };
+    backend();
+
+    // when
+    await renderOpened();
+
+    // then
+    expect(screen.getByText("Bob Tester recorded an expense in Mallorca 2027")).toBeInTheDocument();
+  });
+
+  it("showsWhatLoadedWhenThePaymentsCouldNotBeLoaded", async () => {
+    inbox = { ...inbox, payments: null };
+    backend();
+
+    await renderOpened();
+
+    expect(screen.getByText("Payments could not be loaded.")).toBeInTheDocument();
+    expect(screen.getByText("Alice Tester invited you to Mallorca 2027")).toBeInTheDocument();
   });
 
   it("listsInvitationsBeforeEntriesWithAcceptAndDecline", async () => {
@@ -77,6 +297,21 @@ describe("InboxBell", () => {
     expect(items[1]).toHaveTextContent("Bob Tester joined Mallorca 2027");
   });
 
+  it("saysWhenAnInvitationIsToBecomeAnAdminAndWhenSomebodyMadeYouOne", async () => {
+    inbox = {
+      invitations: [{ ...invitation, role: "ADMIN" }],
+      notifications: { unreadCount: 1, items: [{ ...entry, id: "n3", type: "MEMBER_PROMOTED" }] },
+      payments: [],
+    };
+    backend();
+
+    await renderOpened();
+
+    const items = screen.getAllByRole("listitem");
+    expect(items[0]).toHaveTextContent("Alice Tester invited you to Mallorca 2027 as an admin");
+    expect(items[1]).toHaveTextContent("Bob Tester made you an admin of Mallorca 2027");
+  });
+
   it("describesADeclinedInvitationAndFallsBackWhenNamesAreMissing", async () => {
     inbox = {
       invitations: [],
@@ -84,6 +319,7 @@ describe("InboxBell", () => {
         unreadCount: 1,
         items: [{ ...entry, id: "n2", type: "INVITATION_DECLINED", actor: null, group: null }],
       },
+      payments: [],
     };
     backend();
 
@@ -170,7 +406,7 @@ describe("InboxBell", () => {
   });
 
   it("showsWhatLoadedWhenTheInvitationsCouldNotBeLoaded", async () => {
-    inbox = { invitations: null, notifications: { unreadCount: 1, items: [entry] } };
+    inbox = { invitations: null, notifications: { unreadCount: 1, items: [entry] }, payments: [] };
     backend();
 
     await renderOpened();
@@ -180,7 +416,7 @@ describe("InboxBell", () => {
   });
 
   it("showsWhatLoadedWhenTheEntriesCouldNotBeLoaded", async () => {
-    inbox = { invitations: [invitation], notifications: null };
+    inbox = { invitations: [invitation], notifications: null, payments: [] };
     backend();
 
     await renderOpened();
@@ -194,6 +430,7 @@ describe("InboxBell", () => {
     inbox = {
       invitations: [{ ...invitation, group: { id: "g9", name: evil } }],
       notifications: { unreadCount: 1, items: [{ ...entry, actor: { ...entry.actor, displayName: evil } }] },
+      payments: [],
     };
     backend();
 
@@ -204,22 +441,11 @@ describe("InboxBell", () => {
     expect(screen.getByText(`${evil} joined Mallorca 2027`)).toBeInTheDocument();
   });
 
-  it("stopsPollingAfter401", async () => {
-    vi.useFakeTimers();
-    apiMock.mockRejectedValue(new ApiError(401, "UNAUTHENTICATED"));
-
-    render(<InboxBell />);
-    await act(async () => {});
-    await vi.advanceTimersByTimeAsync(90_000);
-
-    expect(apiMock).toHaveBeenCalledTimes(1);
-  });
-
   it("pollsEveryThirtySecondsAndWhenTheTabBecomesVisible", async () => {
     vi.useFakeTimers();
     backend();
 
-    render(<InboxBell />);
+    renderWithQueryClient(<InboxBell />);
     await act(async () => {});
     expect(apiMock).toHaveBeenCalledTimes(1);
 

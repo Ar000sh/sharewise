@@ -1,52 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { Avatar } from "@/components/Avatar";
 import { Icon } from "@/components/Icon";
 import { amountToCents, formatEuro } from "@/lib/money";
 import { useApi } from "@/lib/useApi";
+import { useGroupChange } from "@/lib/useGroupChange";
+import { useLookAgain } from "@/lib/useLookAgain";
 
 type Balance = components["schemas"]["Balance"];
-
-/**
- * Milliseconds after an expense was recorded at which the balances are fetched again. The ledger is updated by an
- * event after the expense is saved, so the first answer may still be the old one. The window is bounded: after the
- * last look the tab stops asking.
- */
-const LOOK_AGAIN_AFTER_MS = [500, 1000, 2000, 4000];
 
 function signed(cents: number): string {
   return cents > 0 ? `+${formatEuro(cents)}` : formatEuro(cents);
 }
 
 /**
- * `lastRecordedAt` is the time (ms since 1970) an expense was recorded on this page, if one was. While that is
- * recent the tab looks again a few times and says so.
+ * Everybody's net balance. When something in the group changed on this page a moment ago (an expense, a payment
+ * answered in the bell) the tab looks again a few times and says so: the ledger books the change after it was saved.
  */
-export function BalancesTab({ groupId, lastRecordedAt }: { groupId: string; lastRecordedAt?: number }) {
-  const { data: balances, error, reload } = useApi<Balance[]>(`/groups/${groupId}/balances`);
-  const [updating, setUpdating] = useState(false);
-
-  useEffect(() => {
-    if (lastRecordedAt === undefined) return;
-    const age = Date.now() - lastRecordedAt;
-    const remaining = LOOK_AGAIN_AFTER_MS.filter((delay) => delay > age);
-    if (remaining.length === 0) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- starts a bounded series of timers
-    setUpdating(true);
-    const timers = remaining.map((delay, i) =>
-      setTimeout(() => {
-        void reload();
-        if (i === remaining.length - 1) setUpdating(false);
-      }, delay - age),
-    );
-    return () => {
-      timers.forEach(clearTimeout);
-      setUpdating(false);
-    };
-  }, [lastRecordedAt, reload]);
+export function BalancesTab({ groupId }: { groupId: string }) {
+  const { data: balances, error, reload } = useApi<Balance[]>(`/groups/${groupId}/balances`, { poll: true });
+  const { lastChangedAt } = useGroupChange(groupId);
+  const { updating } = useLookAgain(lastChangedAt, reload);
 
   if (error && !balances) return <ErrorBanner error={error} />;
   if (!balances) return <p className="loading-state">Loading…</p>;

@@ -67,6 +67,20 @@ public class GroupRequests {
 			.content(json.writeValueAsString(Map.of("identifier", identifier))));
 	}
 
+	/** Invites with an explicit role ({@code ADMIN} or {@code MEMBER}). */
+	public ResultActions createInvitation(UUID group, AccountFixture caller, String identifier, String role)
+			throws Exception {
+		return mvc.perform(post("/groups/" + group + "/invitations").header(USER_HEADER, caller.bearer())
+			.contentType(APPLICATION_JSON)
+			.content(json.writeValueAsString(Map.of("identifier", identifier, "role", role))));
+	}
+
+	/** Makes {@code user} an admin of the group, as {@code caller}. */
+	public ResultActions promote(UUID group, AccountFixture caller, AccountFixture user) throws Exception {
+		return mvc.perform(post("/groups/" + group + "/members/" + user.userId().value() + "/promote")
+			.header(USER_HEADER, caller.bearer()));
+	}
+
 	/**
 	 * Invites {@code invitee} by username (expects 201) and returns the invitation id.
 	 */

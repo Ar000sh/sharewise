@@ -13,8 +13,9 @@ src/
   api/schema.d.ts      GENERATED from docs/api/openapi.yaml (npm run gen:api); never edited by hand
 e2e/                   Playwright specs (*.spec.ts)
 ```
+
 - Components: `PascalCase.tsx`, one exported component per file, named like the file. Hooks: `useThing.ts`. Plain modules: `camelCase.ts`.
-- Route handlers mirror the backend path (`/api/groups/{groupId}/expenses` → `src/app/api/groups/[groupId]/expenses/route.ts`), each starts with `await connection()` and forwards through `proxyToBackend`. One exception: an *aggregating* handler that has no single backend endpoint (`/api/inbox` asks `/invitations` and `/notifications` and merges the answers, so the bell needs one call) is named after what it serves, still calls the backend only through `proxyToBackend`, and passes a 401 on unchanged.
+- Route handlers mirror the backend path (`/api/groups/{groupId}/expenses` → `src/app/api/groups/[groupId]/expenses/route.ts`), each starts with `await connection()` and forwards through `proxyToBackend`. One exception: an _aggregating_ handler that has no single backend endpoint (`/api/inbox` asks `/invitations`, `/notifications` and `/me/settlement-payments` and merges the answers, so the bell needs one call) is named after what it serves, still calls the backend only through `proxyToBackend`, and passes a 401 on unchanged.
 
 ## 2. API access and types
 
@@ -38,36 +39,36 @@ Amounts in the API are decimal strings (`"900.00"`). All parsing, formatting and
 - An HTTP error with a non-JSON body still becomes `ApiError` with its HTTP status; do not display a raw HTML error
   page. An unreadable success response is an unconfirmed action: explain that the user should refresh to check the
   result. A failed identity load shows a retry action instead of protected content without a known account.
-- A `401` anywhere sends the visitor to `/login?next=<path>`; `next` and `returnTo` are only ever used through `safeReturnTo` (`lib/session.ts`).
-- Balances are eventually consistent: after recording an expense the balances view re-fetches and re-checks for a short, bounded time. Never assume the new balance is there immediately.
+- A `401` anywhere sends the visitor to `/login?next=<path>`, in one place: `api()` (`lib/api.ts`), which still throws, so no caller handles a 401 on its own. `next` and `returnTo` are only ever read through `safeReturnTo` (`lib/session.ts`).
+- Balances are eventually consistent: after an own write (an expense, a payment, a waiver) the open tab re-fetches and re-checks for a short, bounded time (`useLookAgain`), because the ledger books the change a moment after it was saved. Other members' changes arrive because the open group page asks again every 10 seconds and on window focus (`useApi(path, { poll: true })`). Never assume the new balance is there immediately.
 
 ## 5. Components
 
 - Client components say `"use client"` on the first line; keep server components (pages, layouts) free of state and effects.
-- State: local `useState`; server data through `useApi`. No global state library.
+- State: local `useState`; server data only through `useApi`, which is TanStack Query (`lib/useApi.ts`, client defaults in `lib/queryClient.ts`). No client state library. Component tests render inside `renderWithQueryClient` (`lib/renderWithQueryClient.tsx`).
 - Forms are controlled, labelled (`<label>` text is what Playwright and screen readers use), validate on submit, and disable the submit button while busy.
 - Styling with Tailwind utility classes; a layout must work at phone width.
 - Shared visual primitives live in `globals.css`: `panel`, `button-primary`, `button-secondary`, `field`, and `field-label`.
   Use semantic tokens (`surface`, `accent`, `accent-foreground`, `soft`, `muted`, `line`) for neutral surfaces, controls
   and hierarchy. They follow the light/dark setting alongside `background` and `foreground`. Use the Geist font already
   loaded by the layout, with consistent spacing and alignment. Reserve status colours for meaning.
-- **Colours and dark mode.** The page follows the browser's light or dark setting (`globals.css`: `--background` and `--foreground` switch in `prefers-color-scheme: dark`, and `color-scheme: light dark` lets form controls follow). Everything inside inherits the *foreground* colour, which is light in dark mode. So:
+- **Colours and dark mode.** The page follows the browser's light or dark setting (`globals.css`: `--background` and `--foreground` switch in `prefers-color-scheme: dark`, and `color-scheme: light dark` lets form controls follow). Everything inside inherits the _foreground_ colour, which is light in dark mode. So:
   - Use the theme tokens, never fixed black, white or grey: surfaces `bg-background` with `text-foreground`, strong buttons `bg-foreground text-background`, quiet text `text-foreground/70` (60 to 80), subtle fills `bg-foreground/10`, active underline `border-foreground`. Borders default to the text colour.
   - A fixed-palette background (`bg-red-600`, `bg-red-50`) always brings its own text colour in the same class string. A background without a text colour inherits the page's, which is unreadable on a light fill in dark mode (the inbox dropdown had `bg-white` and showed pale text on white).
   - A coloured text (`text-red-700`, `text-green-700`) needs a `dark:` counterpart (`dark:text-red-400`), unless it sits on its own fixed background.
   - New UI is looked at in **both** modes before it is called done (browser or OS setting; a Playwright run can use `colorScheme: "dark"`).
   - Checked by `src/lib/themeRules.test.ts`, which scans every component and page; it fails with the file and the offending class string.
-- Text in the UI is English, sentence case, and uses the glossary: "group", "expense", "paid by", "split equally between", "balance". Not "payer", "bill" or "user" for a group participant.
+- Text in the UI is English, sentence case, and uses the glossary (`docs/domain/Ubiquitous_Language.md`): "group", "expense", "paid by", "split equally between", "balance". Not "payer", "bill" or "user" for a group participant.
 - No `console.log`, no commented-out code, no `any` (use `unknown` and narrow), no `// @ts-ignore`.
 
 ## 6. Tests
 
-| Level | Tool | Rule |
-|---|---|---|
-| Unit (`lib/*`) | Vitest | pure functions: money, errors, `safeReturnTo`, session cookie |
-| Component | Vitest + Testing Library | one file per component; mock `@/lib/api`; query by role and label, not by class or test id; assert the message a user reads |
-| Route handler | Vitest (`@vitest-environment node`) | `fetch` mocked; assert target URL, method, forwarded headers and the cookie handling |
-| Journey | Playwright (`e2e/`) | fresh users per run (unique emails); no fixed sleeps; assertions retry |
+| Level          | Tool                                | Rule                                                                                                                        |
+| -------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Unit (`lib/*`) | Vitest                              | pure functions: money, errors, `safeReturnTo`, session cookie                                                               |
+| Component      | Vitest + Testing Library            | one file per component; mock `@/lib/api`; query by role and label, not by class or test id; assert the message a user reads |
+| Route handler  | Vitest (`@vitest-environment node`) | `fetch` mocked; assert target URL, method, forwarded headers and the cookie handling                                        |
+| Journey        | Playwright (`e2e/`)                 | fresh users per run (unique emails); no fixed sleeps; assertions retry                                                      |
 
 Test names are sentences about behaviour (`callbackWithAWrongStateSetsNoSessionCookie`). Run: `npm run lint && npm run typecheck && npm test && npm run build`, and `npm run e2e` with the backend running.
 

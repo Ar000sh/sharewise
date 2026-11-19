@@ -24,7 +24,7 @@ The code says *how*; comments say *why* and *which rule*. Language: English, ful
 
 - Reference the sources of a rule instead of restating them: requirement numbers `(R4)`, decision numbers `(D10)`, diagram decisions `(diagram 17.10)`.
 - No commented-out code, no banner comments, no `// getter`, no comment that repeats the name of what it documents.
-- `TODO` is allowed only as `TODO(Ex5): what and why`, and only for work that is already planned. Search for `TODO` before every release.
+- `TODO` is allowed only as `TODO(ExN): what and why` (`N` the exercise that does it), and only for work that is already planned. Search for `TODO` before every release.
 - Test comments: only the `// given // when // then` markers and the occasional `// why` for a surprising setup.
 
 ## 3. Errors
@@ -46,7 +46,8 @@ The code says *how*; comments say *why* and *which rule*. Language: English, ful
 |---|---|---|
 | `docs/api/openapi.yaml` | the HTTP contract | changed first, in its own commit |
 | `docs/conventions/*` | these rules | changed together with the code that breaks them |
-| `docs/2026-…-design.md`, `…-plan.md` | design decisions and plans for a piece of work | written before the work, not edited afterwards except to mark a decision changed |
+| `docs/specs/<date>-<topic>/` with `design.md` (always this name, also for a small change), `plan.md`, further designs as `<name>-design.md` | design decisions and the plan for one piece of work, one folder per feature | written before the work, not edited afterwards except to mark a decision changed |
+| `docs/notes/<date>-<topic>.md` | write-ups that belong to no single feature (money flow, handover, a decision, messaging) | written once; corrected when the code changes |
 | `RUNNING.md` | how a stranger starts, tests and demos the app | updated in the same commit as any change to setup or commands |
 | `docs/domain/ShareWise_Domain_Model.drawio` | the domain diagram shown to the professor | updated in the same change as a rename or new concept; a code name the diagram lacks is a defect in one of the two |
 
@@ -54,7 +55,7 @@ Write documents in English, with headings that can be linked to, tables for comp
 
 ## 6. Git
 
-- **Branches:** `main` is always green. Work happens on `feature/<what>`, `fix/<what>`, `refactor/<what>` or `chore/<what>` and is merged with `git merge --no-ff` and a merge commit `merge: <branch> (<one line>)`. No direct commits to `main` except documentation fixes.
+- **Branches:** `main` is always green. Work happens on `feature/<what>`, `fix/<what>`, `refactor/<what>` or `chore/<what>` and reaches `main` only by pull request: the CI pipeline (`.github/workflows/ci.yml`) must be green (required check `ci-passed`), and the merge method is "Create a merge commit" with the subject `merge: <branch> (<one line>)` (same history shape as `git merge --no-ff`). No direct pushes to `main`, not even documentation fixes and not for the repository owner (branch protection has no bypass). Why: the local gates only run on clones that enabled them; a required CI check cannot be skipped.
 - **Commit format:** `<type>(<scope>): <imperative subject, lowercase, no full stop, at most 72 characters>`.
   - Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `contract` (a change to `openapi.yaml`, always on its own).
   - Scopes: `account`, `group`, `expense`, `settlement`, `notification`, `shared`, `frontend`, `e2e`, `build`, `devsetup` (the `.claude/` and `.githooks/` setup).

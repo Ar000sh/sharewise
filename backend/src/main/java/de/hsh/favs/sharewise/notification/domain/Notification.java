@@ -37,7 +37,10 @@ public class Notification {
 	@Column(name = "actor_id", nullable = false)
 	private UUID actorId;
 
-	/** What the entry points at: the invitation, or the person who joined. */
+	/**
+	 * What the entry points at: the invitation, the person who joined, or the settlement
+	 * payment.
+	 */
 	@Column(nullable = false)
 	private UUID reference;
 
