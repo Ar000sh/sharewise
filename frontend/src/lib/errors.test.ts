@@ -24,8 +24,12 @@ describe("messageFor", () => {
     expect(messageFor(new ApiError(500, "SOMETHING_NEW", "Boom happened"))).toBe("Boom happened");
   });
 
-  it("fallsBackToGenericMessageWithoutDetail", () => {
-    expect(messageFor(new ApiError(500, "UNKNOWN"))).toBe("Something went wrong.");
+  it("explainsAServerFailureWhenNoProblemDetailIsAvailable", () => {
+    expect(messageFor(new ApiError(500, "UNKNOWN"))).toBe("The server could not complete this request. Please try again in a moment.");
+  });
+
+  it("explainsAnUnexpected404FromTheConfiguredBackend", () => {
+    expect(messageFor(new ApiError(404, "HTTP_ERROR"))).toContain("ShareWise backend");
   });
 
   it("showsAPlainTextMessageAsItIs", () => {

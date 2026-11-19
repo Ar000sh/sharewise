@@ -1,11 +1,13 @@
 # Running ShareWise (Ex4 slice)
 
+For the complete four-container lab setup, GitHub image publishing and SSH access, see [DEPLOYING.md](DEPLOYING.md).
+
 Sign up, create a group, invite friends, record an equal-split expense, see who owes what. Accounts and passwords
 belong to Keycloak (the identity provider); ShareWise never sees a password. The Next.js server keeps the tokens in an
 httpOnly cookie.
 
 ## Prerequisites
-- Java 21 (Maven is bundled as `./mvnw`)
+- Java 21 (Maven is bundled as `./mvnw`), or use the container backend below
 - Node.js 22+ and npm
 - Docker Desktop **running** (database, Keycloak, backend tests)
 - Once per clone, before the first commit: `git config core.hooksPath .githooks` (commit and push gates; see
@@ -31,7 +33,54 @@ npm run dev
 ```
 
 Open http://localhost:3000. You land on the sign-in page; **Create an account** opens Keycloak's registration page.
-If port 5432 is taken by another local Postgres, stop that one first (the compose file maps the fixed port).
+**Sign in** opens Keycloak's login page: use your existing ShareWise username or email and password. On success you
+return to ShareWise automatically. Cancelled or expired attempts show an explanation and keep your destination for retry.
+The interface follows the system light/dark setting, with a neutral palette, shared controls and responsive layouts.
+If another application uses 8080 or 5432, use the alternate-port setup below rather than pointing ShareWise at that
+application or stopping its database.
+
+### Alternate ports and a backend without a local JDK
+
+On this machine Apache occupies 8080 and another project's PostgreSQL occupies 5432. The working ShareWise ports are
+frontend **3000**, backend **8081**, database **5433**, and Keycloak **8180**.
+
+From the repository root in PowerShell:
+
+```powershell
+$env:SHAREWISE_DB_PORT = '5433'
+$env:SHAREWISE_BACKEND_PORT = '8081'
+docker compose --profile app up -d --build backend
+```
+
+The optional `app` profile builds the backend with Java 21 and the repository's Maven wrapper, starts its own database
+and Keycloak dependencies, and waits for database readiness. Existing volumes are kept. The image build skips backend
+integration tests; it does not replace `./mvnw verify` in the test stage. The frontend still runs on the host.
+
+From `frontend/` in another PowerShell terminal:
+
+```powershell
+$env:BACKEND_URL = 'http://localhost:8081'
+npm run dev
+```
+
+Alternatively set only `BACKEND_URL=http://localhost:8081` in your own `frontend/.env.local`. Keep `APP_URL` at
+`http://localhost:3000` and the Keycloak issuer at `http://localhost:8180/realms/sharewise`. The backend container
+validates that public issuer while fetching signing keys from Keycloak's internal Docker address.
+
+If an older project database volume was initialized without the `sharewise` database, inspect it first. Creating the
+missing database preserves existing databases; do not delete the volume to fix its name:
+
+```powershell
+docker compose exec -T db psql -U sharewise -d postgres -Atc "SELECT datname FROM pg_database WHERE NOT datistemplate;"
+# Only if sharewise is absent:
+docker compose exec -T db createdb -U sharewise sharewise
+# If the backend had already exited because the database was missing:
+docker compose --profile app restart backend
+```
+
+Check `http://localhost:8081/actuator/health` before using the frontend. A ShareWise health response is JSON with status
+`UP`; an Apache HTML 404 at 8080 means the URL points to the wrong application. Unexpected HTML API errors now produce
+an HTTP-specific explanation instead of the generic "Something went wrong."
 
 ### What the three Keycloak variables in `frontend/.env.example` are
 - `KEYCLOAK_ISSUER` the realm URL (`http://localhost:8180/realms/sharewise`). The browser, the Next.js server and the

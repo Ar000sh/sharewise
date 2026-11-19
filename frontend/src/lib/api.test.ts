@@ -37,4 +37,27 @@ describe("api", () => {
     expect(err).toBeInstanceOf(ApiError);
     expect(err).toMatchObject({ status: 0, code: "NETWORK_ERROR" });
   });
+
+  it("preservesTheHttpStatusWhenTheConfiguredBackendReturnsAnHtmlErrorPage", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("<html>Not found</html>", {
+      status: 404, headers: { "content-type": "text/html" },
+    }));
+
+    await expect(api("/groups", { method: "POST" })).rejects.toMatchObject({
+      status: 404, code: "HTTP_ERROR",
+    });
+  });
+
+  it("reportsAnUnconfirmedActionWhenASuccessfulResponseIsNotJson", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("<html>Wrong service</html>", { status: 200 }));
+
+    await expect(api("/groups", { method: "POST" })).rejects.toMatchObject({
+      status: 200, code: "INVALID_RESPONSE",
+    });
+  });
+
+  it("handlesANullErrorBodyWithoutThrowingATypeError", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("null", { status: 500 }));
+    await expect(api("/groups")).rejects.toMatchObject({ status: 500, code: "HTTP_ERROR" });
+  });
 });

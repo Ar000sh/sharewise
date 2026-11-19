@@ -20,6 +20,11 @@ function clientId(): string {
   return process.env.KEYCLOAK_CLIENT_ID ?? "sharewise-web";
 }
 
+/** Container-only address for server requests; browser redirects still use the public issuer. */
+function internalIssuer(): string {
+  return (process.env.KEYCLOAK_INTERNAL_ISSUER ?? issuer()).replace(/\/$/, "");
+}
+
 /** Public URL of this app, the one the browser sees. Redirects are built from it, never from the request's host. */
 export function appUrl(): string {
   return (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
@@ -70,7 +75,7 @@ export function authorizationUrl(opts: { state: string; challenge: string; regis
 }
 
 async function tokenRequest(params: Record<string, string>): Promise<Tokens> {
-  const res = await fetch(`${issuer()}/protocol/openid-connect/token`, {
+  const res = await fetch(`${internalIssuer()}/protocol/openid-connect/token`, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ client_id: clientId(), ...params }),
@@ -117,7 +122,7 @@ export function endSessionUrl(): string {
 /** True when Keycloak answers at all; used to show "sign-in unavailable" instead of a browser error page (F13). */
 export async function keycloakReachable(): Promise<boolean> {
   try {
-    const res = await fetch(`${issuer()}/.well-known/openid-configuration`, {
+    const res = await fetch(`${internalIssuer()}/.well-known/openid-configuration`, {
       cache: "no-store",
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });

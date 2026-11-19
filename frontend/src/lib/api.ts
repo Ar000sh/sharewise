@@ -21,10 +21,18 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   } catch {
     throw new ApiError(0, "NETWORK_ERROR", "Could not reach the server");
   }
-  if (!res.ok) {
-    const problem = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, problem.code ?? "UNKNOWN", problem.detail);
-  }
   if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    // An HTML error page (for example from a wrong backend URL) is still an HTTP failure, not a programming error.
+    throw new ApiError(res.status, res.ok ? "INVALID_RESPONSE" : "HTTP_ERROR");
+  }
+  if (!res.ok) {
+    const problem = body !== null && typeof body === "object" ? body as { code?: unknown; detail?: unknown } : {};
+    throw new ApiError(res.status, typeof problem.code === "string" ? problem.code : "HTTP_ERROR",
+      typeof problem.detail === "string" ? problem.detail : undefined);
+  }
+  return body as T;
 }

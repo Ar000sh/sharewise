@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { Icon } from "@/components/Icon";
 import { api } from "@/lib/api";
 
 type Invitation = components["schemas"]["Invitation"];
@@ -37,20 +38,23 @@ export function InviteForm({ groupId }: { groupId: string }) {
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-2">
-      <label className="flex flex-col gap-1 text-sm">
+    <form onSubmit={submit} className="flex flex-col gap-4">
+      <label className="field-label">
         Username or email
         <input
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
-          className="rounded border px-2 py-2"
+          className="field"
+          placeholder="Their username or email"
+          aria-describedby="invite-help"
           autoComplete="off"
         />
       </label>
-      <button type="submit" disabled={busy} className="self-start rounded border px-3 py-2 disabled:opacity-50">
-        Invite
+      <p id="invite-help" className="text-xs leading-relaxed text-muted">They need to have signed in to ShareWise once. Their invitation will appear in their inbox.</p>
+      <button type="submit" disabled={busy} className="button-primary">
+        <Icon name="plus" />Invite
       </button>
-      {invited && <p role="status">Invitation sent to @{invited}</p>}
+      {invited && <p role="status" className="rounded-xl bg-soft p-3 text-sm text-accent">Invitation sent to @{invited}</p>}
       <ErrorBanner error={error} />
     </form>
   );

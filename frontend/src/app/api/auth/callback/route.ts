@@ -20,16 +20,21 @@ export async function GET(req: Request) {
   const flow = readLoginFlow(req);
   const code = params.get("code");
 
-  // A missing cookie, a wrong state or an error from Keycloak all end the same way: no session, back to the login page.
-  if (!flow || !code || params.get("state") !== flow.state) {
-    return redirect("/login", [clearedLoginFlowCookie()]);
+  function retry(reason: "cancelled" | "expired"): Response {
+    const query = new URLSearchParams({ reason });
+    if (flow) query.set("next", flow.returnTo);
+    return redirect(`/login?${query}`, [clearedLoginFlowCookie()]);
   }
+
+  // Only a matching browser flow can be resumed; explanations never expose provider error details.
+  if (!flow || params.get("state") !== flow.state) return retry("expired");
+  if (params.get("error") || !code) return retry(params.get("error") === "access_denied" ? "cancelled" : "expired");
 
   let tokens;
   try {
     tokens = await exchangeCode(code, flow.verifier);
   } catch (err) {
-    if (err instanceof TokenRejectedError) return redirect("/login", [clearedLoginFlowCookie()]);
+    if (err instanceof TokenRejectedError) return retry("expired");
     return signInUnavailable();
   }
 

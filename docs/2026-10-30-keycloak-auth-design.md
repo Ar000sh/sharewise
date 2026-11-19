@@ -1,5 +1,13 @@
 # Keycloak authentication (replaces the built-in login)
 
+**Container deployment update 17.11.2026:** `KEYCLOAK_INTERNAL_ISSUER` optionally routes server-side
+token exchange, refresh and availability checks over Docker networking. Browser authorization/logout URLs
+and JWT issuer validation retain the public issuer. See `DEPLOYING.md` for the private lab topology.
+
+**UI update 08.11.2026:** the existing OIDC/PKCE flow is retained. The ShareWise sign-in page explains the Keycloak
+handoff, and cancelled/expired callbacks show a fixed explanation with the safe destination retained for retry.
+See `2026-11-08-frontend-experience-design.md` for the local interface work; realm settings and credentials are unchanged.
+
 **Date:** 30.10.26 · **Status:** implemented, in review · **Origin:** brainstorming with the user; the diagram variant is `work/proposals/ShareWise_Domain_Model_Account_External_IdP.drawio`
 
 Marked *(call)* = chosen by Claude without asking, can be overruled. Everything else was decided by the user.

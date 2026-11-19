@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { Icon } from "@/components/Icon";
 import { api } from "@/lib/api";
 import { centsToAmount, eurosToCents, formatEuro } from "@/lib/money";
 
@@ -79,29 +80,31 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3 rounded border p-3">
-      <label className="flex flex-col gap-1">
+    <form onSubmit={submit} className="panel flex flex-col gap-5 p-6">
+      <div><h2 className="font-semibold">Add an expense</h2><p className="mt-1 text-xs text-muted">Record who paid and how to share the cost.</p></div>
+      <label className="field-label">
         Title
-        <input className="rounded border px-2 py-2" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} />
+        <input className="field" placeholder="Dinner, groceries, a place to stay…" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} />
       </label>
       <div className="flex gap-3">
-        <label className="flex flex-1 flex-col gap-1">
+        <label className="field-label flex-1">
           Amount (€)
           <input
-            className="rounded border px-2 py-2"
+            className="field"
             inputMode="decimal"
+            placeholder="0,00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
           />
         </label>
-        <label className="flex flex-1 flex-col gap-1">
+        <label className="field-label flex-1">
           Date
-          <input type="date" className="rounded border px-2 py-2" value={date} onChange={(e) => setDate(e.target.value)} />
+          <input type="date" className="field" value={date} onChange={(e) => setDate(e.target.value)} required />
         </label>
       </div>
-      <label className="flex flex-col gap-1">
+      <label className="field-label">
         Paid by
-        <select className="rounded border px-2 py-2" value={paidBy} onChange={(e) => setPaidBy(e.target.value)}>
+        <select className="field" value={paidBy} onChange={(e) => setPaidBy(e.target.value)}>
           {members.map((m) => (
             <option key={m.userId} value={m.userId}>
               {m.displayName}
@@ -109,12 +112,13 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
           ))}
         </select>
       </label>
-      <fieldset className="flex flex-col gap-1">
-        <legend>Split equally between</legend>
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-3 text-sm font-medium">Split equally between</legend>
         {members.map((m) => (
-          <label key={m.userId} className="flex items-center gap-2">
+          <label key={m.userId} className="flex min-h-10 cursor-pointer items-center gap-3 rounded-lg bg-background px-3 py-2 text-sm">
             <input
               type="checkbox"
+              className="size-4 shrink-0"
               checked={!excluded.includes(m.userId)}
               onChange={() => toggle(m.userId)}
             />
@@ -123,18 +127,18 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
         ))}
       </fieldset>
       {shares.length > 0 && (
-        <ul aria-label="Shares" className="text-sm text-foreground/80">
+        <ul aria-label="Shares" className="flex flex-col gap-2 rounded-xl bg-soft p-4 text-sm text-foreground">
           {participants.map((m, i) => (
             <li key={m.userId} className="flex justify-between">
               <span>{m.displayName}</span>
-              <span>{formatEuro(shares[i])}</span>
+              <span className="font-medium tabular-nums">{formatEuro(shares[i])}</span>
             </li>
           ))}
         </ul>
       )}
       <ErrorBanner error={error} />
-      <button type="submit" disabled={busy} className="rounded bg-foreground px-3 py-2 text-background disabled:opacity-50">
-        Add expense
+      <button type="submit" disabled={busy} className="button-primary">
+        <Icon name="plus" />Add expense
       </button>
     </form>
   );

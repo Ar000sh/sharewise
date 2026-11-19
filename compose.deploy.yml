@@ -1,0 +1,67 @@
+# Lab deployment over SSH loopback forwarding, not a public HTTPS deployment.
+name: sharewise-lab
+services:
+  frontend:
+    mem_limit: 512m
+    image: ${FRONTEND_IMAGE:-sharewise-frontend:lab}
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3100:3000"
+    environment:
+      APP_URL: http://localhost:3100
+      BACKEND_URL: http://backend:8080
+      KEYCLOAK_ISSUER: http://localhost:8180/realms/sharewise
+      KEYCLOAK_INTERNAL_ISSUER: http://keycloak:8080/realms/sharewise
+      KEYCLOAK_CLIENT_ID: sharewise-web
+    depends_on:
+      backend:
+        condition: service_started
+      keycloak:
+        condition: service_started
+  backend:
+    mem_limit: 768m
+    image: ${BACKEND_IMAGE:-sharewise-backend:lab}
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/sharewise
+      SPRING_DATASOURCE_USERNAME: sharewise
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env.deploy.local}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8180/realms/sharewise
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/sharewise/protocol/openid-connect/certs
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    mem_limit: 256m
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sharewise
+      POSTGRES_USER: sharewise
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env.deploy.local}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U sharewise -d sharewise"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  keycloak:
+    mem_limit: 768m
+    image: quay.io/keycloak/keycloak:26.8.1
+    command: start-dev --import-realm
+    restart: unless-stopped
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env.deploy.local}
+      KC_HOSTNAME: http://localhost:8180
+    ports:
+      - "127.0.0.1:8180:8080"
+    volumes:
+      - identity:/opt/keycloak/data
+      - ./docker/keycloak:/opt/keycloak/data/import:ro
+volumes:
+  database:
+  identity:
