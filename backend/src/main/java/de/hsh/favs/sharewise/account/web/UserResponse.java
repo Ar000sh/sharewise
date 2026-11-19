@@ -3,7 +3,7 @@ package de.hsh.favs.sharewise.account.web;
 import de.hsh.favs.sharewise.account.api.UserProfile;
 import java.util.UUID;
 
-/** Response of {@code GET /me}. */
+/** Response of {@code GET /me} and {@code PATCH /me}. */
 record UserResponse(UUID userId, String displayName, String username) {
 
 	static UserResponse of(UserProfile profile) {

@@ -8,7 +8,15 @@ type User = components["schemas"]["User"];
 
 const PUBLIC_PATHS = ["/login"];
 
-const CurrentUserContext = createContext<User | undefined>(undefined);
+interface CurrentUserContextValue {
+  user: User | undefined;
+  setUser: (user: User) => void;
+}
+
+const CurrentUserContext = createContext<CurrentUserContextValue>({
+  user: undefined,
+  setUser: () => {},
+});
 
 /**
  * Asks the server once "who am I" (the session cookie is httpOnly, so the page cannot read it) and shares the answer
@@ -25,10 +33,15 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
       .catch(() => {});
   }, []);
 
-  return <CurrentUserContext value={user}>{children}</CurrentUserContext>;
+  return <CurrentUserContext value={{ user, setUser }}>{children}</CurrentUserContext>;
 }
 
 /** The signed-in user, or undefined while the answer is on its way (or on the sign-in pages). */
 export function useCurrentUser(): User | undefined {
-  return useContext(CurrentUserContext);
+  return useContext(CurrentUserContext).user;
+}
+
+/** Updates the cached current user after a profile change (e.g. PATCH /me). */
+export function useUpdateCurrentUser(): (user: User) => void {
+  return useContext(CurrentUserContext).setUser;
 }

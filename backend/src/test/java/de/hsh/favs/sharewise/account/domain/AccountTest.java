@@ -30,4 +30,22 @@ class AccountTest {
 		assertThat(account.registeredAt()).isEqualTo(NOW);
 	}
 
+	@Test
+	void changeDisplayNameReplacesTheDisplayNameAndLeavesEverythingElseUnchanged() {
+		// given
+		UserId subject = new UserId(UUID.fromString("0f8fad5b-d9cb-469f-a165-70867728950e"));
+		Account account = Account.registerFromIdentityProvider(subject, new Email("alice@example.com"),
+				new Username("alice"), new DisplayName("Alice"), NOW);
+
+		// when
+		account.changeDisplayName(new DisplayName("  Alice M.  "));
+
+		// then
+		assertThat(account.displayName()).isEqualTo(new DisplayName("Alice M."));
+		assertThat(account.userId()).isEqualTo(subject);
+		assertThat(account.email()).isEqualTo(new Email("alice@example.com"));
+		assertThat(account.username()).isEqualTo(new Username("alice"));
+		assertThat(account.status()).isEqualTo(AccountStatus.ACTIVE);
+	}
+
 }

@@ -199,6 +199,25 @@ public class GroupService {
 	}
 
 	/**
+	 * Persists the EXPIRED status on every stored PENDING invitation whose 7-day validity
+	 * has passed (R9). Each affected group is locked so a concurrent accept or decline is
+	 * serialized cleanly.
+	 * @return how many invitations changed from PENDING to EXPIRED
+	 */
+	@Transactional
+	public int expirePendingInvitations() {
+		Instant now = clock.instant();
+		int expired = 0;
+		for (UUID groupId : groups.findIdsWithExpiredPendingInvitations(now)) {
+			Group group = groups.findByIdForUpdate(groupId).orElse(null);
+			if (group != null) {
+				expired += group.expirePendingInvitations(now);
+			}
+		}
+		return expired;
+	}
+
+	/**
 	 * The caller's open invitations, newest first. A read use case: one query that
 	 * returns plain rows, so no group is loaded and no lazy collection is touched.
 	 */

@@ -62,6 +62,15 @@ public class Account {
 		return account;
 	}
 
+	/**
+	 * Changes the name other people see for this account. The new name is already
+	 * validated by {@link DisplayName} and stays owned by ShareWise (D10, C2). Produces
+	 * no event (the diagram draws none for the Account context).
+	 */
+	public void changeDisplayName(DisplayName newDisplayName) {
+		this.displayName = newDisplayName.value();
+	}
+
 	public UserId userId() {
 		return new UserId(id);
 	}

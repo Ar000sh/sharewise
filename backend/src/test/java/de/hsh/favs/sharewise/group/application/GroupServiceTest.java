@@ -332,4 +332,35 @@ class GroupServiceTest {
 		});
 	}
 
+	@Test
+	void expirePendingInvitationsLocksAffectedGroupsAndFlipsExpiredOnes() {
+		// given
+		Group group = new GroupFixture().withCreator(alice).build();
+		Instant eightDaysAgo = MutableClock.START.minus(Duration.ofDays(8));
+		var invitation = group.inviteMember(bob, alice, GroupRole.MEMBER, eightDaysAgo).invitation();
+		when(groups.findIdsWithExpiredPendingInvitations(MutableClock.START))
+			.thenReturn(List.of(group.groupId().value()));
+		when(groups.findByIdForUpdate(group.groupId().value())).thenReturn(Optional.of(group));
+
+		// when
+		int expired = service.expirePendingInvitations();
+
+		// then
+		assertThat(expired).isEqualTo(1);
+		assertThat(invitation.status()).isEqualTo(de.hsh.favs.sharewise.group.domain.InvitationStatus.EXPIRED);
+	}
+
+	@Test
+	void expirePendingInvitationsDoesNothingWhenNoneAreExpired() {
+		// given
+		when(groups.findIdsWithExpiredPendingInvitations(MutableClock.START)).thenReturn(List.of());
+
+		// when
+		int expired = service.expirePendingInvitations();
+
+		// then
+		assertThat(expired).isZero();
+		verify(groups, never()).findByIdForUpdate(any());
+	}
+
 }
