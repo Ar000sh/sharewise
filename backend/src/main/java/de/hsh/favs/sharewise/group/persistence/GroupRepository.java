@@ -40,6 +40,12 @@ public interface GroupRepository extends JpaRepository<Group, UUID> {
 			order by i.createdAt desc, i.id desc""")
 	List<PendingInvitationRow> findPendingInvitationsFor(@Param("userId") UUID userId, @Param("now") Instant now);
 
+	@Query("""
+			select distinct g.id from Group g join g.invitations i
+			where i.status = de.hsh.favs.sharewise.group.domain.InvitationStatus.PENDING
+			and i.expiresAt < :now""")
+	List<UUID> findIdsWithExpiredPendingInvitations(@Param("now") Instant now);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select g from Group g where g.id = :id")
 	Optional<Group> findByIdForUpdate(@Param("id") UUID id);

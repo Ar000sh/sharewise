@@ -18,7 +18,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Change the current user's display name */
+        patch: operations["changeDisplayName"];
         trace?: never;
     };
     "/groups": {
@@ -390,6 +391,9 @@ export interface components {
             displayName: string;
             /** @description Lower case, 3 to 30 characters of a-z 0-9 . _ -, chosen at sign-up. */
             username: string;
+        };
+        ChangeDisplayNameRequest: {
+            displayName: string;
         };
         UserSummary: {
             /** Format: uuid */
@@ -862,6 +866,44 @@ export interface operations {
                     "application/json": components["schemas"]["User"];
                 };
             };
+            401: components["responses"]["Unauthenticated"];
+        };
+    };
+    changeDisplayName: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "displayName": "Alice M."
+                 *     }
+                 */
+                "application/json": components["schemas"]["ChangeDisplayNameRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "userId": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *       "displayName": "Alice M.",
+                     *       "username": "alice"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthenticated"];
         };
     };

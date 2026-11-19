@@ -1,6 +1,7 @@
 package de.hsh.favs.sharewise.account.web;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -80,6 +82,64 @@ class AccountControllerTest {
 	@Test
 	void actuatorNeedsNoCredentials() throws Exception {
 		mvc.perform(get("/actuator/health")).andExpect(status().isOk());
+	}
+
+	@Test
+	void patchMeChangesTheDisplayNameAndPersistsIt() throws Exception {
+		// given
+		AccountFixture lena = AccountFixture.signUp(mvc, json, "Lena");
+
+		// when
+		mvc.perform(
+				patch("/me").header("Authorization", lena.bearer()).contentType(MediaType.APPLICATION_JSON).content("""
+						{"displayName": "  Lena M.  "}"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.userId").value(lena.idString()))
+			.andExpect(jsonPath("$.displayName").value("Lena M."))
+			.andExpect(jsonPath("$.username").value(lena.username()));
+
+		// then: subsequent GET /me keeps the changed name (never overwritten by token)
+		mvc.perform(get("/me").header("Authorization", lena.bearer()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.displayName").value("Lena M."));
+	}
+
+	@Test
+	void patchMeWithBlankDisplayNameIs400BadRequest() throws Exception {
+		// given
+		AccountFixture nina = AccountFixture.signUp(mvc, json, "Nina");
+
+		// when / then
+		mvc.perform(
+				patch("/me").header("Authorization", nina.bearer()).contentType(MediaType.APPLICATION_JSON).content("""
+						{"displayName": "   "}"""))
+			.andExpect(status().isBadRequest())
+			.andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+	}
+
+	@Test
+	void patchMeWithTooLongDisplayNameIs400BadRequest() throws Exception {
+		// given
+		AccountFixture paul = AccountFixture.signUp(mvc, json, "Paul");
+		String tooLong = "a".repeat(101);
+
+		// when / then
+		mvc.perform(patch("/me").header("Authorization", paul.bearer())
+			.contentType(MediaType.APPLICATION_JSON)
+			.content("{\"displayName\": \"" + tooLong + "\"}"))
+			.andExpect(status().isBadRequest())
+			.andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+	}
+
+	@Test
+	void patchMeWithoutATokenIs401Unauthenticated() throws Exception {
+		mvc.perform(patch("/me").contentType(MediaType.APPLICATION_JSON).content("""
+				{"displayName": "Alice"}"""))
+			.andExpect(status().isUnauthorized())
+			.andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+			.andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
 	}
 
 }
