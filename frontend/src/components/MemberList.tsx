@@ -34,6 +34,7 @@ export function MemberList({ members, currentUserId, promote }: Props) {
   }
 
   return (
+    <>
     <ul className="divide-y divide-line">
       {members.map((m) => (
         <li key={m.userId} className="flex items-center justify-between gap-3 px-6 py-5">
@@ -62,5 +63,6 @@ export function MemberList({ members, currentUserId, promote }: Props) {
     <div>
       <ErrorBanner error={error} />
     </div>
+    </>
   );
 }
