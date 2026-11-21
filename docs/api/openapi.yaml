@@ -1357,7 +1357,7 @@ components:
 
     NotificationType:
       type: string
-      enum: [GROUP_CLOSED, GROUP_REOPENED, MEMBER_JOINED, INVITATION_DECLINED, MEMBER_PROMOTED, PAYMENT_CONFIRMED, PAYMENT_REJECTED, DEBT_WAIVED, EXPENSE_RECORDED]
+      enum: [EXPENSE_CORRECTED, GROUP_CLOSED, GROUP_REOPENED, MEMBER_JOINED, INVITATION_DECLINED, MEMBER_PROMOTED, PAYMENT_CONFIRMED, PAYMENT_REJECTED, DEBT_WAIVED, EXPENSE_RECORDED]
       description: >
         PAYMENT_CONFIRMED and PAYMENT_REJECTED tell the payer how the creditor answered; DEBT_WAIVED tells the
         debtor that the creditor forgave part of the debt. The actor is the creditor and the reference is the
