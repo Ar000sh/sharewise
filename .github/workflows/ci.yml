@@ -90,6 +90,7 @@ jobs:
           load: true
           push: false
           tags: ${{ env.BACKEND_IMAGE }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
           cache-from: type=gha,scope=backend
           cache-to: type=gha,scope=backend,mode=max
       - name: Save the image for the next jobs
@@ -116,6 +117,7 @@ jobs:
           load: true
           push: false
           tags: ${{ env.FRONTEND_IMAGE }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,scope=frontend,mode=max
       - name: Save the image for the next jobs
@@ -190,9 +192,10 @@ jobs:
     permissions:
       contents: read
       packages: write
-    env:
-      REGISTRY: ghcr.io/ar000sh
     steps:
+      - name: Choose the repository owner's registry namespace
+        shell: bash
+        run: echo "REGISTRY=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@v4
         with:
           pattern: image-*

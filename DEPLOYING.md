@@ -75,6 +75,13 @@ are not ShareWise images.
 
 ## GitHub CI and container registry
 
+The separate `CI` workflow in `ci.yml` publishes its E2E-tested images under
+`ghcr.io/<repository-owner>/sharewise-backend` and `sharewise-frontend`.
+Its namespace and image source labels follow the repository running the workflow;
+a fork must not attempt publication into the upstream owner's namespace.
+The VM deployment workflow selects the images published by `containers.yml`
+described below, which use a different repository-prefixed naming convention.
+
 `.github/workflows/containers.yml` runs on pushes and pull requests, and supports
 manual runs. It runs frontend lint, type checking, unit tests and contract lint,
 plus backend Maven `verify` with real PostgreSQL/Keycloak Testcontainers. Only
