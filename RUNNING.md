@@ -149,6 +149,10 @@ cookie is per browser.
 
 ## Tests
 
+The CI E2E job enables the Compose `app` profile so the optional backend starts.
+Its host-networked backend uses published localhost ports for PostgreSQL and
+Keycloak; the base development configuration uses Docker service names instead.
+
 ```sh
 cd backend  && ./mvnw verify                                             # needs Docker (Postgres and Keycloak containers)
 cd frontend && npm run lint && npm run typecheck && npm test && npm run build
