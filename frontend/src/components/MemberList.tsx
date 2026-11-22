@@ -71,5 +71,6 @@ export function MemberList({ members, currentUserId, promote }: Props) {
       </ul>
       <ErrorBanner error={error} />
     </div>
+    </>
   );
 }
