@@ -1,6 +1,7 @@
 package de.hsh.favs.sharewise.expense.domain;
 
 import de.hsh.favs.sharewise.expense.api.ExpenseId;
+import de.hsh.favs.sharewise.expense.api.ExpenseCorrected;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import de.hsh.favs.sharewise.expense.api.ExpenseShare;
 import de.hsh.favs.sharewise.group.api.GroupMembershipView;
@@ -84,6 +85,47 @@ public class Expense {
 	@CollectionTable(name = "expense_shares", joinColumns = @JoinColumn(name = "expense_id"))
 	@OrderColumn(name = "position")
 	private List<StoredShare> shares;
+
+	@Column(name = "reversal_id")
+	private UUID reversalId;
+
+	@Column(name = "corrected_from")
+	private UUID correctedFrom;
+
+	public UUID reversalId() {
+		return reversalId;
+	}
+
+	public UUID correctedFrom() {
+		return correctedFrom;
+	}
+
+	public record Correction(Expense replacement, ExpenseCorrected reversal) {
+	}
+
+	/**
+	 * Corrects title/amount with unchanged payer and participants; old values and all
+	 * payments remain (R5-R7).
+	 */
+	public Correction correct(GroupMembershipView view, UserId caller, ExpenseTitle title, Money amount, Instant now) {
+		if (!view.isOpen())
+			throw new DomainException(ErrorCode.GROUP_NOT_OPEN, "An admin must reopen this group first.");
+		if (status != ExpenseStatus.ACTIVE
+				|| !(caller.equals(recordedBy()) || caller.equals(paidBy()) || view.isAdmin(caller)))
+			throw new DomainException(ErrorCode.EXPENSE_NOT_EDITABLE,
+					"Only the recorder, payer or an admin may correct an active expense.");
+		if (splitStrategy != SplitStrategy.EQUAL)
+			throw new DomainException(ErrorCode.SPLIT_NOT_SUPPORTED, "Only equal splits can be corrected.");
+		var newShares = EqualSplit.split(amount, shares().stream().map(s -> s.participantId()).toList());
+		var replacement = record(view, title, paidBy(), recordedBy(), amount, date, newShares, splitStrategy, now);
+		UUID reference = UUID.randomUUID();
+		var reversal = new ExpenseCorrected(reference, groupId(), paidBy(), totalAmount(), shares(), caller,
+				replacement.event(), now);
+		replacement.expense().correctedFrom = id;
+		status = ExpenseStatus.CORRECTED;
+		reversalId = reference;
+		return new Correction(replacement.expense(), reversal);
+	}
 
 	protected Expense() {
 	}

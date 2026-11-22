@@ -25,6 +25,14 @@ class GroupMembershipImpl implements GroupMembership {
 	}
 
 	@Override
+	@Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+	public void lockOpen(GroupId group) {
+		groups.findByIdForUpdate(group.value())
+			.orElseThrow(() -> new DomainException(ErrorCode.GROUP_NOT_FOUND, "Group not found"))
+			.requireOpen();
+	}
+
+	@Override
 	public boolean exists(GroupId group) {
 		return groups.existsById(group.value());
 	}

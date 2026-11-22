@@ -1,6 +1,7 @@
 package de.hsh.favs.sharewise.settlement.application;
 
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.expense.api.ExpenseCorrected;
 import de.hsh.favs.sharewise.settlement.api.DebtWaived;
 import de.hsh.favs.sharewise.settlement.api.SettlementPaymentConfirmed;
 import de.hsh.favs.sharewise.settlement.domain.GroupLedger;
@@ -43,10 +44,18 @@ public class GroupLedgerService {
 	}
 
 	/**
-	 * Books an expense in its group's ledger, creating the ledger on the first event.
-	 * Applying the same event twice books it once: the event may be delivered more than
-	 * once.
+	 * Books the reversal and replacement together, once, regardless of event arrival
+	 * order.
 	 */
+	@Transactional
+	public void bookCorrection(ExpenseCorrected event) {
+		book(event.groupId(), event.reversalId(), (ledger, now) -> {
+			ledger.appendCorrectionReversal(event, now);
+			ledger.appendExpenseEntry(event.replacement(), now);
+		});
+	}
+
+	/** Books an expense once, creating the ledger on its first event. */
 	@Transactional
 	public void bookExpense(ExpenseRecorded expense) {
 		book(expense.groupId(), expense.expenseId().value(), (ledger, now) -> ledger.appendExpenseEntry(expense, now));

@@ -26,6 +26,16 @@ class NotificationListener {
 	}
 
 	@ApplicationModuleListener
+	void on(de.hsh.favs.sharewise.group.api.GroupLifecycleChanged event) {
+		notifications.recordGroupLifecycle(event);
+	}
+
+	@ApplicationModuleListener
+	void on(de.hsh.favs.sharewise.expense.api.ExpenseCorrected event) {
+		notifications.recordExpenseCorrected(event);
+	}
+
+	@ApplicationModuleListener
 	void on(MemberJoined event) {
 		notifications.recordMemberJoined(event);
 	}

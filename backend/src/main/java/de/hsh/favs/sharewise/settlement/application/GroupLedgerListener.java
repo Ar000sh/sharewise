@@ -22,6 +22,11 @@ class GroupLedgerListener {
 	}
 
 	@ApplicationModuleListener
+	void on(de.hsh.favs.sharewise.expense.api.ExpenseCorrected event) {
+		ledgers.bookCorrection(event);
+	}
+
+	@ApplicationModuleListener
 	void on(ExpenseRecorded event) {
 		ledgers.bookExpense(event);
 	}

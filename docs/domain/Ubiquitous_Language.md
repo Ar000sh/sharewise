@@ -47,13 +47,13 @@ Same technique as slide 33's "policy" → "regulatory provision" / "insurance co
 | Word heard in discussion | Problem | 🟢 Resolution: use these terms |
 |---|---|---|
 | **"user"** | One word for 4 different roles (slide 40) | **User** (Identity) · **Member** (Group) · **Payer / Participant** (Expense) · **Debtor / Creditor** (Settlement) |
-| **"settlement"** | Three meanings: the phase, the plan, a single payment | **Settlement phase** = group status CLOSED_FOR_SETTLEMENT · **Settlement plan** = the list of suggested transfers · **Settlement payment** = one recorded transfer. Never just "settlement" alone |
+| **"settlement"** | Three meanings: the phase, the plan, a single payment | No separate settlement lifecycle phase (revision 21.11.26). **Settlement plan** = the list of suggested transfers · **Settlement payment** = one recorded transfer. Never just "settlement" alone |
 | **"payment"** | A settlement payment or the payer's original outlay | **Settlement payment** (recorded, between members; the money itself moves outside the app) · **Payer** paid an **expense** |
 | **"balance" vs "debt"** (both on slide 36) | Used as synonyms in everyday speech | **Balance** = a member's *net* position in a group (signed: + is owed, − owes). **Debt** = one directed amount *from one debtor to one creditor* in the settlement plan. Alice has a balance of +371; David has a debt of €371 to Alice |
 | **"share"** vs **"participant"** (slides 68 vs 64) | Slide 68: ExpenseShare VO. Slide 64: ExpenseParticipant entity | **Participant** = a member taking part in one expense. **Share** = the amount a participant owes for that expense. (Whether this becomes a VO or an entity is decided in Ex3.) |
 | **"edit" / "change" / "update" an expense** | Hides that the old version is kept | **Correct** (keeps history, status CORRECTED). We never say "edit" or "update" |
 | **"delete"** | Suggests the data is gone | **Remove** an expense (soft, status REMOVED). **Remove** a member (by an admin). **Leave** (by the member themselves) |
-| **"close"** vs **"archive"** | Often used as synonyms | **Close for settlement** = freeze expenses, settlements only, can be reopened. **Archive** = final and read-only, only at all balances 0 |
+| **"close"** vs **"archive"** | Often used as synonyms | **Close group** = admin closure at zero balances. **Archive** = immutable snapshot automatically created on each closure. **Reopen** = admin enables corrections with a reason. |
 | **"owner" / "creator" / "admin"** | Synonyms? | **Admin** = a role with rights to close, reopen, remove members and promote. The **creator** is simply the first admin; "owner" is not used |
 | **"group"** | Means different things per context | Group context: the group with members, roles and lifecycle. Expense / Settlement: only a **GroupId** that scopes expenses and balances |
 | **"invite"** | Action vs object | **Invite** (verb, by a member) creates an **Invitation** (object with status PENDING / ACCEPTED / DECLINED / EXPIRED) |
@@ -76,7 +76,7 @@ Same technique as slide 33's "policy" → "regulatory provision" / "insurance co
 | **Leave** | A member ends their own membership; only at balance 0 | Bob leaves on day 5 after paying €202 |
 | **Remove member** | An admin ends someone else's membership; only at balance 0 | – |
 | **Promote** | An admin gives the admin role to another member | Required before the last admin leaves |
-| **Group status** | OPEN → CLOSED_FOR_SETTLEMENT → ARCHIVED | – |
+| **Group status** | OPEN ↔ CLOSED; each closure creates an immutable archive version | – |
 | **Open** | Status in which expenses can be recorded, corrected and removed | Days 0–5 |
 | **Close for settlement** | Admin freezes the group: no new or corrected expenses, only settlement payments. Balances need not be 0 | Alice on day 6 |
 | **Reopen** | Admin returns a closed group to OPEN | (would be needed for Carol's taxi) |
@@ -159,7 +159,7 @@ Written the way slide 34 asks for (domain language), checked against slide 69.
 | The last admin cannot leave while other members remain. | `count(role='ADMIN') > 1` |
 | Only an admin can close a group for settlement, reopen it, or archive it. | role check in the controller |
 | Once a group is closed, only settlement payments may be recorded. | – |
-| A group is archived as soon as all balances are 0; an archived group can never change again. | – |
+| An admin closes at zero balances, creating an immutable archive. An admin may reopen the group; earlier archives never change. | – |
 | The sum of all balances in a group is always 0. | – |
 | The settlement plan never changes anyone's balance; it only decides who pays whom. | – |
 | A settlement payment counts only after the creditor has confirmed it. | `status = 'CONFIRMED'` filter |
@@ -175,12 +175,12 @@ Written the way slide 34 asks for (domain language), checked against slide 69.
 | Group | `createGroup()` | `insertGroup()` | GroupCreated |
 | Group | `inviteMember()`, `acceptInvitation()`, `declineInvitation()` | `addRow()` | MemberInvited, MemberJoined, InvitationDeclined |
 | Group | `leaveGroup()`, `removeMember()`, `promoteToAdmin()` | `deleteUser()`, `setRole()` | MemberLeft, MemberRemoved, MemberPromoted |
-| Group | **`closeGroupForSettlement()`** (slide 35), `reopenGroup()`, **`archiveGroup()`** (slide 35) | **`updateStatus()`** (slide 35) | GroupClosedForSettlement, GroupReopened, GroupArchived |
+| Group | `closeGroup()`, `reopenGroup()` (user-approved lifecycle revision 21.11.26) | **`updateStatus()`** (slide 35) | GroupLifecycleChanged |
 | Expense | `recordExpense()`, `correctExpense()`, `removeExpense()` | `saveExpense()`, `update()`, `delete()` | ExpenseRecorded, ExpenseCorrected, ExpenseRemoved |
 | Settlement | **`calculateFinalBalances()`** (slide 35), `suggestSettlementPlan()` | **`calculate()`** (slide 35), `processData()` | – (query) |
 | Settlement | **`recordSettlementPayment()`** (slide 35), `confirmSettlementPayment()`, `rejectSettlementPayment()` | **`handlePayment()`** (slide 35) | SettlementPaymentRecorded, …Confirmed, …Rejected, AllBalancesSettled |
 
-(note:) Slide 35 spells it `archieveGroup()`, which is a typo. Use `archiveGroup()`.
+(note:) The revised model creates the archive inside `closeGroup()`; it has no separate archive command.
 
 ---
 
@@ -189,3 +189,7 @@ Written the way slide 34 asks for (domain language), checked against slide 69.
 - [ ] **Is the payer automatically a participant?** Currently no (the payer may be excluded).
 - [ ] **"Settled" vs "Archived":** is "settled" a status of the group or only of a member? Currently a member property only.
 - [ ] Do we keep **"Recorder"** as its own term, or just say "the member who recorded it"?
+
+## Lifecycle vocabulary revision — 21 November 2026
+
+This revision supersedes earlier close-for-settlement/irreversible-archive descriptions above. **Close group** means an admin finalizes a fully settled group and automatically creates an archive version. **Reopen group** means an admin permits corrections, with a reason. **Archive** is an immutable closure snapshot, not a group state. **Settlement payment** remains a repayment recorded while OPEN. **GroupArchive** and **GroupLifecycleEntry** are children of Group. See the revised requirements L1–L6 and lifecycle design.

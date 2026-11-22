@@ -24,7 +24,9 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (!res.ok && res.status === 401) {
     const { pathname, search } = window.location;
-    window.location.replace(`/login?next=${encodeURIComponent(pathname + search)}`);
+    window.location.replace(
+      `/login?next=${encodeURIComponent(pathname + search)}`,
+    );
   }
   if (res.status === 204) return undefined as T;
   let body: unknown;

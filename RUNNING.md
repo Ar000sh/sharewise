@@ -149,6 +149,10 @@ cookie is per browser.
 
 ## Tests
 
+The CI E2E job enables the Compose `app` profile so the optional backend starts.
+Its host-networked backend uses published localhost ports for PostgreSQL and
+Keycloak; the base development configuration uses Docker service names instead.
+
 ```sh
 cd backend  && ./mvnw verify                                             # needs Docker (Postgres and Keycloak containers)
 cd frontend && npm run lint && npm run typecheck && npm test && npm run build
@@ -235,3 +239,11 @@ volumes.
 - `docs/notes/2026-11-04-money-flow.md` how expenses, balances, the plan and settlement payments work (with diagrams); `docs/specs/2026-11-02-settlements/design.md` is the first design, `docs/specs/2026-11-02-settlements/inbox-design.md` what changed
 - `docs/diagram-deltas.md` where the code differs from the domain diagram, and why
 - `backend/src/main/java/de/hsh/favs/sharewise/{account,group,expense,settlement,shared}` the modules
+
+## Group closure and archive versions
+
+In an open group, settle every balance and answer pending payments. An admin can then choose **Close group**, review the warning and confirm. The server may ask you to retry while ledger updates finish. **Archives** shows each immutable version.
+
+For a correction, an admin chooses **Reopen for corrections** and enters a reason. Use **Correct expense** to replace an equal-split title/amount; payer and participants stay unchanged, and original records and confirmed payments remain. Settle any resulting debt, then close again for the next archive version. Ordinary members cannot close or reopen.
+
+The V207 migration refuses unexpected old CLOSED_FOR_SETTLEMENT/ARCHIVED rows instead of silently reopening them. Review any manually populated legacy states before applying it. Fresh and previously OPEN-only databases migrate automatically.

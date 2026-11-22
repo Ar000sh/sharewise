@@ -1,6 +1,13 @@
 import { ApiError } from "@/lib/api";
 
 const MESSAGES: Record<string, string> = {
+  LIFECYCLE_CONFLICT: "The group changed. Review its current status and try again.",
+  BALANCES_NOT_ZERO: "Every balance must be zero before closing the group.",
+  PAYMENTS_PENDING: "Answer all pending payments before closing.",
+  FINANCIAL_PROCESSING_PENDING: "Financial updates are still processing. Please try again shortly.",
+  EXPENSE_NOT_FOUND: "This expense does not exist.",
+  EXPENSE_NOT_EDITABLE: "This expense was already corrected, or you do not have permission to correct it.",
+  ARCHIVE_NOT_FOUND: "This archive does not exist.",
   UNAUTHENTICATED: "You are not signed in. Please sign in.",
   NOT_A_MEMBER: "You are not a member of this group.",
   GROUP_NOT_FOUND: "This group does not exist.",
@@ -18,7 +25,7 @@ const MESSAGES: Record<string, string> = {
   PARTICIPANT_NOT_IN_GROUP: "A participant is not a member of this group.",
   NO_PARTICIPANTS: "Select at least one participant.",
   RECORDER_NOT_PARTICIPANT: "The person recording an expense must be one of its participants.",
-  GROUP_NOT_OPEN: "This group is no longer open for new expenses.",
+  GROUP_NOT_OPEN: "This group is closed. An admin must reopen it before changes can be made.",
   SPLIT_NOT_SUPPORTED: "Only equal splits are supported for now.",
   PAYMENT_EXCEEDS_OPEN_DEBT: "You can only pay up to what you owe.",
   SETTLEMENT_PAYMENT_NOT_FOUND: "This settlement payment does not exist.",

@@ -46,3 +46,7 @@ The team version of 17.10.26 drew these differently; the diagram now shows what 
 - Settlement: `appendCorrectionReversal`, `appendRemovalReversal` (they follow `correct` and `remove` of the expense context). `AllBalancesSettled` is published but has no consumer yet (auto-archive L5 is parked).
 - Account: `changeDisplayName`, `deactivate` (email verification, password reset and lock-out are Keycloak's).
 - Notification context (the in-app inbox): built with the `notification` module of design 2026-11-03.
+
+## Lifecycle revision — 21 November 2026
+
+User-approved two-state model: OPEN/CLOSED. `closeGroup` creates `GroupArchive` automatically, `reopenGroup` requires a reason. Both return `GroupLifecycleChanged`. Group owns immutable archive and lifecycle entry children plus a revision counter. Expense corrections retain old records and use reversal references and replacement links. See the lifecycle design for read ports and locking boundary; diagram annotation records the new children.

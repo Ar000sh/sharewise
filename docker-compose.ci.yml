@@ -1,5 +1,5 @@
 # The built images next to the local database and Keycloak, for the end-to-end test in CI:
-#   BACKEND_IMAGE=... FRONTEND_IMAGE=... docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d
+#   BACKEND_IMAGE=... FRONTEND_IMAGE=... docker compose --profile app -f docker-compose.yml -f docker-compose.ci.yml up -d
 # Host networking on purpose: the Keycloak issuer URL (http://localhost:8180/realms/sharewise) must mean the same
 # to the browser, the frontend server and the backend, and in a container "localhost" otherwise means the container.
 # This works on a Linux host (the CI runner). Docker Desktop needs host networking switched on; the cloud will need
@@ -17,6 +17,11 @@ services:
   backend:
     image: ${BACKEND_IMAGE:?set BACKEND_IMAGE}
     network_mode: host
+    ports: !reset []
+    environment:
+      # Host networking uses published host ports, not Docker service DNS names.
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:${SHAREWISE_DB_PORT:-5432}/sharewise
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://localhost:8180/realms/sharewise/protocol/openid-connect/certs
     depends_on:
       db:
         condition: service_healthy

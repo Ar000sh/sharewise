@@ -4,6 +4,9 @@ Shared expenses made simple: Spring Boot modulith (`backend/`) + Next.js (`front
 
 ## Progress and review notes
 
+- **[Team deployment guide: concepts, roles, GitHub pipeline, VM commands and troubleshooting](docs/TEAM_DEPLOYMENT_GUIDE.md)** — updated 20 November 2026: private automatic deployment workflow implemented and verified on the VM, with scheduled publication checks, database backup and health checks.
+- [Deployment configuration reference](DEPLOYING.md)
+
 - [Progress, decisions, verification, saved screenshots and requirements review (08.11.2026)](docs/2026-11-08-progress-and-handoff.md)
 - [Frontend experience and sign-in design](docs/2026-11-08-frontend-experience-design.md)
 - [CI/CD special cases and pending coverage](docs/2026-11-08-ci-cd-special-cases.md)

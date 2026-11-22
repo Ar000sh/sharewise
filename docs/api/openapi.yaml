@@ -24,6 +24,178 @@ tags:
   - name: notification
 
 paths:
+  /groups/{groupId}/close:
+    parameters:
+    - $ref: '#/components/parameters/GroupId'
+    post:
+      tags:
+      - group
+      operationId: closeGroup
+      summary: Close at zero and atomically create an archive version
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LifecycleRequest'
+            example:
+              expectedRevision: 0
+              reason: ''
+      responses:
+        '200':
+          description: Updated lifecycle. A stale revision is rejected, including a duplicate request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lifecycle'
+              example: &id001
+                status: OPEN
+                revision: 0
+                archiveCount: 0
+                history: []
+        '400': &id002
+          description: 'BAD_REQUEST: malformed input or missing reopening reason'
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401': &id003
+          description: UNAUTHENTICATED
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403': &id004
+          description: NOT_A_MEMBER or NOT_AN_ADMIN; correction may return EXPENSE_NOT_EDITABLE
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404': &id005
+          description: GROUP_NOT_FOUND, ARCHIVE_NOT_FOUND or EXPENSE_NOT_FOUND
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409': &id006
+          description: LIFECYCLE_CONFLICT, EXPENSE_NOT_EDITABLE, PAYMENTS_PENDING or FINANCIAL_PROCESSING_PENDING
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422': &id007
+          description: BALANCES_NOT_ZERO or GROUP_NOT_OPEN
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /groups/{groupId}/reopen:
+    parameters:
+    - $ref: '#/components/parameters/GroupId'
+    post:
+      tags:
+      - group
+      operationId: reopenGroup
+      summary: Reopen for corrections; preserve every existing archive
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LifecycleRequest'
+            example:
+              expectedRevision: 1
+              reason: Correct receipt amount
+      responses:
+        '200':
+          description: Updated lifecycle. A stale revision is rejected, including a duplicate request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lifecycle'
+              example: *id001
+        '400': *id002
+        '401': *id003
+        '403': *id004
+        '404': *id005
+        '409': *id006
+        '422': *id007
+  /groups/{groupId}/lifecycle:
+    parameters:
+    - $ref: '#/components/parameters/GroupId'
+    get:
+      tags:
+      - group
+      operationId: getLifecycle
+      summary: Read lifecycle as an active member
+      responses:
+        '200':
+          description: Persisted history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lifecycle'
+              example: *id001
+        '401': *id003
+        '403': *id004
+        '404': *id005
+  /groups/{groupId}/archives:
+    parameters:
+    - $ref: '#/components/parameters/GroupId'
+    get:
+      tags:
+      - group
+      operationId: listArchives
+      summary: Read archives as an active member
+      responses:
+        '200':
+          description: Persisted history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupArchive'
+              example: []
+        '401': *id003
+        '403': *id004
+        '404': *id005
+  /groups/{groupId}/expenses/{expenseId}/correct:
+    parameters:
+    - $ref: '#/components/parameters/GroupId'
+    - in: path
+      name: expenseId
+      required: true
+      schema:
+        type: string
+        format: uuid
+    post:
+      tags:
+      - expense
+      operationId: correctExpense
+      summary: Replace an equal-split expense title and amount, retaining payer, participants and history
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CorrectExpenseRequest'
+            example:
+              title: Corrected hotel receipt
+              totalAmount: '80.00'
+      responses:
+        '200':
+          description: Replacement expense; the original is retained as CORRECTED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '400': *id002
+        '401': *id003
+        '403': *id004
+        '404': *id005
+        '409': *id006
+        '422': *id007
   /me:
     get:
       tags: [account]
@@ -117,6 +289,11 @@ paths:
             schema: { $ref: "#/components/schemas/InviteMemberRequest" }
             example: { identifier: bob, role: MEMBER }
       responses:
+        "422":
+          description: GROUP_NOT_OPEN - an admin must reopen the group first
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
         "201":
           description: Created
           content:
@@ -170,6 +347,11 @@ paths:
         Make an active member an ADMIN. The caller must be an admin. Promotion is one way: there is no
         demotion.
       responses:
+        "422":
+          description: GROUP_NOT_OPEN - an admin must reopen the group first
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
         "200":
           description: The member, now with role ADMIN
           content:
@@ -235,6 +417,11 @@ paths:
         Join the group. Only the invited account can accept; an invitation meant for somebody else is
         INVITATION_NOT_FOUND. The caller becomes a MEMBER.
       responses:
+        "422":
+          description: GROUP_NOT_OPEN - an admin must reopen the group first
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
         "200":
           description: Joined
           content:
@@ -254,6 +441,11 @@ paths:
       operationId: declineInvitation
       summary: Decline the invitation. Only the invited account can decline; nobody joins.
       responses:
+        "422":
+          description: GROUP_NOT_OPEN - an admin must reopen the group first
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
         "204": { description: Declined }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "404": { $ref: "#/components/responses/InvitationNotFound" }
@@ -811,6 +1003,224 @@ components:
           example: { type: "about:blank", title: Forbidden, status: 403, code: NOT_THE_CREDITOR, detail: "Only the creditor can resolve this payment" }
 
   schemas:
+    LifecycleRequest:
+      type: object
+      required:
+      - expectedRevision
+      properties:
+        expectedRevision: &id001
+          type: integer
+          minimum: 0
+        reason:
+          type: string
+          maxLength: 500
+          description: Required and nonblank for reopening; ignored when closing.
+    Lifecycle:
+      type: object
+      required:
+      - status
+      - revision
+      - archiveCount
+      - history
+      properties:
+        status:
+          type: string
+          enum:
+          - OPEN
+          - CLOSED
+        revision: *id001
+        archiveCount: *id001
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/LifecycleEntry'
+    LifecycleEntry:
+      type: object
+      required:
+      - id
+      - action
+      - actor
+      - reason
+      - occurredAt
+      properties:
+        id: &id002
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum:
+          - CLOSED
+          - REOPENED
+        actor: *id002
+        reason: &id004
+          type: string
+        occurredAt: &id003
+          type: string
+          format: date-time
+    GroupArchive:
+      type: object
+      required:
+      - version
+      - closedBy
+      - closedAt
+      - snapshot
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        closedBy: *id002
+        closedAt: *id003
+        snapshot:
+          $ref: '#/components/schemas/ArchiveSnapshot'
+    ArchiveSnapshot:
+      type: object
+      required:
+      - groupId
+      - name
+      - currency
+      - members
+      - finances
+      properties:
+        groupId: *id002
+        name: *id004
+        currency: *id004
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArchiveMember'
+        finances:
+          $ref: '#/components/schemas/ArchiveFinances'
+    ArchiveMember:
+      type: object
+      required:
+      - userId
+      - displayName
+      - role
+      properties:
+        userId: *id002
+        displayName: *id004
+        role: *id004
+    ArchiveFinances:
+      type: object
+      required:
+      - expenses
+      - payments
+      - balances
+      properties:
+        expenses:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArchiveExpense'
+        payments:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArchivePayment'
+        balances:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArchiveBalance'
+    ArchiveExpense:
+      type: object
+      required:
+      - id
+      - title
+      - totalAmount
+      - date
+      - paidBy
+      - recordedBy
+      - status
+      - shares
+      - createdAt
+      - reversalId
+      - correctedFrom
+      properties:
+        id: *id002
+        title: *id004
+        totalAmount:
+          $ref: '#/components/schemas/MoneyAmount'
+        date:
+          type: string
+          format: date
+        paidBy: *id002
+        recordedBy: *id002
+        status: *id004
+        shares:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArchiveShare'
+        createdAt: *id003
+        reversalId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        correctedFrom:
+          type:
+          - string
+          - 'null'
+          format: uuid
+    ArchiveShare:
+      type: object
+      required:
+      - participantId
+      - owedShare
+      properties:
+        participantId: *id002
+        owedShare:
+          $ref: '#/components/schemas/MoneyAmount'
+    ArchivePayment:
+      type: object
+      required:
+      - id
+      - fromDebtor
+      - toCreditor
+      - amount
+      - status
+      - note
+      - createdAt
+      - resolvedAt
+      properties:
+        id: *id002
+        fromDebtor: *id002
+        toCreditor: *id002
+        amount:
+          $ref: '#/components/schemas/MoneyAmount'
+        status: *id004
+        note:
+          type:
+          - string
+          - 'null'
+        createdAt: *id003
+        resolvedAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+    ArchiveBalance:
+      type: object
+      required:
+      - userId
+      - netBalance
+      properties:
+        userId: *id002
+        netBalance:
+          $ref: '#/components/schemas/MoneyAmount'
+    CorrectExpenseRequest:
+      type: object
+      required:
+      - title
+      - totalAmount
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        totalAmount:
+          $ref: '#/components/schemas/MoneyAmount'
+    MoneyAmount:
+      type: string
+      pattern: ^-?\d+\.\d{2}$
+      example: '0.00'
     Problem:
       type: object
       required: [status, code]
@@ -821,6 +1231,13 @@ components:
         code:
           type: string
           enum:
+            - LIFECYCLE_CONFLICT
+            - BALANCES_NOT_ZERO
+            - PAYMENTS_PENDING
+            - FINANCIAL_PROCESSING_PENDING
+            - EXPENSE_NOT_FOUND
+            - EXPENSE_NOT_EDITABLE
+            - ARCHIVE_NOT_FOUND
             - BAD_REQUEST
             - UNAUTHENTICATED
             - NOT_A_MEMBER
@@ -882,7 +1299,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
-        status: { type: string, enum: [OPEN, CLOSED_FOR_SETTLEMENT, ARCHIVED] }
+        status: { type: string, enum: [OPEN, CLOSED] }
         memberCount: { type: integer, minimum: 0 }
 
     Member:
@@ -940,7 +1357,7 @@ components:
 
     NotificationType:
       type: string
-      enum: [MEMBER_JOINED, INVITATION_DECLINED, MEMBER_PROMOTED, PAYMENT_CONFIRMED, PAYMENT_REJECTED, DEBT_WAIVED, EXPENSE_RECORDED]
+      enum: [EXPENSE_CORRECTED, GROUP_CLOSED, GROUP_REOPENED, MEMBER_JOINED, INVITATION_DECLINED, MEMBER_PROMOTED, PAYMENT_CONFIRMED, PAYMENT_REJECTED, DEBT_WAIVED, EXPENSE_RECORDED]
       description: >
         PAYMENT_CONFIRMED and PAYMENT_REJECTED tell the payer how the creditor answered; DEBT_WAIVED tells the
         debtor that the creditor forgave part of the debt. The actor is the creditor and the reference is the

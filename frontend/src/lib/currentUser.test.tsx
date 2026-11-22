@@ -3,7 +3,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api } from "@/lib/api";
 import { CurrentUserProvider, useCurrentUser } from "@/lib/currentUser";
 
-vi.mock("@/lib/api", async (orig) => ({ ...(await orig<typeof import("@/lib/api")>()), api: vi.fn() }));
+vi.mock("@/lib/api", async (orig) => ({
+  ...(await orig<typeof import("@/lib/api")>()),
+  api: vi.fn(),
+}));
 
 const apiMock = vi.mocked(api);
 const replace = vi.fn();
@@ -55,11 +58,21 @@ describe("CurrentUserProvider", () => {
     stubLocation("/groups/new");
     apiMock.mockRejectedValue(new ApiError(502, "BACKEND_UNREACHABLE"));
 
-    render(<CurrentUserProvider><button>Create group</button></CurrentUserProvider>);
+    render(
+      <CurrentUserProvider>
+        <button>Create group</button>
+      </CurrentUserProvider>,
+    );
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/server is not reachable/i);
-    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Create group" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /server is not reachable/i,
+    );
+    expect(
+      screen.getByRole("button", { name: "Try again" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Create group" }),
+    ).not.toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
   });
 });

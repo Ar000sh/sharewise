@@ -37,6 +37,8 @@ const group = {
 /** Answers the calls the page makes. `me` may be a promise so a test decides when "who am I" arrives. */
 function serve(me: Promise<unknown> | unknown) {
   apiMock.mockImplementation(async (path: string) => {
+    if (path === "/groups/g1/lifecycle") return {status:"OPEN",revision:0,archiveCount:0,history:[]};
+    if (path === "/groups/g1/archives") return [];
     if (path === "/me") return me;
     if (path === "/groups/g1") return group;
     if (path === "/groups/g1/expenses") return [];
@@ -203,7 +205,9 @@ describe("GroupDetail", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     let offline = false;
     apiMock.mockImplementation(async (path: string) => {
-      if (path === "/me") return { userId: "u2", displayName: "Bob" };
+      if (path === "/groups/g1/lifecycle") return {status:"OPEN",revision:0,archiveCount:0,history:[]};
+    if (path === "/groups/g1/archives") return [];
+    if (path === "/me") return { userId: "u2", displayName: "Bob" };
       if (path === "/groups/g1" && offline)
         throw new ApiError(0, "NETWORK_ERROR", "Could not reach the server");
       if (path === "/groups/g1") return group;

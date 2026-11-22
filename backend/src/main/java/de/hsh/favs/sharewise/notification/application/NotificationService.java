@@ -91,6 +91,33 @@ public class NotificationService {
 				event.userId().value(), event.occurredAt()));
 	}
 
+	/** Notifies members once per lifecycle decision; references its unique event id. */
+	@Transactional
+	public void recordGroupLifecycle(de.hsh.favs.sharewise.group.api.GroupLifecycleChanged event) {
+		var type = event.status() == de.hsh.favs.sharewise.group.api.GroupStatus.CLOSED ? NotificationType.GROUP_CLOSED
+				: NotificationType.GROUP_REOPENED;
+		for (var recipient : event.recipients())
+			if (!recipient.equals(event.actor()))
+				record(Notification.notify(recipient, type, event.groupId(), event.actor(), event.id(),
+						event.occurredAt()));
+	}
+
+	/**
+	 * Announces the correction's real actor, rather than attributing it to the old
+	 * recorder.
+	 */
+	@Transactional
+	public void recordExpenseCorrected(de.hsh.favs.sharewise.expense.api.ExpenseCorrected event) {
+		Set<UserId> recipients = new LinkedHashSet<>();
+		event.shares().forEach(s -> recipients.add(s.participantId()));
+		recipients.add(event.paidBy());
+		recipients.remove(event.correctedBy());
+		for (UserId recipient : recipients) {
+			record(Notification.notify(recipient, NotificationType.EXPENSE_CORRECTED, event.groupId(),
+					event.correctedBy(), event.reversalId(), event.occurredAt()));
+		}
+	}
+
 	/** Tells a member that an admin made them an admin. */
 	@Transactional
 	public void recordMemberPromoted(MemberPromoted event) {

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import de.hsh.favs.sharewise.MutableClock;
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.expense.api.ExpenseCorrected;
 import de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture;
 import de.hsh.favs.sharewise.settlement.api.DebtWaived;
 import de.hsh.favs.sharewise.settlement.api.MemberBalance;
@@ -67,6 +68,24 @@ class GroupLedgerServiceTest {
 	void setUp() {
 		service = new GroupLedgerService(ledgers, events, Clock.fixed(MutableClock.START, ZoneOffset.UTC));
 		when(ledgers.findForUpdate(event.groupId().value())).thenReturn(Optional.of(ledger));
+	}
+
+	@Test
+	void redeliveredCorrectionBooksReversalAndReplacementOnlyOnce() {
+		var replacement = new ExpenseRecordedFixture().withTotalAmount("800.00").build();
+		var correction = new ExpenseCorrected(UUID.randomUUID(), event.groupId(), event.paidBy(), event.totalAmount(),
+				event.shares(), alice, replacement, MutableClock.START);
+		ledger.appendExpenseEntry(event, MutableClock.START);
+		when(ledgers.isBooked(event.groupId().value(), correction.reversalId())).thenReturn(false, true);
+
+		service.bookCorrection(correction);
+		service.bookCorrection(correction);
+
+		verify(ledgers, times(1)).save(ledger);
+		assertThat(ledger.entries()).hasSize(15);
+		assertThat(ledger.projectBalances()).filteredOn(b -> b.userId().equals(bob))
+			.extracting(b -> b.netBalance().amount())
+			.containsExactly(new java.math.BigDecimal("-200.00"));
 	}
 
 	@Test
