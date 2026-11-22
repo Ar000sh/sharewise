@@ -9,7 +9,7 @@ package de.hsh.favs.sharewise.settlement.domain;
 public enum LedgerEntryType {
 
 	/** The payer is credited what they paid. */
-	EXPENSE_PAID,
+	EXPENSE_PAID, EXPENSE_REVERSAL_PAID, EXPENSE_REVERSAL_OWED,
 
 	/** A share holder is debited their share. */
 	EXPENSE_OWED,

@@ -12,6 +12,12 @@ import java.util.List;
  */
 public interface GroupMembership {
 
+	/**
+	 * Holds the group lock until the calling write transaction ends; refuses closed
+	 * groups.
+	 */
+	void lockOpen(GroupId group);
+
 	boolean exists(GroupId group);
 
 	boolean isMember(GroupId group, UserId user);

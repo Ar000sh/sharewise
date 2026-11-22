@@ -155,7 +155,7 @@ class SettlementPaymentServiceTest {
 	void archivedGroupRefusesANewPaymentAndANewWaiver() {
 		// given
 		when(groups.exists(GROUP)).thenReturn(true);
-		when(groups.status(GROUP)).thenReturn(GroupStatus.ARCHIVED);
+		when(groups.status(GROUP)).thenReturn(GroupStatus.CLOSED);
 
 		// when / then
 		assertCode(() -> service.record(bobPaysAlice("10.00")), ErrorCode.GROUP_NOT_OPEN);

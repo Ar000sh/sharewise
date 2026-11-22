@@ -29,7 +29,7 @@ ShareWise is "a collaborative application for managing expenses within groups". 
 4. record settlement payments
 5. close and archive completed groups
 
-**Our differentiator** 🟢: an explicit **close-for-settlement** phase. While a group is closed, expenses are frozen and only settlement payments are allowed. No competitor has this; they only archive (see Ex1b market research).
+**Our differentiator** 🟢: **admin closure with versioned archives**. Expenses and payments happen while OPEN. Closing at zero creates an immutable archive; admins can reopen for corrections and create a new version on reclosure.
 
 **What ShareWise does *not* do** 🟢 (team decision 14.10):
 - **No multi-currency.** Each group has exactly one currency, set when the group is created. There are no exchange rates and no conversion.
@@ -53,8 +53,8 @@ The MVP is small but rich in domain logic: the interesting rules sit in splittin
 | **Must** | Record a settlement payment | J8 | R16, R17 |
 | **Must** | Leave a group / remove a member, only at balance 0 | J10, J11 | R11–R13 |
 | **Must** | Promote a member to admin | J10 | R12 |
-| **Must** | Close a group for settlement, reopen it | J12 | L1–L6 |
-| **Must** | Archive a group (automatically or manually) | J13 | L4, L5 |
+| **Must** | Close a settled group, reopen for corrections | J12 | L1–L6 |
+| **Must** | Automatically create a versioned archive on closure | J13 | L4, L5 |
 | Should | Creditor confirms a settlement payment (the MVP may skip this) | J8 | R16 |
 | Should | Activity feed | J16 | – |
 | Should | Notifications (invite, expense recorded/corrected, group closed, settlement payment) | several | – |
@@ -90,23 +90,25 @@ DDD slide 40: the **same person** plays a different role in each context. That i
 
 ## 4. Business rules
 
-### 4.1 Group lifecycle (answers the open questions on DDD slide 7)
+### 4.1 Group lifecycle (revised 21 November 2026)
 
-```
-          closeGroupForSettlement()            all balances = 0 (auto)
-  OPEN ───────────────────────────► CLOSED_FOR_SETTLEMENT ───────────────────► ARCHIVED
-    ▲                                   │                    or archiveGroup() by an admin
-    └──────── reopenGroup() ────────────┘                    (only if all balances = 0)
+User-approved revision: two group states and immutable archive versions. See [design](../specs/2026-11-21-group-lifecycle/design.md).
+
+```text
+OPEN -- closeGroup(admin, zero balances) --> CLOSED + automatic archive vN
+OPEN <-- reopenGroup(admin, reason) ------- CLOSED
 ```
 
-| # | Rule 🟢 | Slide-7 question it answers |
-|---|---|---|
-| **L1** | Only **admins** may close a group for settlement, reopen it or archive it. | Who is authorized? |
-| **L2** | While the group is closed, **no expenses can be recorded**. Only settlement payments are allowed. | Can expenses be added afterwards? |
-| **L3** | While the group is closed, **no expenses can be corrected or removed**. An admin must reopen the group first. The reopen shows in the activity feed. | Can they still be corrected? |
-| **L4** | Closing does **not** require balances of 0. Closing freezes the expenses and fixes the final settlement plan. **Archiving requires all balances = 0.** | Must all balances be 0? |
-| **L5** | The group is **archived automatically** as soon as the last balance reaches 0. An admin may also archive manually, but only when all balances are 0. | Is archiving automatic? |
-| **L6** | An admin can **reopen** a closed group. **ARCHIVED is final** and read-only. | Can closing be revoked? |
+| # | Rule |
+|---|---|
+| **L1** | Only active admins can close or reopen a group. |
+| **L2** | Financial writes are allowed only while OPEN; payments are recorded and confirmed before closure. |
+| **L3** | Expense corrections require OPEN and their normal authorization. Reopening requires a reason and records visible history. |
+| **L4** | Closing requires every balance to be zero, no unanswered payments, and all accepted financial operations booked. |
+| **L5** | Each successful admin closure automatically creates an immutable archive version. Reaching zero alone never closes the group. |
+| **L6** | Admins can reopen CLOSED groups for corrections. Previous archives and confirmed payments remain unchanged. Closing again creates a new version. |
+
+The closing warning explains that changes will stop and only an admin can reopen. Requests carry a lifecycle revision so retries cannot close a later correction cycle.
 
 ### 4.2 Expenses (Expense context)
 
@@ -196,7 +198,7 @@ Each journey lists: actor · trigger · preconditions · main flow · alternativ
 - **Alternatives:**
   - The invitation has expired → "Ask for a new invite".
   - Already a member → the group opens.
-  - Group CLOSED or ARCHIVED → joining is not possible.
+  - Group CLOSED → joining is not possible.
   - The invitee declines → status DECLINED.
 - **Rules:** R9, R10
 - **Events:** `MemberInvited`, `InvitationAccepted` / `InvitationDeclined`, `MemberJoined`
@@ -261,7 +263,7 @@ Each journey lists: actor · trigger · preconditions · main flow · alternativ
 
 ### J8: Record a settlement payment
 - **Actors:** Debtor (David) → Creditor (Alice)
-- **Preconditions:** group OPEN or CLOSED_FOR_SETTLEMENT
+- **Preconditions:** group OPEN
 - **Flow:**
   1. David chooses "Settle up" next to "David → Alice €371".
   2. The amount is prefilled. He records it as paid; the money itself moved outside the app.
@@ -301,31 +303,23 @@ Each journey lists: actor · trigger · preconditions · main flow · alternativ
 - **Rules:** R11, R13
 - **Events:** `MemberRemoved`
 
-### J12: Close the group for settlement (+ J12b reopen)
-- **Actor:** Admin (Alice)
-- **Preconditions:** group OPEN
-- **Flow:**
-  1. Choose "Close group for settlement".
-  2. The system shows a summary: total spent, final balances, simplified plan.
-  3. Alice confirms. The status becomes CLOSED_FOR_SETTLEMENT.
-  4. Recording, correcting and removing expenses is now blocked.
-  5. All members are notified with "your final amount".
-- **J12b Reopen:**
-  1. The admin chooses "Reopen". The status becomes OPEN.
-  2. Expenses can be recorded and corrected again.
-  3. The members are notified.
-- **Rules:** L1–L4, L6
-- **Events:** `GroupClosedForSettlement`, `GroupReopened`
+### J12: Close a settled group; reopen for corrections
 
-### J13: Archive the group
-- **Trigger:** the last settlement payment is confirmed, so all balances are 0 (automatic). Or an admin archives manually.
-- **Flow:**
-  1. The status becomes ARCHIVED.
-  2. The group is read-only and moves to "Archived groups".
-  3. Optional: export (Could).
-- **Error:** manual archive while balances ≠ 0 → refused.
-- **Rules:** L4–L6
-- **Events:** `AllBalancesSettled`, `GroupArchived`
+- **Actor:** active admin.
+- **Close:** review summary, acknowledge warning, submit current lifecycle revision. The server enforces L4, changes OPEN to CLOSED and persists an archive in one transaction.
+- **Reopen:** supply a reason and current revision. The group becomes OPEN and existing archives remain unchanged. Members are notified.
+- **Correction:** an authorized user corrects the working expense; confirmed transfers remain. Any resulting debt must be settled before reclosure.
+- **Errors:** non-admin, stale revision, nonzero balances, pending payments or unfinished ledger updates leave the group unchanged.
+- **Rules:** L1–L6.
+- **Event:** `GroupLifecycleChanged` with resulting state and a unique decision id.
+
+### J13: View automatically created archive versions
+
+- **Trigger:** successful admin closure creates the next version; there is no separate archive command.
+- **Flow:** active members view the immutable snapshot of expenses, shares, payments, balances and closure metadata. After reopening, the old version remains historical. Reclosure creates another version.
+- **Failure:** snapshot persistence failure rolls back closure.
+- **Optional:** downloadable export remains separate from the persisted archive view.
+- **Rules:** L4–L6.
 
 ### Should / Could journeys (short)
 - **J14 Payment reminder** (Should): a creditor sends a reminder to a debtor. Event: `PaymentReminderSent`.
@@ -373,10 +367,10 @@ Use this example in the presentation, in tests and in the glossary.
 | 12 | 5 | J10 fails | Bob tries to leave and is refused: "You owe €202". |
 | 13 | 5 | J8 | Bob pays Alice €202, and Alice confirms. Bob = 0, Alice = +371. |
 | 14 | 5 | J10 | Bob leaves. He appears as "Bob (left)" in old expenses. |
-| 15 | 6 | J12 | Alice closes the group for settlement. The final balances and the plan are shown. |
-| 16 | 6 | J4 fails | Carol tries to add a forgotten taxi and is refused: "Group is closed for settlement". (The alternative is J12b: reopen, add the taxi, close again.) |
+| 15 | 6 | J12 | Alice attempts closure with outstanding debt and is refused. The group remains OPEN. |
+| 16 | 6 | J4 fails | Members review the remaining expenses and settlement plan while the group remains OPEN. |
 | 17 | 7–10 | J8 | Settlement payments per the plan, each confirmed by the creditor. |
-| 18 | 10 | J13 | The last confirmation brings all balances to 0, and the group is **auto-archived**. |
+| 18 | 10 | J13 | The last confirmation brings all balances to 0; an admin closes the group and an archive is created automatically. |
 
 **Simplified settlement plan after Bob leaves** (Alice +371, Eve +138, Carol −72, David −437). It takes 3 payments instead of up to 6:
 - David → Alice **€371**
@@ -397,9 +391,8 @@ After these payments, everyone's balance is 0 (verified by script).
 | `MemberJoined`, `MemberLeft`, `MemberRemoved`, `MemberPromoted` | Group | J2, J3, J9–J11 | Expense, Settlement (who is a member), Activity, Notification |
 | `ExpenseRecorded`, `ExpenseCorrected`, `ExpenseRemoved` | Expense | J4–J6 | **Settlement** (recalculate balances), Activity, Notification |
 | `SettlementPaymentRecorded`, `…Confirmed`, `…Rejected` | Settlement | J8 | Notification, Activity |
-| `AllBalancesSettled` | Settlement | J13 | **Group** (auto-archive) |
-| `GroupClosedForSettlement`, `GroupReopened` | Group | J12 | **Expense** (block or unblock expenses), Settlement (final balances), Notification, Activity |
-| `GroupArchived` | Group | J13 | Activity, Notification |
+| `AllBalancesSettled` | Settlement | J13 | No automatic closure consumer; may inform eligibility |
+| `GroupLifecycleChanged` | Group | J12/J13 | Notification; lifecycle history and archives are persisted with the command |
 | `PaymentReminderSent` (Should) | Settlement | J14 | Notification |
 
 ---
@@ -416,7 +409,7 @@ After these payments, everyone's balance is 0 (verified by script).
 - [ ] **Correction after a settlement payment:** Bob already paid €202, then the hotel is corrected. Does Bob get a new debt or credit, and is he notified again?
 - [ ] **Who may invite:** any member, or admins only?
 - [ ] **Rejoining:** can a former member be invited again, and do they keep their history?
-- [ ] **Auto-archive scope:** only from CLOSED_FOR_SETTLEMENT, or also an OPEN group whose balances happen to be 0?
+- [ ] **Archive trigger (decided 21.11):** successful admin closure creates a version; a zero balance alone does not close.
 - [ ] **Deleting a group:** allowed for an OPEN group without expenses?
 - [ ] **Account deletion (GDPR):** the user still appears in a group's history.
 - [ ] **Placeholder members (J17) vs R9:** make an exception, or drop J17?

@@ -1,6 +1,7 @@
 package de.hsh.favs.sharewise.settlement.domain;
 
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.expense.api.ExpenseCorrected;
 import de.hsh.favs.sharewise.settlement.api.DebtWaived;
 import de.hsh.favs.sharewise.settlement.api.MemberBalance;
 import de.hsh.favs.sharewise.settlement.api.SettlementPaymentConfirmed;
@@ -47,9 +48,18 @@ public class GroupLedger {
 	}
 
 	/**
-	 * Books the expense: the payer is credited the total, every participant debited their
-	 * share (R14).
+	 * Reverse an old expense without changing its original bookings or confirmed payments
+	 * (R7).
 	 */
+	public void appendCorrectionReversal(ExpenseCorrected event, Instant now) {
+		entries.add(new LedgerEntry(this, event.paidBy(), event.totalAmount().negate(),
+				LedgerEntryType.EXPENSE_REVERSAL_PAID, event.reversalId(), now));
+		for (var share : event.shares())
+			entries.add(new LedgerEntry(this, share.participantId(), share.owedShare(),
+					LedgerEntryType.EXPENSE_REVERSAL_OWED, event.reversalId(), now));
+	}
+
+	/** Credits the payer the total and debits each participant their share (R14). */
 	public void appendExpenseEntry(ExpenseRecorded expense, Instant occurredAt) {
 		entries.add(new LedgerEntry(this, expense.paidBy(), expense.totalAmount(), LedgerEntryType.EXPENSE_PAID,
 				expense.expenseId().value(), occurredAt));

@@ -7,7 +7,7 @@ One module per bounded context, plus `shared`. Root package `de.hsh.favs.sharewi
 | Module | Context | Subdomain | Aggregates |
 |---|---|---|---|
 | `account` | Account | generic | `Account` |
-| `group` | Group | supporting | `Group` (with entities `Membership`, `Invitation`) |
+| `group` | Group | supporting | `Group` (with entities `Membership`, `Invitation`, `GroupArchive`, `GroupLifecycleEntry`) |
 | `expense` | Expense | core | `Expense` |
 | `settlement` | Settlement | core | `GroupLedger` (with entity `LedgerEntry`), `SettlementPayment` |
 | `notification` | Notification | generic | `Notification` (the inbox: things that happened to a person, fed by events of group and settlement; a leaf, nothing depends on it, so it has no `api` package) |
@@ -46,7 +46,7 @@ Dependency direction inside a module: `web → application → domain` and `appl
 ### 2.3 Aggregate rules (from DDD slide 67)
 1. Only the **aggregate root** has a repository. Entities inside an aggregate (`Membership`, `Invitation`, `LedgerEntry`) have none.
 2. Every state change and every business rule is a method on the root. A service or controller never constructs or mutates a child.
-3. A root method is named after the **operation in the diagram** (`acceptInvitation`, `record`, `closeForSettlement`) and **returns the domain event it produces** (or a small result record when it produces several). An operation that reacts to another context's event and produces no event of its own returns nothing (`Group.updateBalanceStatus` is `void`; the diagram draws no event for it). It never publishes; it never calls another module.
+3. A root method is named after the **operation in the diagram** (`acceptInvitation`, `record`, `closeGroup`) and **returns the domain event it produces** (or a small result record when it produces several). An operation that reacts to another context's event and produces no event of its own returns nothing (`Group.updateBalanceStatus` is `void`; the diagram draws no event for it). It never publishes; it never calls another module.
 4. Other aggregates and other modules are referenced **by id** (`GroupId`, `UserId`) only.
 5. The application service is thin and always has this shape: load the root (lock it where a race matters) → call one root method → save → publish the returned event(s) → return a result.
 6. Time comes in as a parameter (`Instant now` from the injected `Clock`), never from `Instant.now()` inside the domain.
@@ -75,9 +75,9 @@ Use these names verbatim, in code, tests, JSON, SQL and docs. English, `UpperCam
 
 ### 3.1 Group context
 - Aggregate root `Group`: fields `id: GroupId`, `name: GroupName`, `currency: Currency`, `status: GroupStatus`; entities `Membership` (`userId`, `role: GroupRole`, `status: MembershipStatus`, `hasZeroBalance`, `joinedAt`; plus `balanceStatusAt`, not in the diagram, see 5.1) and `Invitation` (`id: InvitationId`, `invitee: UserId`, `role: GroupRole`, `status: InvitationStatus`, `expiresAt`). An invitation belongs to one existing account and only that account can answer it; `EXPIRED` is derived from `expiresAt`, never stored. Only an **admin** invites (`NOT_AN_ADMIN` otherwise) and chooses the `role` the invitee gets on accepting (`MEMBER` unless stated). `promoteToAdmin` is admin-only and one way: there is no demotion (design 2026-11-09).
-- Operations (each returns its event, except `updateBalanceStatus`, which reacts to `MemberBalanceStatusChanged` and returns nothing, see 2.3): `createGroup`, `inviteMember`, `acceptInvitation`, `declineInvitation`, `promoteToAdmin`, `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, `updateBalanceStatus`.
-- Enumerations `GroupStatus {OPEN, CLOSED_FOR_SETTLEMENT, ARCHIVED}`, `GroupRole {ADMIN, MEMBER}`, `MembershipStatus {ACTIVE, FORMER_MEMBER}`, `InvitationStatus {PENDING, ACCEPTED, DECLINED, EXPIRED}`.
-- Events (`MemberInvited` carries `role`, `MemberPromoted` is `groupId, userId, promotedBy, occurredAt`): `GroupCreated`, `MemberInvited`, `MemberJoined`, `MemberLeft`, `MemberRemoved`, `MemberPromoted`, `InvitationDeclined`, `GroupClosedForSettlement`, `GroupReopened`, `GroupArchived`.
+- Operations (each returns its event, except `updateBalanceStatus`, which reacts to `MemberBalanceStatusChanged` and returns nothing, see 2.3): `createGroup`, `inviteMember`, `acceptInvitation`, `declineInvitation`, `promoteToAdmin`, `removeMember`, `leaveGroup`, `closeGroup`, `reopenGroup`, `updateBalanceStatus`.
+- Enumerations `GroupStatus {OPEN, CLOSED}`, `GroupRole {ADMIN, MEMBER}`, `MembershipStatus {ACTIVE, FORMER_MEMBER}`, `InvitationStatus {PENDING, ACCEPTED, DECLINED, EXPIRED}`.
+- Events (`MemberInvited` carries `role`, `MemberPromoted` is `groupId, userId, promotedBy, occurredAt`): `GroupCreated`, `MemberInvited`, `MemberJoined`, `MemberLeft`, `MemberRemoved`, `MemberPromoted`, `InvitationDeclined`, `GroupLifecycleChanged`.
 - Read model `GroupMembershipView`.
 
 ### 3.2 Expense context
@@ -137,7 +137,7 @@ Method names on services are the operation names (`recordExpense`, `acceptInvita
 
 ### 5.1 The one exception: `shared.events` (D12)
 
-Events live in the `api` of the module that publishes them, **except** `MemberBalanceStatusChanged` and `AllBalancesSettled`, which live in `de.hsh.favs.sharewise.shared.events`. Settlement publishes them after every ledger booking (expense, confirmed payment, waiver) when a zero-state flips; group consumes `MemberBalanceStatusChanged` to keep `Membership.hasZeroBalance` (R11) up to date. `AllBalancesSettled` has no consumer yet (auto-archive L5 is parked).
+Events live in the `api` of the module that publishes them, **except** `MemberBalanceStatusChanged` and `AllBalancesSettled`, which live in `de.hsh.favs.sharewise.shared.events`. Settlement publishes them after every ledger booking (expense, confirmed payment, waiver) when a zero-state flips; group consumes `MemberBalanceStatusChanged` to keep `Membership.hasZeroBalance` (R11) up to date. `AllBalancesSettled` does not cause closure: revised L5 creates an archive only on an admin close.
 
 - **Why:** the module graph stays one-way, `account ← group ← expense ← settlement`. Settlement already depends on `group::api`; a group listener for an event in `settlement.api` would make group depend on settlement, a cycle `ModularityTests` refuses. A survey of all diagram events found these two as the only ones that flow upstream.
 - **Alternatives rejected:** allow `group → settlement` (a cycle, and it blocks the P3 service split); a `canLeave` port in settlement (group would call settlement, the same cycle); settlement keeping its own copy of group data (the biggest change for the least gain).
@@ -163,3 +163,9 @@ Defined first in `docs/api/openapi.yaml`; the Java records in `web` and the Type
 - Ids are UUID strings; instants are ISO-8601 UTC; dates are `YYYY-MM-DD`.
 - Errors are `application/problem+json` with a stable `code` from the `ErrorCode` enumeration; the contract lists every code an endpoint can return.
 - Status codes: `201` create, `200` read/update, `204` no content, `400` malformed or invalid input, `401` not signed in, `403` signed in but not allowed, `404` unknown, `409` conflict, `410` expired, `422` a business rule refused it.
+
+## 8. Closure snapshot boundary (21 November 2026)
+
+See `docs/specs/2026-11-21-group-lifecycle/design.md`. `GroupFinancialHistory` is a Group-owned read port implemented by Settlement, using `ExpenseHistory` from Expense. Module dependencies stay acyclic. `GroupMembership.lockOpen` is an explicit transaction-bound lock operation; callers need an existing transaction. All financial writers take this lock before ledger locks. Closure checks expected financial references have been booked and snapshots immutable values in the same transaction as the status change.
+
+`GroupArchiveService` coordinates the Group-owned archive operation and uses JSON only to encode/decode the persisted immutable snapshot. `GroupLifecycleChanged` carries the unique decision id, actor, resulting status and recipients. `ExpenseCorrected` books an immutable reversal; the replacement retains the original payer and participants. Archive entities have no independent repository or write API.

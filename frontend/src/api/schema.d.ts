@@ -4,6 +4,102 @@
  */
 
 export interface paths {
+    "/groups/{groupId}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close at zero and atomically create an archive version */
+        post: operations["closeGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/groups/{groupId}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reopen for corrections; preserve every existing archive */
+        post: operations["reopenGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/groups/{groupId}/lifecycle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        /** Read lifecycle as an active member */
+        get: operations["getLifecycle"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/groups/{groupId}/archives": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        /** Read archives as an active member */
+        get: operations["listArchives"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/groups/{groupId}/expenses/{expenseId}/correct": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+                expenseId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replace an equal-split expense title and amount, retaining payer, participants and history */
+        post: operations["correctExpense"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me": {
         parameters: {
             query?: never;
@@ -376,12 +472,113 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        LifecycleRequest: {
+            expectedRevision: number;
+            /** @description Required and nonblank for reopening; ignored when closing. */
+            reason?: string;
+        };
+        Lifecycle: {
+            /** @enum {string} */
+            status: "OPEN" | "CLOSED";
+            revision: number;
+            archiveCount: number;
+            history: components["schemas"]["LifecycleEntry"][];
+        };
+        LifecycleEntry: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            action: "CLOSED" | "REOPENED";
+            /** Format: uuid */
+            actor: string;
+            reason: string;
+            /** Format: date-time */
+            occurredAt: string;
+        };
+        GroupArchive: {
+            version: number;
+            /** Format: uuid */
+            closedBy: string;
+            /** Format: date-time */
+            closedAt: string;
+            snapshot: components["schemas"]["ArchiveSnapshot"];
+        };
+        ArchiveSnapshot: {
+            /** Format: uuid */
+            groupId: string;
+            name: string;
+            currency: string;
+            members: components["schemas"]["ArchiveMember"][];
+            finances: components["schemas"]["ArchiveFinances"];
+        };
+        ArchiveMember: {
+            /** Format: uuid */
+            userId: string;
+            displayName: string;
+            role: string;
+        };
+        ArchiveFinances: {
+            expenses: components["schemas"]["ArchiveExpense"][];
+            payments: components["schemas"]["ArchivePayment"][];
+            balances: components["schemas"]["ArchiveBalance"][];
+        };
+        ArchiveExpense: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            totalAmount: components["schemas"]["MoneyAmount"];
+            /** Format: date */
+            date: string;
+            /** Format: uuid */
+            paidBy: string;
+            /** Format: uuid */
+            recordedBy: string;
+            status: string;
+            shares: components["schemas"]["ArchiveShare"][];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            reversalId: string | null;
+            /** Format: uuid */
+            correctedFrom: string | null;
+        };
+        ArchiveShare: {
+            /** Format: uuid */
+            participantId: string;
+            owedShare: components["schemas"]["MoneyAmount"];
+        };
+        ArchivePayment: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            fromDebtor: string;
+            /** Format: uuid */
+            toCreditor: string;
+            amount: components["schemas"]["MoneyAmount"];
+            status: string;
+            note: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            resolvedAt: string | null;
+        };
+        ArchiveBalance: {
+            /** Format: uuid */
+            userId: string;
+            netBalance: components["schemas"]["MoneyAmount"];
+        };
+        CorrectExpenseRequest: {
+            title: string;
+            totalAmount: components["schemas"]["MoneyAmount"];
+        };
+        /** @example 0.00 */
+        MoneyAmount: string;
         Problem: {
             type?: string;
             title?: string;
             status: number;
             /** @enum {string} */
-            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "RECORDER_NOT_PARTICIPANT" | "GROUP_NOT_OPEN" | "SPLIT_NOT_SUPPORTED" | "PAYMENT_EXCEEDS_OPEN_DEBT" | "SETTLEMENT_PAYMENT_NOT_FOUND" | "PAYMENT_NOT_PENDING" | "NOT_THE_CREDITOR" | "ACCOUNT_NOT_FOUND" | "ALREADY_INVITED" | "NOTIFICATION_NOT_FOUND" | "NOT_AN_ADMIN" | "MEMBER_NOT_FOUND" | "ALREADY_ADMIN";
+            code: "LIFECYCLE_CONFLICT" | "BALANCES_NOT_ZERO" | "PAYMENTS_PENDING" | "FINANCIAL_PROCESSING_PENDING" | "EXPENSE_NOT_FOUND" | "EXPENSE_NOT_EDITABLE" | "ARCHIVE_NOT_FOUND" | "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "RECORDER_NOT_PARTICIPANT" | "GROUP_NOT_OPEN" | "SPLIT_NOT_SUPPORTED" | "PAYMENT_EXCEEDS_OPEN_DEBT" | "SETTLEMENT_PAYMENT_NOT_FOUND" | "PAYMENT_NOT_PENDING" | "NOT_THE_CREDITOR" | "ACCOUNT_NOT_FOUND" | "ALREADY_INVITED" | "NOTIFICATION_NOT_FOUND" | "NOT_AN_ADMIN" | "MEMBER_NOT_FOUND" | "ALREADY_ADMIN";
             detail?: string;
         };
         User: {
@@ -410,7 +607,7 @@ export interface components {
             id: string;
             name: string;
             /** @enum {string} */
-            status: "OPEN" | "CLOSED_FOR_SETTLEMENT" | "ARCHIVED";
+            status: "OPEN" | "CLOSED";
             memberCount: number;
         };
         Member: {
@@ -457,7 +654,7 @@ export interface components {
          * @description PAYMENT_CONFIRMED and PAYMENT_REJECTED tell the payer how the creditor answered; DEBT_WAIVED tells the debtor that the creditor forgave part of the debt. The actor is the creditor and the reference is the settlement payment. EXPENSE_RECORDED tells everybody involved in an expense (the participants and the payer) that somebody recorded it, except the person who recorded it; the actor is the recorder and the reference is the expense. MEMBER_PROMOTED tells a member that an admin made them an admin; the actor is the promoting admin and the reference is the promoted member. A payment waiting for an answer is not an entry (see GET /me/settlement-payments). More types arrive with later features (removal).
          * @enum {string}
          */
-        NotificationType: "MEMBER_JOINED" | "INVITATION_DECLINED" | "MEMBER_PROMOTED" | "PAYMENT_CONFIRMED" | "PAYMENT_REJECTED" | "DEBT_WAIVED" | "EXPENSE_RECORDED";
+        NotificationType: "EXPENSE_CORRECTED" | "GROUP_CLOSED" | "GROUP_REOPENED" | "MEMBER_JOINED" | "INVITATION_DECLINED" | "MEMBER_PROMOTED" | "PAYMENT_CONFIRMED" | "PAYMENT_REJECTED" | "DEBT_WAIVED" | "EXPENSE_RECORDED";
         Notification: {
             /** Format: uuid */
             id: string;
@@ -837,6 +1034,388 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    closeGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expectedRevision": 0,
+                 *       "reason": ""
+                 *     }
+                 */
+                "application/json": components["schemas"]["LifecycleRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated lifecycle. A stale revision is rejected, including a duplicate request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "OPEN",
+                     *       "revision": 0,
+                     *       "archiveCount": 0,
+                     *       "history": []
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Lifecycle"];
+                };
+            };
+            /** @description BAD_REQUEST: malformed input or missing reopening reason */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_A_MEMBER or NOT_AN_ADMIN; correction may return EXPENSE_NOT_EDITABLE */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description GROUP_NOT_FOUND, ARCHIVE_NOT_FOUND or EXPENSE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description LIFECYCLE_CONFLICT, EXPENSE_NOT_EDITABLE, PAYMENTS_PENDING or FINANCIAL_PROCESSING_PENDING */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description BALANCES_NOT_ZERO or GROUP_NOT_OPEN */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    reopenGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "expectedRevision": 1,
+                 *       "reason": "Correct receipt amount"
+                 *     }
+                 */
+                "application/json": components["schemas"]["LifecycleRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated lifecycle. A stale revision is rejected, including a duplicate request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "OPEN",
+                     *       "revision": 0,
+                     *       "archiveCount": 0,
+                     *       "history": []
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Lifecycle"];
+                };
+            };
+            /** @description BAD_REQUEST: malformed input or missing reopening reason */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_A_MEMBER or NOT_AN_ADMIN; correction may return EXPENSE_NOT_EDITABLE */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description GROUP_NOT_FOUND, ARCHIVE_NOT_FOUND or EXPENSE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description LIFECYCLE_CONFLICT, EXPENSE_NOT_EDITABLE, PAYMENTS_PENDING or FINANCIAL_PROCESSING_PENDING */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description BALANCES_NOT_ZERO or GROUP_NOT_OPEN */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getLifecycle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Persisted history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "status": "OPEN",
+                     *       "revision": 0,
+                     *       "archiveCount": 0,
+                     *       "history": []
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Lifecycle"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_A_MEMBER or NOT_AN_ADMIN; correction may return EXPENSE_NOT_EDITABLE */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description GROUP_NOT_FOUND, ARCHIVE_NOT_FOUND or EXPENSE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listArchives: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Persisted history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /** @example [] */
+                    "application/json": components["schemas"]["GroupArchive"][];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_A_MEMBER or NOT_AN_ADMIN; correction may return EXPENSE_NOT_EDITABLE */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description GROUP_NOT_FOUND, ARCHIVE_NOT_FOUND or EXPENSE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    correctExpense: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+                expenseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "title": "Corrected hotel receipt",
+                 *       "totalAmount": "80.00"
+                 *     }
+                 */
+                "application/json": components["schemas"]["CorrectExpenseRequest"];
+            };
+        };
+        responses: {
+            /** @description Replacement expense; the original is retained as CORRECTED */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Expense"];
+                };
+            };
+            /** @description BAD_REQUEST: malformed input or missing reopening reason */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description UNAUTHENTICATED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_A_MEMBER or NOT_AN_ADMIN; correction may return EXPENSE_NOT_EDITABLE */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description GROUP_NOT_FOUND, ARCHIVE_NOT_FOUND or EXPENSE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description LIFECYCLE_CONFLICT, EXPENSE_NOT_EDITABLE, PAYMENTS_PENDING or FINANCIAL_PROCESSING_PENDING */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description BALANCES_NOT_ZERO or GROUP_NOT_OPEN */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getMe: {
         parameters: {
             query?: never;
@@ -1051,6 +1630,15 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description GROUP_NOT_OPEN - an admin must reopen the group first */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     promoteToAdmin: {
@@ -1115,6 +1703,15 @@ export interface operations {
                      *       "detail": "This member is already an admin"
                      *     }
                      */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description GROUP_NOT_OPEN - an admin must reopen the group first */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
@@ -1191,6 +1788,15 @@ export interface operations {
             404: components["responses"]["InvitationNotFound"];
             409: components["responses"]["AlreadyMember"];
             410: components["responses"]["InvitationExpired"];
+            /** @description GROUP_NOT_OPEN - an admin must reopen the group first */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     declineInvitation: {
@@ -1214,6 +1820,15 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             404: components["responses"]["InvitationNotFound"];
             410: components["responses"]["InvitationExpired"];
+            /** @description GROUP_NOT_OPEN - an admin must reopen the group first */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     listNotifications: {

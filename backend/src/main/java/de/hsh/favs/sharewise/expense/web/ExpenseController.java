@@ -42,6 +42,20 @@ class ExpenseController {
 		return ExpenseResponse.of(expenses.recordExpense(command));
 	}
 
+	record CorrectExpenseRequest(
+			@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max = 200) String title,
+			@jakarta.validation.constraints.NotNull @jakarta.validation.constraints.Pattern(
+					regexp = "[0-9]+[.][0-9]{2}") String totalAmount) {
+	}
+
+	@PostMapping("/{expenseId}/correct")
+	ExpenseResponse correctExpense(@PathVariable UUID groupId, @PathVariable UUID expenseId,
+			@Valid @RequestBody CorrectExpenseRequest request) {
+		return ExpenseResponse.of(expenses.correctExpense(new GroupId(groupId),
+				new de.hsh.favs.sharewise.expense.api.ExpenseId(expenseId), caller(), new ExpenseTitle(request.title()),
+				Money.eur(request.totalAmount())));
+	}
+
 	@GetMapping
 	List<ExpenseResponse> listExpenses(@PathVariable UUID groupId) {
 		return expenses.listExpenses(new GroupId(groupId), caller()).stream().map(ExpenseResponse::of).toList();

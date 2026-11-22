@@ -1,6 +1,7 @@
 package de.hsh.favs.sharewise.group.domain;
 
 import de.hsh.favs.sharewise.group.api.GroupCreated;
+import de.hsh.favs.sharewise.group.api.GroupLifecycleChanged;
 import de.hsh.favs.sharewise.group.api.GroupMembershipView;
 import de.hsh.favs.sharewise.group.api.GroupRole;
 import de.hsh.favs.sharewise.group.api.GroupStatus;
@@ -77,6 +78,74 @@ public class Group {
 	@JoinColumn(name = "group_id", nullable = false)
 	private List<Invitation> invitations = new ArrayList<>();
 
+	@Column(name = "lifecycle_revision", nullable = false)
+	private long lifecycleRevision;
+
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	@JoinColumn(name = "group_id", nullable = false)
+	@OrderBy("version ASC")
+	private List<GroupArchive> archives = new ArrayList<>();
+
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	@JoinColumn(name = "group_id", nullable = false)
+	@OrderBy("revision ASC")
+	private List<GroupLifecycleEntry> lifecycleEntries = new ArrayList<>();
+
+	/** Checks the revision before gathering financial facts (L1, L4). */
+	public void requireLifecycle(UserId caller, long expected, GroupStatus source) {
+		requireAdmin(caller);
+		if (lifecycleRevision != expected || status != source)
+			throw new DomainException(ErrorCode.LIFECYCLE_CONFLICT, "The group changed. Refresh before trying again.");
+	}
+
+	/** Closes at zero and creates its immutable archive atomically (revised L1-L5). */
+	public GroupLifecycleChanged closeGroup(UserId caller, long expected, boolean allZero, String snapshot,
+			Instant now) {
+		requireLifecycle(caller, expected, GroupStatus.OPEN);
+		if (!allZero)
+			throw new DomainException(ErrorCode.BALANCES_NOT_ZERO, "Every balance must be zero before closing.");
+		if (snapshot == null || snapshot.isBlank())
+			throw new IllegalArgumentException("An archive snapshot is required");
+		archives.add(new GroupArchive(archives.size() + 1, caller.value(), now, snapshot));
+		return transition(caller, GroupStatus.CLOSED, "", now);
+	}
+
+	/** Reopens for corrections, preserving all earlier archives (revised L6). */
+	public GroupLifecycleChanged reopenGroup(UserId caller, long expected, String reason, Instant now) {
+		requireLifecycle(caller, expected, GroupStatus.CLOSED);
+		if (reason == null || reason.isBlank() || reason.length() > 500)
+			throw new DomainException(ErrorCode.BAD_REQUEST, "A reopening reason of 1 to 500 characters is required.");
+		return transition(caller, GroupStatus.OPEN, reason.strip(), now);
+	}
+
+	private GroupLifecycleChanged transition(UserId caller, GroupStatus next, String reason, Instant now) {
+		status = next;
+		lifecycleRevision++;
+		var entry = new GroupLifecycleEntry(lifecycleRevision, next == GroupStatus.CLOSED ? "CLOSED" : "REOPENED",
+				caller.value(), reason, now);
+		lifecycleEntries.add(entry);
+		return new GroupLifecycleChanged(entry.id(), groupId(), caller, next,
+				activeMemberships().stream().map(Membership::userId).toList(), now);
+	}
+
+	/** All writes must stop at closure (R5). */
+	public void requireOpen() {
+		if (status != GroupStatus.OPEN)
+			throw new DomainException(ErrorCode.GROUP_NOT_OPEN, "An admin must reopen this group first.");
+	}
+
+	public long lifecycleRevision() {
+		return lifecycleRevision;
+	}
+
+	public List<GroupArchive> archives() {
+		return List.copyOf(archives);
+	}
+
+	public List<GroupLifecycleEntry> lifecycleEntries() {
+		return List.copyOf(lifecycleEntries);
+	}
+
 	protected Group() {
 	}
 
@@ -121,6 +190,7 @@ public class Group {
 	 * ALREADY_INVITED when the invitee has an open invitation to this group
 	 */
 	public Invited inviteMember(UserId invitee, UserId inviter, GroupRole role, Instant now) {
+		requireOpen();
 		if (hasActiveMember(invitee)) {
 			throw new DomainException(ErrorCode.ALREADY_MEMBER, "This person is already a member of this group");
 		}
@@ -140,6 +210,7 @@ public class Group {
 	 * @return the {@link MemberPromoted} event
 	 */
 	public MemberPromoted promoteToAdmin(UserId user, UserId promotedBy, Instant now) {
+		requireOpen();
 		requireAdmin(promotedBy);
 		Membership membership = activeMemberships().stream()
 			.filter(m -> m.userId().equals(user))
@@ -157,11 +228,11 @@ public class Group {
 	 * Joins the user with the role the invitation carries (R9). The checks run in this
 	 * order: the invitation exists, is for this user and still pending
 	 * (INVITATION_NOT_FOUND), is not expired (INVITATION_EXPIRED), and the user is not a
-	 * member yet (ALREADY_MEMBER). The group's status is not checked yet because groups
-	 * cannot be closed before a later exercise.
+	 * member yet (ALREADY_MEMBER). Closed groups reject joining (GROUP_NOT_OPEN).
 	 * @return the {@link MemberJoined} event, carrying who invited the user
 	 */
 	public MemberJoined acceptInvitation(InvitationId invitationId, UserId user, Instant now) {
+		requireOpen();
 		Invitation invitation = invitation(invitationId);
 		invitation.requireAnswerableBy(user, now);
 		if (hasActiveMember(user)) {
@@ -179,6 +250,7 @@ public class Group {
 	 * @throws DomainException INVITATION_NOT_FOUND, INVITATION_EXPIRED
 	 */
 	public InvitationDeclined declineInvitation(InvitationId invitationId, UserId user, Instant now) {
+		requireOpen();
 		Invitation invitation = invitation(invitationId);
 		invitation.requireAnswerableBy(user, now);
 		invitation.decline();

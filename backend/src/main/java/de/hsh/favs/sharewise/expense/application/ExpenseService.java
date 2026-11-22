@@ -47,6 +47,7 @@ public class ExpenseService {
 	 */
 	@Transactional
 	public Expense recordExpense(RecordExpenseCommand command) {
+		groups.lockOpen(command.groupId());
 		groups.requireMember(command.groupId(), command.caller());
 		if (command.splitStrategy() != SplitStrategy.EQUAL) {
 			throw new DomainException(ErrorCode.SPLIT_NOT_SUPPORTED, "Only the EQUAL split is supported");
@@ -58,6 +59,22 @@ public class ExpenseService {
 		expenses.save(recorded.expense());
 		events.publishEvent(recorded.event());
 		return recorded.expense();
+	}
+
+	/** Preserves the original expense and books a reversal plus replacement (R5-R7). */
+	@Transactional
+	public Expense correctExpense(GroupId group, de.hsh.favs.sharewise.expense.api.ExpenseId id, UserId caller,
+			de.hsh.favs.sharewise.expense.domain.ExpenseTitle title, de.hsh.favs.sharewise.shared.Money amount) {
+		groups.lockOpen(group);
+		groups.requireMember(group, caller);
+		Expense original = expenses.findById(id.value())
+			.filter(e -> e.groupId().equals(group))
+			.orElseThrow(() -> new DomainException(ErrorCode.EXPENSE_NOT_FOUND, "Expense not found"));
+		var corrected = original.correct(groups.view(group), caller, title, amount, clock.instant());
+		expenses.save(original);
+		expenses.save(corrected.replacement());
+		events.publishEvent(corrected.reversal());
+		return corrected.replacement();
 	}
 
 	/** The group's expenses, newest first: by date, then by creation time. */

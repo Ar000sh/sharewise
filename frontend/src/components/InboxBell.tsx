@@ -30,6 +30,8 @@ function describe(entry: Notification): string {
   const who = entry.actor?.displayName ?? "Someone";
   const group = entry.group?.name ?? "a group";
   switch (entry.type) {
+    case "GROUP_CLOSED": return `${who} closed ${group} and created an archive`;
+    case "GROUP_REOPENED": return `${who} reopened ${group} for corrections`;
     case "MEMBER_JOINED":
       return `${who} joined ${group}`;
     case "INVITATION_DECLINED":
@@ -42,6 +44,7 @@ function describe(entry: Notification): string {
       return `${who} rejected your payment in ${group}`;
     case "DEBT_WAIVED":
       return `${who} waived part of your debt in ${group}`;
+    case "EXPENSE_CORRECTED": return `${who} corrected an expense in ${group}`;
     case "EXPENSE_RECORDED":
       return `${who} recorded an expense in ${group}`;
   }

@@ -22,6 +22,11 @@ class GroupMembershipTest {
 	UserId stranger = new UserId(UUID.randomUUID());
 
 	GroupMembership inMemory = new GroupMembership() {
+		@Override
+		public void lockOpen(GroupId group) {
+			throw new UnsupportedOperationException("Read-only test fixture");
+		}
+
 		Map<GroupId, List<UserId>> groups = Map.of(known, List.of(member));
 
 		public boolean exists(GroupId g) {

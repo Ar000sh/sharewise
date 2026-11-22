@@ -27,6 +27,31 @@ class ExpenseTest {
 	}
 
 	@Test
+	void correctionPreservesOriginalFactsAndReplacesTheExpense() {
+		var fixture = new ExpenseFixture().withRecordedBy(BOB);
+		var original = fixture.build();
+		var result = original.correct(fixture.groupView(), ALICE, new ExpenseTitle("Corrected hotel"),
+				Money.eur("800.00"), MutableClock.START);
+		assertThat(original.totalAmount()).isEqualTo(Money.eur("900.00"));
+		assertThat(original.status()).isEqualTo(ExpenseStatus.CORRECTED);
+		assertThat(result.replacement().correctedFrom()).isEqualTo(original.expenseId().value());
+		assertThat(result.replacement().totalAmount()).isEqualTo(Money.eur("800.00"));
+		assertThat(result.reversal().correctedBy()).isEqualTo(ALICE);
+		assertRefusedWith(() -> original.correct(fixture.groupView(), ALICE, new ExpenseTitle("Again"),
+				Money.eur("700.00"), MutableClock.START), ErrorCode.EXPENSE_NOT_EDITABLE);
+	}
+
+	@Test
+	void correctionRequiresAnOpenGroupAndAnAuthorizedEditor() {
+		var original = new ExpenseFixture().build();
+		assertRefusedWith(() -> original.correct(new ExpenseFixture().groupView(), BOB, new ExpenseTitle("Hotel"),
+				Money.eur("800.00"), MutableClock.START), ErrorCode.EXPENSE_NOT_EDITABLE);
+		assertRefusedWith(() -> original.correct(new ExpenseFixture().withClosedGroup().groupView(), ALICE,
+				new ExpenseTitle("Hotel"), Money.eur("800.00"), MutableClock.START), ErrorCode.GROUP_NOT_OPEN);
+		assertThat(original.status()).isEqualTo(ExpenseStatus.ACTIVE);
+	}
+
+	@Test
 	void recordingCreatesAnActiveExpenseAndReturnsTheEventWithEverythingSettlementNeeds() {
 		// when
 		Expense.Recorded recorded = new ExpenseFixture().record();

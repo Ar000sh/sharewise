@@ -53,10 +53,10 @@ public class SettlementPaymentService {
 
 	/**
 	 * The caller (the debtor) reports a payment to a creditor; it stays PENDING until the
-	 * creditor answers (R16). The order of the checks: the group exists and is not
-	 * archived (GROUP_NOT_FOUND, GROUP_NOT_OPEN), the caller is a member (NOT_A_MEMBER),
-	 * the creditor is a member (PARTICIPANT_NOT_IN_GROUP), then, under the ledger lock,
-	 * the open debt and the rules of {@link SettlementPayment#record}.
+	 * creditor answers (R16). The order of the checks: the group exists and is open
+	 * (GROUP_NOT_FOUND, GROUP_NOT_OPEN), the caller is a member (NOT_A_MEMBER), the
+	 * creditor is a member (PARTICIPANT_NOT_IN_GROUP), then, under the ledger lock, the
+	 * open debt and the rules of {@link SettlementPayment#record}.
 	 * @throws DomainException with one of the codes above, or those of
 	 * {@link SettlementPayment#record} (PAYMENT_EXCEEDS_OPEN_DEBT, AMOUNT_NOT_POSITIVE,
 	 * BAD_REQUEST)
@@ -102,6 +102,7 @@ public class SettlementPaymentService {
 	@Transactional
 	public SettlementPayment confirm(UserId caller, SettlementPaymentId paymentId) {
 		SettlementPayment payment = loadForAnswer(caller, paymentId);
+		groups.lockOpen(payment.groupId());
 		var event = payment.confirm(caller, clock.instant());
 		saveAnswer(payment);
 		events.publishEvent(event);
@@ -117,6 +118,7 @@ public class SettlementPaymentService {
 	@Transactional
 	public SettlementPayment reject(UserId caller, SettlementPaymentId paymentId, String note) {
 		SettlementPayment payment = loadForAnswer(caller, paymentId);
+		groups.lockOpen(payment.groupId());
 		var event = payment.reject(caller, note, clock.instant());
 		saveAnswer(payment);
 		events.publishEvent(event);
@@ -135,8 +137,8 @@ public class SettlementPaymentService {
 
 	/**
 	 * The PENDING payments the caller still has to answer as creditor (D10, I1), newest
-	 * first. No archive or former-member filter: no operation produces those states yet
-	 * (A4, parked until {@code archiveGroup} or {@code leaveGroup} is built).
+	 * first. Closure requires no pending payments, so a closed group cannot contribute an
+	 * unanswered payment.
 	 */
 	@Transactional(readOnly = true)
 	public List<SettlementPayment> listAwaitingMyAnswer(UserId caller) {
@@ -145,16 +147,17 @@ public class SettlementPaymentService {
 
 	/**
 	 * The checks before a payment or waiver between two people, in this order: the group
-	 * exists, it is not archived, the caller is a member, the other person is a member.
+	 * exists, it is open, the caller is a member, the other person is a member.
 	 * @throws DomainException with GROUP_NOT_FOUND, GROUP_NOT_OPEN, NOT_A_MEMBER or
 	 * PARTICIPANT_NOT_IN_GROUP
 	 */
 	private void requireGroupAcceptsSettlementBetween(GroupId group, UserId caller, UserId otherParty) {
+		groups.lockOpen(group);
 		if (!groups.exists(group)) {
 			throw new DomainException(ErrorCode.GROUP_NOT_FOUND, "Group not found");
 		}
-		if (groups.status(group) == GroupStatus.ARCHIVED) {
-			throw new DomainException(ErrorCode.GROUP_NOT_OPEN, "The group is archived");
+		if (groups.status(group) != GroupStatus.OPEN) {
+			throw new DomainException(ErrorCode.GROUP_NOT_OPEN, "The group is closed");
 		}
 		if (!groups.isMember(group, caller)) {
 			throw new DomainException(ErrorCode.NOT_A_MEMBER, "You are not a member of this group");

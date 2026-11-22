@@ -9,7 +9,7 @@ package de.hsh.favs.sharewise.notification.domain;
 public enum NotificationType {
 
 	/** Somebody joined through the recipient's invitation. */
-	MEMBER_JOINED,
+	GROUP_CLOSED, GROUP_REOPENED, EXPENSE_CORRECTED, MEMBER_JOINED,
 
 	/** Somebody turned the recipient's invitation down. */
 	INVITATION_DECLINED,

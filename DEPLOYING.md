@@ -1,5 +1,8 @@
 # ShareWise lab deployment
 
+For the complete team walkthrough, theory, responsibilities and commands for
+each machine, see [the team deployment guide](docs/TEAM_DEPLOYMENT_GUIDE.md).
+
 This configuration packages the current branch, not the lecturer's favsdemo.
 It runs Next.js, Spring Boot (Java 21), PostgreSQL and Keycloak. It is a private
 lab setup reached through SSH, not a public production HTTPS deployment.
@@ -52,7 +55,7 @@ The existing realm permits frontend redirects on port 3100. Registration, login,
 an authenticated `/api/me` call, refresh and logout should be checked before
 claiming the complete application is deployed.
 
-## Run on docker-01 later
+## Run on docker-01
 
 Copy this configuration, the `docker/keycloak` realm directory and the private
 environment file to the VM. Supply images by building from this repository there,
@@ -119,8 +122,13 @@ After the first successful default-branch run:
    SSH forwards below. Do not treat a green image publication job as deployment.
 
 This implements CI and image delivery; it does not remotely execute commands on
-the university VM. An automatic deployment job would additionally need a runner
-with lab network access and deployment credentials.
+the university VM. On 20 November 2026 a runner service was installed on docker-01
+for the separate private `JoiningwithMattheus/sharewise-deploy` repository. Its
+deployment workflow now polls successful main publications every five minutes
+and supports manual runs. A forced deployment of the verified version passed
+with a database backup and service health checks. See sections
+11 and 12 of [the team guide](docs/TEAM_DEPLOYMENT_GUIDE.md) for setup, service logs
+and the remaining steps.
 
 Reference: https://docs.github.com/en/actions/tutorials/publish-packages/publish-docker-images
 
