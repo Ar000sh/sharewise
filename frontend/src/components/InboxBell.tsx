@@ -218,7 +218,9 @@ export function InboxBell() {
   const empty = openInvitations.length === 0 && waitingPayments.length === 0 && entries.length === 0;
 
   return (
-    <div className="relative">
+    // Not `relative`: the dropdown is placed against the whole header group (AuthBar), so it opens at the right edge of
+    // the screen, never over the page's tabs and never off the left edge of a phone.
+    <div>
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}

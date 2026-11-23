@@ -68,7 +68,7 @@ export function AuthBar() {
   }
 
   return (
-    <div className="ml-auto flex flex-wrap items-center justify-end gap-3 text-sm">
+    <div className="relative ml-auto flex flex-wrap items-center justify-end gap-3 text-sm">
       <InboxBell />
       {editing ? (
         <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2">
