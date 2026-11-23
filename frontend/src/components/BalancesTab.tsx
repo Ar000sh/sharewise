@@ -2,16 +2,12 @@
 
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
-import { amountToCents, formatEuro } from "@/lib/money";
+import { amountToCents, formatEuro, formatSignedEuro } from "@/lib/money";
 import { useApi } from "@/lib/useApi";
 import { useGroupChange } from "@/lib/useGroupChange";
 import { useLookAgain } from "@/lib/useLookAgain";
 
 type Balance = components["schemas"]["Balance"];
-
-function signed(cents: number): string {
-  return cents > 0 ? `+${formatEuro(cents)}` : formatEuro(cents);
-}
 
 /**
  * Everybody's net balance. When something in the group changed on this page a moment ago (an expense, a payment
@@ -35,7 +31,7 @@ export function BalancesTab({ groupId }: { groupId: string }) {
             <li key={b.userId} className="flex justify-between gap-2 px-3 py-2">
               <span>{b.displayName}</span>
               <span className={`font-medium ${cents > 0 ? "text-positive" : cents < 0 ? "font-bold text-negative" : ""}`}>
-                {signed(cents)}
+                {formatSignedEuro(cents)}
               </span>
             </li>
           );

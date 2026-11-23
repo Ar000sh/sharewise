@@ -1,27 +1,77 @@
 import type { components } from "@/api/schema";
-import { amountToCents, formatEuro } from "@/lib/money";
+import { Avatar } from "@/components/Avatar";
+import { formatDay } from "@/lib/dates";
+import { amountToCents, formatEuro, formatSignedEuro, yourPartCents } from "@/lib/money";
 
 type Expense = components["schemas"]["Expense"];
 type Member = components["schemas"]["Member"];
 
-export function ExpenseList({ expenses, members }: { expenses: Expense[]; members: Member[] }) {
-  if (expenses.length === 0) return <p>No expenses yet.</p>;
+/** Consecutive expenses of the same date, in the order the API gives them (newest first). */
+function byDay(expenses: Expense[]): { date: string; expenses: Expense[] }[] {
+  const days: { date: string; expenses: Expense[] }[] = [];
+  for (const expense of expenses) {
+    const last = days.at(-1);
+    if (last?.date === expense.date) last.expenses.push(expense);
+    else days.push({ date: expense.date, expenses: [expense] });
+  }
+  return days;
+}
+
+/**
+ * The expenses of a group grouped by day (board B-04). Each row says who paid, how it is split and what it means for
+ * the person looking: their part, plus or minus, with the sign and not only the colour telling the direction.
+ */
+export function ExpenseList({
+  expenses,
+  members,
+  currentUserId,
+}: {
+  expenses: Expense[];
+  members: Member[];
+  currentUserId: string;
+}) {
+  if (expenses.length === 0) {
+    return (
+      <div className="card flex flex-col gap-1 p-6">
+        <h2 className="text-2xl">No expenses yet</h2>
+        <p className="text-muted">Record the first one. Everyone in the group sees it.</p>
+      </div>
+    );
+  }
 
   const nameOf = (id: string) => members.find((m) => m.userId === id)?.displayName ?? "Former member";
 
   return (
-    <ul className="card divide-y">
-      {expenses.map((e) => (
-        <li key={e.id} className="flex items-start justify-between gap-2 px-3 py-2">
-          <div>
-            <div className="font-medium">{e.title}</div>
-            <div className="text-sm text-muted">
-              {nameOf(e.paidBy)} paid · {e.date}
-            </div>
-          </div>
-          <div className="whitespace-nowrap font-medium">{formatEuro(amountToCents(e.totalAmount))}</div>
-        </li>
+    <div className="flex flex-col gap-2">
+      {byDay(expenses).map((day) => (
+        <section key={day.date} aria-label={formatDay(day.date)}>
+          <h2 className="px-1 pt-3 pb-1 font-sans text-sm font-bold tracking-normal text-muted">{formatDay(day.date)}</h2>
+          <ul className="card divide-y">
+            {day.expenses.map((e) => {
+              const part = yourPartCents(e, currentUserId);
+              return (
+                <li key={e.id} className="flex items-center gap-4 px-5 py-4">
+                  <Avatar userId={e.paidBy} name={nameOf(e.paidBy)} />
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <span className="font-bold">{e.title}</span>
+                    <span className="text-sm text-muted">
+                      {e.paidBy === currentUserId ? "You" : nameOf(e.paidBy)} paid · equally between {e.shares.length}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="font-bold whitespace-nowrap tabular-nums">{formatEuro(amountToCents(e.totalAmount))}</span>
+                    <span
+                      className={`text-sm whitespace-nowrap tabular-nums ${part > 0 ? "text-positive" : part < 0 ? "text-negative" : "text-muted"}`}
+                    >
+                      your part {formatSignedEuro(part)}
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       ))}
-    </ul>
+    </div>
   );
 }

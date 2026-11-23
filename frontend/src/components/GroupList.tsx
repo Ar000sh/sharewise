@@ -3,16 +3,10 @@
 import Link from "next/link";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { GroupStatusBadge } from "@/components/GroupStatusBadge";
 import { useApi } from "@/lib/useApi";
 
 type Group = components["schemas"]["Group"];
-
-/** How each group status reads on the screen (requirements: "the UI must make the current state obvious"). */
-const STATUS_LABEL: Record<Group["status"], string> = {
-  OPEN: "Open",
-  CLOSED_FOR_SETTLEMENT: "Closed for settlement",
-  ARCHIVED: "Archived",
-};
 
 export function GroupList() {
   const { data: groups, error, reload } = useApi<Group[]>("/groups");
@@ -37,11 +31,7 @@ export function GroupList() {
           <Link href={`/groups/${g.id}`} className="flex flex-col gap-2 px-6 py-5">
             <span className="font-display text-2xl font-bold tracking-tight">{g.name}</span>
             <span className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-              <span
-                className={`rounded-full border-2 px-3 py-0.5 font-bold ${g.status === "OPEN" ? "border-positive text-positive" : "border-muted text-muted"}`}
-              >
-                {STATUS_LABEL[g.status]}
-              </span>
+              <GroupStatusBadge status={g.status} />
               <span className="text-muted">
                 {g.memberCount} {g.memberCount === 1 ? "member" : "members"}
               </span>

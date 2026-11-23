@@ -80,7 +80,9 @@ cookie is per browser.
    admin. Later, an admin can press **Make admin** next to a member; that member's bell shows "… made you an admin".
 3. **Bob / Carol:** reload, open the bell (**Inbox**), read "Alice … invited you to Mallorca 2027" and press **Accept**
    (or **Decline**). Alice's bell shows "… joined Mallorca 2027" a moment later (it arrives through an event).
-4. **Alice:** add "Hotel", 900 €, paid by Alice, everyone. **Bob:** "Dinner", 180 €, paid by Bob, everyone.
+4. **Alice:** **Add expense** (top of the group page; on a phone the button at the bottom), "Hotel", 900 €, paid by
+   Alice, **Select everyone**, **Save expense**. **Bob:** the same with "Dinner", 180 €, paid by Bob. After saving, the
+   group page says "Updating…" for a moment and then shows your own balance ("You are owed +540,00 €").
 5. Balances tab: Alice +540,00 €, Bob -180,00 €, Carol -360,00 €. They arrive through an event, so they can lag the
    expense by a moment.
 5. **Carol:** Settle up tab, "You owe" shows 360,00 € to Alice; **I paid**, **Send payment**. The row now says

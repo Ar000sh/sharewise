@@ -36,12 +36,20 @@ async function signUp(browser: Browser, firstName: string): Promise<Page> {
   return page;
 }
 
+/** From the group page to the Add expense page (its own page, design 2026-11-23, U7). */
+async function openAddExpense(page: Page) {
+  await page.getByRole("link", { name: "Add expense" }).click();
+  await expect(page.getByRole("heading", { name: "Add expense" })).toBeVisible();
+}
+
+/** Fills the open Add expense page, saves, and is back on the group page with the expense in the list. */
 async function addExpense(page: Page, title: string, euros: string) {
-  await page.getByLabel("Title").fill(title);
-  await page.getByLabel("Amount (€)").fill(euros);
+  await page.getByLabel("Amount (EUR)").fill(euros);
+  await page.getByLabel("What was it for?").fill(title);
   // Only the recorder is ticked at first: the journey splits every expense between the whole group.
   await page.getByRole("button", { name: "Select everyone" }).click();
-  await page.getByRole("button", { name: "Add expense" }).click();
+  await page.getByRole("button", { name: "Save expense" }).click();
+  await expect(page.getByRole("heading", { name: "Mallorca 2027" })).toBeVisible();
   await expect(page.getByText(title).first()).toBeVisible();
 }
 
@@ -93,9 +101,11 @@ test("three friends sign up, share a group, see who owes what and settle up", as
 
   // Alice pays the hotel (900 €, all three), Bob pays the dinner (180 €, all three).
   await alice.reload();
+  await openAddExpense(alice);
   await expect(alice.getByLabel("Paid by")).toContainText("Carol Tester");
   await addExpense(alice, "Hotel", "900");
   await bob.reload();
+  await openAddExpense(bob);
   await expect(bob.getByLabel("Paid by")).toContainText("Carol Tester");
   // Nobody has to pick themselves: the form already says who is recording.
   await expect(bob.getByLabel("Paid by").locator("option:checked")).toHaveText("Bob Tester");
