@@ -79,6 +79,42 @@ describe("GroupDetail", () => {
     expect(screen.queryByLabelText(/paid by/i)).not.toBeInTheDocument();
   });
 
+  it("aPaymentWaitingForTheViewerShowsInTheHeroAndOnTheSettleUpTabAndLeadsThere", async () => {
+    // given a payment of this group waits for Alice's answer
+    serve({ userId: "u1", displayName: "Alice" });
+    const answer = apiMock.getMockImplementation()!;
+    apiMock.mockImplementation(async (path: string, init?: RequestInit) =>
+      path === "/inbox"
+        ? {
+            invitations: [],
+            notifications: { unreadCount: 0, items: [] },
+            payments: [
+              {
+                id: "p1",
+                groupId: "g1",
+                fromDebtor: "u2",
+                fromDebtorName: "Bob",
+                toCreditor: "u1",
+                toCreditorName: "Alice",
+                amount: "90.00",
+                status: "PENDING",
+                note: null,
+                createdAt: "2027-07-27T16:40:00Z",
+                resolvedAt: null,
+              },
+            ],
+          }
+        : answer(path, init),
+    );
+    renderPage();
+
+    // when
+    await userEvent.click(await screen.findByRole("button", { name: "1 payment waits for your answer" }));
+
+    // then
+    expect(screen.getByRole("tab", { name: "Settle up, 1 waiting" })).toHaveAttribute("aria-selected", "true");
+  });
+
   it("showsTheViewersOwnBalanceInWords", async () => {
     // given Bob owes 180 €
     serve({ userId: "u2", displayName: "Bob" });

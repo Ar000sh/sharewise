@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
 import { AuthBar } from "@/components/AuthBar";
+import { MainNav } from "@/components/MainNav";
 import { QueryProvider } from "@/components/QueryProvider";
 import { CurrentUserProvider } from "@/lib/currentUser";
 import "./globals.css";
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 <span aria-hidden="true" className="size-6 rounded-full bg-accent" />
                 ShareWise
               </Link>
+              <MainNav />
               <AuthBar />
             </header>
             <div className="flex-1 px-4 py-8 sm:px-6">{children}</div>

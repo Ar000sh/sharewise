@@ -27,7 +27,18 @@ function OwnBalance({ cents }: { cents: number }) {
  * balance. It reads the same balances query as the Balances tab and, after a change made on this device, looks again
  * for a short time and says "Updating…" meanwhile (eventual consistency: the ledger books a change a moment later).
  */
-export function GroupHero({ group, currentUserId }: { group: GroupDetailData; currentUserId: string | undefined }) {
+export function GroupHero({
+  group,
+  currentUserId,
+  waiting,
+  onOpenSettleUp,
+}: {
+  group: GroupDetailData;
+  currentUserId: string | undefined;
+  /** Payments of this group that wait for the viewer's answer (from the one inbox query). */
+  waiting: number;
+  onOpenSettleUp: () => void;
+}) {
   const { data: balances, reload } = useApi<Balance[]>(`/groups/${group.id}/balances`, { poll: true });
   const { lastChangedAt } = useGroupChange(group.id);
   const { updating } = useLookAgain(lastChangedAt, reload);
@@ -52,6 +63,11 @@ export function GroupHero({ group, currentUserId }: { group: GroupDetailData; cu
         </span>
       </div>
       {own && <OwnBalance cents={amountToCents(own.netBalance)} />}
+      {waiting > 0 && (
+        <button type="button" onClick={onOpenSettleUp} className="self-start font-bold underline">
+          {waiting === 1 ? "1 payment waits for your answer" : `${waiting} payments wait for your answer`}
+        </button>
+      )}
       {/* On a phone the most frequent action stays in reach at the bottom of the screen (design U7). */}
       <div className="fixed right-4 bottom-4 z-10 sm:hidden">
         <Link href={`/groups/${group.id}/expenses/new`} className="btn-primary min-h-14 shadow-xl">

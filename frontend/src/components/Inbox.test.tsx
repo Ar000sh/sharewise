@@ -2,7 +2,7 @@ import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api } from "@/lib/api";
-import { InboxBell } from "@/components/InboxBell";
+import { Inbox } from "@/components/Inbox";
 import { renderWithQueryClient } from "@/lib/renderWithQueryClient";
 import { lastChangedKey } from "@/lib/useGroupChange";
 import { INBOX_POLL_MS } from "@/lib/useInbox";
@@ -57,14 +57,10 @@ function backend(others: (path: string) => unknown = () => undefined) {
   });
 }
 
-async function openBell() {
-  await userEvent.click(await screen.findByRole("button", { name: /inbox/i }));
-}
-
-/** Renders the bell and opens its dropdown, the set-up of most tests. */
+/** Renders the inbox page and waits until it has loaded, the set-up of most tests. */
 async function renderOpened() {
-  const view = renderWithQueryClient(<InboxBell />);
-  await openBell();
+  const view = renderWithQueryClient(<Inbox />);
+  await screen.findByRole("heading", { name: "Inbox" });
   return view;
 }
 
@@ -77,19 +73,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("InboxBell", () => {
-  it("badgeIsOpenInvitationsPlusWaitingPaymentsPlusUnreadEntries", async () => {
-    // given one invitation, one payment waiting and one unread entry
-    inbox = { ...inbox, payments: [payment] };
-    backend();
-
-    // when
-    renderWithQueryClient(<InboxBell />);
-
-    // then
-    expect(await screen.findByRole("button", { name: "Inbox, 3 new" })).toHaveTextContent("3");
-  });
-
+describe("Inbox", () => {
   it("showsAPaymentWaitingForMyAnswerBeforeTheEntries", async () => {
     // given
     inbox = { ...inbox, invitations: [], payments: [payment] };
@@ -223,19 +207,6 @@ describe("InboxBell", () => {
     // then
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(client.getQueryData(lastChangedKey("g1"))).toBeUndefined();
-  });
-
-  it("openingTheGroupFromAPaymentClosesTheDropdown", async () => {
-    // given
-    inbox = { ...inbox, payments: [payment] };
-    backend();
-    await renderOpened();
-
-    // when
-    await userEvent.click(screen.getByRole("link", { name: "Open group" }));
-
-    // then
-    expect(screen.queryByRole("region", { name: "Inbox entries" })).not.toBeInTheDocument();
   });
 
   it("describesTheThreeSettlementEntries", async () => {
@@ -403,7 +374,7 @@ describe("InboxBell", () => {
 
     expect(apiMock).toHaveBeenCalledWith("/notifications/read-all", { method: "POST" });
     await waitFor(() => expect(screen.queryByRole("button", { name: /mark all as read/i })).not.toBeInTheDocument());
-    expect(screen.getByRole("button", { name: /inbox/i })).toHaveTextContent("1");
+    expect(screen.queryByText("New")).not.toBeInTheDocument();
   });
 
   it("showsWhatLoadedWhenTheInvitationsCouldNotBeLoaded", async () => {
@@ -446,7 +417,7 @@ describe("InboxBell", () => {
     // given (asking again when the window gets focus is TanStack Query's default, design 2026-11-11)
     vi.useFakeTimers({ shouldAdvanceTime: true });
     backend();
-    renderWithQueryClient(<InboxBell />);
+    renderWithQueryClient(<Inbox />);
     await vi.waitFor(() => expect(apiMock).toHaveBeenCalledTimes(1));
 
     // when

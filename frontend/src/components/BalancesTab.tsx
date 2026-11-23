@@ -11,7 +11,7 @@ type Balance = components["schemas"]["Balance"];
 
 /**
  * Everybody's net balance. When something in the group changed on this page a moment ago (an expense, a payment
- * answered in the bell) the tab looks again a few times and says so: the ledger books the change after it was saved.
+ * answered in the inbox) the tab looks again a few times and says so: the ledger books the change after it was saved.
  */
 export function BalancesTab({ groupId }: { groupId: string }) {
   const { data: balances, error, reload } = useApi<Balance[]>(`/groups/${groupId}/balances`, { poll: true });
