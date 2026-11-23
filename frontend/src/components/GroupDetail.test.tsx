@@ -41,6 +41,8 @@ function serve(me: Promise<unknown> | unknown) {
     if (path === "/groups/g1/expenses") return [];
     if (path === "/groups/g1/balances") return [];
     if (path === "/groups/g1/settlement-plan") return [];
+    if (path === "/groups/g1/settlement-payments") return [];
+    if (path === "/inbox") return { invitations: [], notifications: { unreadCount: 0, items: [] }, payments: [] };
     throw new Error(`unexpected call ${path}`);
   });
 }
