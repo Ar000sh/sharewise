@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { amountToCents, centsToAmount, eurosToCents, formatEuro } from "@/lib/money";
+import { amountToCents, centsToAmount, eurosToCents, formatEuro, formatSignedEuro, yourPartCents } from "@/lib/money";
 
 describe("eurosToCents", () => {
   it.each([
@@ -36,6 +36,43 @@ describe("formatEuro", () => {
 
   it("formatsZero", () => {
     expect(formatEuro(0)).toBe("0,00 €");
+  });
+});
+
+describe("formatSignedEuro", () => {
+  it("marksWhatIsOwedWithAPlusAndWhatIsOwingWithAMinus", () => {
+    expect(formatSignedEuro(54000)).toBe("+540,00 €");
+    expect(formatSignedEuro(-18000)).toBe("-180,00 €");
+    expect(formatSignedEuro(0)).toBe("0,00 €");
+  });
+});
+
+describe("yourPartCents", () => {
+  // 10,00 € split between three: the server gave the remainder cent to the first participant (R13).
+  const taxi = {
+    totalAmount: "10.00",
+    paidBy: "alice",
+    shares: [
+      { participantId: "alice", owedShare: "3.34" },
+      { participantId: "bob", owedShare: "3.33" },
+      { participantId: "carol", owedShare: "3.33" },
+    ],
+  };
+
+  it("aPayerWhoIsAlsoAParticipantGetsWhatTheyPaidMinusTheirOwnShare", () => {
+    expect(yourPartCents(taxi, "alice")).toBe(666);
+  });
+
+  it("aParticipantWhoDidNotPayOwesExactlyTheShareTheServerBooked", () => {
+    expect(yourPartCents(taxi, "bob")).toBe(-333);
+  });
+
+  it("aPayerWhoIsNotAParticipantGetsTheWholeAmount", () => {
+    expect(yourPartCents({ ...taxi, paidBy: "dave" }, "dave")).toBe(1000);
+  });
+
+  it("someoneOutsideTheExpenseHasNoPart", () => {
+    expect(yourPartCents(taxi, "dave")).toBe(0);
   });
 });
 

@@ -1,15 +1,14 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import type { components } from "@/api/schema";
 import { BalancesTab } from "@/components/BalancesTab";
 import { ErrorBanner } from "@/components/ErrorBanner";
-import { ExpenseForm } from "@/components/ExpenseForm";
 import { ExpenseList } from "@/components/ExpenseList";
+import { GroupHero } from "@/components/GroupHero";
 import { InviteForm } from "@/components/InviteForm";
 import { MemberList } from "@/components/MemberList";
 import { SettleUpTab } from "@/components/SettleUpTab";
-import { Toast } from "@/components/Toast";
 import { useCurrentUser } from "@/lib/currentUser";
 import { useApi } from "@/lib/useApi";
 import { useGroupChange } from "@/lib/useGroupChange";
@@ -27,8 +26,6 @@ export function GroupDetail({ groupId }: { groupId: string }) {
   const { data: expenses, error: expensesError } = useApi<Expense[]>(`/groups/${groupId}/expenses`, { poll: true });
   const { markChanged } = useGroupChange(groupId);
   const [tab, setTab] = useState<Tab>("Expenses");
-  const [notice, setNotice] = useState<string>();
-  const dismissNotice = useCallback(() => setNotice(undefined), []);
 
   // A failed poll keeps the page (and what the user typed) and shows the message above it; only a first load can fail it.
   if (error && !group) return <ErrorBanner error={error} onRetry={reload} />;
@@ -38,10 +35,10 @@ export function GroupDetail({ groupId }: { groupId: string }) {
   const isAdmin = group.members.some((m) => m.userId === me?.userId && m.role === "ADMIN");
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-3xl sm:text-4xl">{group.name}</h1>
+    <div className="flex flex-col gap-6 pb-20 sm:pb-0">
+      <GroupHero group={group} currentUserId={me?.userId} />
       <ErrorBanner error={error} />
-      <div role="tablist" className="flex gap-1 border-b">
+      <div role="tablist" aria-label="Group sections" className="flex gap-2 overflow-x-auto pb-1">
         {TABS.map((t) => (
           <button
             key={t}
@@ -49,7 +46,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
             role="tab"
             aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={`px-3 py-2 ${tab === t ? "border-b-2 border-foreground font-medium" : "text-muted"}`}
+            className={`min-h-11 shrink-0 rounded-full border-2 px-5 font-bold ${tab === t ? "border-foreground bg-foreground text-background" : "bg-surface"}`}
           >
             {t}
           </button>
@@ -58,22 +55,12 @@ export function GroupDetail({ groupId }: { groupId: string }) {
 
       {tab === "Expenses" && (
         <div className="flex flex-col gap-4">
-          {/* Only once we know who is asking: the "Paid by" default is chosen when the form first appears. */}
-          {me ? (
-            <ExpenseForm
-              groupId={group.id}
-              members={group.members}
-              currentUserId={me.userId}
-              onRecorded={() => {
-                markChanged();
-                setNotice("Expense saved. Balances update in a moment.");
-              }}
-            />
+          <ErrorBanner error={expensesError} />
+          {expenses && me ? (
+            <ExpenseList expenses={expenses} members={group.members} currentUserId={me.userId} />
           ) : (
             <p>Loading…</p>
           )}
-          <ErrorBanner error={expensesError} />
-          {expenses && <ExpenseList expenses={expenses} members={group.members} />}
         </div>
       )}
       {tab === "Balances" && <BalancesTab groupId={group.id} />}
@@ -88,7 +75,6 @@ export function GroupDetail({ groupId }: { groupId: string }) {
           {isAdmin && <InviteForm groupId={group.id} />}
         </section>
       )}
-      {notice && <Toast message={notice} onDismiss={dismissNotice} />}
     </div>
   );
 }

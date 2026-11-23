@@ -1,4 +1,4 @@
-import { centsToAmount } from "@/lib/money";
+import { amountToCents, centsToAmount } from "@/lib/money";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -23,7 +23,7 @@ function renderForm(onRecorded = vi.fn()) {
 }
 
 async function fill(title: string, amount: string) {
-  await userEvent.type(screen.getByLabelText(/title/i), title);
+  await userEvent.type(screen.getByLabelText(/what was it for/i), title);
   await userEvent.type(screen.getByLabelText(/amount/i), amount);
 }
 
@@ -69,7 +69,7 @@ describe("ExpenseForm", () => {
     expect(screen.getByRole("checkbox", { name: "Dave" })).not.toBeChecked();
     const rows = within(screen.getByRole("list", { name: /shares/i })).getAllByRole("listitem");
     expect(rows.map((r) => r.textContent)).toEqual(["Alice300,00 €", "Bob300,00 €", "Carol300,00 €"]);
-    expect(screen.getByLabelText(/title/i)).toHaveValue("Hotel");
+    expect(screen.getByLabelText(/what was it for/i)).toHaveValue("Hotel");
   });
 
   it("theRecorderCannotUntickThemselvesButOthersCanBeUnticked", async () => {
@@ -100,7 +100,7 @@ describe("ExpenseForm", () => {
     renderForm();
 
     await fill("Lunch", typed);
-    await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
+    await userEvent.click(screen.getByRole("button", { name: /save expense/i }));
 
     expect(postedBody()).toMatchObject({ totalAmount: centsToAmount(cents), splitStrategy: "EQUAL" });
   });
@@ -111,7 +111,7 @@ describe("ExpenseForm", () => {
     apiMock.mockReturnValue(new Promise((resolve) => (finish = resolve)));
     renderForm();
     await fill("Groceries", "12");
-    const button = screen.getByRole("button", { name: /add expense/i });
+    const button = screen.getByRole("button", { name: /save expense/i });
 
     // when the button is clicked twice
     await userEvent.click(button);
@@ -130,7 +130,7 @@ describe("ExpenseForm", () => {
 
     await fill("Hotel", "900");
     await userEvent.click(screen.getByRole("checkbox", { name: "Alice" }));
-    await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
+    await userEvent.click(screen.getByRole("button", { name: /save expense/i }));
 
     expect(apiMock.mock.calls[0][0]).toBe("/groups/g1/expenses");
     expect(postedBody()).toMatchObject({
@@ -141,7 +141,7 @@ describe("ExpenseForm", () => {
       date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
     });
     expect(onRecorded).toHaveBeenCalledTimes(1);
-    expect(screen.getByLabelText(/title/i)).toHaveValue("");
+    expect(screen.getByLabelText(/what was it for/i)).toHaveValue("");
   });
 
   it("showsSharePreviewPerParticipant", async () => {
@@ -164,7 +164,7 @@ describe("ExpenseForm", () => {
     const onRecorded = renderForm();
 
     await fill("Taxi", "10");
-    await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
+    await userEvent.click(screen.getByRole("button", { name: /save expense/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("The payer is not a member of this group.");
     expect(onRecorded).not.toHaveBeenCalled();
@@ -174,7 +174,7 @@ describe("ExpenseForm", () => {
     renderForm();
 
     await fill("Taxi", "1.000,50");
-    await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
+    await userEvent.click(screen.getByRole("button", { name: /save expense/i }));
 
     expect(screen.getByRole("alert")).toHaveTextContent(/valid amount/i);
     expect(apiMock).not.toHaveBeenCalled();
@@ -182,35 +182,72 @@ describe("ExpenseForm", () => {
 });
 
 describe("ExpenseList", () => {
-  it("showsExpensesWithPayerAndAmount", () => {
+  /** An expense split equally between Alice, Bob and Carol; the server's shares give the remainder cent to Alice. */
+  function expense(id: string, title: string, totalAmount: string, date: string, paidBy: string) {
+    const third = amountToCents(totalAmount) / 3;
+    const base = Math.floor(third);
+    const first = amountToCents(totalAmount) - 2 * base;
+    return {
+      id,
+      title,
+      totalAmount,
+      date,
+      paidBy,
+      recordedBy: paidBy,
+      splitStrategy: "EQUAL" as const,
+      status: "ACTIVE" as const,
+      shares: [
+        { participantId: "u1", owedShare: centsToAmount(first) },
+        { participantId: "u2", owedShare: centsToAmount(base) },
+        { participantId: "u3", owedShare: centsToAmount(base) },
+      ],
+    };
+  }
+
+  it("groupsTheExpensesByDayNewestFirstAsTheServerSendsThem", () => {
+    // when Bob looks at three expenses on two days
     render(
       <ExpenseList
         members={members}
+        currentUserId="u2"
         expenses={[
-          {
-            id: "e1",
-            title: "Dinner",
-            totalAmount: "180.00",
-            date: "2027-06-02",
-            paidBy: "u1",
-            recordedBy: "u1",
-            splitStrategy: "EQUAL",
-            status: "ACTIVE",
-            shares: [],
-          },
+          expense("e3", "Taxi", "10.00", "2027-07-19", "u1"),
+          expense("e2", "Dinner", "180.00", "2027-07-19", "u2"),
+          expense("e1", "Hotel", "900.00", "2027-07-17", "u1"),
         ]}
       />,
     );
 
-    const item = screen.getByRole("listitem");
-    expect(item).toHaveTextContent("Dinner");
-    expect(item).toHaveTextContent("180,00 €");
-    expect(item).toHaveTextContent("Alice");
-    expect(item).toHaveTextContent("2027-06-02");
+    // then each day is a section with its expenses
+    const monday = screen.getByRole("region", { name: "Monday 19 Jul" });
+    expect(within(monday).getAllByRole("listitem").map((li) => li.textContent)).toEqual([
+      expect.stringContaining("Taxi"),
+      expect.stringContaining("Dinner"),
+    ]);
+    expect(within(screen.getByRole("region", { name: "Saturday 17 Jul" })).getByRole("listitem")).toHaveTextContent("Hotel");
+  });
+
+  it("saysWhoPaidHowItIsSplitAndWhatItMeansForTheViewer", () => {
+    // when Bob looks at a dinner he paid and a taxi Alice paid
+    render(
+      <ExpenseList
+        members={members}
+        currentUserId="u2"
+        expenses={[expense("e2", "Dinner", "180.00", "2027-07-19", "u2"), expense("e3", "Taxi", "10.00", "2027-07-19", "u1")]}
+      />,
+    );
+
+    // then the amounts and his part are the server's, with a sign
+    const [dinner, taxi] = screen.getAllByRole("listitem");
+    expect(dinner).toHaveTextContent("You paid · equally between 3");
+    expect(dinner).toHaveTextContent("180,00 €");
+    expect(dinner).toHaveTextContent("your part +120,00 €");
+    expect(taxi).toHaveTextContent("Alice paid · equally between 3");
+    expect(taxi).toHaveTextContent("your part -3,33 €");
   });
 
   it("showsEmptyState", () => {
-    render(<ExpenseList members={members} expenses={[]} />);
+    render(<ExpenseList members={members} currentUserId="u2" expenses={[]} />);
 
     expect(screen.getByText(/no expenses yet/i)).toBeInTheDocument();
   });

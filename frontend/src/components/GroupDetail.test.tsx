@@ -4,8 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api } from "@/lib/api";
 import { GroupDetail } from "@/components/GroupDetail";
 import { CurrentUserProvider } from "@/lib/currentUser";
-import { renderWithQueryClient } from "@/lib/renderWithQueryClient";
+import { renderWithQueryClient, testQueryClient } from "@/lib/renderWithQueryClient";
 import { POLL_MS } from "@/lib/useApi";
+import { markGroupChanged } from "@/lib/useGroupChange";
+import { LOOK_AGAIN_AFTER_MS } from "@/lib/useLookAgain";
 
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<typeof import("@/lib/api")>()), api: vi.fn() }));
 
@@ -43,28 +45,56 @@ function serve(me: Promise<unknown> | unknown) {
   });
 }
 
-function renderPage() {
+function renderPage(client = testQueryClient()) {
   renderWithQueryClient(
     <CurrentUserProvider>
       <GroupDetail groupId="g1" />
     </CurrentUserProvider>,
+    client,
   );
 }
 
+/** A client in which the group was just changed on this device, as the Add expense page leaves it after saving. */
+function clientAfterAChange() {
+  const client = testQueryClient();
+  markGroupChanged(client, "g1");
+  return client;
+}
+
 describe("GroupDetail", () => {
-  it("offersTheExpenseFormOnlyOnceItKnowsWhoIsAskingSoThePayerDefaultIsRight", async () => {
-    // given the group arrives before "who am I"
-    let answerMe: (user: unknown) => void = () => {};
-    serve(new Promise((resolve) => (answerMe = resolve)));
+  it("leadsToTheAddExpensePageInsteadOfShowingTheFormOnTheList", async () => {
+    // given
+    serve({ userId: "u2", displayName: "Bob" });
 
     // when
-    renderPage()
-    expect(await screen.findByRole("heading", { name: "Mallorca 2027" })).toBeInTheDocument();
+    renderPage();
 
-    // then there is no form yet, so the payer cannot silently default to the first member
-    expect(screen.queryByRole("button", { name: /add expense/i })).not.toBeInTheDocument();
-    answerMe({ userId: "u2", displayName: "Bob" });
-    expect(await screen.findByLabelText(/paid by/i)).toHaveValue("u2");
+    // then
+    expect(await screen.findByRole("heading", { name: "Mallorca 2027" })).toBeInTheDocument();
+    for (const link of screen.getAllByRole("link", { name: "Add expense" })) {
+      expect(link).toHaveAttribute("href", "/groups/g1/expenses/new");
+    }
+    expect(screen.queryByLabelText(/paid by/i)).not.toBeInTheDocument();
+  });
+
+  it("showsTheViewersOwnBalanceInWords", async () => {
+    // given Bob owes 180 €
+    serve({ userId: "u2", displayName: "Bob" });
+    const answer = apiMock.getMockImplementation()!;
+    apiMock.mockImplementation(async (path: string, init?: RequestInit) =>
+      path === "/groups/g1/balances"
+        ? [
+            { userId: "u1", displayName: "Alice", netBalance: "180.00" },
+            { userId: "u2", displayName: "Bob", netBalance: "-180.00" },
+          ]
+        : answer(path, init),
+    );
+
+    // when
+    renderPage();
+
+    // then the words and the sign say the direction, not only the colour
+    expect(await screen.findByText(/you owe/i)).toHaveTextContent("You owe -180,00 €");
   });
 
   it("offersASettleUpTabBetweenBalancesAndMembers", async () => {
@@ -103,18 +133,18 @@ describe("GroupDetail", () => {
     expect(screen.queryByRole("button", { name: /make .* admin/i })).not.toBeInTheDocument();
   });
 
-  it("tellsTheUserThatBalancesFollowAfterAnExpenseWasRecorded", async () => {
-    // given
+  it("saysTheBalancesAreUpdatingRightAfterAnExpenseWasSavedAndUpToDateLater", async () => {
+    // given Bob just saved an expense on the Add expense page and came back
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     serve({ userId: "u2", displayName: "Bob" });
-    renderPage();
-    await userEvent.type(await screen.findByLabelText(/title/i), "Dinner");
-    await userEvent.type(screen.getByLabelText(/amount/i), "180");
 
     // when
-    await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
+    renderPage(clientAfterAChange());
 
-    // then
-    expect(await screen.findByRole("status")).toHaveTextContent(/expense saved.*balances/i);
+    // then the page says so until the last look again (design 2026-11-23, F4)
+    expect(await screen.findByText("Updating…")).toBeInTheDocument();
+    await act(() => vi.advanceTimersByTimeAsync(LOOK_AGAIN_AFTER_MS.at(-1)!));
+    expect(await screen.findByText("Balances up to date")).toBeInTheDocument();
   });
 
   it("theOpenGroupPageAsksAgainEveryTenSecondsSoOtherPeoplesChangesShowUp", async () => {
@@ -176,13 +206,10 @@ describe("GroupDetail", () => {
   });
 
   it("afterAnExpenseTheSettleUpTabLooksAgainWhenOpened", async () => {
-    // given Bob recorded an expense on the Expenses tab, where neither Balances nor Settle up is mounted
+    // given Bob just saved an expense and is back on the Expenses tab, where Settle up is not mounted
     serve({ userId: "u2", displayName: "Bob" });
-    renderPage();
-    await userEvent.type(await screen.findByLabelText(/title/i), "Dinner");
-    await userEvent.type(screen.getByLabelText(/amount/i), "180");
-    await userEvent.click(screen.getByRole("button", { name: /add expense/i }));
-    await screen.findByRole("status");
+    renderPage(clientAfterAChange());
+    await screen.findByRole("heading", { name: "Mallorca 2027" });
     const planCalls = () => apiMock.mock.calls.filter(([path]) => path === "/groups/g1/settlement-plan").length;
 
     // when he opens Settle up
