@@ -36,6 +36,13 @@ async function signUp(browser: Browser, firstName: string): Promise<Page> {
   return page;
 }
 
+/** From anywhere back to the group, through My groups in the top bar. */
+async function openGroup(page: Page) {
+  await page.getByRole("link", { name: "My groups" }).click();
+  await page.getByRole("link", { name: /Mallorca 2027/ }).click();
+  await expect(page.getByRole("heading", { name: "Mallorca 2027" })).toBeVisible();
+}
+
 /** From the group page to the Add expense page (its own page, design 2026-11-23, U7). */
 async function openAddExpense(page: Page) {
   await page.getByRole("link", { name: "Add expense" }).click();
@@ -75,17 +82,17 @@ test("three friends sign up, share a group, see who owes what and settle up", as
   // Alice invites Bob by username and Carol by email.
   await alice.getByRole("tab", { name: "Members" }).click();
   await alice.getByLabel("Username or email").fill(usernameOf("Bob"));
-  await alice.getByRole("button", { name: "Invite" }).click();
+  await alice.getByRole("button", { name: "Send invitation" }).click();
   await expect(alice.getByRole("status")).toContainText(`Invitation sent to @${usernameOf("Bob")}`);
   await alice.getByLabel("Username or email").fill(emailOf("Carol"));
-  await alice.getByRole("button", { name: "Invite" }).click();
+  await alice.getByRole("button", { name: "Send invitation" }).click();
   await expect(alice.getByRole("status")).toContainText(`Invitation sent to @${usernameOf("Carol")}`);
 
-  // Each of them finds the invitation in the bell and accepts it.
+  // Each of them finds the invitation in the inbox and accepts it.
   for (const page of [bob, carol]) {
     await page.reload();
     await page.waitForLoadState("networkidle");
-    await page.getByRole("button", { name: /inbox/i }).click();
+    await page.getByRole("link", { name: /^Inbox/ }).click();
     await expect(page.getByText("Alice Tester invited you to Mallorca 2027")).toBeVisible();
     await page.getByRole("button", { name: /accept invitation/i }).click();
     await expect(page.getByRole("heading", { name: "Mallorca 2027" })).toBeVisible();
@@ -94,13 +101,13 @@ test("three friends sign up, share a group, see who owes what and settle up", as
   // Alice hears about it: the entries arrive through an event, so she reloads until they are there.
   await expect(async () => {
     await alice.reload();
-    await alice.getByRole("button", { name: /inbox/i }).click();
+    await alice.getByRole("link", { name: /^Inbox/ }).click();
     await expect(alice.getByText("Bob Tester joined Mallorca 2027")).toBeVisible({ timeout: 2000 });
     await expect(alice.getByText("Carol Tester joined Mallorca 2027")).toBeVisible({ timeout: 2000 });
   }).toPass();
 
   // Alice pays the hotel (900 €, all three), Bob pays the dinner (180 €, all three).
-  await alice.reload();
+  await openGroup(alice);
   await openAddExpense(alice);
   await expect(alice.getByLabel("Paid by")).toContainText("Carol Tester");
   await addExpense(alice, "Hotel", "900");
@@ -132,7 +139,7 @@ test("three friends sign up, share a group, see who owes what and settle up", as
 
   // Alice finds the payment waiting for her answer in the bell (state, not an event: a reload shows it) and confirms it.
   await alice.reload();
-  await alice.getByRole("button", { name: /inbox/i }).click();
+  await alice.getByRole("link", { name: /^Inbox/ }).click();
   await expect(alice.getByText("Carol Tester marked 360,00 € as paid to you")).toBeVisible();
   await alice.getByRole("button", { name: "Confirm payment from Carol Tester" }).click();
   await expect(alice.getByText("Carol Tester marked 360,00 € as paid to you")).toHaveCount(0);
@@ -144,12 +151,13 @@ test("three friends sign up, share a group, see who owes what and settle up", as
   // Carol hears about it: the entry arrives through an event, so she reloads until it is there.
   await expect(async () => {
     await carol.reload();
-    await carol.getByRole("button", { name: /inbox/i }).click();
+    await carol.getByRole("link", { name: /^Inbox/ }).click();
     await expect(carol.getByText("Alice Tester confirmed your payment in Mallorca 2027")).toBeVisible({ timeout: 2000 });
   }).toPass();
 
   // The ledger books the confirmation asynchronously; the plan shrinks to Bob's debt alone.
-  // The open tab asks again by itself, so the assertion retries until the booking has arrived; no reload.
+  // The tab asks again by itself, so the assertion retries until the booking has arrived; no reload.
+  await openGroup(alice);
   await alice.getByRole("tab", { name: /^Settle up/ }).click();
   const owedToAlice = alice.getByRole("region", { name: "You can receive" });
   await expect(owedToAlice.getByRole("listitem")).toHaveCount(1);

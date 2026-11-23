@@ -44,6 +44,25 @@ describe("GroupList", () => {
     expect(screen.getByRole("link", { name: /Ski weekend.*Closed for settlement/ })).toBeInTheDocument();
   });
 
+  it("saysHowManyPaymentsWaitForTheViewerInEachGroup", async () => {
+    // given one payment of Mallorca waits for an answer, none of the flat (read from the one inbox query, F3)
+    apiMock.mockImplementation(async (path: string) =>
+      path === "/inbox"
+        ? { invitations: [], notifications: { unreadCount: 0, items: [] }, payments: [{ id: "p1", groupId: "g1" }] }
+        : [
+            { id: "g1", name: "Mallorca 2027", status: "OPEN", memberCount: 4 },
+            { id: "g2", name: "Flat", status: "OPEN", memberCount: 2 },
+          ],
+    );
+
+    // when
+    renderWithQueryClient(<GroupList />);
+
+    // then
+    expect(await screen.findByRole("link", { name: /Mallorca 2027.*1 waiting for you/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Flat/ })).not.toHaveTextContent("waiting");
+  });
+
   it("showsEmptyStateWhenNoGroups", async () => {
     apiMock.mockResolvedValue([]);
 

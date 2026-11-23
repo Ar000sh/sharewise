@@ -12,9 +12,11 @@ import { SettleUpTab } from "@/components/SettleUpTab";
 import { useCurrentUser } from "@/lib/currentUser";
 import { useApi } from "@/lib/useApi";
 import { useGroupChange } from "@/lib/useGroupChange";
+import { useInbox } from "@/lib/useInbox";
 
 type GroupDetailData = components["schemas"]["GroupDetail"];
 type Expense = components["schemas"]["Expense"];
+type Balance = components["schemas"]["Balance"];
 
 const TABS = ["Expenses", "Balances", "Settle up", "Members"] as const;
 type Tab = (typeof TABS)[number];
@@ -26,6 +28,10 @@ export function GroupDetail({ groupId }: { groupId: string }) {
   const { data: expenses, error: expensesError } = useApi<Expense[]>(`/groups/${groupId}/expenses`, { poll: true });
   const { markChanged } = useGroupChange(groupId);
   const [tab, setTab] = useState<Tab>("Expenses");
+  // The same cached query as the hero and the Balances tab: no second request.
+  const { data: balances } = useApi<Balance[]>(`/groups/${groupId}/balances`, { poll: true });
+  const { inbox } = useInbox();
+  const waiting = (inbox?.payments ?? []).filter((p) => p.groupId === groupId).length;
 
   // A failed poll keeps the page (and what the user typed) and shows the message above it; only a first load can fail it.
   if (error && !group) return <ErrorBanner error={error} onRetry={reload} />;
@@ -36,7 +42,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
 
   return (
     <div className="flex flex-col gap-6 pb-20 sm:pb-0">
-      <GroupHero group={group} currentUserId={me?.userId} />
+      <GroupHero group={group} currentUserId={me?.userId} waiting={waiting} onOpenSettleUp={() => setTab("Settle up")} />
       <ErrorBanner error={error} />
       <div role="tablist" aria-label="Group sections" className="flex gap-2 overflow-x-auto pb-1">
         {TABS.map((t) => (
@@ -45,10 +51,16 @@ export function GroupDetail({ groupId }: { groupId: string }) {
             type="button"
             role="tab"
             aria-selected={tab === t}
+            aria-label={t === "Settle up" && waiting > 0 ? `Settle up, ${waiting} waiting` : undefined}
             onClick={() => setTab(t)}
             className={`min-h-11 shrink-0 rounded-full border-2 px-5 font-bold ${tab === t ? "border-foreground bg-foreground text-background" : "bg-surface"}`}
           >
             {t}
+            {t === "Settle up" && waiting > 0 && (
+              <span aria-hidden="true" className="ml-2 rounded-full bg-accent px-2 text-xs font-extrabold text-on-accent">
+                {waiting}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -70,6 +82,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
           <MemberList
             members={group.members}
             currentUserId={me?.userId}
+            balances={balances}
             promote={isAdmin ? { groupId: group.id, onPromoted: markChanged } : undefined}
           />
           {isAdmin && <InviteForm groupId={group.id} />}
