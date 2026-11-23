@@ -34,15 +34,15 @@ export function MemberList({ members, currentUserId, promote }: Props) {
 
   return (
     <div className="flex flex-col gap-2">
-      <ul className="divide-y rounded border">
+      <ul className="card divide-y">
         {members.map((m) => (
           <li key={m.userId} className="flex items-center justify-between gap-2 px-3 py-2">
             <span>
               {m.displayName}
-              {m.userId === currentUserId && <span className="text-foreground/70"> (you)</span>}
+              {m.userId === currentUserId && <span className="text-muted"> (you)</span>}
             </span>
             {m.role === "ADMIN" && (
-              <span className="rounded bg-foreground/10 px-2 py-0.5 text-xs">Admin</span>
+              <span className="rounded-full bg-surface-2 px-3 py-1 text-xs font-bold">Admin</span>
             )}
             {promote && m.role !== "ADMIN" && (
               <button
@@ -50,7 +50,7 @@ export function MemberList({ members, currentUserId, promote }: Props) {
                 onClick={() => void makeAdmin(m)}
                 disabled={busyId === m.userId}
                 aria-label={`Make ${m.displayName} an admin`}
-                className="rounded border px-2 py-0.5 text-xs disabled:opacity-50"
+                className="btn-secondary"
               >
                 Make admin
               </button>

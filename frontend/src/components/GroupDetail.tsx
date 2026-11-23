@@ -22,7 +22,7 @@ type Tab = (typeof TABS)[number];
 
 export function GroupDetail({ groupId }: { groupId: string }) {
   // The open page asks again every few seconds: other members change the group while it is open (design 2026-11-11, L2).
-  const { data: group, error } = useApi<GroupDetailData>(`/groups/${groupId}`, { poll: true });
+  const { data: group, error, reload } = useApi<GroupDetailData>(`/groups/${groupId}`, { poll: true });
   const me = useCurrentUser();
   const { data: expenses, error: expensesError } = useApi<Expense[]>(`/groups/${groupId}/expenses`, { poll: true });
   const { markChanged } = useGroupChange(groupId);
@@ -31,7 +31,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
   const dismissNotice = useCallback(() => setNotice(undefined), []);
 
   // A failed poll keeps the page (and what the user typed) and shows the message above it; only a first load can fail it.
-  if (error && !group) return <ErrorBanner error={error} />;
+  if (error && !group) return <ErrorBanner error={error} onRetry={reload} />;
   if (!group) return <p>Loading…</p>;
 
   // Only a hint for the screen: the backend refuses non-admins with 403 NOT_AN_ADMIN whatever the UI shows.
@@ -39,7 +39,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">{group.name}</h1>
+      <h1 className="text-3xl sm:text-4xl">{group.name}</h1>
       <ErrorBanner error={error} />
       <div role="tablist" className="flex gap-1 border-b">
         {TABS.map((t) => (
@@ -49,7 +49,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
             role="tab"
             aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={`px-3 py-2 ${tab === t ? "border-b-2 border-foreground font-medium" : "text-foreground/70"}`}
+            className={`px-3 py-2 ${tab === t ? "border-b-2 border-foreground font-medium" : "text-muted"}`}
           >
             {t}
           </button>

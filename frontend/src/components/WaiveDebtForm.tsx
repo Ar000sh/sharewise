@@ -95,11 +95,10 @@ export function WaiveDebtForm({
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-2 rounded border p-3">
+    <form onSubmit={submit} className="card flex flex-col gap-3 p-6">
       <label className="flex flex-col gap-1">
         Debtor
         <select
-          className="rounded border px-2 py-2"
           value={fromDebtor}
           disabled={waivableEdges.length === 1 && selectedEdge !== undefined} // with nobody selected there is something to choose
           onChange={(e) => chooseDebtor(e.target.value)}
@@ -119,7 +118,6 @@ export function WaiveDebtForm({
       <label className="flex flex-col gap-1">
         Waived amount (€)
         <input
-          className="rounded border px-2 py-2"
           inputMode="decimal"
           value={amount}
           onChange={(e) => {
@@ -131,7 +129,6 @@ export function WaiveDebtForm({
       <label className="flex flex-col gap-1">
         Reason (optional)
         <input
-          className="rounded border px-2 py-2"
           value={note}
           maxLength={200}
           onChange={(e) => {
@@ -141,11 +138,11 @@ export function WaiveDebtForm({
         />
       </label>
       {error && (
-        <p role="alert" className="text-red-700 dark:text-red-400">
+        <p role="alert" className="font-bold text-negative">
           {error}
         </p>
       )}
-      <button type="submit" disabled={busy} className="rounded bg-foreground px-3 py-2 text-background disabled:opacity-50">
+      <button type="submit" disabled={busy} className="btn-primary">
         Waive debt
       </button>
     </form>

@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api";
 import { ErrorBanner } from "@/components/ErrorBanner";
 
@@ -20,5 +21,25 @@ describe("ErrorBanner", () => {
     render(<ErrorBanner error="Please enter a group name." />);
 
     expect(screen.getByRole("alert")).toHaveTextContent("Please enter a group name.");
+  });
+
+  it("offersNoTryAgainWithoutARetry", () => {
+    // when
+    render(<ErrorBanner error="Please enter a group name." />);
+
+    // then
+    expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+  });
+
+  it("tryAgainLoadsAgain", async () => {
+    // given
+    const retry = vi.fn();
+    render(<ErrorBanner error={new ApiError(0, "NETWORK_ERROR")} onRetry={retry} />);
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+    // then
+    expect(retry).toHaveBeenCalledOnce();
   });
 });

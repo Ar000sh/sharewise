@@ -18,7 +18,7 @@ type PlanEdge = components["schemas"]["SettlementPlanEdge"];
 function PendingAmountNote({ edge }: { edge: PlanEdge }) {
   const pending = amountToCents(edge.pendingAmount);
   if (pending <= 0) return null;
-  return <p className="text-sm text-foreground/70">{formatEuro(pending)} awaiting confirmation</p>;
+  return <p className="text-sm text-muted">{formatEuro(pending)} awaiting confirmation</p>;
 }
 
 /** The inline form of one "You owe" row. The amount starts at what the server accepts right now (`payableAmount`) and can only go down. */
@@ -60,11 +60,10 @@ function PaymentForm({ groupId, edge, onPaid }: { groupId: string; edge: PlanEdg
   }
 
   return (
-    <form onSubmit={submit} className="mt-2 flex flex-col gap-2 rounded border p-3">
+    <form onSubmit={submit} className="card mt-2 flex flex-col gap-3 p-6">
       <label className="flex flex-col gap-1">
         Amount (€)
         <input
-          className="rounded border px-2 py-2"
           inputMode="decimal"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
@@ -72,14 +71,14 @@ function PaymentForm({ groupId, edge, onPaid }: { groupId: string; edge: PlanEdg
       </label>
       <label className="flex flex-col gap-1">
         Note (optional)
-        <input className="rounded border px-2 py-2" value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} />
+        <input value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} />
       </label>
       {error && (
-        <p role="alert" className="text-red-700 dark:text-red-400">
+        <p role="alert" className="font-bold text-negative">
           {error}
         </p>
       )}
-      <button type="submit" disabled={busy} className="rounded bg-foreground px-3 py-2 text-background disabled:opacity-50">
+      <button type="submit" disabled={busy} className="btn-primary">
         Send payment
       </button>
     </form>
@@ -93,14 +92,14 @@ function OweRow({ groupId, edge, onPaid }: { groupId: string; edge: PlanEdge; on
       <div className="flex items-center justify-between gap-2">
         <span>{`${formatEuro(amountToCents(edge.amount))} to ${edge.toCreditorName}`}</span>
         {payableCents(edge) > 0 && !formOpen && (
-          <button type="button" onClick={() => setFormOpen(true)} className="rounded border px-3 py-1">
+          <button type="button" onClick={() => setFormOpen(true)} className="btn-secondary">
             I paid
           </button>
         )}
       </div>
       <PendingAmountNote edge={edge} />
       {payableCents(edge) <= 0 && amountToCents(edge.pendingAmount) <= 0 && (
-        <p className="text-sm text-foreground/70">Not payable right now: payments that wait for an answer use up this amount.</p>
+        <p className="text-sm text-muted">Not payable right now: payments that wait for an answer use up this amount.</p>
       )}
       {formOpen && (
         <PaymentForm
@@ -124,7 +123,7 @@ function OwedRow({ groupId, edge, onWaived }: { groupId: string; edge: PlanEdge;
       <div className="flex items-center justify-between gap-2">
         <span>{`${edge.fromDebtorName} owes ${formatEuro(amountToCents(edge.amount))}`}</span>
         {payableCents(edge) > 0 && !formOpen && (
-          <button type="button" onClick={() => setFormOpen(true)} className="rounded border px-3 py-1">
+          <button type="button" onClick={() => setFormOpen(true)} className="btn-secondary">
             Waive
           </button>
         )}
@@ -146,9 +145,9 @@ function OwedRow({ groupId, edge, onWaived }: { groupId: string; edge: PlanEdge;
 
 function Section({ title, quiet, children }: { title: string; quiet?: boolean; children: React.ReactNode }) {
   return (
-    <section aria-label={title} className={`flex flex-col gap-1 ${quiet ? "text-sm text-foreground/70" : ""}`}>
-      <h2 className="font-medium">{title}</h2>
-      <ul className="divide-y rounded border">{children}</ul>
+    <section aria-label={title} className={`flex flex-col gap-1 ${quiet ? "text-sm text-muted" : ""}`}>
+      <h2 className="text-xl">{title}</h2>
+      <ul className="card divide-y">{children}</ul>
     </section>
   );
 }
@@ -166,7 +165,7 @@ export function SettleUpTab({ groupId }: { groupId: string }) {
 
   useLookAgain(lastChangedAt, reload);
 
-  if (error && !plan) return <ErrorBanner error={error} />;
+  if (error && !plan) return <ErrorBanner error={error} onRetry={reload} />;
   if (!plan || !me) return <p>Loading…</p>;
 
   const afterWaive = () => {
@@ -216,7 +215,7 @@ export function SettleUpTab({ groupId }: { groupId: string }) {
       )}
       {waivable.length > 0 && (
         <section aria-label="Waive manually" className="flex flex-col gap-1">
-          <h2 className="font-medium">Waive manually</h2>
+          <h2 className="text-xl">Waive manually</h2>
           <WaiveDebtForm groupId={groupId} waivableEdges={waivable} onWaived={afterWaive} />
         </section>
       )}

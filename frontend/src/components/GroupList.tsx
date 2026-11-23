@@ -8,9 +8,9 @@ import { useApi } from "@/lib/useApi";
 type Group = components["schemas"]["Group"];
 
 export function GroupList() {
-  const { data: groups, error } = useApi<Group[]>("/groups");
+  const { data: groups, error, reload } = useApi<Group[]>("/groups");
 
-  if (error) return <ErrorBanner error={error} />;
+  if (error) return <ErrorBanner error={error} onRetry={reload} />;
   if (!groups) return <p>Loading…</p>;
   if (groups.length === 0) {
     return (
@@ -23,12 +23,12 @@ export function GroupList() {
     );
   }
   return (
-    <ul className="divide-y rounded border">
+    <ul className="card divide-y">
       {groups.map((g) => (
         <li key={g.id}>
           <Link href={`/groups/${g.id}`} className="flex justify-between gap-2 px-3 py-3">
             <span className="font-medium">{g.name}</span>
-            <span className="text-sm text-foreground/70">
+            <span className="text-sm text-muted">
               {g.memberCount} {g.memberCount === 1 ? "member" : "members"}
             </span>
           </Link>
