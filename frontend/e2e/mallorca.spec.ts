@@ -122,10 +122,12 @@ test("three friends sign up, share a group, see who owes what and settle up", as
   // Carol settles up: she reports her whole debt to Alice. It only counts once Alice confirms it (R16).
   await carol.getByRole("tab", { name: /^Settle up/ }).click();
   const carolOwes = carol.getByRole("region", { name: "You owe" });
-  await expect(carolOwes).toContainText("360,00 € to Alice Tester");
-  await carolOwes.getByRole("button", { name: "I paid" }).click();
-  await expect(carolOwes.getByLabel("Amount (€)")).toHaveValue("360.00");
-  await carolOwes.getByRole("button", { name: "Send payment" }).click();
+  await expect(carolOwes).toContainText("Pay Alice Tester 360,00 €");
+  await carolOwes.getByRole("button", { name: "Report a payment" }).click();
+  const report = carol.getByRole("dialog", { name: "Report a payment" });
+  await expect(report.getByLabel("Amount (EUR)")).toHaveValue("360.00");
+  await report.getByRole("button", { name: "Report payment" }).click();
+  await expect(report).toHaveCount(0);
   await expect(carolOwes).toContainText("360,00 € awaiting confirmation");
 
   // Alice finds the payment waiting for her answer in the bell (state, not an event: a reload shows it) and confirms it.
@@ -137,7 +139,7 @@ test("three friends sign up, share a group, see who owes what and settle up", as
 
   // Carol's Settle up tab is still open and was not touched: it asks again by itself (every 10 s), so her debt
   // disappears from it without a reload once the ledger has booked the confirmation.
-  await expect(carolOwes).toHaveCount(0);
+  await expect(carolOwes).toContainText("You owe no one in this group.");
 
   // Carol hears about it: the entry arrives through an event, so she reloads until it is there.
   await expect(async () => {
@@ -149,10 +151,12 @@ test("three friends sign up, share a group, see who owes what and settle up", as
   // The ledger books the confirmation asynchronously; the plan shrinks to Bob's debt alone.
   // The open tab asks again by itself, so the assertion retries until the booking has arrived; no reload.
   await alice.getByRole("tab", { name: /^Settle up/ }).click();
-  const owedToAlice = alice.getByRole("region", { name: "Owed to you" });
+  const owedToAlice = alice.getByRole("region", { name: "You can receive" });
   await expect(owedToAlice.getByRole("listitem")).toHaveCount(1);
-  await expect(owedToAlice).toContainText("Bob Tester owes 180,00 €");
+  await expect(owedToAlice).toContainText("Bob Tester pays you 180,00 €");
   await expect(owedToAlice).not.toContainText("Carol Tester");
+  // The history keeps the confirmed payment.
+  await expect(alice.getByRole("region", { name: "Payment history" })).toContainText("Carol Tester → you");
 });
 
 test("wrong password is refused, signed-out visitors are sent to sign in, signing in again works", async ({

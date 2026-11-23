@@ -5,6 +5,7 @@ import { ApiError, api } from "@/lib/api";
 import { InboxBell } from "@/components/InboxBell";
 import { renderWithQueryClient } from "@/lib/renderWithQueryClient";
 import { lastChangedKey } from "@/lib/useGroupChange";
+import { INBOX_POLL_MS } from "@/lib/useInbox";
 
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<typeof import("@/lib/api")>()), api: vi.fn() }));
 const apiMock = vi.mocked(api);
@@ -86,7 +87,7 @@ describe("InboxBell", () => {
     renderWithQueryClient(<InboxBell />);
 
     // then
-    expect(await screen.findByRole("button", { name: /inbox/i })).toHaveTextContent("3");
+    expect(await screen.findByRole("button", { name: "Inbox, 3 new" })).toHaveTextContent("3");
   });
 
   it("showsAPaymentWaitingForMyAnswerBeforeTheEntries", async () => {
@@ -441,20 +442,17 @@ describe("InboxBell", () => {
     expect(screen.getByText(`${evil} joined Mallorca 2027`)).toBeInTheDocument();
   });
 
-  it("pollsEveryThirtySecondsAndWhenTheTabBecomesVisible", async () => {
-    vi.useFakeTimers();
+  it("asksAgainEveryThirtySeconds", async () => {
+    // given (asking again when the window gets focus is TanStack Query's default, design 2026-11-11)
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     backend();
-
     renderWithQueryClient(<InboxBell />);
-    await act(async () => {});
-    expect(apiMock).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(apiMock).toHaveBeenCalledTimes(1));
 
-    await vi.advanceTimersByTimeAsync(30_000);
+    // when
+    await act(() => vi.advanceTimersByTimeAsync(INBOX_POLL_MS));
+
+    // then
     expect(apiMock).toHaveBeenCalledTimes(2);
-
-    await act(async () => {
-      document.dispatchEvent(new Event("visibilitychange"));
-    });
-    expect(apiMock).toHaveBeenCalledTimes(3);
   });
 });

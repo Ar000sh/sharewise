@@ -1,28 +1,18 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { ApiError, api } from "@/lib/api";
 import { amountToCents, formatEuro } from "@/lib/money";
-import { markGroupChanged } from "@/lib/useGroupChange";
+import { useAnswerPayment, useInbox, useReloadInbox } from "@/lib/useInbox";
 
 type PendingInvitation = components["schemas"]["PendingInvitation"];
-type NotificationList = components["schemas"]["NotificationList"];
 type Notification = components["schemas"]["Notification"];
 type SettlementPayment = components["schemas"]["SettlementPayment"];
 type Group = components["schemas"]["Group"];
-type Inbox = {
-  invitations: PendingInvitation[] | null;
-  notifications: NotificationList | null;
-  payments: SettlementPayment[] | null;
-};
-
-/** How often the bell asks again, in milliseconds. It also asks when the tab becomes visible. */
-const POLL_MS = 30_000;
 
 /** The sentence of an entry. Names are plain text: React escapes them, nothing here builds HTML. */
 function describe(entry: Notification): string {
@@ -131,38 +121,18 @@ function PaymentRow({
  */
 export function InboxBell() {
   const router = useRouter();
-  const client = useQueryClient();
-  const [inbox, setInbox] = useState<Inbox>();
+  // One query for the inbox (design 2026-11-23, F3): an answer given in a group's Settle up tab disappears here too.
+  const { inbox } = useInbox();
+  const reloadInbox = useReloadInbox();
+  const { confirm, reject } = useAnswerPayment();
   const [open, setOpen] = useState(false);
   const [busyId, setBusyId] = useState<string>();
   const [error, setError] = useState<unknown>();
 
-  const load = useCallback(async () => {
-    try {
-      setInbox(await api<Inbox>("/inbox"));
-    } catch {
-      // The next poll tries again; a 401 has already sent the visitor to sign in (in api()).
-    }
-  }, []);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetching on mount, as in useApi
-    void load();
-    const timer = setInterval(() => void load(), POLL_MS);
-    const onVisible = () => {
-      if (document.visibilityState !== "hidden") void load();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      clearInterval(timer);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [load]);
-
   /**
-   * Runs one action of the bell, then asks again so the screen shows the truth. A 404, or a payment that is no longer
-   * pending, means the thing is already done (answered in a second tab, a double click): nothing to report, just
-   * refresh.
+   * Runs one action of the bell, then asks again so the screen shows the truth. A 404 means the thing is already done
+   * (an invitation answered in a second tab, a double click): nothing to report, just refresh. Payments have the same
+   * rule inside `useAnswerPayment`.
    */
   async function perform(action: () => Promise<unknown>, rowId?: string) {
     setBusyId(rowId);
@@ -170,12 +140,12 @@ export function InboxBell() {
     try {
       await action();
     } catch (e) {
-      const alreadyDone = e instanceof ApiError && (e.status === 404 || e.code === "PAYMENT_NOT_PENDING");
+      const alreadyDone = e instanceof ApiError && e.status === 404;
       if (!alreadyDone) setError(e);
     } finally {
       setBusyId(undefined);
     }
-    await load();
+    await reloadInbox();
   }
 
   const accept = (invitation: PendingInvitation) =>
@@ -188,21 +158,9 @@ export function InboxBell() {
   const decline = (invitation: PendingInvitation) =>
     perform(() => api(`/invitations/${invitation.invitationId}/decline`, { method: "POST" }), invitation.invitationId);
 
-  const confirmPayment = (payment: SettlementPayment) =>
-    perform(async () => {
-      await api(`/settlement-payments/${payment.id}/confirm`, { method: "POST" });
-      markGroupChanged(client, payment.groupId);
-    }, payment.id);
+  const confirmPayment = (payment: SettlementPayment) => perform(() => confirm(payment), payment.id);
 
-  const rejectPayment = (payment: SettlementPayment, note: string) =>
-    perform(async () => {
-      await api(`/settlement-payments/${payment.id}/reject`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ note }),
-      });
-      markGroupChanged(client, payment.groupId);
-    }, payment.id);
+  const rejectPayment = (payment: SettlementPayment, note: string) => perform(() => reject(payment, note), payment.id);
 
   const markRead = (entry: Notification) => perform(() => api(`/notifications/${entry.id}/read`, { method: "POST" }));
 

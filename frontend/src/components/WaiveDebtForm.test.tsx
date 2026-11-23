@@ -1,4 +1,4 @@
-import { act, screen, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api } from "@/lib/api";
@@ -27,20 +27,22 @@ type Edge = {
   payableAmount: string;
 };
 
-function edge(from: string, fromName: string, amount: string, pendingAmount = "0.00", to = ALICE, toName = "Alice", payableAmount = amount): Edge {
-  return { fromDebtor: from, fromDebtorName: fromName, toCreditor: to, toCreditorName: toName, amount, pendingAmount, payableAmount };
+function edge(from: string, fromName: string, amount: string, pendingAmount = "0.00", payableAmount = amount): Edge {
+  return { fromDebtor: from, fromDebtorName: fromName, toCreditor: ALICE, toCreditorName: "Alice", amount, pendingAmount, payableAmount };
 }
 
-/** Alice is owed by Carol, David and Bob; Carol owes Bob nothing, but Bob owes David (not Alice's business). */
-const plan = [edge(CAROL, "Carol", "270.00", "30.00", ALICE, "Alice", "240.00"), edge(DAVID, "David", "270.00"), edge(BOB, "Bob", "90.00")];
+/** Alice is owed by Carol (30,00 of it already reported), David and Bob. */
+const plan = [edge(CAROL, "Carol", "270.00", "30.00", "240.00"), edge(DAVID, "David", "270.00"), edge(BOB, "Bob", "90.00")];
 
-function serve(me: { userId: string; displayName: string }, plans: Edge[][], other?: () => Promise<unknown>) {
+/** Alice signed in; the plan answers one per call (the last repeating); every POST is answered by `other`. */
+function serve(plans: Edge[][], other: () => Promise<unknown> = async () => ({})) {
   let planCalls = 0;
-  apiMock.mockImplementation(async (path: string) => {
-    if (path === "/me") return me;
+  apiMock.mockImplementation(async (path: string, init?: RequestInit) => {
+    if (path === "/me") return { userId: ALICE, displayName: "Alice" };
     if (path === "/groups/g1/settlement-plan") return plans[Math.min(planCalls++, plans.length - 1)];
-    if (other) return other();
-    throw new Error(`unexpected call ${path}`);
+    if (path === "/inbox") return { invitations: [], notifications: { unreadCount: 0, items: [] }, payments: [] };
+    if (path === "/groups/g1/settlement-payments" && !init) return [];
+    return other();
   });
 }
 
@@ -56,224 +58,121 @@ function waiveCalls() {
   return apiMock.mock.calls.filter(([path]) => path === "/groups/g1/debt-waivers");
 }
 
+/** Opens the waiver dialog of one row ("Waive debt" on the row of `name`). */
+async function openWaiver(name: string) {
+  const row = (await screen.findByText(`${name} pays you`, { exact: false })).closest("li")!;
+  await userEvent.click(within(row).getByRole("button", { name: "Waive debt" }));
+  return screen.getByRole("dialog", { name: "Waive a debt" });
+}
+
 describe("WaiveDebtForm", () => {
-  it("waiveButtonOnARowOpensTheFormInThatRowWithDebtorAndAmount", async () => {
-    // given Alice is owed by three people, Carol has 30,00 pending
-    serve({ userId: ALICE, displayName: "Alice" }, [plan]);
-    renderTab();
-    const owed = await screen.findByRole("region", { name: "Owed to you" });
-
-    // when she waives on Carol's row
-    const carolRow = within(owed).getByText("Carol owes 270,00 €").closest("li")!;
-    await userEvent.click(within(carolRow).getByRole("button", { name: "Waive" }));
-
-    // then the form opens in that row with Carol fixed and the amount that is not pending
-    expect(within(carolRow).getByLabelText("Debtor")).toHaveDisplayValue("Carol");
-    expect(within(carolRow).getByLabelText("Debtor")).toBeDisabled();
-    expect(within(carolRow).getByLabelText("Waived amount (€)")).toHaveValue("240.00");
-    expect(within(carolRow).queryByRole("button", { name: "Waive" })).not.toBeInTheDocument();
-  });
-
-  it("waivingFromARowSendsTheRequestWithoutAReasonAndRefreshesThePlan", async () => {
-    // given Bob's debt is gone from the plan after the waiver
-    serve({ userId: ALICE, displayName: "Alice" }, [plan, plan.slice(0, 2)], async () => ({}));
-    renderTab();
-    const owed = await screen.findByRole("region", { name: "Owed to you" });
-    const bobRow = within(owed).getByText("Bob owes 90,00 €").closest("li")!;
-    await userEvent.click(within(bobRow).getByRole("button", { name: "Waive" }));
-
-    // when she waives without giving a reason
-    await userEvent.click(within(bobRow).getByRole("button", { name: "Waive debt" }));
-
-    // then the request has no note, the row is gone and she is told
-    await vi.waitFor(() => expect(waiveCalls()).toHaveLength(1));
-    expect(JSON.parse(String(waiveCalls()[0][1]?.body))).toEqual({ fromDebtor: BOB, amount: "90.00" });
-    await vi.waitFor(() => expect(screen.queryByText("Bob owes 90,00 €")).not.toBeInTheDocument());
-    expect(await screen.findByRole("status")).toHaveTextContent(/waived/i);
-  });
-
-  it("dropdownListsOnlyPeopleWhoOweMe", async () => {
-    // given the plan has a row between two other people
-    const others = [...plan, edge(BOB, "Bob", "10.00", "0.00", DAVID, "David")];
-    serve({ userId: ALICE, displayName: "Alice" }, [others]);
-
-    // when
-    renderTab();
-    const debtor = await screen.findByLabelText("Debtor");
-
-    // then only the three who owe Alice are offered
-    const options = within(debtor).getAllByRole("option").map((o) => o.textContent);
-    expect(options).toEqual(["Carol", "David", "Bob"]);
-  });
-
-  it("theReasonIsOptionalAndIsLeftOutOfTheRequestWhenEmpty", async () => {
+  it("waiveDebtOnARowOpensADialogAboutThatPersonWithWhatCanBeWaivedNow", async () => {
     // given
-    serve({ userId: ALICE, displayName: "Alice" }, [plan], async () => ({}));
+    serve([plan]);
     renderTab();
-    await screen.findByLabelText("Debtor");
-    expect(screen.getByLabelText("Reason (optional)")).toHaveValue("");
-
-    // when she submits without a reason
-    await userEvent.click(screen.getByRole("button", { name: "Waive debt" }));
-
-    // then the request is sent without a note and no error is shown
-    await vi.waitFor(() => expect(waiveCalls()).toHaveLength(1));
-    expect(JSON.parse(String(waiveCalls()[0][1]?.body))).toEqual({ fromDebtor: CAROL, amount: "240.00" });
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-  });
-
-  it("successRefreshesThePlan", async () => {
-    // given after the waiver Bob's debt is gone from the plan
-    serve({ userId: ALICE, displayName: "Alice" }, [plan, plan.slice(0, 2)], async () => ({}));
-    renderTab();
-    expect(await screen.findByText("Bob owes 90,00 €")).toBeInTheDocument();
-    await userEvent.selectOptions(screen.getByLabelText("Debtor"), "Bob");
-    await userEvent.type(screen.getByLabelText("Reason (optional)"), "A gift");
 
     // when
-    await userEvent.click(screen.getByRole("button", { name: "Waive debt" }));
+    const dialog = await openWaiver("Carol");
 
-    // then the request carries debtor, amount with two decimals and the note, and the plan is fetched again
-    expect(JSON.parse(String(waiveCalls()[0][1]?.body))).toEqual({ fromDebtor: BOB, amount: "90.00", note: "A gift" });
-    expect(waiveCalls()[0][1]?.method).toBe("POST");
-    await vi.waitFor(() => expect(screen.queryByText("Bob owes 90,00 €")).not.toBeInTheDocument());
-    expect(await screen.findByRole("status")).toHaveTextContent(/waived/i);
+    // then it is about Carol only, starting at what is not reserved by her reported payment
+    expect(dialog).toHaveTextContent("Carol owes you 240,00 €");
+    expect(within(dialog).getByLabelText("Waived amount (EUR)")).toHaveValue("240.00");
+    expect(within(dialog).queryByRole("combobox")).not.toBeInTheDocument();
   });
 
-  it("tooHighAmountShowsTheProblemMessage", async () => {
-    // given the backend refuses the amount
-    serve({ userId: ALICE, displayName: "Alice" }, [plan], async () => {
+  it("waivingSendsTheRequestWithoutAnEmptyReasonClosesTheDialogAndSaysSo", async () => {
+    // given
+    serve([plan]);
+    renderTab();
+    const dialog = await openWaiver("Bob");
+
+    // when
+    await userEvent.click(within(dialog).getByRole("button", { name: "Waive debt" }));
+
+    // then
+    expect(JSON.parse(String(waiveCalls()[0][1]?.body))).toEqual({ fromDebtor: BOB, amount: "90.00" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(await screen.findByRole("status")).toHaveTextContent("Debt waived.");
+  });
+
+  it("aGivenReasonAndAPartialAmountAreSent", async () => {
+    // given
+    serve([plan]);
+    renderTab();
+    const dialog = await openWaiver("David");
+
+    // when
+    const amount = within(dialog).getByLabelText("Waived amount (EUR)");
+    await userEvent.clear(amount);
+    await userEvent.type(amount, "36,00");
+    await userEvent.type(within(dialog).getByLabelText("Reason (optional)"), "Birthday");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Waive debt" }));
+
+    // then
+    expect(JSON.parse(String(waiveCalls()[0][1]?.body))).toEqual({ fromDebtor: DAVID, amount: "36.00", note: "Birthday" });
+  });
+
+  it("moreThanIsOpenIsRefusedWithoutSending", async () => {
+    // given
+    serve([plan]);
+    renderTab();
+    const dialog = await openWaiver("Bob");
+
+    // when
+    const amount = within(dialog).getByLabelText("Waived amount (EUR)");
+    await userEvent.clear(amount);
+    await userEvent.type(amount, "90,01");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Waive debt" }));
+
+    // then
+    expect(within(dialog).getByRole("alert")).toHaveTextContent("You can waive up to 90,00 € here.");
+    expect(waiveCalls()).toHaveLength(0);
+  });
+
+  it("aServerRefusalShowsTheWaiverWording", async () => {
+    // given
+    serve([plan], async () => {
       throw new ApiError(422, "PAYMENT_EXCEEDS_OPEN_DEBT", "too much");
     });
     renderTab();
-    await screen.findByLabelText("Debtor");
-    await userEvent.type(screen.getByLabelText("Reason (optional)"), "Forgiven");
+    const dialog = await openWaiver("Bob");
 
     // when
-    await userEvent.click(screen.getByRole("button", { name: "Waive debt" }));
+    await userEvent.click(within(dialog).getByRole("button", { name: "Waive debt" }));
 
-    // then the message is shown and the form stays usable
-    expect(await screen.findByRole("alert")).toHaveTextContent(/up to/i);
-    expect(screen.getByRole("button", { name: "Waive debt" })).toBeEnabled();
+    // then
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("You can only waive up to what is still open.");
   });
 
-  it("afterAFullWaiveTheFormOffersTheNextDebtorAndCanBeSubmitted", async () => {
-    // given Bob's debt disappears from the plan after the waiver
-    serve({ userId: ALICE, displayName: "Alice" }, [plan, plan.slice(0, 2)], async () => ({}));
-    renderTab();
-    await screen.findByText("Bob owes 90,00 €");
-    await userEvent.selectOptions(screen.getByLabelText("Debtor"), "Bob");
-    await userEvent.type(screen.getByLabelText("Reason (optional)"), "A gift");
-    await userEvent.click(screen.getByRole("button", { name: "Waive debt" }));
-    await vi.waitFor(() => expect(screen.queryByText("Bob owes 90,00 €")).not.toBeInTheDocument());
-
-    // when she waives again with what the form now shows
-    expect(screen.getByLabelText("Debtor")).toHaveDisplayValue("Carol");
-    await userEvent.type(screen.getByLabelText("Reason (optional)"), "Second");
-    await userEvent.click(screen.getByRole("button", { name: "Waive debt" }));
-
-    // then the request is for the shown debtor with the amount shown, not for the removed one
-    await vi.waitFor(() => expect(waiveCalls()).toHaveLength(2));
-    expect(JSON.parse(String(waiveCalls()[1][1]?.body))).toEqual({ fromDebtor: CAROL, amount: "240.00", note: "Second" });
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-  });
-
-  it("afterAPartialWaiveTheAmountFollowsTheNewOpenDebt", async () => {
-    // given David owed 270,00 and 40,00 of it is waived
-    const after = [plan[0], edge(DAVID, "David", "230.00"), plan[2]];
-    serve({ userId: ALICE, displayName: "Alice" }, [plan, after], async () => ({}));
-    renderTab();
-    await screen.findByText("David owes 270,00 €");
-    await userEvent.selectOptions(screen.getByLabelText("Debtor"), "David");
-    const amount = screen.getByLabelText("Waived amount (€)");
-    await userEvent.clear(amount);
-    await userEvent.type(amount, "40,00");
-    await userEvent.type(screen.getByLabelText("Reason (optional)"), "Part");
-    await userEvent.click(screen.getByRole("button", { name: "Waive debt" }));
-
-    // when the plan has reloaded
-    await screen.findByText("David owes 230,00 €");
-
-    // then the amount is the new open debt and the next waive is accepted
-    expect(screen.getByLabelText("Waived amount (€)")).toHaveValue("230.00");
-    await userEvent.type(screen.getByLabelText("Reason (optional)"), "Rest");
-    await userEvent.click(screen.getByRole("button", { name: "Waive debt" }));
-    await vi.waitFor(() => expect(waiveCalls()).toHaveLength(2));
-    expect(JSON.parse(String(waiveCalls()[1][1]?.body))).toEqual({ fromDebtor: DAVID, amount: "230.00", note: "Rest" });
-  });
-
-  describe("whenThePlanChangesWhileTheFormIsOpen", () => {
-    const withoutBob = plan.slice(0, 2);
-    const davidFirst = [plan[1], plan[0], plan[2]];
-
-    it("aChosenDebtorWhoLeavesThePlanLeavesNoSelectionAndNothingIsSent", async () => {
-      // given Alice chose Bob and typed an amount, then somebody else's payment made Bob's debt disappear
-      serve({ userId: ALICE, displayName: "Alice" }, [plan, withoutBob], async () => ({}));
+  describe("whenThePlanChangesWhileTheDialogIsOpen", () => {
+    it("aDebtorWhoseDebtDisappearsGetsNoWaiverAndNobodyElseIsOffered", async () => {
+      // given Alice opened the waiver for Bob and typed an amount, then somebody's payment made Bob's debt disappear (F1)
+      serve([plan, plan.slice(0, 2)]);
       const { client } = renderTab();
-      await screen.findByText("Bob owes 90,00 €");
-      await userEvent.selectOptions(screen.getByLabelText("Debtor"), "Bob");
-      const amount = screen.getByLabelText("Waived amount (€)");
-      await userEvent.clear(amount);
-      await userEvent.type(amount, "50");
+      const dialog = await openWaiver("Bob");
+      await userEvent.type(within(dialog).getByLabelText("Reason (optional)"), "Gift");
+
+      // when the plan is asked again
       act(() => markGroupChanged(client, "g1"));
-      await vi.waitFor(() => expect(screen.queryByText("Bob owes 90,00 €")).not.toBeInTheDocument());
 
-      // when she waives anyway
-      await userEvent.click(screen.getByRole("button", { name: "Waive debt" }));
-
-      // then nobody is selected, she is told to choose, and no waiver went out (not one for Carol)
-      expect(screen.getByLabelText("Debtor")).toHaveDisplayValue("Choose who owes you");
-      expect(await screen.findByRole("alert")).toHaveTextContent("Please choose who owes you.");
+      // then the dialog says so, offers nothing to send and never switches to Carol or David
+      expect(await within(dialog).findByText("Nothing is open with Bob any more.")).toBeInTheDocument();
+      expect(within(dialog).queryByRole("button", { name: "Waive debt" })).not.toBeInTheDocument();
       expect(waiveCalls()).toHaveLength(0);
     });
 
-    it("aChosenDebtorWhoLeavesAPlanOfTwoStillLetsTheUserChooseTheOtherOne", async () => {
-      // given two debtors, Alice chose Bob, and then Bob's debt disappeared, leaving only Carol
-      serve({ userId: ALICE, displayName: "Alice" }, [[plan[0], plan[2]], [plan[0]]], async () => ({}));
+    it("theDialogStaysAboutItsPersonWhenThePlanIsReordered", async () => {
+      // given Alice opened the waiver for Carol, then the plan comes back in another order with David first
+      serve([plan, [plan[1], plan[0], plan[2]]]);
       const { client } = renderTab();
-      await screen.findByText("Bob owes 90,00 €");
-      await userEvent.selectOptions(screen.getByLabelText("Debtor"), "Bob");
+      const dialog = await openWaiver("Carol");
+
+      // when
       act(() => markGroupChanged(client, "g1"));
-      await vi.waitFor(() => expect(screen.queryByText("Bob owes 90,00 €")).not.toBeInTheDocument());
+      await waitFor(() => expect(screen.getAllByText(/pays you/)[0]).toHaveTextContent("David"));
 
-      // when she looks at the form
-      const debtor = screen.getByLabelText("Debtor");
-
-      // then nobody is selected, but the debtor who is left can be chosen (it is not a dead end)
-      expect(debtor).toHaveDisplayValue("Choose who owes you");
-      expect(debtor).toBeEnabled();
-      await userEvent.selectOptions(debtor, "Carol");
-      expect(debtor).toHaveDisplayValue("Carol");
-    });
-
-    it("aDebtorShownByDefaultStaysOnceTheUserTypes", async () => {
-      // given the form shows Carol, the first entry, and Alice types a reason without touching the debtor
-      serve({ userId: ALICE, displayName: "Alice" }, [plan, davidFirst], async () => ({}));
-      const { client } = renderTab();
-      await screen.findByText("Bob owes 90,00 €");
-      expect(screen.getByLabelText("Debtor")).toHaveDisplayValue("Carol");
-      await userEvent.type(screen.getByLabelText("Reason (optional)"), "Gift");
-
-      // when the plan changes and David is now the first entry
-      act(() => markGroupChanged(client, "g1"));
-      await vi.waitFor(() => expect(screen.getAllByRole("listitem")[0]).toHaveTextContent("David"));
-
-      // then the form is still about Carol
-      expect(screen.getByLabelText("Debtor")).toHaveDisplayValue("Carol");
-    });
-
-    it("untouchedTheFormFollowsThePlan", async () => {
-      // given nothing was typed or chosen and the form shows Carol
-      serve({ userId: ALICE, displayName: "Alice" }, [plan, davidFirst], async () => ({}));
-      const { client } = renderTab();
-      await screen.findByText("Bob owes 90,00 €");
-      expect(screen.getByLabelText("Debtor")).toHaveDisplayValue("Carol");
-
-      // when the plan changes and David is now the first entry
-      act(() => markGroupChanged(client, "g1"));
-
-      // then the form shows David
-      await vi.waitFor(() => expect(screen.getByLabelText("Debtor")).toHaveDisplayValue("David"));
+      // then it is still about Carol
+      expect(dialog).toHaveTextContent("Carol owes you 240,00 €");
     });
   });
 });

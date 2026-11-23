@@ -14,24 +14,24 @@ export function payableCents(edge: PlanEdge): number {
 }
 
 /**
- * The creditor forgives (part of) a debt. `waivableEdges` are the plan entries toward the current user; the amount starts at
- * what can be waived now. The reason is optional. A waiver takes effect at once, so there is no confirmation step.
+ * The creditor forgives (part of) one person's debt (R17, board B-12). The form is about that one person only: `edge`
+ * is their current entry in the polled plan, or `undefined` once their debt is gone, and then the form says so instead
+ * of offering anybody else (design 2026-11-23, F1). The amount starts at what can be waived now; the reason is
+ * optional. A waiver takes effect at once, so there is no confirmation step.
  */
 export function WaiveDebtForm({
   groupId,
-  waivableEdges,
+  debtorName,
+  edge,
   onWaived,
+  onCancel,
 }: {
   groupId: string;
-  waivableEdges: PlanEdge[];
-  onWaived?: () => void;
+  debtorName: string;
+  edge: PlanEdge | undefined;
+  onWaived: () => void;
+  onCancel: () => void;
 }) {
-  // The choice and the typed amount are only what the user did; what is shown is derived from the current `waivableEdges`,
-  // so a plan that reloads (a debtor gone, a smaller open amount) never leaves the form on stale values.
-  const [chosenDebtorId, setChosenDebtorId] = useState<string>();
-  // Pinned once the user chose a debtor or typed anything: the form then stays about that person even when the plan
-  // (polled every few seconds) changes under it. Untouched, it follows the plan.
-  const [pinned, setPinned] = useState(false);
   const [typedAmount, setTypedAmount] = useState<string>();
   const [note, setNote] = useState("");
   const [error, setError] = useState<string>();
@@ -39,48 +39,35 @@ export function WaiveDebtForm({
   // State updates are not visible to a second submit in the same tick; the ref is.
   const sending = useRef(false);
 
-  // A pinned debtor who left the plan leaves nothing selected: never silently somebody else, whose debt would be waived
-  // instead (design 2026-11-11, D2).
-  const chosenEdge = waivableEdges.find((edge) => edge.fromDebtor === chosenDebtorId);
-  const selectedEdge = chosenEdge ?? (pinned ? undefined : waivableEdges[0]);
-  const fromDebtor = selectedEdge?.fromDebtor ?? "";
-  const amount = typedAmount ?? (selectedEdge ? centsToAmount(payableCents(selectedEdge)) : "");
-
-  function chooseDebtor(id: string) {
-    setChosenDebtorId(id);
-    setPinned(true);
-    setTypedAmount(undefined);
+  if (!edge || payableCents(edge) <= 0) {
+    return (
+      <div className="flex flex-col gap-4">
+        <p>Nothing is open with {debtorName} any more.</p>
+        <button type="button" onClick={onCancel} className="btn-secondary self-start">
+          Close
+        </button>
+      </div>
+    );
   }
 
-  /** The user typed: keep the debtor that is shown right now. */
-  function pinShownDebtor() {
-    setChosenDebtorId(fromDebtor);
-    setPinned(true);
-  }
+  const open = payableCents(edge);
+  const amount = typedAmount ?? centsToAmount(open);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (sending.current) return;
+    if (sending.current || !edge) return;
     const cents = eurosToCents(amount);
-    if (!selectedEdge) return setError("Please choose who owes you.");
-    if (cents === null || cents <= 0) return setError("Please enter a valid amount, e.g. 19,99.");
-    if (cents > payableCents(selectedEdge))
-      return setError(`You can waive up to ${formatEuro(payableCents(selectedEdge))} here.`);
+    if (cents === null) return setError("Please enter a valid amount, e.g. 19,99.");
+    if (cents > open) return setError(`You can waive up to ${formatEuro(open)} here.`);
     sending.current = true;
     setBusy(true);
     try {
       await api(`/groups/${groupId}/debt-waivers`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ fromDebtor, amount: centsToAmount(cents), ...(note.trim() ? { note: note.trim() } : {}) }),
+        body: JSON.stringify({ fromDebtor: edge.fromDebtor, amount: centsToAmount(cents), ...(note.trim() ? { note: note.trim() } : {}) }),
       });
-      setError(undefined);
-      setNote("");
-      setTypedAmount(undefined);
-      // The waiver is done: the debtor stays selected while still in the plan (a partial waiver), else the form
-      // follows the plan again.
-      setPinned(false);
-      onWaived?.();
+      onWaived();
     } catch (err) {
       // The shared sentence talks about paying; here the creditor gives something up.
       setError(
@@ -95,56 +82,32 @@ export function WaiveDebtForm({
   }
 
   return (
-    <form onSubmit={submit} className="card flex flex-col gap-3 p-6">
-      <label className="flex flex-col gap-1">
-        Debtor
-        <select
-          value={fromDebtor}
-          disabled={waivableEdges.length === 1 && selectedEdge !== undefined} // with nobody selected there is something to choose
-          onChange={(e) => chooseDebtor(e.target.value)}
-        >
-          {!selectedEdge && (
-            <option value="" disabled>
-              Choose who owes you
-            </option>
-          )}
-          {waivableEdges.map((edge) => (
-            <option key={edge.fromDebtor} value={edge.fromDebtor}>
-              {edge.fromDebtorName}
-            </option>
-          ))}
-        </select>
+    <form onSubmit={submit} className="flex flex-col gap-4">
+      <p>You give up part of what {debtorName} owes you. It takes effect at once and cannot be undone.</p>
+      <p className="rounded-2xl bg-surface-2 px-4 py-3">
+        <span className="font-bold">{debtorName}</span> owes you <span className="font-bold">{formatEuro(open)}</span>
+      </p>
+      <label className="flex flex-col gap-1 font-bold">
+        Waived amount (EUR)
+        <input className="font-normal" inputMode="decimal" value={amount} onChange={(e) => setTypedAmount(e.target.value)} />
       </label>
-      <label className="flex flex-col gap-1">
-        Waived amount (€)
-        <input
-          inputMode="decimal"
-          value={amount}
-          onChange={(e) => {
-            pinShownDebtor();
-            setTypedAmount(e.target.value);
-          }}
-        />
-      </label>
-      <label className="flex flex-col gap-1">
+      <label className="flex flex-col gap-1 font-bold">
         Reason (optional)
-        <input
-          value={note}
-          maxLength={200}
-          onChange={(e) => {
-            pinShownDebtor();
-            setNote(e.target.value);
-          }}
-        />
+        <input className="font-normal" value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} />
       </label>
       {error && (
         <p role="alert" className="font-bold text-negative">
           {error}
         </p>
       )}
-      <button type="submit" disabled={busy} className="btn-primary">
-        Waive debt
-      </button>
+      <div className="flex flex-wrap gap-3">
+        <button type="submit" disabled={busy} className="btn-primary">
+          Waive debt
+        </button>
+        <button type="button" onClick={onCancel} className="btn-secondary">
+          Cancel
+        </button>
+      </div>
     </form>
   );
 }
