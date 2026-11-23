@@ -1,28 +1,170 @@
 @import "tailwindcss";
 
+/*
+ * The "Journey" theme (docs/specs/2026-11-23-ui-journey/design.md, U8). Every colour has a light and a dark value and
+ * switches with the browser's setting, so components only ever name a token (`bg-surface`, `text-negative`) and never
+ * need a `dark:` variant. The values come from the mockup's b.css.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fff9ef;
+  --foreground: #11283f;
+  --surface: #ffffff;
+  --surface-2: #fdefd5;
+  --muted: #4f6174;
+  --line: #ebddc2;
+  --accent: #ffc83d;
+  --on-accent: #11283f;
+  --positive: #0a6e69;
+  --negative: #b42318;
+  --warning: #ffe3b8;
+  --on-warning: #5b3200;
+  --focus: #1d4ed8;
+  --person-1: #bfe6e3;
+  --person-2: #ffd3b8;
+  --person-3: #d4d9fa;
+  --person-4: #f8c9d9;
+  --person-5: #e2e6a8;
   /* Form controls, scrollbars and default text follow the browser's light or dark setting. */
   color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0c1b2a;
+    --foreground: #f6efe2;
+    --surface: #132a40;
+    --surface-2: #0a1522;
+    --muted: #aab9c9;
+    --line: #254159;
+    --accent: #ffc83d;
+    --on-accent: #11283f;
+    --positive: #5ed6cf;
+    --negative: #ff9d8f;
+    --warning: #4a3410;
+    --on-warning: #ffd99a;
+    --focus: #8fb1ff;
+    --person-1: #1e5552;
+    --person-2: #6a3f22;
+    --person-3: #363e78;
+    --person-4: #6b2f47;
+    --person-5: #555a1d;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-warning: var(--warning);
+  --color-on-warning: var(--on-warning);
+  --color-focus: var(--focus);
+  --color-person-1: var(--person-1);
+  --color-person-2: var(--person-2);
+  --color-person-3: var(--person-3);
+  --color-person-4: var(--person-4);
+  --color-person-5: var(--person-5);
+  --font-sans: var(--font-dm-sans);
+  --font-display: var(--font-bricolage);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  /* Borders and dividers are the quiet line colour unless a class says otherwise. */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-line);
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans), system-ui, sans-serif;
+  }
+
+  h1,
+  h2 {
+    font-family: var(--font-display), system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  /* Text fields and selects look the same everywhere; at least 48 px high, so they are easy to hit on a phone. */
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    min-height: 3rem;
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--color-line);
+    border-radius: 1rem;
+    background: var(--color-surface);
+    color: var(--color-foreground);
+  }
+
+  input[type="checkbox"] {
+    width: 1.5rem;
+    height: 1.5rem;
+    accent-color: var(--color-foreground);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 3px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* The strong action of a screen: one per form. At least 44 px high (touch target). */
+@utility btn-primary {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 2px solid var(--color-accent);
+  border-radius: 9999px;
+  background: var(--color-accent);
+  padding: 0 1.25rem;
+  color: var(--color-on-accent);
+  font-weight: 700;
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* Every other action. */
+@utility btn-secondary {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 2px solid var(--color-foreground);
+  border-radius: 9999px;
+  background: transparent;
+  padding: 0 1.25rem;
+  color: var(--color-foreground);
+  font-weight: 700;
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* A raised surface: forms, lists of rows. */
+@utility card {
+  border: 1.5px solid var(--color-line);
+  border-radius: 1.5rem;
+  background: var(--color-surface);
 }

@@ -66,9 +66,9 @@ function PaymentRow({
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
   return (
-    <li className="flex flex-col gap-1 border-l-4 border-green-600 pl-2">
+    <li className="flex flex-col gap-1 border-l-4 border-positive pl-3">
       <span>{`${payment.fromDebtorName} marked ${formatEuro(amountToCents(payment.amount))} as paid to you`}</span>
-      {payment.note && <span className="text-foreground/70">{payment.note}</span>}
+      {payment.note && <span className="text-muted">{payment.note}</span>}
       <Link href={`/groups/${payment.groupId}`} onClick={onOpenGroup} className="underline">
         Open group
       </Link>
@@ -79,7 +79,7 @@ function PaymentRow({
             onClick={onConfirm}
             disabled={busy}
             aria-label={`Confirm payment from ${payment.fromDebtorName}`}
-            className="rounded bg-foreground px-2 py-1 text-background disabled:opacity-50"
+            className="btn-primary"
           >
             Confirm
           </button>
@@ -88,7 +88,7 @@ function PaymentRow({
             onClick={() => setRejecting(true)}
             disabled={busy}
             aria-label={`Reject payment from ${payment.fromDebtorName}`}
-            className="rounded border px-2 py-1 disabled:opacity-50"
+            className="btn-secondary"
           >
             Reject
           </button>
@@ -104,17 +104,17 @@ function PaymentRow({
         >
           <label className="flex flex-col gap-1">
             Reason
-            <input className="rounded border px-2 py-1" value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />
+            <input value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />
           </label>
           <span className="flex gap-2">
             <button
               type="submit"
               disabled={busy || !reason.trim()}
-              className="rounded bg-foreground px-2 py-1 text-background disabled:opacity-50"
+              className="btn-primary"
             >
               Send rejection
             </button>
-            <button type="button" disabled={busy} onClick={() => setRejecting(false)} className="rounded border px-2 py-1">
+            <button type="button" disabled={busy} onClick={() => setRejecting(false)} className="btn-secondary">
               Cancel
             </button>
           </span>
@@ -218,28 +218,30 @@ export function InboxBell() {
   const empty = openInvitations.length === 0 && waitingPayments.length === 0 && entries.length === 0;
 
   return (
-    <div className="relative">
+    // Not `relative`: the dropdown is placed against the whole header group (AuthBar), so it opens at the right edge of
+    // the screen, never over the page's tabs and never off the left edge of a phone.
+    <div>
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-label={count > 0 ? `Inbox, ${count} new` : "Inbox"}
         aria-expanded={open}
-        className="relative rounded border px-2 py-1"
+        className="btn-secondary"
       >
-        <span aria-hidden="true">&#128276;</span>
+        <span aria-hidden="true">Inbox</span>
         {count > 0 && (
-          <span className="ml-1 rounded-full bg-red-600 px-1.5 text-xs text-white">{count}</span>
+          <span className="rounded-full bg-accent px-2 text-xs font-extrabold text-on-accent">{count}</span>
         )}
       </button>
       {open && (
-        <div role="region" aria-label="Inbox entries" className="absolute right-0 z-10 mt-2 w-80 max-w-[90vw] flex flex-col gap-2 rounded border bg-background p-3 text-sm text-foreground shadow">
+        <div role="region" aria-label="Inbox entries" className="card absolute right-0 z-10 mt-2 flex w-80 max-w-[90vw] flex-col gap-3 p-4 text-sm text-foreground shadow-xl">
           <ErrorBanner error={error} />
-          {invitations === null && <p className="text-foreground/70">Invitations could not be loaded.</p>}
-          {payments === null && <p className="text-foreground/70">Payments could not be loaded.</p>}
-          {notifications === null && <p className="text-foreground/70">Entries could not be loaded.</p>}
+          {invitations === null && <p className="text-muted">Invitations could not be loaded.</p>}
+          {payments === null && <p className="text-muted">Payments could not be loaded.</p>}
+          {notifications === null && <p className="text-muted">Entries could not be loaded.</p>}
           <ul className="flex flex-col gap-2">
             {openInvitations.map((invitation) => (
-              <li key={invitation.invitationId} className="flex flex-col gap-1 border-l-4 border-blue-500 pl-2">
+              <li key={invitation.invitationId} className="flex flex-col gap-1 border-l-4 border-accent pl-3">
                 <span>{`${invitation.invitedBy.displayName} invited you to ${invitation.group.name}${invitation.role === "ADMIN" ? " as an admin" : ""}`}</span>
                 <span className="flex gap-2">
                   <button
@@ -247,7 +249,7 @@ export function InboxBell() {
                     onClick={() => void accept(invitation)}
                     disabled={busyId === invitation.invitationId}
                     aria-label={`Accept invitation to ${invitation.group.name}`}
-                    className="rounded bg-foreground px-2 py-1 text-background disabled:opacity-50"
+                    className="btn-primary"
                   >
                     Accept
                   </button>
@@ -256,7 +258,7 @@ export function InboxBell() {
                     onClick={() => void decline(invitation)}
                     disabled={busyId === invitation.invitationId}
                     aria-label={`Decline invitation to ${invitation.group.name}`}
-                    className="rounded border px-2 py-1 disabled:opacity-50"
+                    className="btn-secondary"
                   >
                     Decline
                   </button>
@@ -276,7 +278,7 @@ export function InboxBell() {
             {entries.map((entry) => (
               <li key={entry.id}>
                 {entry.readAt ? (
-                  <span className="text-foreground/60">{describe(entry)}</span>
+                  <span className="text-muted">{describe(entry)}</span>
                 ) : (
                   <button type="button" onClick={() => void markRead(entry)} className="text-left font-medium">
                     {describe(entry)}
@@ -285,7 +287,7 @@ export function InboxBell() {
               </li>
             ))}
           </ul>
-          {empty && invitations !== null && payments !== null && notifications !== null && <p className="text-foreground/70">Nothing new.</p>}
+          {empty && invitations !== null && payments !== null && notifications !== null && <p className="text-muted">Nothing new.</p>}
           {notifications && notifications.unreadCount > 0 && (
             <button type="button" onClick={() => void markAllRead()} className="self-start underline">
               Mark all as read

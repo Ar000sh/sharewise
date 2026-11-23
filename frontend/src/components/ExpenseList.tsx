@@ -10,12 +10,12 @@ export function ExpenseList({ expenses, members }: { expenses: Expense[]; member
   const nameOf = (id: string) => members.find((m) => m.userId === id)?.displayName ?? "Former member";
 
   return (
-    <ul className="divide-y rounded border">
+    <ul className="card divide-y">
       {expenses.map((e) => (
         <li key={e.id} className="flex items-start justify-between gap-2 px-3 py-2">
           <div>
             <div className="font-medium">{e.title}</div>
-            <div className="text-sm text-foreground/70">
+            <div className="text-sm text-muted">
               {nameOf(e.paidBy)} paid · {e.date}
             </div>
           </div>

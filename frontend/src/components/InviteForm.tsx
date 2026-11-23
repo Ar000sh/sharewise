@@ -44,7 +44,6 @@ export function InviteForm({ groupId }: { groupId: string }) {
         <input
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
-          className="rounded border px-2 py-2"
           autoComplete="off"
         />
       </label>
@@ -53,13 +52,12 @@ export function InviteForm({ groupId }: { groupId: string }) {
         <select
           value={role}
           onChange={(e) => setRole(e.target.value as "MEMBER" | "ADMIN")}
-          className="rounded border bg-background px-2 py-2"
         >
           <option value="MEMBER">Member</option>
           <option value="ADMIN">Admin</option>
         </select>
       </label>
-      <button type="submit" disabled={busy} className="self-start rounded border px-3 py-2 disabled:opacity-50">
+      <button type="submit" disabled={busy} className="btn-secondary self-start">
         Invite
       </button>
       {invited && <p role="status">Invitation sent to @{invited}</p>}

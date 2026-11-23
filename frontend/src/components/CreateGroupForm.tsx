@@ -33,18 +33,17 @@ export function CreateGroupForm() {
   }
 
   return (
-    <form onSubmit={submit} className="flex max-w-md flex-col gap-3">
+    <form onSubmit={submit} className="card flex max-w-md flex-col gap-4 p-6">
       <label className="flex flex-col gap-1">
         Group name
         <input
-          className="rounded border px-2 py-2"
           value={name}
           maxLength={100}
           onChange={(e) => setName(e.target.value)}
         />
       </label>
       <ErrorBanner error={error} />
-      <button type="submit" className="rounded bg-foreground px-3 py-2 text-background">
+      <button type="submit" className="btn-primary">
         Create group
       </button>
     </form>

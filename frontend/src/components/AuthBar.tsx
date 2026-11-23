@@ -3,6 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import type { components } from "@/api/schema";
+import { Avatar } from "@/components/Avatar";
 import { InboxBell } from "@/components/InboxBell";
 import { api } from "@/lib/api";
 import { useCurrentUser, useUpdateCurrentUser } from "@/lib/currentUser";
@@ -67,7 +68,7 @@ export function AuthBar() {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3 text-sm">
+    <div className="relative ml-auto flex flex-wrap items-center justify-end gap-3 text-sm">
       <InboxBell />
       {editing ? (
         <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2">
@@ -81,12 +82,12 @@ export function AuthBar() {
             onChange={(e) => setDraft(e.target.value)}
             maxLength={100}
             disabled={saving}
-            className="w-40 rounded border bg-background px-2 py-1 text-foreground"
+            className="w-40"
           />
           <button
             type="submit"
             disabled={saving}
-            className="rounded bg-foreground px-2 py-1 text-background disabled:opacity-50"
+            className="btn-primary"
           >
             Save
           </button>
@@ -94,25 +95,27 @@ export function AuthBar() {
             type="button"
             onClick={cancelEditing}
             disabled={saving}
-            className="rounded border px-2 py-1 disabled:opacity-50"
+            className="btn-secondary"
           >
             Cancel
           </button>
           {error && (
-            <span role="alert" className="text-red-700 dark:text-red-400">
+            <span role="alert" className="font-bold text-negative">
               {error}
             </span>
           )}
         </form>
       ) : (
         <span className="flex items-center gap-2">
-          <span>
+          <Avatar userId={user.userId} name={user.displayName} />
+          {/* On a phone the avatar stands for the name; the button below still says whose name it changes. */}
+          <span className="hidden sm:inline">
             Signed in as <strong>{user.displayName}</strong>
           </span>
           <button
             type="button"
             onClick={startEditing}
-            className="rounded border px-2 py-0.5 text-xs text-foreground/70"
+            className="text-sm text-muted underline"
           >
             Change name
           </button>
@@ -121,7 +124,7 @@ export function AuthBar() {
       {/* A real form post, not fetch: the answer redirects to Keycloak's logout page, which a script cannot follow
           across origins. The full page load also drops all client state of the signed-out user. */}
       <form method="post" action="/api/auth/logout">
-        <button type="submit" className="rounded border px-2 py-1">
+        <button type="submit" className="btn-secondary">
           Sign out
         </button>
       </form>

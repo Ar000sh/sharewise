@@ -81,16 +81,15 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3 rounded border p-3">
+    <form onSubmit={submit} className="card flex flex-col gap-4 p-6">
       <label className="flex flex-col gap-1">
         Title
-        <input className="rounded border px-2 py-2" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} />
+        <input value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} />
       </label>
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1">
           Amount (€)
           <input
-            className="rounded border px-2 py-2"
             inputMode="decimal"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
@@ -98,12 +97,12 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
         </label>
         <label className="flex flex-1 flex-col gap-1">
           Date
-          <input type="date" className="rounded border px-2 py-2" value={date} onChange={(e) => setDate(e.target.value)} />
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </label>
       </div>
       <label className="flex flex-col gap-1">
         Paid by
-        <select className="rounded border px-2 py-2" value={paidBy} onChange={(e) => setPaidBy(e.target.value)}>
+        <select value={paidBy} onChange={(e) => setPaidBy(e.target.value)}>
           {members.map((m) => (
             <option key={m.userId} value={m.userId}>
               {m.displayName}
@@ -116,7 +115,7 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
         <button
           type="button"
           onClick={() => setIncluded(members.map((m) => m.userId))}
-          className="self-start rounded border px-2 py-1 text-sm"
+          className="btn-secondary self-start"
         >
           Select everyone
         </button>
@@ -133,7 +132,7 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
         ))}
       </fieldset>
       {shares.length > 0 && (
-        <ul aria-label="Shares" className="text-sm text-foreground/80">
+        <ul aria-label="Shares" className="text-sm text-muted">
           {participants.map((m, i) => (
             <li key={m.userId} className="flex justify-between">
               <span>{m.displayName}</span>
@@ -143,7 +142,7 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
         </ul>
       )}
       <ErrorBanner error={error} />
-      <button type="submit" disabled={busy} className="rounded bg-foreground px-3 py-2 text-background disabled:opacity-50">
+      <button type="submit" disabled={busy} className="btn-primary">
         Add expense
       </button>
     </form>
