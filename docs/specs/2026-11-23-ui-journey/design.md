@@ -92,7 +92,7 @@ Tokens from `b.css` (light / dark), as Tailwind theme colours in `globals.css`:
 
 1. `feature/ui-theme`: tokens, fonts, the top bar (logo, "My groups", "Inbox" with count, avatar, sign out), base pieces (button variants, badge, avatar, note, panel, `Dialog`), `ErrorBanner` with "Try again". After this, every screen already looks like B. *Built (23.11) with less: the base pieces are the utilities `btn-primary`, `btn-secondary`, `card` and the `Avatar`; the badge, note and panel are plain token classes until a third use; `Dialog` moves to `feature/ui-settle-up`, its first user; the "My groups" / "Inbox" links come with the Inbox page (`feature/ui-members-inbox`), until then the logo leads home and the bell stays (keep it simple: no piece without a user).*
 2. `feature/ui-groups`: My groups (without the balance until A2 is merged), Create group, Sign in.
-3. `feature/ui-group-page`: header, hero (own balance, waiting count, "Updating…"), pill tabs, Expenses by day, Add expense page and floating button.
+3. `feature/ui-group-page`: header, hero (own balance, waiting count, "Updating…"), pill tabs, Expenses by day, Add expense page and floating button. *Built (23.11) without the waiting count, which needs the one inbox query (F3) and comes with `feature/ui-members-inbox`; the share preview of the Add expense form stays a list below the checkboxes instead of B's amount per row (call: keeps the tested preview).*
 4. `feature/ui-settle-up`: Settle up in B's order, payment history, the three dialogs.
 5. `feature/ui-members-inbox`: Members tab, Inbox page (removes the bell).
 6. `feature/balance-breakdown` (backend + contract, A1 and A2) — can run in parallel to 2 to 5; then a small frontend branch fills the Balances rows and the home balance.
