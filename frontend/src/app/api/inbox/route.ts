@@ -2,7 +2,7 @@ import { connection } from "next/server";
 import { proxyToBackend } from "@/lib/backend";
 
 /**
- * The bell shows three things from three places: the caller's open invitations and the payments waiting for the
+ * The inbox page shows three things from three places: the caller's open invitations and the payments waiting for the
  * caller's answer (both state, asked as queries) and the inbox entries (things that happened, from the notification
  * context). This handler asks all three and merges the answers, so the browser makes one call. A part that failed is
  * null; the others still arrive.

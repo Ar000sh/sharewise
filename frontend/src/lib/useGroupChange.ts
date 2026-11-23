@@ -9,7 +9,7 @@ export function lastChangedKey(groupId: string): string[] {
 }
 
 /**
- * Something in the group changed (an own write, an answer in the bell): remember when, and ask all of the group's
+ * Something in the group changed (an own write, an answer in the inbox): remember when, and ask all of the group's
  * queries again. The time starts the bounded look-again of whichever tab is open or opened next, because the ledger
  * books the change a moment after it was saved (eventual consistency).
  */

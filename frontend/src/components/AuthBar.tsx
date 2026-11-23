@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import type { components } from "@/api/schema";
 import { Avatar } from "@/components/Avatar";
-import { InboxBell } from "@/components/InboxBell";
 import { api } from "@/lib/api";
 import { useCurrentUser, useUpdateCurrentUser } from "@/lib/currentUser";
 import { messageFor } from "@/lib/errors";
@@ -68,8 +67,7 @@ export function AuthBar() {
   }
 
   return (
-    <div className="relative ml-auto flex flex-wrap items-center justify-end gap-3 text-sm">
-      <InboxBell />
+    <div className="ml-auto flex flex-wrap items-center justify-end gap-3 text-sm">
       {editing ? (
         <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2">
           <label htmlFor="authbar-display-name" className="sr-only">

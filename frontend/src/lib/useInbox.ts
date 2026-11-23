@@ -24,8 +24,9 @@ export const INBOX_POLL_MS = 30_000;
 const INBOX_KEY = queryKeyOf("/inbox");
 
 /**
- * The inbox as one query (design 2026-11-23, F3): the bell, the payments waiting in a group's Settle up tab and any
- * count read the same cached answer, so an answer given in one place disappears from all of them at once.
+ * The inbox as one query (design 2026-11-23, F3): the inbox page, the top-bar count, the payments waiting in a group's
+ * Settle up tab and every waiting count read the same cached answer, so an answer given in one place disappears from
+ * all of them at once.
  */
 export function useInbox() {
   const { data, error } = useQuery({

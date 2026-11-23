@@ -33,7 +33,6 @@ describe("AuthBar", () => {
     );
 
     expect(await screen.findByText("Alice")).toBeInTheDocument();
-    expect(await screen.findByRole("button", { name: /inbox/i })).toBeInTheDocument();
     const button = screen.getByRole("button", { name: "Sign out" });
     expect(button.closest("form")).toHaveAttribute("method", "post");
     expect(button.closest("form")).toHaveAttribute("action", "/api/auth/logout");
