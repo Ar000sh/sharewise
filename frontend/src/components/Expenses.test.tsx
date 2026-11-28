@@ -366,6 +366,54 @@ describe("ExpenseForm", () => {
   });
 });
 
+describe("ExpenseForm correcting an expense", () => {
+  const dinner = {
+    id: "e2",
+    title: "Dinner",
+    totalAmount: "180.00",
+    date: "2027-07-19",
+    paidBy: "u2",
+    recordedBy: "u2",
+    splitStrategy: "EQUAL" as const,
+    status: "ACTIVE" as const,
+    revisions: [],
+    shares: [
+      { participantId: "u2", owedShare: "90.00" },
+      { participantId: "u3", owedShare: "90.00" },
+    ],
+  };
+
+  it("startsWithTheExpenseAndSendsTheCorrectionWithItsReason", async () => {
+    apiMock.mockResolvedValue({});
+    const onRecorded = vi.fn();
+    // when Alice (an admin, not the recorder) corrects Bob's dinner
+    render(<ExpenseForm groupId="g1" members={members} currentUserId="u1" correcting={dinner} onRecorded={onRecorded} />);
+    expect(screen.getByLabelText("Amount (EUR)")).toHaveValue("180.00");
+    expect(screen.getByRole("checkbox", { name: "Bob" })).toBeDisabled();
+    expect(screen.getByRole("checkbox", { name: "Carol" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Alice" })).not.toBeChecked();
+    await userEvent.clear(screen.getByLabelText("Amount (EUR)"));
+    await userEvent.type(screen.getByLabelText("Amount (EUR)"), "200");
+    await userEvent.type(screen.getByLabelText(/why is it corrected/i), "Forgot the tip");
+    await userEvent.click(screen.getByRole("button", { name: "Save correction" }));
+
+    // then the whole new version goes to the expense with PUT (R7)
+    const [path, init] = apiMock.mock.calls[0];
+    expect(path).toBe("/groups/g1/expenses/e2");
+    expect(init?.method).toBe("PUT");
+    expect(JSON.parse(String(init?.body))).toEqual({
+      title: "Dinner",
+      totalAmount: "200.00",
+      date: "2027-07-19",
+      paidBy: "u2",
+      participants: [{ userId: "u2" }, { userId: "u3" }],
+      splitStrategy: "EQUAL",
+      reason: "Forgot the tip",
+    });
+    expect(onRecorded).toHaveBeenCalled();
+  });
+});
+
 describe("ExpenseList", () => {
   /** An expense split equally between Alice, Bob and Carol; the server's shares give the remainder cent to Alice. */
   function expense(id: string, title: string, totalAmount: string, date: string, paidBy: string) {
@@ -380,7 +428,13 @@ describe("ExpenseList", () => {
       paidBy,
       recordedBy: paidBy,
       splitStrategy: "EQUAL" as const,
-      status: "ACTIVE" as const,
+      status: "ACTIVE" as "ACTIVE" | "CORRECTED" | "REMOVED",
+      revisions: [] as {
+        correctedBy: string;
+        correctedAt: string;
+        reason: string | null;
+        previous: { title: string; totalAmount: string; date: string; paidBy: string; splitStrategy: "EQUAL"; shares: never[] };
+      }[],
       shares: [
         { participantId: "u1", owedShare: centsToAmount(first) },
         { participantId: "u2", owedShare: centsToAmount(base) },
@@ -463,6 +517,121 @@ describe("ExpenseList", () => {
 
     // then (R13)
     expect(screen.getByRole("listitem")).toHaveTextContent("David (left) paid");
+  });
+
+  it("aCorrectedExpenseShowsABadgeAndItsHistory", async () => {
+    // given a dinner that Alice corrected from 180 to 200 euros
+    const dinner = {
+      ...expense("e2", "Dinner", "200.00", "2027-07-19", "u2"),
+      status: "CORRECTED" as const,
+      revisions: [
+        {
+          correctedBy: "u1",
+          correctedAt: "2027-07-20T10:00:00Z",
+          reason: "Forgot the tip",
+          previous: { title: "Dinner", totalAmount: "180.00", date: "2027-07-19", paidBy: "u2", splitStrategy: "EQUAL" as const, shares: [] },
+        },
+      ],
+    };
+    render(<ExpenseList members={members} currentUserId="u2" expenses={[dinner]} />);
+
+    // when Bob opens the history
+    expect(screen.getByRole("listitem")).toHaveTextContent("Corrected");
+    await userEvent.click(screen.getByRole("button", { name: "History of Dinner" }));
+
+    // then he reads who changed what and why (R7)
+    const dialog = screen.getByRole("dialog", { name: "History of Dinner" });
+    expect(dialog).toHaveTextContent("Alice corrected it on Tuesday 20 Jul");
+    expect(dialog).toHaveTextContent("Forgot the tip");
+    expect(dialog).toHaveTextContent("Before: Dinner, 180,00 €, paid by Bob");
+  });
+
+  it("aRemovedExpenseStaysInTheListButNoLongerCounts", () => {
+    render(
+      <ExpenseList
+        members={members}
+        currentUserId="u2"
+        expenses={[{ ...expense("e2", "Dinner", "180.00", "2027-07-19", "u2"), status: "REMOVED" as const }]}
+        change={{ groupId: "g1", isAdmin: true, onChanged: vi.fn() }}
+      />,
+    );
+
+    // then (R8): no part for Bob and nothing left to change
+    const row = screen.getByRole("listitem");
+    expect(row).toHaveTextContent("Removed");
+    expect(row).toHaveTextContent("no longer counts");
+    expect(row).not.toHaveTextContent("your part");
+    expect(screen.queryByRole("link", { name: "Correct Dinner" })).not.toBeInTheDocument();
+  });
+
+  it("onlyTheRecorderThePayerOrAnAdminMayChangeAnExpense", () => {
+    // when Carol (no admin) looks at a dinner Bob paid and a taxi she paid herself
+    render(
+      <ExpenseList
+        members={members}
+        currentUserId="u3"
+        expenses={[expense("e2", "Dinner", "180.00", "2027-07-19", "u2"), expense("e3", "Taxi", "10.00", "2027-07-19", "u3")]}
+        change={{ groupId: "g1", isAdmin: false, onChanged: vi.fn() }}
+      />,
+    );
+
+    // then only her own expense can be corrected or removed (R6)
+    expect(screen.queryByRole("link", { name: "Correct Dinner" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Correct Taxi" })).toHaveAttribute("href", "/groups/g1/expenses/e3/correct");
+    expect(screen.getByRole("button", { name: "Remove Taxi" })).toBeInTheDocument();
+  });
+
+  it("anExpenseOfAFormerMemberCannotBeChanged", () => {
+    render(
+      <ExpenseList
+        members={members}
+        formerMembers={[{ userId: "u4", displayName: "David", role: "MEMBER" }]}
+        currentUserId="u1"
+        expenses={[expense("e4", "Taxi", "30.00", "2027-07-19", "u4")]}
+        change={{ groupId: "g1", isAdmin: true, onChanged: vi.fn() }}
+      />,
+    );
+
+    expect(screen.queryByRole("link", { name: "Correct Taxi" })).not.toBeInTheDocument();
+  });
+
+  it("removingAnExpenseAsksFirstThenSendsTheDelete", async () => {
+    apiMock.mockResolvedValue(undefined);
+    const onChanged = vi.fn();
+    render(
+      <ExpenseList
+        members={members}
+        currentUserId="u2"
+        expenses={[expense("e2", "Dinner", "180.00", "2027-07-19", "u2")]}
+        change={{ groupId: "g1", isAdmin: false, onChanged }}
+      />,
+    );
+
+    // when Bob removes his dinner and confirms
+    await userEvent.click(screen.getByRole("button", { name: "Remove Dinner" }));
+    expect(apiMock).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "Remove expense" }));
+
+    // then
+    expect(apiMock).toHaveBeenCalledWith("/groups/g1/expenses/e2", { method: "DELETE" });
+    expect(onChanged).toHaveBeenCalled();
+  });
+
+  it("aRefusedRemovalShowsTheMessageInTheDialog", async () => {
+    apiMock.mockRejectedValue(new ApiError(409, "FORMER_MEMBER_INVOLVED", "x"));
+    render(
+      <ExpenseList
+        members={members}
+        currentUserId="u2"
+        expenses={[expense("e2", "Dinner", "180.00", "2027-07-19", "u2")]}
+        change={{ groupId: "g1", isAdmin: false, onChanged: vi.fn() }}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Remove Dinner" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove expense" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Somebody in this expense has left the group");
   });
 
   it("showsEmptyState", () => {

@@ -103,6 +103,12 @@ cookie is per browser.
    says "Alice … closed Mallorca 2027 for settlement". **Reopen group** undoes it. When the last payment is confirmed
    the group archives itself ("Mallorca 2027 was archived: everybody is settled"); with all balances at 0 already,
    Alice presses **Archive group**. An archived group is read-only.
+10. **Correcting and removing an expense** (R6 to R8, R10; do it while the group is open, before step 8): on the
+    Expenses tab the recorder, the payer or an admin sees **Correct** and **Remove** on an expense. **Correct** opens
+    the form with the old values; change the amount, give a reason and **Save correction**. The row gets a "Corrected"
+    badge, **History** shows the old version, and the balances move by the difference only. **Remove** asks first; the
+    row stays struck through with "no longer counts". The others' inbox says "… corrected (removed) an expense in
+    Mallorca 2027". An expense of somebody who has left can no longer change.
 
 ## Tests
 

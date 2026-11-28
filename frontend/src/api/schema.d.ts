@@ -322,6 +322,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/groups/{groupId}/expenses/{expenseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+                expenseId: components["parameters"]["ExpenseId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Correct an expense (J5): the recorder, the payer or an admin (R6) replaces it with a new version while the group is OPEN (R5, L3). The old version is kept as a revision and the status becomes CORRECTED (R7); the balances follow a moment later. The new version follows the rules of recording, so a member who joined later can be added (R10). An expense that involves a former member cannot be changed. Everybody involved in the old or new version, except the caller, gets an inbox entry EXPENSE_CORRECTED. */
+        put: operations["correctExpense"];
+        post?: never;
+        /** Remove an expense (J6): a soft delete by the recorder, the payer or an admin (R6) while the group is OPEN (R5). The status becomes REMOVED, it no longer counts for balances, and it stays in the list (R8). Everybody involved, except the caller, gets an inbox entry EXPENSE_REMOVED. */
+        delete: operations["removeExpense"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/groups/{groupId}/balances": {
         parameters: {
             query?: never;
@@ -478,7 +499,7 @@ export interface components {
             title?: string;
             status: number;
             /** @enum {string} */
-            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "RECORDER_NOT_PARTICIPANT" | "GROUP_NOT_OPEN" | "SHARES_NOT_TOTAL" | "PERCENTAGES_NOT_100" | "PAYMENT_EXCEEDS_OPEN_DEBT" | "SETTLEMENT_PAYMENT_NOT_FOUND" | "PAYMENT_NOT_PENDING" | "NOT_THE_CREDITOR" | "ACCOUNT_NOT_FOUND" | "ALREADY_INVITED" | "NOTIFICATION_NOT_FOUND" | "NOT_AN_ADMIN" | "MEMBER_NOT_FOUND" | "ALREADY_ADMIN" | "BALANCE_NOT_ZERO" | "LAST_ADMIN" | "CANNOT_REMOVE_YOURSELF" | "GROUP_NOT_CLOSED" | "GROUP_ARCHIVED";
+            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "RECORDER_NOT_PARTICIPANT" | "GROUP_NOT_OPEN" | "SHARES_NOT_TOTAL" | "PERCENTAGES_NOT_100" | "PAYMENT_EXCEEDS_OPEN_DEBT" | "SETTLEMENT_PAYMENT_NOT_FOUND" | "PAYMENT_NOT_PENDING" | "NOT_THE_CREDITOR" | "ACCOUNT_NOT_FOUND" | "ALREADY_INVITED" | "NOTIFICATION_NOT_FOUND" | "NOT_AN_ADMIN" | "MEMBER_NOT_FOUND" | "ALREADY_ADMIN" | "BALANCE_NOT_ZERO" | "LAST_ADMIN" | "CANNOT_REMOVE_YOURSELF" | "GROUP_NOT_CLOSED" | "GROUP_ARCHIVED" | "EXPENSE_NOT_FOUND" | "NOT_ALLOWED_TO_CHANGE_EXPENSE" | "EXPENSE_REMOVED" | "FORMER_MEMBER_INVOLVED";
             detail?: string;
         };
         User: {
@@ -557,10 +578,10 @@ export interface components {
             expiresAt: string;
         };
         /**
-         * @description PAYMENT_CONFIRMED and PAYMENT_REJECTED tell the payer how the creditor answered; DEBT_WAIVED tells the debtor that the creditor forgave part of the debt. The actor is the creditor and the reference is the settlement payment. EXPENSE_RECORDED tells everybody involved in an expense (the participants and the payer) that somebody recorded it, except the person who recorded it; the actor is the recorder and the reference is the expense. MEMBER_PROMOTED tells a member that an admin made them an admin; the actor is the promoting admin and the reference is the promoted member. MEMBER_REMOVED tells a person that an admin removed them from the group; the actor is the admin and the reference is the removed person. GROUP_CLOSED, GROUP_REOPENED and GROUP_ARCHIVED tell every member except the acting admin that the group was closed for settlement, reopened or archived; the reference is the group. An archive that happened automatically, because the last balance reached 0, has no actor (null). A payment waiting for an answer is not an entry (see GET /me/settlement-payments). More types arrive with later features (expense correction and removal).
+         * @description PAYMENT_CONFIRMED and PAYMENT_REJECTED tell the payer how the creditor answered; DEBT_WAIVED tells the debtor that the creditor forgave part of the debt. The actor is the creditor and the reference is the settlement payment. EXPENSE_RECORDED tells everybody involved in an expense (the participants and the payer) that somebody recorded it, except the person who recorded it; the actor is the recorder and the reference is the expense. MEMBER_PROMOTED tells a member that an admin made them an admin; the actor is the promoting admin and the reference is the promoted member. MEMBER_REMOVED tells a person that an admin removed them from the group; the actor is the admin and the reference is the removed person. GROUP_CLOSED, GROUP_REOPENED and GROUP_ARCHIVED tell every member except the acting admin that the group was closed for settlement, reopened or archived; the reference is the group. An archive that happened automatically, because the last balance reached 0, has no actor (null). EXPENSE_CORRECTED and EXPENSE_REMOVED tell everybody involved in the expense (payer and participants of the old and the new version) except the person who changed it; the actor is that person and the reference is the expense. A payment waiting for an answer is not an entry (see GET /me/settlement-payments).
          * @enum {string}
          */
-        NotificationType: "MEMBER_JOINED" | "INVITATION_DECLINED" | "MEMBER_PROMOTED" | "MEMBER_REMOVED" | "PAYMENT_CONFIRMED" | "PAYMENT_REJECTED" | "DEBT_WAIVED" | "EXPENSE_RECORDED" | "GROUP_CLOSED" | "GROUP_REOPENED" | "GROUP_ARCHIVED";
+        NotificationType: "MEMBER_JOINED" | "INVITATION_DECLINED" | "MEMBER_PROMOTED" | "MEMBER_REMOVED" | "PAYMENT_CONFIRMED" | "PAYMENT_REJECTED" | "DEBT_WAIVED" | "EXPENSE_RECORDED" | "EXPENSE_CORRECTED" | "EXPENSE_REMOVED" | "GROUP_CLOSED" | "GROUP_REOPENED" | "GROUP_ARCHIVED";
         Notification: {
             /** Format: uuid */
             id: string;
@@ -607,6 +628,31 @@ export interface components {
             participants: components["schemas"]["SplitParticipant"][];
             splitStrategy: components["schemas"]["SplitStrategy"];
         };
+        /** @description The new version of the expense, with the same rules as recording, and why it was corrected. */
+        CorrectExpenseRequest: components["schemas"]["RecordExpenseRequest"] & {
+            /** @description Optional; shown in the expense's history. */
+            reason?: string;
+        };
+        /** @description What an expense looked like before a correction. */
+        ExpenseVersion: {
+            title: string;
+            totalAmount: components["schemas"]["Amount"];
+            /** Format: date */
+            date: string;
+            /** Format: uuid */
+            paidBy: string;
+            splitStrategy: components["schemas"]["SplitStrategy"];
+            shares: components["schemas"]["ExpenseShare"][];
+        };
+        /** @description One correction of an expense (R7), with the version it replaced, who corrected it, when and why. */
+        ExpenseRevision: {
+            /** Format: uuid */
+            correctedBy: string;
+            /** Format: date-time */
+            correctedAt: string;
+            reason: string | null;
+            previous: components["schemas"]["ExpenseVersion"];
+        };
         SplitParticipant: {
             /** Format: uuid */
             userId: string;
@@ -633,8 +679,11 @@ export interface components {
             /** Format: uuid */
             recordedBy: string;
             splitStrategy: components["schemas"]["SplitStrategy"];
+            /** @description CORRECTED still counts with its current version; REMOVED no longer counts but stays in the list (R8). */
             status: components["schemas"]["ExpenseStatus"];
             shares: components["schemas"]["ExpenseShare"][];
+            /** @description Earlier versions, oldest first; empty for an expense that was never corrected (R7). */
+            revisions: components["schemas"]["ExpenseRevision"][];
         };
         Balance: {
             /** Format: uuid */
@@ -780,6 +829,24 @@ export interface components {
                  *       "detail": "This group is archived and can no longer change"
                  *     }
                  */
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Unknown group, or no such expense in this group */
+        ExpenseNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description The expense was removed, or it involves somebody who left the group (their balance must stay 0, R11) */
+        ExpenseCannotChange: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
@@ -969,6 +1036,7 @@ export interface components {
         PaymentId: string;
         InvitationId: string;
         UserId: string;
+        ExpenseId: string;
     };
     requestBodies: never;
     headers: never;
@@ -1797,7 +1865,8 @@ export interface operations {
                      *             "participantId": "aaaaaaaa-0000-0000-0000-000000000004",
                      *             "owedShare": "45.00"
                      *           }
-                     *         ]
+                     *         ],
+                     *         "revisions": []
                      *       }
                      *     ]
                      */
@@ -1893,7 +1962,8 @@ export interface operations {
                      *           "participantId": "aaaaaaaa-0000-0000-0000-000000000005",
                      *           "owedShare": "50.00"
                      *         }
-                     *       ]
+                     *       ],
+                     *       "revisions": []
                      *     }
                      */
                     "application/json": components["schemas"]["Expense"];
@@ -1916,6 +1986,210 @@ export interface operations {
                      *       "status": 422,
                      *       "code": "RECORDER_NOT_PARTICIPANT",
                      *       "detail": "The recorder must be one of the participants"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    correctExpense: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+                expenseId: components["parameters"]["ExpenseId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "title": "Dinner",
+                 *       "totalAmount": "200.00",
+                 *       "date": "2027-06-02",
+                 *       "paidBy": "aaaaaaaa-0000-0000-0000-000000000002",
+                 *       "participants": [
+                 *         {
+                 *           "userId": "aaaaaaaa-0000-0000-0000-000000000001"
+                 *         },
+                 *         {
+                 *           "userId": "aaaaaaaa-0000-0000-0000-000000000002"
+                 *         },
+                 *         {
+                 *           "userId": "aaaaaaaa-0000-0000-0000-000000000003"
+                 *         },
+                 *         {
+                 *           "userId": "aaaaaaaa-0000-0000-0000-000000000004"
+                 *         }
+                 *       ],
+                 *       "splitStrategy": "EQUAL",
+                 *       "reason": "The receipt said 200"
+                 *     }
+                 */
+                "application/json": components["schemas"]["CorrectExpenseRequest"];
+            };
+        };
+        responses: {
+            /** @description The corrected expense with its revisions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "cccccccc-0000-0000-0000-000000000002",
+                     *       "title": "Dinner",
+                     *       "totalAmount": "200.00",
+                     *       "date": "2027-06-02",
+                     *       "paidBy": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *       "recordedBy": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *       "splitStrategy": "EQUAL",
+                     *       "status": "CORRECTED",
+                     *       "shares": [
+                     *         {
+                     *           "participantId": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *           "owedShare": "50.00"
+                     *         },
+                     *         {
+                     *           "participantId": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *           "owedShare": "50.00"
+                     *         },
+                     *         {
+                     *           "participantId": "aaaaaaaa-0000-0000-0000-000000000003",
+                     *           "owedShare": "50.00"
+                     *         },
+                     *         {
+                     *           "participantId": "aaaaaaaa-0000-0000-0000-000000000004",
+                     *           "owedShare": "50.00"
+                     *         }
+                     *       ],
+                     *       "revisions": [
+                     *         {
+                     *           "correctedBy": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *           "correctedAt": "2027-06-03T09:00:00Z",
+                     *           "reason": "The receipt said 200",
+                     *           "previous": {
+                     *             "title": "Dinner",
+                     *             "totalAmount": "180.00",
+                     *             "date": "2027-06-02",
+                     *             "paidBy": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *             "splitStrategy": "EQUAL",
+                     *             "shares": [
+                     *               {
+                     *                 "participantId": "aaaaaaaa-0000-0000-0000-000000000001",
+                     *                 "owedShare": "45.00"
+                     *               },
+                     *               {
+                     *                 "participantId": "aaaaaaaa-0000-0000-0000-000000000002",
+                     *                 "owedShare": "45.00"
+                     *               },
+                     *               {
+                     *                 "participantId": "aaaaaaaa-0000-0000-0000-000000000003",
+                     *                 "owedShare": "45.00"
+                     *               },
+                     *               {
+                     *                 "participantId": "aaaaaaaa-0000-0000-0000-000000000004",
+                     *                 "owedShare": "45.00"
+                     *               }
+                     *             ]
+                     *           }
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Expense"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            /** @description The caller is not a member, or not the recorder, the payer or an admin (R6) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["ExpenseNotFound"];
+            409: components["responses"]["ExpenseCannotChange"];
+            /** @description The group is not OPEN (GROUP_NOT_OPEN), or the new version breaks a rule of recording (see the DomainRule response for the codes). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Unprocessable Entity",
+                     *       "status": 422,
+                     *       "code": "GROUP_NOT_OPEN",
+                     *       "detail": "Expenses can only be changed while the group is open"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    removeExpense: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+                expenseId: components["parameters"]["ExpenseId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            /** @description The caller is not a member, or not the recorder, the payer or an admin (R6) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Forbidden",
+                     *       "status": 403,
+                     *       "code": "NOT_ALLOWED_TO_CHANGE_EXPENSE",
+                     *       "detail": "Only the recorder, the payer or an admin can change this expense"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            404: components["responses"]["ExpenseNotFound"];
+            409: components["responses"]["ExpenseCannotChange"];
+            /** @description The group is not OPEN */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Unprocessable Entity",
+                     *       "status": 422,
+                     *       "code": "GROUP_NOT_OPEN",
+                     *       "detail": "Expenses can only be changed while the group is open"
                      *     }
                      */
                     "application/problem+json": components["schemas"]["Problem"];

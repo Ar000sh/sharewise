@@ -16,6 +16,7 @@ import {
 } from "@/lib/money";
 
 type Member = components["schemas"]["Member"];
+type Expense = components["schemas"]["Expense"];
 type SplitStrategy = "EQUAL" | "EXACT" | "PERCENTAGE";
 
 const SPLIT_OPTIONS: [SplitStrategy, string][] = [
@@ -29,7 +30,32 @@ type Props = {
   members: Member[];
   currentUserId: string;
   onRecorded: () => void;
+  /** Set to correct this expense (J5) instead of recording a new one: the form starts with its values. */
+  correcting?: Expense;
 };
+
+/**
+ * What the form starts with: empty for a new expense, or the expense being corrected. Typed values are prefilled for
+ * exact amounts; percentages are not stored (only the resulting shares are), so they are typed again.
+ */
+function initialValues(correcting: Expense | undefined, currentUserId: string) {
+  if (!correcting) {
+    return { title: "", amount: "", date: today(), paidBy: currentUserId, included: [currentUserId], split: "EQUAL" as const, typed: {} };
+  }
+  const typed: Record<string, string> = {};
+  if (correcting.splitStrategy === "EXACT") {
+    for (const share of correcting.shares) typed[share.participantId] = share.owedShare;
+  }
+  return {
+    title: correcting.title,
+    amount: correcting.totalAmount,
+    date: correcting.date,
+    paidBy: correcting.paidBy,
+    included: correcting.shares.map((share) => share.participantId),
+    split: correcting.splitStrategy,
+    typed,
+  };
+}
 
 function today(): string {
   const d = new Date();
@@ -37,23 +63,27 @@ function today(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Props) {
-  const [title, setTitle] = useState("");
-  const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(today);
+export function ExpenseForm({ groupId, members, currentUserId, onRecorded, correcting }: Props) {
+  const [initial] = useState(() => initialValues(correcting, currentUserId));
+  const [title, setTitle] = useState(initial.title);
+  const [amount, setAmount] = useState(initial.amount);
+  const [date, setDate] = useState(initial.date);
   const [paidBy, setPaidBy] = useState(
-    members.find((m) => m.userId === currentUserId)?.userId ?? members[0]?.userId ?? "",
+    members.find((m) => m.userId === initial.paidBy)?.userId ?? members[0]?.userId ?? "",
   );
   // Only the recorder is in the split at first (R18); everybody else is ticked on purpose. The group page hands this form
   // a new member list whenever somebody joins, and a person nobody ticked must never slip into the split (design
-  // 2026-11-11, D1).
-  const [included, setIncluded] = useState<string[]>([currentUserId]);
+  // 2026-11-11, D1). A correction starts with the expense's own participants.
+  const [included, setIncluded] = useState<string[]>(initial.included);
+  // The person who must stay in the split (R18): whoever recorded the expense, also when somebody else corrects it.
+  const recorderId = correcting?.recordedBy ?? currentUserId;
+  const [reason, setReason] = useState("");
   const [error, setError] = useState<unknown>();
   const [busy, setBusy] = useState(false);
 
-  const [splitStrategy, setSplitStrategy] = useState<SplitStrategy>("EQUAL");
+  const [splitStrategy, setSplitStrategy] = useState<SplitStrategy>(initial.split);
   // What was typed per member, keyed by userId; only the ticked members count (a box of an unticked member is hidden).
-  const [typed, setTyped] = useState<Record<string, string>>({});
+  const [typed, setTyped] = useState<Record<string, string>>(initial.typed);
 
   const participants = members.filter((m) => included.includes(m.userId));
   const cents = eurosToCents(amount);
@@ -97,19 +127,20 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
     }
     setBusy(true);
     try {
-      await api(`/groups/${groupId}/expenses`, {
-        method: "POST",
+      const version = {
+        title: title.trim(),
+        totalAmount: centsToAmount(cents),
+        date,
+        paidBy,
+        participants: participants.map((m, i) =>
+          splitStrategy === "EQUAL" ? { userId: m.userId } : { userId: m.userId, value: centsToAmount(parsed[i] ?? 0) },
+        ),
+        splitStrategy,
+      };
+      await api(correcting ? `/groups/${groupId}/expenses/${correcting.id}` : `/groups/${groupId}/expenses`, {
+        method: correcting ? "PUT" : "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          totalAmount: centsToAmount(cents),
-          date,
-          paidBy,
-          participants: participants.map((m, i) =>
-            splitStrategy === "EQUAL" ? { userId: m.userId } : { userId: m.userId, value: centsToAmount(parsed[i] ?? 0) },
-          ),
-          splitStrategy,
-        }),
+        body: JSON.stringify(correcting ? { ...version, reason: reason.trim() || undefined } : version),
       });
       setTitle("");
       setAmount("");
@@ -185,7 +216,7 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
               <input
                 type="checkbox"
                 checked={included.includes(m.userId)}
-                disabled={m.userId === currentUserId} // the recorder always takes part (R18)
+                disabled={m.userId === recorderId} // the recorder always takes part (R18)
                 onChange={() => toggle(m.userId)}
               />
               {m.displayName}
@@ -202,7 +233,11 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
             )}
           </div>
         ))}
-        <p className="text-sm text-muted">You stay in the split because you record it.</p>
+        <p className="text-sm text-muted">
+          {recorderId === currentUserId
+            ? "You stay in the split because you record it."
+            : `${members.find((m) => m.userId === recorderId)?.displayName ?? "The recorder"} stays in the split because they recorded it.`}
+        </p>
       </fieldset>
       {splitStrategy === "EXACT" && cents !== null && (
         <p className="text-sm text-foreground/80">Remaining: {formatEuro(cents - typedSum)}</p>
@@ -218,10 +253,16 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
           ))}
         </ul>
       )}
+      {correcting && (
+        <label className="flex flex-col gap-1 font-bold">
+          Why is it corrected? (optional)
+          <input className="font-normal" value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />
+        </label>
+      )}
       <ErrorBanner error={error} />
       <div className="flex flex-wrap gap-3">
         <button type="submit" disabled={busy} className="btn-primary">
-          Save expense
+          {correcting ? "Save correction" : "Save expense"}
         </button>
         <Link href={`/groups/${groupId}`} className="btn-secondary">
           Cancel

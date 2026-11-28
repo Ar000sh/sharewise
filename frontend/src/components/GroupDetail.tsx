@@ -79,6 +79,7 @@ export function GroupDetail({ groupId }: { groupId: string }) {
               members={group.members}
               formerMembers={group.formerMembers}
               currentUserId={me.userId}
+              change={group.status === "OPEN" ? { groupId: group.id, isAdmin, onChanged: markChanged } : undefined}
             />
           ) : (
             <p>Loading…</p>
