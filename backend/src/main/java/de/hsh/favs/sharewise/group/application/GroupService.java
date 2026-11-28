@@ -184,6 +184,59 @@ public class GroupService {
 	}
 
 	/**
+	 * An admin closes the group for settlement (J12). The group row is locked, so a
+	 * member joining or an admin reopening at the same moment is serialized with it.
+	 * @throws DomainException GROUP_NOT_FOUND, NOT_A_MEMBER, NOT_AN_ADMIN, GROUP_ARCHIVED
+	 * or GROUP_NOT_OPEN
+	 */
+	@Transactional
+	public GroupView closeForSettlement(GroupId groupId, UserId caller) {
+		Group group = lockedGroup(groupId.value());
+		var closed = group.closeForSettlement(caller, clock.instant());
+		events.publishEvent(closed);
+		return GroupView.of(group);
+	}
+
+	/**
+	 * An admin reopens a closed group (J12b).
+	 * @throws DomainException GROUP_NOT_FOUND, NOT_A_MEMBER, NOT_AN_ADMIN, GROUP_ARCHIVED
+	 * or GROUP_NOT_CLOSED
+	 */
+	@Transactional
+	public GroupView reopenGroup(GroupId groupId, UserId caller) {
+		Group group = lockedGroup(groupId.value());
+		var reopened = group.reopenGroup(caller, clock.instant());
+		events.publishEvent(reopened);
+		return GroupView.of(group);
+	}
+
+	/**
+	 * An admin archives a closed group whose balances are all 0 (J13). The group row is
+	 * locked, so the balance flags cannot change between the check and the save.
+	 * @throws DomainException GROUP_NOT_FOUND, NOT_A_MEMBER, NOT_AN_ADMIN,
+	 * GROUP_ARCHIVED, GROUP_NOT_CLOSED or BALANCE_NOT_ZERO
+	 */
+	@Transactional
+	public GroupView archiveGroup(GroupId groupId, UserId caller) {
+		Group group = lockedGroup(groupId.value());
+		var archived = group.archiveGroup(caller, clock.instant());
+		events.publishEvent(archived);
+		return GroupView.of(group);
+	}
+
+	/**
+	 * Archives a closed group once the ledger reports that every balance is 0 (L5). Does
+	 * nothing for a group that is not closed or that is unknown: the event cannot be
+	 * acted on and redelivering it would not help.
+	 */
+	@Transactional
+	public void archiveWhenAllBalancesSettled(GroupId groupId) {
+		groups.findByIdForUpdate(groupId.value())
+			.flatMap(group -> group.archiveWhenAllBalancesSettled(clock.instant()))
+			.ifPresent(events::publishEvent);
+	}
+
+	/**
 	 * Joins the caller to the group the invitation belongs to. The group row is locked
 	 * while the rules run, so two simultaneous answers to the same invitation cannot both
 	 * pass.

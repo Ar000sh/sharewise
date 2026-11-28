@@ -82,6 +82,21 @@ public class GroupRequests {
 			.header(USER_HEADER, caller.bearer()));
 	}
 
+	/** Closes the group for settlement, as {@code caller}. */
+	public ResultActions close(UUID group, AccountFixture caller) throws Exception {
+		return mvc.perform(post("/groups/" + group + "/close").header(USER_HEADER, caller.bearer()));
+	}
+
+	/** Reopens the group, as {@code caller}. */
+	public ResultActions reopen(UUID group, AccountFixture caller) throws Exception {
+		return mvc.perform(post("/groups/" + group + "/reopen").header(USER_HEADER, caller.bearer()));
+	}
+
+	/** Archives the group, as {@code caller}. */
+	public ResultActions archive(UUID group, AccountFixture caller) throws Exception {
+		return mvc.perform(post("/groups/" + group + "/archive").header(USER_HEADER, caller.bearer()));
+	}
+
 	/** The caller leaves the group. */
 	public ResultActions leave(UUID group, AccountFixture caller) throws Exception {
 		return mvc.perform(post("/groups/" + group + "/leave").header(USER_HEADER, caller.bearer()));

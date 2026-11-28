@@ -92,6 +92,21 @@ class GroupController {
 		groups.leaveGroup(new GroupId(groupId), caller());
 	}
 
+	@PostMapping("/groups/{groupId}/close")
+	GroupResponse closeForSettlement(@PathVariable UUID groupId) {
+		return GroupResponse.of(groups.closeForSettlement(new GroupId(groupId), caller()));
+	}
+
+	@PostMapping("/groups/{groupId}/reopen")
+	GroupResponse reopenGroup(@PathVariable UUID groupId) {
+		return GroupResponse.of(groups.reopenGroup(new GroupId(groupId), caller()));
+	}
+
+	@PostMapping("/groups/{groupId}/archive")
+	GroupResponse archiveGroup(@PathVariable UUID groupId) {
+		return GroupResponse.of(groups.archiveGroup(new GroupId(groupId), caller()));
+	}
+
 	@DeleteMapping("/groups/{groupId}/members/{userId}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	void removeMember(@PathVariable UUID groupId, @PathVariable UUID userId) {

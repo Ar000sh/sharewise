@@ -12,7 +12,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
+import de.hsh.favs.sharewise.group.api.GroupArchived;
+import de.hsh.favs.sharewise.group.api.GroupClosedForSettlement;
 import de.hsh.favs.sharewise.group.api.GroupCreated;
+import de.hsh.favs.sharewise.group.api.GroupReopened;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
 import de.hsh.favs.sharewise.group.api.MemberLeft;
 import de.hsh.favs.sharewise.group.api.MemberPromoted;
@@ -264,6 +267,78 @@ class GroupControllerTest {
 		groups.detail(group, bob)
 			.andExpect(jsonPath("$.memberCount").value(2))
 			.andExpect(jsonPath("$.formerMembers").isEmpty());
+	}
+
+	@Test
+	void closingIs200ClosedPublishesTheEventAndNobodyCanBeInvitedAnyMore() throws Exception {
+		// given
+		UUID group = groups.groupWith(alice, "Close me", bob);
+
+		// when
+		groups.close(group, alice)
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("CLOSED_FOR_SETTLEMENT"));
+
+		// then
+		groups.createInvitation(group, alice, carol.username())
+			.andExpect(status().isUnprocessableContent())
+			.andExpect(jsonPath("$.code").value("GROUP_NOT_OPEN"));
+		assertThat(events.stream(GroupClosedForSettlement.class).filter(e -> e.groupId().value().equals(group)))
+			.singleElement()
+			.satisfies(e -> assertThat(e.closedBy()).isEqualTo(alice.userId()));
+	}
+
+	@Test
+	void closingAsAMemberWhoIsNotAdminIs403AndTheGroupStaysOpen() throws Exception {
+		// given
+		UUID group = groups.groupWith(alice, "Only admins close", bob);
+
+		// when / then
+		groups.close(group, bob).andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("NOT_AN_ADMIN"));
+		groups.detail(group, alice).andExpect(jsonPath("$.status").value("OPEN"));
+	}
+
+	@Test
+	void reopeningAClosedGroupIs200OpenAndReopeningAnOpenOneIs409() throws Exception {
+		// given
+		UUID group = groups.groupWith(alice, "Reopen me", bob);
+		groups.close(group, alice).andExpect(status().isOk());
+
+		// when / then
+		groups.reopen(group, alice).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("OPEN"));
+		groups.reopen(group, alice)
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("GROUP_NOT_CLOSED"));
+		assertThat(events.stream(GroupReopened.class).filter(e -> e.groupId().value().equals(group))).hasSize(1);
+	}
+
+	@Test
+	void archivingAClosedGroupIs200ArchivedAndAfterwardsEveryChangeIs409GroupArchived() throws Exception {
+		// given
+		UUID group = groups.groupWith(alice, "Archive me", bob);
+		groups.close(group, alice).andExpect(status().isOk());
+
+		// when
+		groups.archive(group, alice).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("ARCHIVED"));
+
+		// then
+		groups.reopen(group, alice)
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("GROUP_ARCHIVED"));
+		groups.leave(group, bob).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("GROUP_ARCHIVED"));
+		assertThat(events.stream(GroupArchived.class).filter(e -> e.groupId().value().equals(group))).singleElement()
+			.satisfies(e -> assertThat(e.archivedBy()).isEqualTo(alice.userId()));
+	}
+
+	@Test
+	void archivingAnOpenGroupIs409GroupNotClosed() throws Exception {
+		// given
+		UUID group = groups.createGroup(alice, "Still open");
+
+		// when / then
+		groups.archive(group, alice)
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("GROUP_NOT_CLOSED"));
 	}
 
 	@Test
