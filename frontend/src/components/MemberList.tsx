@@ -2,19 +2,24 @@
 
 import { useState } from "react";
 import type { components } from "@/api/schema";
+import { Avatar } from "@/components/Avatar";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { api } from "@/lib/api";
+import { amountToCents, formatSignedEuro } from "@/lib/money";
 
 type Member = components["schemas"]["Member"];
+type Balance = components["schemas"]["Balance"];
 
 type Props = {
   members: Member[];
   currentUserId?: string;
+  /** Each member's balance, shown next to the name (board B-09); absent while it loads. */
+  balances?: Balance[];
   /** Set only for an admin: then every member who is not an admin yet gets a "Make admin" button. */
   promote?: { groupId: string; onPromoted: () => void };
 };
 
-export function MemberList({ members, currentUserId, promote }: Props) {
+export function MemberList({ members, currentUserId, balances, promote }: Props) {
   const [busyId, setBusyId] = useState<string>();
   const [error, setError] = useState<unknown>();
 
@@ -33,16 +38,26 @@ export function MemberList({ members, currentUserId, promote }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <ul className="divide-y rounded border">
-        {members.map((m) => (
-          <li key={m.userId} className="flex items-center justify-between gap-2 px-3 py-2">
-            <span>
-              {m.displayName}
-              {m.userId === currentUserId && <span className="text-foreground/70"> (you)</span>}
-            </span>
-            {m.role === "ADMIN" && (
-              <span className="rounded bg-foreground/10 px-2 py-0.5 text-xs">Admin</span>
+    <section aria-label="Members" className="flex flex-col gap-3">
+      <h2 className="text-2xl">Members</h2>
+      <ul className="card divide-y">
+        {members.map((m) => {
+          const balance = balances?.find((b) => b.userId === m.userId);
+          const cents = balance ? amountToCents(balance.netBalance) : undefined;
+          return (
+          <li key={m.userId} className="flex flex-wrap items-center gap-4 px-5 py-4">
+            <Avatar userId={m.userId} name={m.displayName} />
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span className="font-bold">
+                {m.displayName}
+                {m.userId === currentUserId && <span className="font-normal text-muted"> (you)</span>}
+              </span>
+              <span className="text-sm text-muted">{m.role === "ADMIN" ? "Admin" : "Member"}</span>
+            </div>
+            {cents !== undefined && (
+              <span className={`font-bold tabular-nums ${cents > 0 ? "text-positive" : cents < 0 ? "text-negative" : "text-muted"}`}>
+                {formatSignedEuro(cents)}
+              </span>
             )}
             {promote && m.role !== "ADMIN" && (
               <button
@@ -50,15 +65,16 @@ export function MemberList({ members, currentUserId, promote }: Props) {
                 onClick={() => void makeAdmin(m)}
                 disabled={busyId === m.userId}
                 aria-label={`Make ${m.displayName} an admin`}
-                className="rounded border px-2 py-0.5 text-xs disabled:opacity-50"
+                className="btn-secondary"
               >
                 Make admin
               </button>
             )}
           </li>
-        ))}
+          );
+        })}
       </ul>
       <ErrorBanner error={error} />
-    </div>
+    </section>
   );
 }

@@ -46,7 +46,7 @@ Concepts this practises (for P2/P3): bounded context and context map (a new, ups
 | N3 | Lookup key: exact **username or email**. | decided |
 | N4 | Usernames are owned by **Keycloak**: the realm stops using the email as username (`registrationEmailAsUsername` false); on first login `Account.username` is copied from `preferred_username` (same pattern as email and display name, D10/C2). | decided (option A) |
 | N5 | Login accepts username **or** email, always with the password (`loginWithEmailAllowed` stays true). | decided |
-| N6 | The inbox is a bell with a dropdown (option A of the mockup). Accept and Decline sit on the invitation. | decided |
+| N6 | The inbox is a bell with a dropdown (option A of the mockup). Accept and Decline sit on the invitation. *Replaced 23.11 by an inbox page reached from the top bar (design 2026-11-23-ui-journey, U5).* | replaced |
 | N7 | Entries: joined / declined (to the inviter); payment recorded (to the creditor); payment confirmed / rejected (to the payer); debt waived (to the debtor); member removed. Expenses are excluded. A received invitation is shown in the same bell but comes from `group` (N9). | decided ("do all"), refined by N9 |
 | N8 | Base is `main`. The payment, waiver and removal entries are built last, after `feature/settlements` is merged into `main` (the settlement events exist only there; `MemberRemoved` and `InvitationDeclined` exist nowhere yet). | decided |
 | N9 | **(review)** A received invitation is not an inbox row. `group` offers "my pending invitations" as a query; the bell merges that list with the notification entries. | decided (option 2 of the design review) |

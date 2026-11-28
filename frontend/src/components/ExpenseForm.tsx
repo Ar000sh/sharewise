@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import type { components } from "@/api/schema";
 import { ErrorBanner } from "@/components/ErrorBanner";
@@ -123,57 +124,64 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3 rounded border p-3">
-      <label className="flex flex-col gap-1">
-        Title
-        <input className="rounded border px-2 py-2" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} />
-      </label>
-      <div className="flex gap-3">
-        <label className="flex flex-1 flex-col gap-1">
-          Amount (€)
-          <input
-            className="rounded border px-2 py-2"
-            inputMode="decimal"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
+    <form onSubmit={submit} className="card flex flex-col gap-5 p-6">
+      <div className="flex flex-col gap-1">
+        <label htmlFor="expense-amount" className="font-bold">
+          Amount (EUR)
         </label>
-        <label className="flex flex-1 flex-col gap-1">
+        <input
+          id="expense-amount"
+          aria-describedby="expense-amount-hint"
+          inputMode="decimal"
+          className="font-display text-2xl font-bold"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+        />
+        <p id="expense-amount-hint" className="text-sm text-muted">
+          Comma or point, at most two decimals.
+        </p>
+      </div>
+      <label className="flex flex-col gap-1 font-bold">
+        What was it for?
+        <input className="font-normal" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} />
+      </label>
+      <div className="flex flex-col gap-5 sm:flex-row">
+        <label className="flex flex-1 flex-col gap-1 font-bold">
+          Paid by
+          <select className="font-normal" value={paidBy} onChange={(e) => setPaidBy(e.target.value)}>
+            {members.map((m) => (
+              <option key={m.userId} value={m.userId}>
+                {m.displayName}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-1 flex-col gap-1 font-bold">
           Date
-          <input type="date" className="rounded border px-2 py-2" value={date} onChange={(e) => setDate(e.target.value)} />
+          <input type="date" className="font-normal" value={date} onChange={(e) => setDate(e.target.value)} />
         </label>
       </div>
-      <label className="flex flex-col gap-1">
-        Paid by
-        <select className="rounded border px-2 py-2" value={paidBy} onChange={(e) => setPaidBy(e.target.value)}>
-          {members.map((m) => (
-            <option key={m.userId} value={m.userId}>
-              {m.displayName}
-            </option>
-          ))}
-        </select>
-      </label>
       <fieldset className="flex flex-wrap gap-x-4 gap-y-1">
-        <legend>Split</legend>
+        <legend className="pb-2 font-bold">Split</legend>
         {SPLIT_OPTIONS.map(([value, label]) => (
-          <label key={value} className="flex items-center gap-2">
+          <label key={value} className="flex min-h-12 items-center gap-2">
             <input type="radio" name="splitStrategy" checked={splitStrategy === value} onChange={() => chooseStrategy(value)} />
             {label}
           </label>
         ))}
       </fieldset>
-      <fieldset className="flex flex-col gap-1">
-        <legend>Split between</legend>
+      <fieldset className="flex flex-col gap-2">
+        <legend className="pb-2 font-bold">Split between</legend>
         <button
           type="button"
           onClick={() => setIncluded(members.map((m) => m.userId))}
-          className="self-start rounded border px-2 py-1 text-sm"
+          className="btn-secondary self-start"
         >
           Select everyone
         </button>
         {members.map((m) => (
           <div key={m.userId} className="flex items-center justify-between gap-2">
-            <label className="flex items-center gap-2">
+            <label className="flex min-h-12 items-center gap-3">
               <input
                 type="checkbox"
                 checked={included.includes(m.userId)}
@@ -184,7 +192,7 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
             </label>
             {splitStrategy !== "EQUAL" && included.includes(m.userId) && (
               <input
-                className="w-28 rounded border px-2 py-1 text-right"
+                className="w-28 text-right"
                 aria-label={`${splitStrategy === "EXACT" ? "Amount" : "Percentage"} for ${m.displayName}`}
                 inputMode="decimal"
                 required
@@ -194,25 +202,35 @@ export function ExpenseForm({ groupId, members, currentUserId, onRecorded }: Pro
             )}
           </div>
         ))}
+        <p className="text-sm text-muted">You stay in the split because you record it.</p>
       </fieldset>
       {splitStrategy === "EXACT" && cents !== null && (
         <p className="text-sm text-foreground/80">Remaining: {formatEuro(cents - typedSum)}</p>
       )}
       {splitStrategy === "PERCENTAGE" && <p className="text-sm text-foreground/80">Sum: {formatPercent(typedSum)}</p>}
       {shares.length > 0 && (
-        <ul aria-label="Shares" className="text-sm text-foreground/80">
+        <ul aria-label="Shares" className="card divide-y bg-surface-2 text-sm">
           {participants.map((m, i) => (
-            <li key={m.userId} className="flex justify-between">
+            <li key={m.userId} className="flex justify-between px-4 py-2">
               <span>{m.displayName}</span>
-              <span>{formatEuro(shares[i])}</span>
+              <span className="font-bold tabular-nums">{formatEuro(shares[i])}</span>
             </li>
           ))}
         </ul>
       )}
       <ErrorBanner error={error} />
-      <button type="submit" disabled={busy} className="rounded bg-foreground px-3 py-2 text-background disabled:opacity-50">
-        Add expense
-      </button>
+      <div className="flex flex-wrap gap-3">
+        <button type="submit" disabled={busy} className="btn-primary">
+          Save expense
+        </button>
+        <Link href={`/groups/${groupId}`} className="btn-secondary">
+          Cancel
+        </Link>
+      </div>
+      <p className="rounded-2xl bg-surface-2 px-4 py-3 text-sm">
+        <span className="font-bold">After you save,</span> it shows in the list at once. Balances show “Updating…” for a
+        moment, then catch up.
+      </p>
     </form>
   );
 }

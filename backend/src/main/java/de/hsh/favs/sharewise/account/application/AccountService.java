@@ -18,11 +18,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Turns the identity of a validated Keycloak token into the caller's account, creating
- * the account on the first request of a new person (D4).
+ * Use cases of the account aggregate: creating an account on the first request of a new
+ * Keycloak subject (D4) and updating account profile fields owned by ShareWise.
  */
 @Service
-class AccountService {
+public class AccountService {
 
 	private static final Logger log = LoggerFactory.getLogger(AccountService.class);
 
@@ -62,6 +62,20 @@ class AccountService {
 			log.warn("Refused first login of subject {}: its email or username belongs to another account", id);
 			return unauthenticated();
 		});
+	}
+
+	/**
+	 * Changes the caller's display name. The new name is owned by ShareWise and will not
+	 * be overwritten by future identity provider tokens (D10, C2).
+	 * @throws DomainException ACCOUNT_NOT_FOUND when no account exists for {@code userId}
+	 */
+	@Transactional
+	public UserProfile changeDisplayName(UserId userId, DisplayName displayName) {
+		Account account = accounts.findById(userId.value())
+			.orElseThrow(() -> new DomainException(ErrorCode.ACCOUNT_NOT_FOUND, "Account not found"));
+		account.changeDisplayName(displayName);
+		accounts.save(account);
+		return toProfile(account);
 	}
 
 	static UserProfile toProfile(Account account) {

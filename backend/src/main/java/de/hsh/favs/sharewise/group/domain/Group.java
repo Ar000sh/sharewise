@@ -186,6 +186,21 @@ public class Group {
 	}
 
 	/**
+	 * Flips every stored PENDING invitation whose 7-day validity has passed to EXPIRED
+	 * (R9). Idempotent; returns how many invitations changed status. Produces no event
+	 * (the diagram draws none for expiry).
+	 */
+	public int expirePendingInvitations(Instant now) {
+		int expired = 0;
+		for (Invitation invitation : invitations) {
+			if (invitation.expire(now)) {
+				expired++;
+			}
+		}
+		return expired;
+	}
+
+	/**
 	 * The invitations of this group that are open for {@code user} at {@code now}: stored
 	 * PENDING and not expired.
 	 */

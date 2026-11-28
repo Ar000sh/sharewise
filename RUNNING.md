@@ -77,20 +77,23 @@ cookie is per browser.
 2. **Alice:** sign up, create the group "Mallorca 2027", open the Members tab, type Bob's username (or Carol's email)
    into **Username or email** and press **Invite**. "No account found" means that person has not signed in yet.
    Only an admin sees this form (the creator is the first admin); pick **Joins as** Admin to invite someone as an
-   admin. Later, an admin can press **Make admin** next to a member; that member's bell shows "… made you an admin".
-3. **Bob / Carol:** reload, open the bell (**Inbox**), read "Alice … invited you to Mallorca 2027" and press **Accept**
-   (or **Decline**). Alice's bell shows "… joined Mallorca 2027" a moment later (it arrives through an event).
-4. **Alice:** add "Hotel", 900 €, paid by Alice, everyone. **Bob:** "Dinner", 180 €, paid by Bob, everyone.
+   admin. Later, an admin can press **Make admin** next to a member; that member's inbox shows "… made you an admin".
+3. **Bob / Carol:** reload, open **Inbox** in the top bar, read "Alice … invited you to Mallorca 2027" and press **Accept**
+   (or **Decline**). Alice's inbox shows "… joined Mallorca 2027" a moment later (it arrives through an event).
+4. **Alice:** **Add expense** (top of the group page; on a phone the button at the bottom), "Hotel", 900 €, paid by
+   Alice, **Select everyone**, **Save expense**. **Bob:** the same with "Dinner", 180 €, paid by Bob. After saving, the
+   group page says "Updating…" for a moment and then shows your own balance ("You are owed +540,00 €").
 5. Balances tab: Alice +540,00 €, Bob -180,00 €, Carol -360,00 €. They arrive through an event, so they can lag the
    expense by a moment.
-5. **Carol:** Settle up tab, "You owe" shows 360,00 € to Alice; **I paid**, **Send payment**. The row now says
-   "360,00 € awaiting confirmation"; no balance has changed yet.
-6. **Alice:** the bell (**Inbox**) shows a badge and lists "Carol Tester marked 360,00 € as paid to you": **Confirm**
-   (or **Reject** with a reason). Carol's bell then reads "Alice Tester confirmed your payment in Mallorca 2027". After
-   a moment the plan shows only "Bob Tester owes 180,00 €" and the Balances tab Alice +180,00 €, Bob -180,00 €, Carol
-   0,00 €.
-7. **Alice:** **Waive** on Bob's row fills the "Waive manually" form below the plan; give a reason and **Waive debt**.
-   Bob's debt is forgiven at once, no confirmation needed, and the plan says "Everybody is settled."
+5. **Carol:** Settle up tab, "You owe" shows "Pay Alice Tester 360,00 €"; **Report a payment** opens a dialog,
+   **Report payment**. The row now says "360,00 € awaiting confirmation"; no balance has changed yet.
+6. **Alice:** **Inbox** in the top bar shows a count and lists "Carol Tester marked 360,00 € as paid to you"; the same
+   payment is first on her Settle up tab under "Needs your answer". **Confirm** in either place (or **Reject** with a
+   reason); it disappears from both. Carol's inbox then reads "Alice Tester confirmed your payment in Mallorca 2027".
+   After a moment the plan shows only "Bob Tester pays you 180,00 €" and the Balances tab Alice +180,00 €, Bob
+   -180,00 €, Carol 0,00 €. The payment history at the bottom of Settle up lists Carol's payment as confirmed.
+7. **Alice:** **Waive debt** on Bob's row opens a dialog about Bob; give a reason and **Waive debt**. Bob's debt is
+   forgiven at once, no confirmation needed, and the plan says "Everybody is settled."
 
 ## Tests
 
@@ -107,7 +110,7 @@ test run.
 
 ### End-to-end test in a real browser (Playwright)
 Three people register on Keycloak's registration page in three browsers, share a group, check the balances and settle
-up (Carol reports a payment, Alice confirms it in her bell, the plan shrinks to Bob's debt); a second test covers a
+up (Carol reports a payment, Alice confirms it in her inbox, the plan shrinks to Bob's debt); a second test covers a
 wrong password, sign-out and the redirect to sign-in.
 ```sh
 docker compose up -d db keycloak                # the realm allows http://localhost:3100, the port of the e2e frontend

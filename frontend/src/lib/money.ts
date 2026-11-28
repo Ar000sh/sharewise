@@ -56,6 +56,25 @@ export function formatEuro(cents: number): string {
   return `${cents < 0 ? "-" : ""}${euros},${rest} €`;
 }
 
+/** Formats cents with a sign where the direction matters: "+540,00 €", "-180,00 €", "0,00 €". */
+export function formatSignedEuro(cents: number): string {
+  return cents > 0 ? `+${formatEuro(cents)}` : formatEuro(cents);
+}
+
+/**
+ * What an expense means for one person, in cents: what they paid (the whole amount, if they are the payer) minus their
+ * own share. Built only from the server's shares, never by splitting again, so remainder cents (R13) are exactly the
+ * ones the ledger booked (design 2026-11-23, F5).
+ */
+export function yourPartCents(
+  expense: { totalAmount: string; paidBy: string; shares: { participantId: string; owedShare: string }[] },
+  userId: string,
+): number {
+  const paid = expense.paidBy === userId ? amountToCents(expense.totalAmount) : 0;
+  const share = expense.shares.find((s) => s.participantId === userId);
+  return paid - (share ? amountToCents(share.owedShare) : 0);
+}
+
 /**
  * Converts an API amount (a decimal string with two decimals, e.g. "900.00" or "-90.00") to integer cents without
  * floating point. Throws on anything else: the backend promises this format.

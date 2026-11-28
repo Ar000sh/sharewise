@@ -10,7 +10,8 @@ import { describe, expect, it } from "vitest";
  * hard-coded dark text colour on the page background) becomes unreadable. The rules look at each string literal that holds
  * class names:
  *   1. no `bg-white`, `bg-black`, `border-white`, `border-black`, `text-black` and no grey from the fixed palette; use the
- *      theme tokens (`bg-background`, `text-foreground`, `bg-foreground`, `text-background`, `text-foreground/70`);
+ *      theme tokens of `globals.css` (`bg-surface`, `text-foreground`, `text-muted`, `text-negative`, `bg-accent` with
+ *      `text-on-accent`), which switch with the mode by themselves;
  *   2. a background from the fixed palette (`bg-red-600`) comes with its own text colour in the same string;
  *   3. `text-white` only on such a fixed-palette background;
  *   4. a fixed-palette text colour in a shade 500 to 900 (`text-red-700`) comes with a `dark:text-...` counterpart, unless it
@@ -21,7 +22,8 @@ const FIXED_BACKGROUND = new RegExp(`^bg-(${PALETTE})-\\d{2,3}$`);
 const FORBIDDEN = new RegExp(
   `^(bg-(white|black)|border-(white|black)|text-black|(bg|text|border)-(slate|gray|zinc|neutral|stone)-\\d{2,3})$`,
 );
-const TEXT_COLOUR = new RegExp(`^text-(white|black|foreground|background|(${PALETTE})-\\d{2,3})(/\\d+)?$`);
+const THEME_TEXT = "foreground|background|muted|positive|negative|on-accent|on-warning";
+const TEXT_COLOUR = new RegExp(`^text-(white|black|${THEME_TEXT}|(${PALETTE})-\\d{2,3})(/\\d+)?$`);
 const DARK_SENSITIVE_TEXT = new RegExp(`^text-(red|green|blue|yellow|orange|amber|purple|pink)-[5-9]00$`);
 
 /** The contents of every "double quoted" and `template` string literal: where class names live. */
@@ -38,7 +40,7 @@ export function violations(source: string): string[] {
     const bases = tokens.map(baseOf);
     const hasFixedBackground = bases.some((token) => FIXED_BACKGROUND.test(token));
     for (const token of bases.filter((t) => FORBIDDEN.test(t))) {
-      problems.push(`${token}: use a theme token (bg-background, text-foreground, bg-foreground, text-foreground/70) in "${literal}"`);
+      problems.push(`${token}: use a theme token (bg-surface, text-foreground, text-muted, bg-surface-2) in "${literal}"`);
     }
     if (bases.includes("text-white") && !hasFixedBackground) {
       problems.push(`text-white without a fixed-palette background; use text-background on bg-foreground in "${literal}"`);
@@ -84,6 +86,10 @@ describe("theme rules (dark mode)", () => {
     'className="text-red-700 dark:text-red-400"',
     'className="rounded border border-red-300 bg-red-50 px-3 py-2 text-red-800"',
     'className="text-sm text-foreground/70"',
+    'className="text-sm text-muted"',
+    'className="rounded-2xl bg-warning px-4 py-3 text-on-warning"',
+    'className="rounded-full bg-accent px-2 text-xs text-on-accent"',
+    'className={`font-medium ${a ? "text-positive" : b ? "text-negative" : ""}`}',
     'className={`px-3 ${tab ? "border-b-2 border-foreground font-medium" : "text-foreground/70"}`}',
     'className={`font-medium ${a ? "text-green-700 dark:text-green-400" : b ? "text-red-700 dark:text-red-400" : ""}`}',
     'import { api } from "@/lib/api";',

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import de.hsh.favs.sharewise.account.api.UserProfile;
 import de.hsh.favs.sharewise.account.domain.Account;
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
+import de.hsh.favs.sharewise.account.domain.DisplayName;
 import de.hsh.favs.sharewise.account.persistence.AccountRepository;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
@@ -101,6 +102,33 @@ class AccountServiceTest {
 		// then
 		assertThat(profile).isEqualTo(alice.profile());
 		verify(accounts, never()).insertIfAbsent(any(Account.class));
+	}
+
+	@Test
+	void changeDisplayNameUpdatesAndSavesTheAccount() {
+		// given
+		Account account = alice.build();
+		when(accounts.findById(alice.id())).thenReturn(Optional.of(account));
+
+		// when
+		UserProfile updated = service.changeDisplayName(alice.userId(), new DisplayName("Alice M."));
+
+		// then
+		assertThat(updated).isEqualTo(new UserProfile(alice.userId(), "Alice M.", "alice", true));
+		assertThat(account.displayName()).isEqualTo(new DisplayName("Alice M."));
+		verify(accounts).save(account);
+	}
+
+	@Test
+	void changeDisplayNameForUnknownAccountThrowsAccountNotFound() {
+		// given
+		when(accounts.findById(alice.id())).thenReturn(Optional.empty());
+
+		// when / then
+		assertThatThrownBy(() -> service.changeDisplayName(alice.userId(), new DisplayName("Alice M.")))
+			.isInstanceOfSatisfying(DomainException.class,
+					e -> assertThat(e.code()).isEqualTo(ErrorCode.ACCOUNT_NOT_FOUND));
+		verify(accounts, never()).save(any(Account.class));
 	}
 
 }

@@ -20,6 +20,7 @@ import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Currency;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -372,6 +373,31 @@ class GroupTest {
 		// when / then
 		assertThat(group.pendingInvitationsFor(bob, NOW)).containsExactly(forBob);
 		assertThat(group.pendingInvitationsFor(alice, NOW)).isEmpty();
+	}
+
+	@Test
+	void expirePendingInvitationsFlipsOnlyPastExpiryPendingInvitations() {
+		// given: one invitation at NOW, one accepted, one newer invitation still valid
+		UserId dave = new UserId(UUID.randomUUID());
+		Invitation expired = group.inviteMember(bob, alice, GroupRole.MEMBER, NOW).invitation();
+		Invitation accepted = group.inviteMember(carol, alice, GroupRole.MEMBER, NOW).invitation();
+		group.acceptInvitation(accepted.id(), carol, NOW.plusSeconds(10));
+		Invitation stillOpen = group.inviteMember(dave, alice, GroupRole.MEMBER, NOW.plusSeconds(60)).invitation();
+
+		// when: at exact expiry nothing flips yet
+		assertThat(group.expirePendingInvitations(EXPIRY)).isZero();
+		assertThat(expired.status()).isEqualTo(InvitationStatus.PENDING);
+
+		// when: one second past expiry only the expired pending one flips
+		int flipped = group.expirePendingInvitations(EXPIRY.plusSeconds(1));
+
+		// then
+		assertThat(flipped).isEqualTo(1);
+		assertThat(expired.status()).isEqualTo(InvitationStatus.EXPIRED);
+		assertThat(accepted.status()).isEqualTo(InvitationStatus.ACCEPTED);
+		assertThat(stillOpen.status()).isEqualTo(InvitationStatus.PENDING);
+		// idempotent on a second sweep
+		assertThat(group.expirePendingInvitations(EXPIRY.plusSeconds(2))).isZero();
 	}
 
 	@Test

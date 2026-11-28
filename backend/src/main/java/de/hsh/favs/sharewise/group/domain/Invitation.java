@@ -21,9 +21,9 @@ import java.util.UUID;
  * answer it.
  *
  * <p>
- * {@code EXPIRED} is never stored: the stored status is PENDING, ACCEPTED or DECLINED,
- * and {@link #statusAt(Instant)} derives EXPIRED from the expiry time. That way no reader
- * can see a stale PENDING.
+ * {@link #statusAt(Instant)} derives EXPIRED from {@code expiresAt} immediately so no
+ * reader ever sees a stale PENDING, and {@link Group#expirePendingInvitations(Instant)}
+ * also persists the transition to {@code EXPIRED} in the database.
  */
 @Entity
 @Table(name = "invitations")
@@ -110,6 +110,19 @@ public class Invitation {
 
 	void decline() {
 		status = InvitationStatus.DECLINED;
+	}
+
+	/**
+	 * Persists the transition from PENDING to EXPIRED once {@code now} is past
+	 * {@code expiresAt} (R9). Idempotent: returns {@code true} only when the stored
+	 * status actually changed.
+	 */
+	boolean expire(Instant now) {
+		if (status == InvitationStatus.PENDING && now.isAfter(expiresAt)) {
+			status = InvitationStatus.EXPIRED;
+			return true;
+		}
+		return false;
 	}
 
 	public InvitationId id() {

@@ -38,29 +38,36 @@ export function InviteForm({ groupId }: { groupId: string }) {
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-2">
-      <label className="flex flex-col gap-1 text-sm">
-        Username or email
-        <input
-          value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
-          className="rounded border px-2 py-2"
-          autoComplete="off"
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        Joins as
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value as "MEMBER" | "ADMIN")}
-          className="rounded border bg-background px-2 py-2"
-        >
-          <option value="MEMBER">Member</option>
-          <option value="ADMIN">Admin</option>
-        </select>
-      </label>
-      <button type="submit" disabled={busy} className="self-start rounded border px-3 py-2 disabled:opacity-50">
-        Invite
+    <form onSubmit={submit} aria-label="Invite someone" className="card flex flex-col gap-4 p-6">
+      <h2 className="text-2xl">Invite someone</h2>
+      <div className="flex flex-col gap-4 sm:flex-row">
+        <label className="flex flex-1 flex-col gap-1 font-bold">
+          Username or email
+          <input
+            className="font-normal"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            autoComplete="off"
+          />
+        </label>
+        <label className="flex flex-col gap-1 font-bold">
+          Joins as
+          <select
+            className="font-normal"
+            value={role}
+            onChange={(e) => setRole(e.target.value as "MEMBER" | "ADMIN")}
+          >
+            <option value="MEMBER">Member</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </label>
+      </div>
+      <p className="text-sm text-muted">
+        {/* R10: a late joiner shares only in later expenses; R9: invitations expire after 7 days. */}
+        Someone who joins later only shares in expenses recorded after joining. Invitations last 7 days.
+      </p>
+      <button type="submit" disabled={busy} className="btn-primary self-start">
+        Send invitation
       </button>
       {invited && <p role="status">Invitation sent to @{invited}</p>}
       <ErrorBanner error={error} />

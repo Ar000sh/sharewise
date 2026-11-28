@@ -36,25 +36,41 @@ async function signUp(browser: Browser, firstName: string): Promise<Page> {
   return page;
 }
 
+/** From anywhere back to the group, through My groups in the top bar. */
+async function openGroup(page: Page) {
+  await page.getByRole("link", { name: "My groups" }).click();
+  await page.getByRole("link", { name: /Mallorca 2027/ }).click();
+  await expect(page.getByRole("heading", { name: "Mallorca 2027" })).toBeVisible();
+}
+
+/** From the group page to the Add expense page (its own page, design 2026-11-23, U7). */
+async function openAddExpense(page: Page) {
+  await page.getByRole("link", { name: "Add expense" }).click();
+  await expect(page.getByRole("heading", { name: "Add expense" })).toBeVisible();
+}
+
+/** Fills the open Add expense page, saves, and is back on the group page with the expense in the list. */
 async function addExpense(page: Page, title: string, euros: string) {
-  await page.getByLabel("Title").fill(title);
-  await page.getByLabel("Amount (€)").fill(euros);
+  await page.getByLabel("Amount (EUR)").fill(euros);
+  await page.getByLabel("What was it for?").fill(title);
   // Only the recorder is ticked at first: the journey splits every expense between the whole group.
   await page.getByRole("button", { name: "Select everyone" }).click();
-  await page.getByRole("button", { name: "Add expense" }).click();
+  await page.getByRole("button", { name: "Save expense" }).click();
+  await expect(page.getByRole("heading", { name: "Mallorca 2027" })).toBeVisible();
   await expect(page.getByText(title).first()).toBeVisible();
 }
 
-/** Records an expense between the whole group as exact amounts, one per member (the form's "Exact amounts" mode). */
+/** Like addExpense, but split between the whole group as exact amounts, one per member ("Exact amounts" mode). */
 async function addExactExpense(page: Page, title: string, euros: string, amounts: Record<string, string>) {
-  await page.getByLabel("Title").fill(title);
-  await page.getByLabel("Amount (€)", { exact: true }).fill(euros);
+  await page.getByLabel("Amount (EUR)", { exact: true }).fill(euros);
+  await page.getByLabel("What was it for?").fill(title);
   await page.getByRole("button", { name: "Select everyone" }).click();
   await page.getByLabel("Exact amounts").check();
   for (const [name, value] of Object.entries(amounts)) {
     await page.getByLabel(`Amount for ${name}`, { exact: true }).fill(value);
   }
-  await page.getByRole("button", { name: "Add expense" }).click();
+  await page.getByRole("button", { name: "Save expense" }).click();
+  await expect(page.getByRole("heading", { name: "Mallorca 2027" })).toBeVisible();
   await expect(page.getByText(title).first()).toBeVisible();
 }
 
@@ -80,17 +96,17 @@ test("three friends sign up, share a group, see who owes what and settle up", as
   // Alice invites Bob by username and Carol by email.
   await alice.getByRole("tab", { name: "Members" }).click();
   await alice.getByLabel("Username or email").fill(usernameOf("Bob"));
-  await alice.getByRole("button", { name: "Invite" }).click();
+  await alice.getByRole("button", { name: "Send invitation" }).click();
   await expect(alice.getByRole("status")).toContainText(`Invitation sent to @${usernameOf("Bob")}`);
   await alice.getByLabel("Username or email").fill(emailOf("Carol"));
-  await alice.getByRole("button", { name: "Invite" }).click();
+  await alice.getByRole("button", { name: "Send invitation" }).click();
   await expect(alice.getByRole("status")).toContainText(`Invitation sent to @${usernameOf("Carol")}`);
 
-  // Each of them finds the invitation in the bell and accepts it.
+  // Each of them finds the invitation in the inbox and accepts it.
   for (const page of [bob, carol]) {
     await page.reload();
     await page.waitForLoadState("networkidle");
-    await page.getByRole("button", { name: /inbox/i }).click();
+    await page.getByRole("link", { name: /^Inbox/ }).click();
     await expect(page.getByText("Alice Tester invited you to Mallorca 2027")).toBeVisible();
     await page.getByRole("button", { name: /accept invitation/i }).click();
     await expect(page.getByRole("heading", { name: "Mallorca 2027" })).toBeVisible();
@@ -99,16 +115,18 @@ test("three friends sign up, share a group, see who owes what and settle up", as
   // Alice hears about it: the entries arrive through an event, so she reloads until they are there.
   await expect(async () => {
     await alice.reload();
-    await alice.getByRole("button", { name: /inbox/i }).click();
+    await alice.getByRole("link", { name: /^Inbox/ }).click();
     await expect(alice.getByText("Bob Tester joined Mallorca 2027")).toBeVisible({ timeout: 2000 });
     await expect(alice.getByText("Carol Tester joined Mallorca 2027")).toBeVisible({ timeout: 2000 });
   }).toPass();
 
   // Alice pays the hotel (900 €, all three equally), Bob pays the dinner (180 €, all three as exact amounts of 60 €).
-  await alice.reload();
+  await openGroup(alice);
+  await openAddExpense(alice);
   await expect(alice.getByLabel("Paid by")).toContainText("Carol Tester");
   await addExpense(alice, "Hotel", "900");
   await bob.reload();
+  await openAddExpense(bob);
   await expect(bob.getByLabel("Paid by")).toContainText("Carol Tester");
   // Nobody has to pick themselves: the form already says who is recording.
   await expect(bob.getByLabel("Paid by").locator("option:checked")).toHaveText("Bob Tester");
@@ -129,37 +147,42 @@ test("three friends sign up, share a group, see who owes what and settle up", as
   // Carol settles up: she reports her whole debt to Alice. It only counts once Alice confirms it (R16).
   await carol.getByRole("tab", { name: /^Settle up/ }).click();
   const carolOwes = carol.getByRole("region", { name: "You owe" });
-  await expect(carolOwes).toContainText("360,00 € to Alice Tester");
-  await carolOwes.getByRole("button", { name: "I paid" }).click();
-  await expect(carolOwes.getByLabel("Amount (€)")).toHaveValue("360.00");
-  await carolOwes.getByRole("button", { name: "Send payment" }).click();
+  await expect(carolOwes).toContainText("Pay Alice Tester 360,00 €");
+  await carolOwes.getByRole("button", { name: "Report a payment" }).click();
+  const report = carol.getByRole("dialog", { name: "Report a payment" });
+  await expect(report.getByLabel("Amount (EUR)")).toHaveValue("360.00");
+  await report.getByRole("button", { name: "Report payment" }).click();
+  await expect(report).toHaveCount(0);
   await expect(carolOwes).toContainText("360,00 € awaiting confirmation");
 
   // Alice finds the payment waiting for her answer in the bell (state, not an event: a reload shows it) and confirms it.
   await alice.reload();
-  await alice.getByRole("button", { name: /inbox/i }).click();
+  await alice.getByRole("link", { name: /^Inbox/ }).click();
   await expect(alice.getByText("Carol Tester marked 360,00 € as paid to you")).toBeVisible();
   await alice.getByRole("button", { name: "Confirm payment from Carol Tester" }).click();
   await expect(alice.getByText("Carol Tester marked 360,00 € as paid to you")).toHaveCount(0);
 
   // Carol's Settle up tab is still open and was not touched: it asks again by itself (every 10 s), so her debt
   // disappears from it without a reload once the ledger has booked the confirmation.
-  await expect(carolOwes).toHaveCount(0);
+  await expect(carolOwes).toContainText("You owe no one in this group.");
 
   // Carol hears about it: the entry arrives through an event, so she reloads until it is there.
   await expect(async () => {
     await carol.reload();
-    await carol.getByRole("button", { name: /inbox/i }).click();
+    await carol.getByRole("link", { name: /^Inbox/ }).click();
     await expect(carol.getByText("Alice Tester confirmed your payment in Mallorca 2027")).toBeVisible({ timeout: 2000 });
   }).toPass();
 
   // The ledger books the confirmation asynchronously; the plan shrinks to Bob's debt alone.
-  // The open tab asks again by itself, so the assertion retries until the booking has arrived; no reload.
+  // The tab asks again by itself, so the assertion retries until the booking has arrived; no reload.
+  await openGroup(alice);
   await alice.getByRole("tab", { name: /^Settle up/ }).click();
-  const owedToAlice = alice.getByRole("region", { name: "Owed to you" });
+  const owedToAlice = alice.getByRole("region", { name: "You can receive" });
   await expect(owedToAlice.getByRole("listitem")).toHaveCount(1);
-  await expect(owedToAlice).toContainText("Bob Tester owes 180,00 €");
+  await expect(owedToAlice).toContainText("Bob Tester pays you 180,00 €");
   await expect(owedToAlice).not.toContainText("Carol Tester");
+  // The history keeps the confirmed payment.
+  await expect(alice.getByRole("region", { name: "Payment history" })).toContainText("Carol Tester → you");
 });
 
 test("wrong password is refused, signed-out visitors are sent to sign in, signing in again works", async ({

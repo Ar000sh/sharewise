@@ -21,7 +21,7 @@ describe("InviteForm", () => {
     render(<InviteForm groupId="g1" />);
     const field = screen.getByLabelText("Username or email");
     await userEvent.type(field, "  bob  ");
-    await userEvent.click(screen.getByRole("button", { name: "Invite" }));
+    await userEvent.click(screen.getByRole("button", { name: "Send invitation" }));
 
     expect(await screen.findByRole("status")).toHaveTextContent("Invitation sent to @bob");
     expect(apiMock).toHaveBeenCalledWith("/groups/g1/invitations", {
@@ -38,7 +38,7 @@ describe("InviteForm", () => {
     render(<InviteForm groupId="g1" />);
     await userEvent.type(screen.getByLabelText("Username or email"), "bob");
     await userEvent.selectOptions(screen.getByLabelText("Joins as"), "ADMIN");
-    await userEvent.click(screen.getByRole("button", { name: "Invite" }));
+    await userEvent.click(screen.getByRole("button", { name: "Send invitation" }));
 
     await screen.findByRole("status");
     expect(apiMock).toHaveBeenCalledWith("/groups/g1/invitations", {
@@ -54,7 +54,7 @@ describe("InviteForm", () => {
 
     render(<InviteForm groupId="g1" />);
     await userEvent.type(screen.getByLabelText("Username or email"), "someone");
-    await userEvent.click(screen.getByRole("button", { name: "Invite" }));
+    await userEvent.click(screen.getByRole("button", { name: "Send invitation" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/no account found/i);
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
@@ -66,18 +66,18 @@ describe("InviteForm", () => {
 
     render(<InviteForm groupId="g1" />);
     await userEvent.type(screen.getByLabelText("Username or email"), "bob");
-    await userEvent.click(screen.getByRole("button", { name: "Invite" }));
+    await userEvent.click(screen.getByRole("button", { name: "Send invitation" }));
 
-    expect(screen.getByRole("button", { name: "Invite" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Send invitation" })).toBeDisabled();
     finish(invitation);
     expect(await screen.findByRole("status")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Invite" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Send invitation" })).toBeEnabled();
   });
 
   it("doesNotSendABlankIdentifier", async () => {
     render(<InviteForm groupId="g1" />);
     await userEvent.type(screen.getByLabelText("Username or email"), "   ");
-    await userEvent.click(screen.getByRole("button", { name: "Invite" }));
+    await userEvent.click(screen.getByRole("button", { name: "Send invitation" }));
 
     expect(apiMock).not.toHaveBeenCalled();
   });
