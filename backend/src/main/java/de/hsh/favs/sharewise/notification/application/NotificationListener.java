@@ -1,6 +1,8 @@
 package de.hsh.favs.sharewise.notification.application;
 
+import de.hsh.favs.sharewise.expense.api.ExpenseCorrected;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.expense.api.ExpenseRemoved;
 import de.hsh.favs.sharewise.group.api.GroupArchived;
 import de.hsh.favs.sharewise.group.api.GroupClosedForSettlement;
 import de.hsh.favs.sharewise.group.api.GroupReopened;
@@ -37,6 +39,16 @@ class NotificationListener {
 	@ApplicationModuleListener
 	void on(ExpenseRecorded event) {
 		notifications.recordExpenseRecorded(event);
+	}
+
+	@ApplicationModuleListener
+	void on(ExpenseCorrected event) {
+		notifications.recordExpenseCorrected(event);
+	}
+
+	@ApplicationModuleListener
+	void on(ExpenseRemoved event) {
+		notifications.recordExpenseRemoved(event);
 	}
 
 	@ApplicationModuleListener

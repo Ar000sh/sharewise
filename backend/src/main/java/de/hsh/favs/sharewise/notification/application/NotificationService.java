@@ -2,7 +2,11 @@ package de.hsh.favs.sharewise.notification.application;
 
 import de.hsh.favs.sharewise.account.api.UserProfile;
 import de.hsh.favs.sharewise.account.api.UserProfiles;
+import de.hsh.favs.sharewise.expense.api.ExpenseCorrected;
+import de.hsh.favs.sharewise.expense.api.ExpenseId;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.expense.api.ExpenseRemoved;
+import de.hsh.favs.sharewise.expense.api.ExpenseShare;
 import de.hsh.favs.sharewise.group.api.GroupArchived;
 import de.hsh.favs.sharewise.group.api.GroupClosedForSettlement;
 import de.hsh.favs.sharewise.group.api.GroupDirectory;
@@ -25,6 +29,7 @@ import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -192,13 +197,45 @@ public class NotificationService {
 	 */
 	@Transactional
 	public void recordExpenseRecorded(ExpenseRecorded event) {
+		notifyInvolved(NotificationType.EXPENSE_RECORDED, event.groupId(), event.recordedBy(), event.expenseId(),
+				event.occurredAt(), event.paidBy(), event.shares());
+	}
+
+	/**
+	 * Tells everybody involved in the old or the new version of a corrected expense,
+	 * except the person who corrected it (R7, design 2026-11-28 E8).
+	 */
+	@Transactional
+	public void recordExpenseCorrected(ExpenseCorrected event) {
+		var shares = new ArrayList<>(event.previousShares());
+		shares.addAll(event.shares());
+		notifyInvolved(NotificationType.EXPENSE_CORRECTED, event.groupId(), event.correctedBy(), event.expenseId(),
+				event.occurredAt(), event.previousPaidBy(), shares, event.paidBy());
+	}
+
+	/**
+	 * Tells everybody involved in a removed expense, except the person who removed it
+	 * (J6).
+	 */
+	@Transactional
+	public void recordExpenseRemoved(ExpenseRemoved event) {
+		notifyInvolved(NotificationType.EXPENSE_REMOVED, event.groupId(), event.removedBy(), event.expenseId(),
+				event.occurredAt(), event.paidBy(), event.shares());
+	}
+
+	/**
+	 * One entry per person among the participants and payers, without the actor, who
+	 * knows; a repeated event adds none.
+	 */
+	private void notifyInvolved(NotificationType type, GroupId groupId, UserId actor, ExpenseId expenseId,
+			Instant occurredAt, UserId paidBy, List<ExpenseShare> shares, UserId... morePayers) {
 		Set<UserId> involved = new LinkedHashSet<>();
-		event.shares().forEach(share -> involved.add(share.participantId()));
-		involved.add(event.paidBy());
-		involved.remove(event.recordedBy());
+		shares.forEach(share -> involved.add(share.participantId()));
+		involved.add(paidBy);
+		involved.addAll(List.of(morePayers));
+		involved.remove(actor);
 		for (UserId recipient : involved) {
-			record(Notification.notify(recipient, NotificationType.EXPENSE_RECORDED, event.groupId(),
-					event.recordedBy(), event.expenseId().value(), event.occurredAt()));
+			record(Notification.notify(recipient, type, groupId, actor, expenseId.value(), occurredAt));
 		}
 	}
 

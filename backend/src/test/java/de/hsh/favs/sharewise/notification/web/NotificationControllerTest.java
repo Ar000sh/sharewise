@@ -223,6 +223,33 @@ class NotificationControllerTest {
 	}
 
 	@Test
+	void aCorrectionShowsACorrectedEntryToEverybodyInvolvedButTheCorrector() throws Exception {
+		// given bob recorded a dinner that alice and he share
+		UUID group = groups.groupWith(alice, "Mallorca 2027", bob);
+		ExpenseRequests dinner = new ExpenseRequests(mvc, json).inGroup(group)
+			.withTotalAmount("40.00")
+			.paidBy(bob)
+			.splitBetween(alice, bob);
+		UUID expense = dinner.recorded(bob);
+		awaitEntries(alice, 2);
+
+		// when bob corrects it
+		dinner.withTotalAmount("50.00").correct(expense, bob, null).andExpect(status().isOk());
+
+		// then alice reads it (R7); bob, who corrected it, gets nothing (a frozen clock
+		// gives
+		// every entry the same time, so the entry is found by its type)
+		JsonNode entry = awaitEntries(alice, 3).get("items")
+			.valueStream()
+			.filter(i -> i.get("type").asString().equals("EXPENSE_CORRECTED"))
+			.findFirst()
+			.orElseThrow();
+		assertThat(entry.get("actor").get("userId").asString()).isEqualTo(bob.idString());
+		assertThat(entry.get("reference").asString()).isEqualTo(expense.toString());
+		inbox(bob, "").andExpect(jsonPath("$.items[?(@.type=='EXPENSE_CORRECTED')]").isEmpty());
+	}
+
+	@Test
 	void theCreatorsOwnGroupCreationAndAnInviteWithoutAnAnswerShowNothing() throws Exception {
 		// given
 		UUID group = groups.createGroup(alice, "Quiet");
