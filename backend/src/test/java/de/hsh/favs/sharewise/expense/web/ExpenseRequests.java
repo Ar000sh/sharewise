@@ -1,8 +1,11 @@
 package de.hsh.favs.sharewise.expense.web;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import java.util.ArrayList;
@@ -91,6 +94,33 @@ public class ExpenseRequests {
 	}
 
 	public ResultActions record(AccountFixture caller) throws Exception {
+		return mvc.perform(post("/groups/{id}/expenses", groupId).header("Authorization", caller.bearer())
+			.contentType(APPLICATION_JSON)
+			.content(json.writeValueAsString(body())));
+	}
+
+	/** Corrects the expense to what this builder describes, with {@code reason}. */
+	public ResultActions correct(UUID expenseId, AccountFixture caller, String reason) throws Exception {
+		Map<String, Object> body = body();
+		body.put("reason", reason);
+		return mvc.perform(
+				put("/groups/{id}/expenses/{expenseId}", groupId, expenseId).header("Authorization", caller.bearer())
+					.contentType(APPLICATION_JSON)
+					.content(json.writeValueAsString(body)));
+	}
+
+	public ResultActions remove(UUID expenseId, AccountFixture caller) throws Exception {
+		return mvc.perform(delete("/groups/{id}/expenses/{expenseId}", groupId, expenseId).header("Authorization",
+				caller.bearer()));
+	}
+
+	/** Records what this builder describes (expects 201) and returns the expense id. */
+	public UUID recorded(AccountFixture caller) throws Exception {
+		String body = record(caller).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+		return UUID.fromString(json.readTree(body).get("id").asString());
+	}
+
+	private Map<String, Object> body() {
 		Map<String, Object> body = new LinkedHashMap<>();
 		body.put("title", title);
 		body.put("totalAmount", totalAmount);
@@ -107,9 +137,7 @@ public class ExpenseRequests {
 		}
 		body.put("participants", entries);
 		body.put("splitStrategy", splitStrategy);
-		return mvc.perform(post("/groups/{id}/expenses", groupId).header("Authorization", caller.bearer())
-			.contentType(APPLICATION_JSON)
-			.content(json.writeValueAsString(body)));
+		return body;
 	}
 
 	public ResultActions list(AccountFixture caller) throws Exception {

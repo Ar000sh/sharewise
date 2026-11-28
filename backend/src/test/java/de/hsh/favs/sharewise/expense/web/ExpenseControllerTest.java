@@ -1,6 +1,7 @@
 package de.hsh.favs.sharewise.expense.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -11,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import de.hsh.favs.sharewise.ModuleIntegrationTest;
 import de.hsh.favs.sharewise.MutableClock;
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
+import de.hsh.favs.sharewise.expense.api.ExpenseCorrected;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import de.hsh.favs.sharewise.group.web.GroupRequests;
 import java.time.Duration;
@@ -300,6 +302,104 @@ class ExpenseControllerTest {
 		mvc.perform(post("/groups/" + group + "/expenses").header("Authorization", alice.bearer())
 			.contentType(APPLICATION_JSON)
 			.content("{not json")).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void putCorrectsTheExpenseAnswersWithItsRevisionAndTheBalancesFollow() throws Exception {
+		// given alice paid 90.00 for the three of them (alice +60.00)
+		UUID dinner = expenses.withTitle("Dinner")
+			.withTotalAmount("90.00")
+			.paidBy(alice)
+			.splitBetween(alice, bob, carol)
+			.recorded(alice);
+
+		// when it is corrected to 120.00
+		expenses.withTotalAmount("120.00")
+			.correct(dinner, alice, "Receipt said 120")
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("CORRECTED"))
+			.andExpect(jsonPath("$.totalAmount").value("120.00"))
+			.andExpect(jsonPath("$.revisions[0].previous.totalAmount").value("90.00"))
+			.andExpect(jsonPath("$.revisions[0].previous.shares[0].owedShare").value("30.00"))
+			.andExpect(jsonPath("$.revisions[0].correctedBy").value(alice.idString()))
+			.andExpect(jsonPath("$.revisions[0].reason").value("Receipt said 120"));
+
+		// then the event went out and alice's balance becomes +80.00 a moment later (R7,
+		// R14)
+		assertThat(events.stream(ExpenseCorrected.class).filter(e -> e.expenseId().value().equals(dinner)))
+			.singleElement();
+		awaitBalanceOf(alice, "80.00");
+	}
+
+	@Test
+	void putByAMemberWhoIsNeitherRecorderNorPayerNorAdminIs403AndChangesNothing() throws Exception {
+		// given bob paid and recorded it; alice is the admin
+		UUID taxi = expenses.withTotalAmount("30.00").paidBy(bob).splitBetween(bob, carol).recorded(bob);
+
+		// when / then (R6)
+		expenses.withTotalAmount("60.00")
+			.correct(taxi, carol, null)
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.code").value("NOT_ALLOWED_TO_CHANGE_EXPENSE"));
+		expenses.list(alice).andExpect(jsonPath("$[0].totalAmount").value("30.00"));
+		assertThat(events.stream(ExpenseCorrected.class)).isEmpty();
+	}
+
+	@Test
+	void changingAnExpenseOfAClosedGroupIs422GroupNotOpen() throws Exception {
+		// given
+		UUID taxi = expenses.withTotalAmount("30.00").paidBy(bob).splitBetween(bob, carol).recorded(bob);
+		new GroupRequests(mvc, json).close(group, alice).andExpect(status().isOk());
+
+		// when / then (R5, L3)
+		expenses.correct(taxi, bob, null)
+			.andExpect(status().isUnprocessableContent())
+			.andExpect(jsonPath("$.code").value("GROUP_NOT_OPEN"));
+		expenses.remove(taxi, bob).andExpect(jsonPath("$.code").value("GROUP_NOT_OPEN"));
+	}
+
+	@Test
+	void deleteRemovesTheExpenseItStaysInTheListAndTheBalancesGoBack() throws Exception {
+		// given alice paid 90.00 for the three of them
+		UUID dinner = expenses.withTotalAmount("90.00").paidBy(alice).splitBetween(alice, bob, carol).recorded(alice);
+		awaitBalanceOf(alice, "60.00");
+
+		// when alice, who paid and recorded it, removes it
+		expenses.remove(dinner, alice).andExpect(status().isNoContent());
+
+		// then (R8)
+		expenses.list(alice).andExpect(jsonPath("$[0].status").value("REMOVED"));
+		awaitBalanceOf(alice, "0.00");
+		expenses.remove(dinner, alice)
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("EXPENSE_REMOVED"));
+	}
+
+	@Test
+	void anUnknownExpenseIs404ExpenseNotFound() throws Exception {
+		expenses.remove(UUID.randomUUID(), alice)
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value("EXPENSE_NOT_FOUND"));
+	}
+
+	@Test
+	void anExpenseOfSomebodyWhoLeftCannotBeRemovedAnyMore() throws Exception {
+		// given carol paid a 30.00 museum ticket for herself only (her balance stays 0)
+		// and then left
+		UUID museum = expenses.withTotalAmount("30.00").paidBy(carol).splitBetween(carol).recorded(carol);
+		new GroupRequests(mvc, json).leave(group, carol).andExpect(status().isNoContent());
+
+		// when / then (design 2026-11-28-expense-correction E3)
+		expenses.remove(museum, alice)
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("FORMER_MEMBER_INVOLVED"));
+	}
+
+	private void awaitBalanceOf(AccountFixture person, String amount) {
+		await().atMost(Duration.ofSeconds(10))
+			.untilAsserted(
+					() -> mvc.perform(get("/groups/{id}/balances", group).header("Authorization", alice.bearer()))
+						.andExpect(jsonPath("$[?(@.userId=='" + person.idString() + "')].netBalance").value(amount)));
 	}
 
 	@Test

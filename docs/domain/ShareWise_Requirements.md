@@ -413,7 +413,7 @@ After these payments, everyone's balance is 0 (verified by script).
 - [ ] **How to check "payer belongs to the group"** (slide 69), when Expense only holds a GroupId (slide 67)? Either the application service checks it before the command, or Expense keeps a local membership copy fed by events.
 
 **Domain questions:**
-- [ ] **Correction after a settlement payment:** Bob already paid €202, then the hotel is corrected. Does Bob get a new debt or credit, and is he notified again?
+- [x] **Correction after a settlement payment:** Bob already paid €202, then the hotel is corrected. Does Bob get a new debt or credit, and is he notified again? Yes to both: the ledger books the difference, so Bob's balance moves by his change in share and the plan shows a new debt or credit; everybody involved gets EXPENSE_CORRECTED (design 2026-11-28-expense-correction E5, E8).
 - [ ] **Who may invite:** any member, or admins only?
 - [x] **Rejoining:** can a former member be invited again, and do they keep their history? Yes: an admin invites them like anybody else, and on accepting they get their old membership back with the new role; old expenses keep pointing at them (decided 25.11.26, design 2026-11-28-membership-exit M3).
 - [x] **Auto-archive scope:** only from CLOSED_FOR_SETTLEMENT, or also an OPEN group whose balances happen to be 0? Only from CLOSED_FOR_SETTLEMENT, as the lifecycle diagram draws it; a group whose balances are already 0 when it is closed stays closed until an admin archives it (decided 25.11.26, design 2026-11-28-group-lifecycle G1, G2).

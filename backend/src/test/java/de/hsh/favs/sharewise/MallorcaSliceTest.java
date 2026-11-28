@@ -176,8 +176,8 @@ class MallorcaSliceTest {
 		assertThat(fields(created)).containsExactly("id", "memberCount", "name", "status");
 		assertThat(fields(detail)).containsExactly("formerMembers", "id", "memberCount", "members", "name", "status");
 		assertThat(fields(detail.get("members").get(0))).containsExactly("displayName", "role", "userId");
-		assertThat(fields(expense)).containsExactly("date", "id", "paidBy", "recordedBy", "shares", "splitStrategy",
-				"status", "title", "totalAmount");
+		assertThat(fields(expense)).containsExactly("date", "id", "paidBy", "recordedBy", "revisions", "shares",
+				"splitStrategy", "status", "title", "totalAmount");
 		assertThat(fields(expense.get("shares").get(0))).containsExactly("owedShare", "participantId");
 		assertThat(fields(invitation)).containsExactly("expiresAt", "invitationId", "invitee");
 		assertThat(fields(invitation.get("invitee"))).containsExactly("displayName", "userId", "username");

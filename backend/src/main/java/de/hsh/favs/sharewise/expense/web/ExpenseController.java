@@ -1,6 +1,8 @@
 package de.hsh.favs.sharewise.expense.web;
 
 import de.hsh.favs.sharewise.account.api.CurrentUser;
+import de.hsh.favs.sharewise.expense.api.ExpenseId;
+import de.hsh.favs.sharewise.expense.application.CorrectExpenseCommand;
 import de.hsh.favs.sharewise.expense.application.ExpenseService;
 import de.hsh.favs.sharewise.expense.application.RecordExpenseCommand;
 import de.hsh.favs.sharewise.expense.domain.ExpenseTitle;
@@ -17,15 +19,17 @@ import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Record and list the expenses of a group. */
+/** Record, correct, remove and list the expenses of a group. */
 @RestController
 @RequestMapping("/groups/{groupId}/expenses")
 class ExpenseController {
@@ -45,15 +49,34 @@ class ExpenseController {
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
 	ExpenseResponse recordExpense(@PathVariable UUID groupId, @Valid @RequestBody RecordExpenseRequest request) {
-		var participants = request.participants()
-			.stream()
-			.map(participant -> new SplitEntry(new UserId(participant.userId()),
-					typedValue(request.splitStrategy(), participant.value())))
-			.toList();
 		var command = new RecordExpenseCommand(new GroupId(groupId), caller(), new ExpenseTitle(request.title()),
-				Money.eur(request.totalAmount()), request.date(), new UserId(request.paidBy()), participants,
-				request.splitStrategy());
+				Money.eur(request.totalAmount()), request.date(), new UserId(request.paidBy()),
+				entries(request.splitStrategy(), request.participants()), request.splitStrategy());
 		return ExpenseResponse.of(expenses.recordExpense(command));
+	}
+
+	@PutMapping("/{expenseId}")
+	ExpenseResponse correctExpense(@PathVariable UUID groupId, @PathVariable UUID expenseId,
+			@Valid @RequestBody CorrectExpenseRequest request) {
+		var command = new CorrectExpenseCommand(new GroupId(groupId), new ExpenseId(expenseId), caller(),
+				new ExpenseTitle(request.title()), Money.eur(request.totalAmount()), request.date(),
+				new UserId(request.paidBy()), entries(request.splitStrategy(), request.participants()),
+				request.splitStrategy(), request.reason());
+		return ExpenseResponse.of(expenses.correctExpense(command));
+	}
+
+	@DeleteMapping("/{expenseId}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	void removeExpense(@PathVariable UUID groupId, @PathVariable UUID expenseId) {
+		expenses.removeExpense(new GroupId(groupId), new ExpenseId(expenseId), caller());
+	}
+
+	private static List<SplitEntry> entries(SplitStrategy strategy,
+			List<RecordExpenseRequest.Participant> participants) {
+		return participants.stream()
+			.map(participant -> new SplitEntry(new UserId(participant.userId()),
+					typedValue(strategy, participant.value())))
+			.toList();
 	}
 
 	/**
