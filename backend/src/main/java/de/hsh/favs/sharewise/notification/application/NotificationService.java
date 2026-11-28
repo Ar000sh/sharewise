@@ -7,6 +7,7 @@ import de.hsh.favs.sharewise.group.api.GroupDirectory;
 import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
 import de.hsh.favs.sharewise.group.api.MemberPromoted;
+import de.hsh.favs.sharewise.group.api.MemberRemoved;
 import de.hsh.favs.sharewise.notification.domain.Notification;
 import de.hsh.favs.sharewise.notification.domain.NotificationId;
 import de.hsh.favs.sharewise.notification.domain.NotificationType;
@@ -96,6 +97,13 @@ public class NotificationService {
 	public void recordMemberPromoted(MemberPromoted event) {
 		record(Notification.notify(event.userId(), NotificationType.MEMBER_PROMOTED, event.groupId(),
 				event.promotedBy(), event.userId().value(), event.occurredAt()));
+	}
+
+	/** Tells a person that an admin removed them from the group (J11). */
+	@Transactional
+	public void recordMemberRemoved(MemberRemoved event) {
+		record(Notification.notify(event.userId(), NotificationType.MEMBER_REMOVED, event.groupId(), event.removedBy(),
+				event.userId().value(), event.occurredAt()));
 	}
 
 	/** Tells the inviter that the invitation was turned down. */

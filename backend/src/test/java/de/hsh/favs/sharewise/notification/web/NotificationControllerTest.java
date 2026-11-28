@@ -171,6 +171,22 @@ class NotificationControllerTest {
 	}
 
 	@Test
+	void aRemovalShowsARemovedEntryToTheRemovedPerson() throws Exception {
+		// given Bob joined Alice's group
+		UUID group = groups.groupWith(alice, "Mallorca 2027", bob);
+
+		// when
+		groups.remove(group, alice, bob).andExpect(status().isNoContent());
+
+		// then
+		JsonNode entry = awaitEntries(bob, 1).get("items").get(0);
+		assertThat(entry.get("type").asString()).isEqualTo("MEMBER_REMOVED");
+		assertThat(entry.get("actor").get("userId").asString()).isEqualTo(alice.idString());
+		assertThat(entry.get("group").get("id").asString()).isEqualTo(group.toString());
+		assertThat(entry.get("reference").asString()).isEqualTo(bob.idString());
+	}
+
+	@Test
 	void theCreatorsOwnGroupCreationAndAnInviteWithoutAnAnswerShowNothing() throws Exception {
 		// given
 		UUID group = groups.createGroup(alice, "Quiet");

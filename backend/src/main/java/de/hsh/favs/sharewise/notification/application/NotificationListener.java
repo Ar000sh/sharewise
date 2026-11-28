@@ -4,6 +4,7 @@ import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
 import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
 import de.hsh.favs.sharewise.group.api.MemberPromoted;
+import de.hsh.favs.sharewise.group.api.MemberRemoved;
 import de.hsh.favs.sharewise.settlement.api.DebtWaived;
 import de.hsh.favs.sharewise.settlement.api.SettlementPaymentConfirmed;
 import de.hsh.favs.sharewise.settlement.api.SettlementPaymentRejected;
@@ -43,6 +44,11 @@ class NotificationListener {
 	@ApplicationModuleListener
 	void on(MemberPromoted event) {
 		notifications.recordMemberPromoted(event);
+	}
+
+	@ApplicationModuleListener
+	void on(MemberRemoved event) {
+		notifications.recordMemberRemoved(event);
 	}
 
 	@ApplicationModuleListener
