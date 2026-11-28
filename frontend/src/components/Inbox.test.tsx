@@ -284,6 +284,22 @@ describe("Inbox", () => {
     expect(items[1]).toHaveTextContent("Bob Tester made you an admin of Mallorca 2027");
   });
 
+  it("saysWhoRemovedYouFromAGroup", async () => {
+    // given
+    inbox = {
+      invitations: [],
+      notifications: { unreadCount: 1, items: [{ ...entry, id: "n4", type: "MEMBER_REMOVED" }] },
+      payments: [],
+    };
+    backend();
+
+    // when
+    await renderOpened();
+
+    // then
+    expect(screen.getByRole("listitem")).toHaveTextContent("Bob Tester removed you from Mallorca 2027");
+  });
+
   it("describesADeclinedInvitationAndFallsBackWhenNamesAreMissing", async () => {
     inbox = {
       invitations: [],

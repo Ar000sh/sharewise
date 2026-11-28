@@ -94,6 +94,10 @@ cookie is per browser.
    -180,00 €, Carol 0,00 €. The payment history at the bottom of Settle up lists Carol's payment as confirmed.
 7. **Alice:** **Waive debt** on Bob's row opens a dialog about Bob; give a reason and **Waive debt**. Bob's debt is
    forgiven at once, no confirmation needed, and the plan says "Everybody is settled."
+8. **Leaving and removal** (balances must be 0, R11): **Carol** opens the Members tab and presses **Leave group**; the
+   group disappears from her list, and the expense list shows her as "Carol Tester (left)". **Alice** can press
+   **Remove** next to a member instead; the removed person's inbox says "… removed you from Mallorca 2027". With a
+   balance the dialog says "The balance must be 0 first"; the last admin is told to make another member an admin first.
 
 ## Tests
 

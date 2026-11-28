@@ -98,6 +98,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/groups/{groupId}/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The caller leaves the group (J10). Only at balance 0 (R11); the last admin cannot leave while other members remain (R12). The caller becomes a former member and stays visible in old expenses (R13). */
+        post: operations["leaveGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/groups/{groupId}/members/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+                userId: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** An admin removes another member (J11), only at that member's balance 0 (R11). Removing oneself is refused: the way out is POST /groups/{groupId}/leave. The removed person becomes a former member (R13) and gets an inbox entry MEMBER_REMOVED. */
+        delete: operations["removeMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/invitations": {
         parameters: {
             query?: never;
@@ -382,7 +421,7 @@ export interface components {
             title?: string;
             status: number;
             /** @enum {string} */
-            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "RECORDER_NOT_PARTICIPANT" | "GROUP_NOT_OPEN" | "SHARES_NOT_TOTAL" | "PERCENTAGES_NOT_100" | "PAYMENT_EXCEEDS_OPEN_DEBT" | "SETTLEMENT_PAYMENT_NOT_FOUND" | "PAYMENT_NOT_PENDING" | "NOT_THE_CREDITOR" | "ACCOUNT_NOT_FOUND" | "ALREADY_INVITED" | "NOTIFICATION_NOT_FOUND" | "NOT_AN_ADMIN" | "MEMBER_NOT_FOUND" | "ALREADY_ADMIN";
+            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "RECORDER_NOT_PARTICIPANT" | "GROUP_NOT_OPEN" | "SHARES_NOT_TOTAL" | "PERCENTAGES_NOT_100" | "PAYMENT_EXCEEDS_OPEN_DEBT" | "SETTLEMENT_PAYMENT_NOT_FOUND" | "PAYMENT_NOT_PENDING" | "NOT_THE_CREDITOR" | "ACCOUNT_NOT_FOUND" | "ALREADY_INVITED" | "NOTIFICATION_NOT_FOUND" | "NOT_AN_ADMIN" | "MEMBER_NOT_FOUND" | "ALREADY_ADMIN" | "BALANCE_NOT_ZERO" | "LAST_ADMIN" | "CANNOT_REMOVE_YOURSELF";
             detail?: string;
         };
         User: {
@@ -425,7 +464,10 @@ export interface components {
             role: "ADMIN" | "MEMBER";
         };
         GroupDetail: components["schemas"]["Group"] & {
+            /** @description The people currently in the group (the only ones who can pay, take part or be invited again). */
             members: components["schemas"]["Member"][];
+            /** @description People who left or were removed (R13). Old expenses still name them, shown as "Bob (left)"; their role is the one they had when they left. */
+            formerMembers: components["schemas"]["Member"][];
         };
         InviteMemberRequest: {
             /** @description Exact username or exact email of an existing account (an identifier with "@" is an email). Trimmed and compared case-insensitively; no partial matching. */
@@ -458,10 +500,10 @@ export interface components {
             expiresAt: string;
         };
         /**
-         * @description PAYMENT_CONFIRMED and PAYMENT_REJECTED tell the payer how the creditor answered; DEBT_WAIVED tells the debtor that the creditor forgave part of the debt. The actor is the creditor and the reference is the settlement payment. EXPENSE_RECORDED tells everybody involved in an expense (the participants and the payer) that somebody recorded it, except the person who recorded it; the actor is the recorder and the reference is the expense. MEMBER_PROMOTED tells a member that an admin made them an admin; the actor is the promoting admin and the reference is the promoted member. A payment waiting for an answer is not an entry (see GET /me/settlement-payments). More types arrive with later features (removal).
+         * @description PAYMENT_CONFIRMED and PAYMENT_REJECTED tell the payer how the creditor answered; DEBT_WAIVED tells the debtor that the creditor forgave part of the debt. The actor is the creditor and the reference is the settlement payment. EXPENSE_RECORDED tells everybody involved in an expense (the participants and the payer) that somebody recorded it, except the person who recorded it; the actor is the recorder and the reference is the expense. MEMBER_PROMOTED tells a member that an admin made them an admin; the actor is the promoting admin and the reference is the promoted member. MEMBER_REMOVED tells a person that an admin removed them from the group; the actor is the admin and the reference is the removed person. A payment waiting for an answer is not an entry (see GET /me/settlement-payments). More types arrive with later features (expense correction and removal).
          * @enum {string}
          */
-        NotificationType: "MEMBER_JOINED" | "INVITATION_DECLINED" | "MEMBER_PROMOTED" | "PAYMENT_CONFIRMED" | "PAYMENT_REJECTED" | "DEBT_WAIVED" | "EXPENSE_RECORDED";
+        NotificationType: "MEMBER_JOINED" | "INVITATION_DECLINED" | "MEMBER_PROMOTED" | "MEMBER_REMOVED" | "PAYMENT_CONFIRMED" | "PAYMENT_REJECTED" | "DEBT_WAIVED" | "EXPENSE_RECORDED";
         Notification: {
             /** Format: uuid */
             id: string;
@@ -1020,6 +1062,13 @@ export interface operations {
                      *           "displayName": "Bob",
                      *           "role": "MEMBER"
                      *         }
+                     *       ],
+                     *       "formerMembers": [
+                     *         {
+                     *           "userId": "aaaaaaaa-0000-0000-0000-000000000004",
+                     *           "displayName": "David",
+                     *           "role": "MEMBER"
+                     *         }
                      *       ]
                      *     }
                      */
@@ -1164,6 +1213,114 @@ export interface operations {
                      *       "status": 409,
                      *       "code": "ALREADY_ADMIN",
                      *       "detail": "This member is already an admin"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    leaveGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Left the group */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["NotAMember"];
+            404: components["responses"]["GroupNotFound"];
+            /** @description The caller's balance is not zero, or the caller is the last admin and others remain */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    removeMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+                userId: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            /** @description The caller is not a member of the group, or is a member but not an admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unknown group, or the person is not an active member of it */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The member's balance is not zero */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Conflict",
+                     *       "status": 409,
+                     *       "code": "BALANCE_NOT_ZERO",
+                     *       "detail": "This member's balance must be settled first"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description The admin tried to remove themselves */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Unprocessable Entity",
+                     *       "status": 422,
+                     *       "code": "CANNOT_REMOVE_YOURSELF",
+                     *       "detail": "Use Leave group to leave it yourself"
                      *     }
                      */
                     "application/problem+json": components["schemas"]["Problem"];

@@ -431,6 +431,21 @@ describe("ExpenseList", () => {
     expect(taxi).toHaveTextContent("your part -3,33 €");
   });
 
+  it("namesAPayerWhoLeftAsLeft", () => {
+    // when Bob looks at a taxi that David paid before he left the group
+    render(
+      <ExpenseList
+        members={members}
+        formerMembers={[{ userId: "u4", displayName: "David", role: "MEMBER" }]}
+        currentUserId="u2"
+        expenses={[expense("e4", "Taxi", "30.00", "2027-07-19", "u4")]}
+      />,
+    );
+
+    // then (R13)
+    expect(screen.getByRole("listitem")).toHaveTextContent("David (left) paid");
+  });
+
   it("showsEmptyState", () => {
     render(<ExpenseList members={members} currentUserId="u2" expenses={[]} />);
 

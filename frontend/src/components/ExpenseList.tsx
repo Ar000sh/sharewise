@@ -24,10 +24,13 @@ function byDay(expenses: Expense[]): { date: string; expenses: Expense[] }[] {
 export function ExpenseList({
   expenses,
   members,
+  formerMembers = [],
   currentUserId,
 }: {
   expenses: Expense[];
   members: Member[];
+  /** People who left or were removed: old expenses name them as "Bob (left)" (R13). */
+  formerMembers?: Member[];
   currentUserId: string;
 }) {
   if (expenses.length === 0) {
@@ -39,7 +42,12 @@ export function ExpenseList({
     );
   }
 
-  const nameOf = (id: string) => members.find((m) => m.userId === id)?.displayName ?? "Former member";
+  const nameOf = (id: string) => {
+    const member = members.find((m) => m.userId === id);
+    if (member) return member.displayName;
+    const former = formerMembers.find((m) => m.userId === id);
+    return former ? `${former.displayName} (left)` : "Former member";
+  };
 
   return (
     <div className="flex flex-col gap-2">

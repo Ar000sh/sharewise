@@ -25,6 +25,8 @@ function describe(entry: Notification): string {
       return `${who} declined your invitation to ${group}`;
     case "MEMBER_PROMOTED":
       return `${who} made you an admin of ${group}`;
+    case "MEMBER_REMOVED":
+      return `${who} removed you from ${group}`;
     case "PAYMENT_CONFIRMED":
       return `${who} confirmed your payment in ${group}`;
     case "PAYMENT_REJECTED":

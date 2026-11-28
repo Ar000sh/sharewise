@@ -7,6 +7,7 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import { ExpenseList } from "@/components/ExpenseList";
 import { GroupHero } from "@/components/GroupHero";
 import { InviteForm } from "@/components/InviteForm";
+import { LeaveGroup } from "@/components/LeaveGroup";
 import { MemberList } from "@/components/MemberList";
 import { SettleUpTab } from "@/components/SettleUpTab";
 import { useCurrentUser } from "@/lib/currentUser";
@@ -69,7 +70,12 @@ export function GroupDetail({ groupId }: { groupId: string }) {
         <div className="flex flex-col gap-4">
           <ErrorBanner error={expensesError} />
           {expenses && me ? (
-            <ExpenseList expenses={expenses} members={group.members} currentUserId={me.userId} />
+            <ExpenseList
+              expenses={expenses}
+              members={group.members}
+              formerMembers={group.formerMembers}
+              currentUserId={me.userId}
+            />
           ) : (
             <p>Loading…</p>
           )}
@@ -81,11 +87,14 @@ export function GroupDetail({ groupId }: { groupId: string }) {
         <section className="flex flex-col gap-3">
           <MemberList
             members={group.members}
+            formerMembers={group.formerMembers}
             currentUserId={me?.userId}
             balances={balances}
             promote={isAdmin ? { groupId: group.id, onPromoted: markChanged } : undefined}
+            remove={isAdmin ? { groupId: group.id, onRemoved: markChanged } : undefined}
           />
           {isAdmin && <InviteForm groupId={group.id} />}
+          <LeaveGroup groupId={group.id} groupName={group.name} />
         </section>
       )}
     </div>

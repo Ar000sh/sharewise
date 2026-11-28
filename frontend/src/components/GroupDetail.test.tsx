@@ -10,6 +10,8 @@ import { markGroupChanged } from "@/lib/useGroupChange";
 import { LOOK_AGAIN_AFTER_MS } from "@/lib/useLookAgain";
 
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<typeof import("@/lib/api")>()), api: vi.fn() }));
+// The Members tab has "Leave group", which navigates after leaving.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 const apiMock = vi.mocked(api);
 afterEach(() => {
