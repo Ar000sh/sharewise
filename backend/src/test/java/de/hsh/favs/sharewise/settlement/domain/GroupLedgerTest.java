@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import de.hsh.favs.sharewise.MutableClock;
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
+import de.hsh.favs.sharewise.expense.api.ExpenseCorrected;
+import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.expense.api.ExpenseRemoved;
 import de.hsh.favs.sharewise.settlement.ExpenseRecordedFixture;
 import de.hsh.favs.sharewise.settlement.api.DebtWaived;
 import de.hsh.favs.sharewise.settlement.api.MemberBalance;
@@ -149,6 +152,66 @@ class GroupLedgerTest {
 		assertThat(plan.plannedAmount(carol, alice)).isEqualTo(Money.eur("270.00"));
 		assertThat(plan.plannedAmount(david, alice)).isEqualTo(Money.eur("270.00"));
 		assertThat(plan.plannedAmount(bob, alice)).isEqualTo(Money.eur("90.00"));
+	}
+
+	@Test
+	void aCorrectionBooksOnlyTheDifferenceWithItsOwnReference() {
+		// given the dinner of the Mallorca example: 180.00 by bob, four ways (45.00 each)
+		ExpenseRecorded dinner = new ExpenseRecordedFixture().paidBy(bob).withTotalAmount("180.00").build();
+		ledger.appendExpenseEntry(dinner, MutableClock.START);
+		UUID revision = UUID.randomUUID();
+
+		// when it is corrected to 200.00 (50.00 each; numbers checked by script, design
+		// 2026-11-28-expense-correction)
+		ledger.appendCorrectionReversal(corrected(dinner, revision, "200.00"), MutableClock.START);
+
+		// then bob's paid +20.00 and four owed -5.00, all with the correction's id
+		assertThat(ledger.entries()).filteredOn(e -> e.referenceId().equals(revision))
+			.extracting(LedgerEntry::userId, LedgerEntry::type, LedgerEntry::deltaAmount)
+			.containsExactlyInAnyOrder(tuple(bob, LedgerEntryType.EXPENSE_PAID, Money.eur("20.00")),
+					tuple(alice, LedgerEntryType.EXPENSE_OWED, Money.eur("-5.00")),
+					tuple(bob, LedgerEntryType.EXPENSE_OWED, Money.eur("-5.00")),
+					tuple(carol, LedgerEntryType.EXPENSE_OWED, Money.eur("-5.00")),
+					tuple(david, LedgerEntryType.EXPENSE_OWED, Money.eur("-5.00")));
+		assertThat(balanceOf(bob)).isEqualTo(Money.eur("150.00"));
+		assertThat(balanceOf(alice)).isEqualTo(Money.eur("-50.00"));
+	}
+
+	@Test
+	void aCorrectionThatChangesNobodysAmountBooksNothing() {
+		// given
+		ExpenseRecorded dinner = new ExpenseRecordedFixture().paidBy(bob).withTotalAmount("180.00").build();
+		ledger.appendExpenseEntry(dinner, MutableClock.START);
+
+		// when only the title or the date changed
+		ledger.appendCorrectionReversal(corrected(dinner, UUID.randomUUID(), "180.00"), MutableClock.START);
+
+		// then
+		assertThat(ledger.entries()).hasSize(5);
+	}
+
+	@Test
+	void aRemovalTakesTheExpenseBackSoEveryBalanceIsZeroAgain() {
+		// given
+		ExpenseRecorded dinner = new ExpenseRecordedFixture().paidBy(bob).withTotalAmount("180.00").build();
+		ledger.appendExpenseEntry(dinner, MutableClock.START);
+
+		// when (R8)
+		ledger.appendRemovalReversal(new ExpenseRemoved(dinner.expenseId(), dinner.groupId(), UUID.randomUUID(), bob,
+				dinner.paidBy(), dinner.totalAmount(), dinner.shares(), MutableClock.START), MutableClock.START);
+
+		// then
+		assertThat(ledger.projectBalances()).extracting(MemberBalance::netBalance).containsOnly(Money.eur("0.00"));
+	}
+
+	/**
+	 * The same expense, corrected to {@code total} split equally between the same four.
+	 */
+	private ExpenseCorrected corrected(ExpenseRecorded expense, UUID revision, String total) {
+		ExpenseRecorded after = new ExpenseRecordedFixture().paidBy(expense.paidBy()).withTotalAmount(total).build();
+		return new ExpenseCorrected(expense.expenseId(), expense.groupId(), revision, bob, expense.paidBy(),
+				expense.totalAmount(), expense.shares(), after.paidBy(), after.totalAmount(), after.shares(),
+				MutableClock.START);
 	}
 
 	@Test

@@ -1,6 +1,8 @@
 package de.hsh.favs.sharewise.settlement.domain;
 
+import de.hsh.favs.sharewise.expense.api.ExpenseCorrected;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.expense.api.ExpenseRemoved;
 import de.hsh.favs.sharewise.settlement.api.DebtWaived;
 import de.hsh.favs.sharewise.settlement.api.MemberBalance;
 import de.hsh.favs.sharewise.settlement.api.SettlementPaymentConfirmed;
@@ -57,6 +59,47 @@ public class GroupLedger {
 			entries.add(new LedgerEntry(this, share.participantId(), share.owedShare().negate(),
 					LedgerEntryType.EXPENSE_OWED, expense.expenseId().value(), occurredAt));
 		}
+	}
+
+	/**
+	 * Books a correction as the difference between the new and the old version: one
+	 * {@code EXPENSE_PAID} and one {@code EXPENSE_OWED} entry per person whose amount
+	 * changed, all referencing the correction (R7, R14, design
+	 * 2026-11-28-expense-correction E5). The booking adds up to zero, and the result is
+	 * the same in whatever order the events arrive, because it only adds.
+	 */
+	public void appendCorrectionReversal(ExpenseCorrected correction, Instant occurredAt) {
+		Map<UserId, Money> paid = new LinkedHashMap<>();
+		paid.merge(correction.previousPaidBy(), correction.previousTotalAmount().negate(), Money::plus);
+		paid.merge(correction.paidBy(), correction.totalAmount(), Money::plus);
+		Map<UserId, Money> owed = new LinkedHashMap<>();
+		correction.previousShares().forEach(share -> owed.merge(share.participantId(), share.owedShare(), Money::plus));
+		correction.shares()
+			.forEach(share -> owed.merge(share.participantId(), share.owedShare().negate(), Money::plus));
+		appendChanges(paid, LedgerEntryType.EXPENSE_PAID, correction.revisionId(), occurredAt);
+		appendChanges(owed, LedgerEntryType.EXPENSE_OWED, correction.revisionId(), occurredAt);
+	}
+
+	/**
+	 * Takes a removed expense back: the payer is debited what they paid, every
+	 * participant credited their share, all referencing the removal (R8, R14, design
+	 * 2026-11-28-expense-correction E5).
+	 */
+	public void appendRemovalReversal(ExpenseRemoved removal, Instant occurredAt) {
+		entries.add(new LedgerEntry(this, removal.paidBy(), removal.totalAmount().negate(),
+				LedgerEntryType.EXPENSE_PAID, removal.removalId(), occurredAt));
+		for (var share : removal.shares()) {
+			entries.add(new LedgerEntry(this, share.participantId(), share.owedShare(), LedgerEntryType.EXPENSE_OWED,
+					removal.removalId(), occurredAt));
+		}
+	}
+
+	private void appendChanges(Map<UserId, Money> changes, LedgerEntryType type, UUID referenceId, Instant occurredAt) {
+		changes.forEach((user, delta) -> {
+			if (!delta.isZero()) {
+				entries.add(new LedgerEntry(this, user, delta, type, referenceId, occurredAt));
+			}
+		});
 	}
 
 	/**
