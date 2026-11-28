@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { components } from "@/api/schema";
 import { Avatar } from "@/components/Avatar";
+import { Dialog } from "@/components/Dialog";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { api } from "@/lib/api";
 import { amountToCents, formatSignedEuro } from "@/lib/money";
@@ -17,11 +18,37 @@ type Props = {
   balances?: Balance[];
   /** Set only for an admin: then every member who is not an admin yet gets a "Make admin" button. */
   promote?: { groupId: string; onPromoted: () => void };
+  /** Set only for an admin: then every other member gets a "Remove" button (J11; the backend checks R11). */
+  remove?: { groupId: string; onRemoved: () => void };
+  /** People who left or were removed (R13), listed under the members. */
+  formerMembers?: Member[];
 };
 
-export function MemberList({ members, currentUserId, balances, promote }: Props) {
+export function MemberList({ members, currentUserId, balances, promote, remove, formerMembers = [] }: Props) {
   const [busyId, setBusyId] = useState<string>();
   const [error, setError] = useState<unknown>();
+  const [removing, setRemoving] = useState<Member>();
+  const [removeError, setRemoveError] = useState<unknown>();
+
+  async function removeMember(member: Member) {
+    if (!remove) return;
+    setBusyId(member.userId);
+    try {
+      await api(`/groups/${remove.groupId}/members/${member.userId}`, { method: "DELETE" });
+      setRemoving(undefined);
+      setRemoveError(undefined);
+      remove.onRemoved();
+    } catch (e) {
+      setRemoveError(e);
+    } finally {
+      setBusyId(undefined);
+    }
+  }
+
+  function closeRemove() {
+    setRemoving(undefined);
+    setRemoveError(undefined);
+  }
 
   async function makeAdmin(member: Member) {
     if (!promote) return;
@@ -70,11 +97,50 @@ export function MemberList({ members, currentUserId, balances, promote }: Props)
                 Make admin
               </button>
             )}
+            {remove && m.userId !== currentUserId && (
+              <button
+                type="button"
+                onClick={() => setRemoving(m)}
+                disabled={busyId === m.userId}
+                aria-label={`Remove ${m.displayName}`}
+                className="btn-secondary"
+              >
+                Remove
+              </button>
+            )}
           </li>
           );
         })}
       </ul>
       <ErrorBanner error={error} />
+      {formerMembers.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <h3 className="text-sm font-bold text-muted">Former members</h3>
+          <p className="text-sm text-muted">{formerMembers.map((m) => m.displayName).join(", ")}</p>
+        </div>
+      )}
+      {removing && (
+        <Dialog title={`Remove ${removing.displayName}?`} onClose={closeRemove}>
+          <p>
+            {removing.displayName} will no longer be in the group, but stays visible in old expenses. This only works when
+            their balance is 0.
+          </p>
+          <ErrorBanner error={removeError} />
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => void removeMember(removing)}
+              disabled={busyId === removing.userId}
+              className="btn-primary"
+            >
+              Remove {removing.displayName}
+            </button>
+            <button type="button" onClick={closeRemove} className="btn-secondary">
+              Cancel
+            </button>
+          </div>
+        </Dialog>
+      )}
     </section>
   );
 }

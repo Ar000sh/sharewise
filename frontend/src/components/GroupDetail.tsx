@@ -7,6 +7,8 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import { ExpenseList } from "@/components/ExpenseList";
 import { GroupHero } from "@/components/GroupHero";
 import { InviteForm } from "@/components/InviteForm";
+import { GroupLifecycle } from "@/components/GroupLifecycle";
+import { LeaveGroup } from "@/components/LeaveGroup";
 import { MemberList } from "@/components/MemberList";
 import { SettleUpTab } from "@/components/SettleUpTab";
 import { useCurrentUser } from "@/lib/currentUser";
@@ -39,10 +41,13 @@ export function GroupDetail({ groupId }: { groupId: string }) {
 
   // Only a hint for the screen: the backend refuses non-admins with 403 NOT_AN_ADMIN whatever the UI shows.
   const isAdmin = group.members.some((m) => m.userId === me?.userId && m.role === "ADMIN");
+  // An archived group is read-only history (L6): no member changes either.
+  const archived = group.status === "ARCHIVED";
 
   return (
     <div className="flex flex-col gap-6 pb-20 sm:pb-0">
       <GroupHero group={group} currentUserId={me?.userId} waiting={waiting} onOpenSettleUp={() => setTab("Settle up")} />
+      <GroupLifecycle groupId={group.id} status={group.status} isAdmin={isAdmin} onChanged={markChanged} />
       <ErrorBanner error={error} />
       <div role="tablist" aria-label="Group sections" className="flex gap-2 overflow-x-auto pb-1">
         {TABS.map((t) => (
@@ -69,7 +74,13 @@ export function GroupDetail({ groupId }: { groupId: string }) {
         <div className="flex flex-col gap-4">
           <ErrorBanner error={expensesError} />
           {expenses && me ? (
-            <ExpenseList expenses={expenses} members={group.members} currentUserId={me.userId} />
+            <ExpenseList
+              expenses={expenses}
+              members={group.members}
+              formerMembers={group.formerMembers}
+              currentUserId={me.userId}
+              change={group.status === "OPEN" ? { groupId: group.id, isAdmin, onChanged: markChanged } : undefined}
+            />
           ) : (
             <p>Loading…</p>
           )}
@@ -81,11 +92,14 @@ export function GroupDetail({ groupId }: { groupId: string }) {
         <section className="flex flex-col gap-3">
           <MemberList
             members={group.members}
+            formerMembers={group.formerMembers}
             currentUserId={me?.userId}
             balances={balances}
-            promote={isAdmin ? { groupId: group.id, onPromoted: markChanged } : undefined}
+            promote={isAdmin && !archived ? { groupId: group.id, onPromoted: markChanged } : undefined}
+            remove={isAdmin && !archived ? { groupId: group.id, onRemoved: markChanged } : undefined}
           />
-          {isAdmin && <InviteForm groupId={group.id} />}
+          {isAdmin && group.status === "OPEN" && <InviteForm groupId={group.id} />}
+          {!archived && <LeaveGroup groupId={group.id} groupName={group.name} />}
         </section>
       )}
     </div>

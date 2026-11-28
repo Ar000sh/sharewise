@@ -25,6 +25,15 @@ function describe(entry: Notification): string {
       return `${who} declined your invitation to ${group}`;
     case "MEMBER_PROMOTED":
       return `${who} made you an admin of ${group}`;
+    case "MEMBER_REMOVED":
+      return `${who} removed you from ${group}`;
+    case "GROUP_CLOSED":
+      return `${who} closed ${group} for settlement`;
+    case "GROUP_REOPENED":
+      return `${who} reopened ${group}`;
+    case "GROUP_ARCHIVED":
+      // An automatic archive has no actor: the last balance reached 0.
+      return entry.actor ? `${who} archived ${group}` : `${group} was archived: everybody is settled`;
     case "PAYMENT_CONFIRMED":
       return `${who} confirmed your payment in ${group}`;
     case "PAYMENT_REJECTED":
@@ -33,6 +42,10 @@ function describe(entry: Notification): string {
       return `${who} waived part of your debt in ${group}`;
     case "EXPENSE_RECORDED":
       return `${who} recorded an expense in ${group}`;
+    case "EXPENSE_CORRECTED":
+      return `${who} corrected an expense in ${group}`;
+    case "EXPENSE_REMOVED":
+      return `${who} removed an expense in ${group}`;
   }
 }
 

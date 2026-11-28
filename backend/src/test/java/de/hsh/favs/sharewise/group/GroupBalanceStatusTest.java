@@ -5,6 +5,7 @@ import static org.awaitility.Awaitility.await;
 
 import de.hsh.favs.sharewise.ModuleIntegrationTest;
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
+import de.hsh.favs.sharewise.group.api.GroupStatus;
 import de.hsh.favs.sharewise.group.domain.Membership;
 import de.hsh.favs.sharewise.group.persistence.GroupRepository;
 import de.hsh.favs.sharewise.group.web.GroupRequests;
@@ -26,11 +27,11 @@ import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * {@code Membership.hasZeroBalance} follows the ledger across the module boundary (D12):
- * the ledger publishes {@code MemberBalanceStatusChanged} in {@code shared.events}, the
- * group reacts asynchronously after the commit, so every assertion waits for it. Real
- * accounts and a real group; the flag is read through the repository because no public
- * API exposes it yet.
+ * {@code Membership.hasZeroBalance} follows the ledger across the module boundary (D12),
+ * and a closed group archives itself on {@code AllBalancesSettled} (L5): the ledger
+ * publishes both events in {@code shared.events}, the group reacts asynchronously after
+ * the commit, so every assertion waits for it. Real accounts and a real group; the flag
+ * is read through the repository because no public API exposes it yet.
  */
 @ModuleIntegrationTest
 class GroupBalanceStatusTest {
@@ -102,6 +103,46 @@ class GroupBalanceStatusTest {
 			assertThat(hasZeroBalance(bob)).isTrue();
 		});
 		assertThat(hasZeroBalance(carol)).isTrue();
+	}
+
+	@Test
+	void theLastConfirmedPaymentOfAClosedGroupArchivesItAutomatically() throws Exception {
+		// given Bob owes Alice 10.00, and Alice closed the group for settlement (L4:
+		// balances need not be 0)
+		bookExpenseByAliceForAliceAndBob();
+		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(hasZeroBalance(bob)).isFalse());
+		new GroupRequests(mvc, json).close(trip.value(), alice);
+
+		// when Bob pays and Alice confirms, so every balance is 0 (AllBalancesSettled)
+		SettlementPayment payment = payments
+			.record(new RecordSettlementPaymentCommand(trip, bob.userId(), alice.userId(), Money.eur("10.00"), null));
+		payments.confirm(alice.userId(), payment.paymentId());
+
+		// then the group archives itself (L5)
+		await().atMost(Duration.ofSeconds(10))
+			.untilAsserted(() -> assertThat(status()).isEqualTo(GroupStatus.ARCHIVED));
+	}
+
+	@Test
+	void settlingEveryBalanceOfAnOpenGroupLeavesItOpen() {
+		// given Bob owes Alice 10.00 in an open group
+		bookExpenseByAliceForAliceAndBob();
+		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(hasZeroBalance(bob)).isFalse());
+
+		// when Bob pays and Alice confirms
+		SettlementPayment payment = payments
+			.record(new RecordSettlementPaymentCommand(trip, bob.userId(), alice.userId(), Money.eur("10.00"), null));
+		payments.confirm(alice.userId(), payment.paymentId());
+
+		// then the balances are 0, but the group stays open (design
+		// 2026-11-28-group-lifecycle G2)
+		await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(hasZeroBalance(bob)).isTrue());
+		assertThat(status()).isEqualTo(GroupStatus.OPEN);
+	}
+
+	private GroupStatus status() {
+		return new TransactionTemplate(transactions)
+			.execute(status -> groups.findById(trip.value()).orElseThrow().status());
 	}
 
 	private void bookExpenseByAliceForAliceAndBob() {

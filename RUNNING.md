@@ -1,6 +1,6 @@
 # Running ShareWise
 
-Sign up, create a group, invite friends, record an equal-split expense, see who owes what, settle up (report a payment,
+Sign up, create a group, invite friends, record an expense (split equally, by exact amounts or by percentages), see who owes what, settle up (report a payment,
 the creditor confirms or rejects it, or forgives a debt). Accounts and passwords
 belong to Keycloak (the identity provider); ShareWise never sees a password. The Next.js server keeps the tokens in an
 httpOnly cookie.
@@ -94,6 +94,21 @@ cookie is per browser.
    -180,00 €, Carol 0,00 €. The payment history at the bottom of Settle up lists Carol's payment as confirmed.
 7. **Alice:** **Waive debt** on Bob's row opens a dialog about Bob; give a reason and **Waive debt**. Bob's debt is
    forgiven at once, no confirmation needed, and the plan says "Everybody is settled."
+8. **Leaving and removal** (balances must be 0, R11): **Carol** opens the Members tab and presses **Leave group**; the
+   group disappears from her list, and the expense list shows her as "Carol Tester (left)". **Alice** can press
+   **Remove** next to a member instead; the removed person's inbox says "… removed you from Mallorca 2027". With a
+   balance the dialog says "The balance must be 0 first"; the last admin is told to make another member an admin first.
+9. **Closing and archiving** (L1 to L6): **Alice** presses **Close for settlement** under the group header and confirms.
+   Everybody sees "Closed for settlement" and no **Add expense** any more; settling up still works, and the others' inbox
+   says "Alice … closed Mallorca 2027 for settlement". **Reopen group** undoes it. When the last payment is confirmed
+   the group archives itself ("Mallorca 2027 was archived: everybody is settled"); with all balances at 0 already,
+   Alice presses **Archive group**. An archived group is read-only.
+10. **Correcting and removing an expense** (R6 to R8, R10; do it while the group is open, before step 8): on the
+    Expenses tab the recorder, the payer or an admin sees **Correct** and **Remove** on an expense. **Correct** opens
+    the form with the old values; change the amount, give a reason and **Save correction**. The row gets a "Corrected"
+    badge, **History** shows the old version, and the balances move by the difference only. **Remove** asks first; the
+    row stays struck through with "no longer counts". The others' inbox says "… corrected (removed) an expense in
+    Mallorca 2027". An expense of somebody who has left can no longer change.
 
 ## Tests
 

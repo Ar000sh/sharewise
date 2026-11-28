@@ -16,7 +16,7 @@ The consequence that surprises people: *a payment can change the plan only after
 ## 2. Words
 | Word | Meaning | Where |
 |---|---|---|
-| **Expense** | something one person paid for the group, split between participants (today only EQUAL, R4) | `expense` module |
+| **Expense** | something one person paid for the group, split between participants (EQUAL, EXACT or PERCENTAGE, all built, R4) | `expense` module |
 | **Share** (`ExpenseShare`) | what one participant owes for one expense | event `ExpenseRecorded` |
 | **Ledger entry** | one signed amount for one person, with a type and a reference (the expense or payment id) | `settlement.domain.LedgerEntry` |
 | **Balance** | sum of a person's entries. Positive: the group owes them. Negative: they owe the group | query `GroupLedgerRepository.totals` |
@@ -185,7 +185,7 @@ Once Alice answers, the picture clears: confirmed gives Alice −50.00, Bob 0.00
 ## 10. Where each rule lives (so it is checked once)
 | Rule | Enforced in | Tested in |
 |---|---|---|
-| R4 shares add up, remainder to the first | `EqualSplit`, `Expense.record` | `ExpenseTest`, `EqualSplitTest` |
+| R4 remainder by largest leftover; typed amounts positive; shares add up to the total | `EqualSplit`, `PercentageSplit` (remainder); `ExactSplit` (typed amounts, positive); `Expense.record` (the sum) | `EqualSplitTest`, `PercentageSplitTest`, `ExpenseTest` |
 | R14 ledger entries per expense/payment | `GroupLedger.append*` | `GroupLedgerTest` |
 | R15 fewest transfers | `SettlementPlan` | `SettlementPlanTest` (the A+3, B+3, C−6, D+5, E−5 case separates exact from greedy) |
 | R16 payment counts only after confirm | `SettlementPayment` states + booking only in the listener | `SettlementPaymentTest`, `MallorcaSliceTest` |
@@ -195,13 +195,13 @@ Once Alice answers, the picture clears: confirmed gives Alice −50.00, Bob 0.00
 
 ## 11. Limits we know and accept
 - Plan above 16 people is greedy and says nothing (the limit is more careful than it needs to be and the alternatives are weighed in section 14).
-- An equal split with a remainder always gives the extra cents to the first participants in the order given (section 12).
+- An equal split with a remainder always gives the extra cents to the first participants in the order given; a percentage split gives them by largest leftover (section 12).
 - The reject reason replaces the debtor's note (one `note` field).
 - A rejected or ignored PENDING payment keeps its reservation until the creditor answers; there is no timeout (parked, trigger: users complain).
 - Currency is EUR only in the settlement context.
 
 ## 12. Splitting money exactly: R4, cents, BigDecimal and the alternatives
-*Added 05.11.26. Nothing here changes the code; it records what we do, why, and what else we could do. Which choice is ours and which comes from the slides is stated per row. The professor's slides say nothing about how to round a split.*
+*Added 05.11.26. This section describes the equal split as it was then; the paragraph "Since the exact and percentage splits" in 12.1 (design 2026-11-17, D4) says what changed: percentages use the largest leftover and equal splits keep their result. The section records what we do, why, and what else we could do. Which choice is ours and which comes from the slides is stated per row. The professor's slides say nothing about how to round a split.*
 
 ### 12.1 What happens now
 `EqualSplit.split` (`expense.domain`) works in whole cents: `base = total / n` (integer division), `remainder = total % n`, and the first `remainder` participants, in the order the request gave, get one cent more. The shares therefore **always add up to the total** (no cent is lost or invented), but they are **not always equal**.
@@ -213,6 +213,8 @@ Once Alice answers, the picture clears: confirmed gives Alice −50.00, Bob 0.00
 | 900.00 | 3 | 300.00, 300.00, 300.00 | 900.00 (no remainder, all equal) |
 
 "Exact" can mean two things. *The shares sum exactly to the total*: met, always. *Everybody pays exactly the same*: impossible in whole cents whenever the total is not divisible by the number of people (1000 cents / 3 = 333.33... cents). Any rule has to put the leftover cents on somebody; the only choice is who.
+
+**Since the exact and percentage splits (design 2026-11-17, D4)** a percentage split works with the *largest leftover*: each share is `total * percentage / 100` rounded down to whole cents, and the cents still missing go one each to the participants whose exact share lost the most to the rounding; on a tie, to the first in the order given. This is a new rule that gives option A's result (below) for an equal split: every exact share has the same fraction, so all ties go to the first participants and the result is unchanged. An exact split needs no rounding, the amounts are the shares and must add up to the total (`SHARES_NOT_TOTAL`).
 
 ### 12.2 Who gets the leftover cents: the options
 | Option | Rule | For | Against |

@@ -2,11 +2,20 @@ package de.hsh.favs.sharewise.notification.application;
 
 import de.hsh.favs.sharewise.account.api.UserProfile;
 import de.hsh.favs.sharewise.account.api.UserProfiles;
+import de.hsh.favs.sharewise.expense.api.ExpenseCorrected;
+import de.hsh.favs.sharewise.expense.api.ExpenseId;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.expense.api.ExpenseRemoved;
+import de.hsh.favs.sharewise.expense.api.ExpenseShare;
+import de.hsh.favs.sharewise.group.api.GroupArchived;
+import de.hsh.favs.sharewise.group.api.GroupClosedForSettlement;
 import de.hsh.favs.sharewise.group.api.GroupDirectory;
+import de.hsh.favs.sharewise.group.api.GroupMembership;
+import de.hsh.favs.sharewise.group.api.GroupReopened;
 import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
 import de.hsh.favs.sharewise.group.api.MemberPromoted;
+import de.hsh.favs.sharewise.group.api.MemberRemoved;
 import de.hsh.favs.sharewise.notification.domain.Notification;
 import de.hsh.favs.sharewise.notification.domain.NotificationId;
 import de.hsh.favs.sharewise.notification.domain.NotificationType;
@@ -20,6 +29,7 @@ import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -59,13 +69,16 @@ public class NotificationService {
 
 	private final GroupDirectory groups;
 
+	private final GroupMembership groupMembers;
+
 	private final Clock clock;
 
 	NotificationService(NotificationRepository notifications, UserProfiles profiles, GroupDirectory groups,
-			Clock clock) {
+			GroupMembership groupMembers, Clock clock) {
 		this.notifications = notifications;
 		this.profiles = profiles;
 		this.groups = groups;
+		this.groupMembers = groupMembers;
 		this.clock = clock;
 	}
 
@@ -96,6 +109,57 @@ public class NotificationService {
 	public void recordMemberPromoted(MemberPromoted event) {
 		record(Notification.notify(event.userId(), NotificationType.MEMBER_PROMOTED, event.groupId(),
 				event.promotedBy(), event.userId().value(), event.occurredAt()));
+	}
+
+	/** Tells a person that an admin removed them from the group (J11). */
+	@Transactional
+	public void recordMemberRemoved(MemberRemoved event) {
+		record(Notification.notify(event.userId(), NotificationType.MEMBER_REMOVED, event.groupId(), event.removedBy(),
+				event.userId().value(), event.occurredAt()));
+	}
+
+	/**
+	 * Tells every member except the admin that the group was closed for settlement (J12).
+	 */
+	@Transactional
+	public void recordGroupClosed(GroupClosedForSettlement event) {
+		for (UserId member : membersExcept(event.groupId(), event.closedBy())) {
+			record(Notification.notify(member, NotificationType.GROUP_CLOSED, event.groupId(), event.closedBy(),
+					event.groupId().value(), event.occurredAt()));
+		}
+	}
+
+	/** Tells every member except the admin that the group is open again (J12b). */
+	@Transactional
+	public void recordGroupReopened(GroupReopened event) {
+		for (UserId member : membersExcept(event.groupId(), event.reopenedBy())) {
+			record(Notification.notify(member, NotificationType.GROUP_REOPENED, event.groupId(), event.reopenedBy(),
+					event.groupId().value(), event.occurredAt()));
+		}
+	}
+
+	/**
+	 * Tells every member except the admin that the group was archived (J13). An automatic
+	 * archive has no admin: everybody gets an entry without an actor (design 2026-11-28
+	 * G5).
+	 */
+	@Transactional
+	public void recordGroupArchived(GroupArchived event) {
+		for (UserId member : membersExcept(event.groupId(), event.archivedBy())) {
+			record(event.archivedBy() == null
+					? Notification.withoutActor(member, NotificationType.GROUP_ARCHIVED, event.groupId(),
+							event.groupId().value(), event.occurredAt())
+					: Notification.notify(member, NotificationType.GROUP_ARCHIVED, event.groupId(), event.archivedBy(),
+							event.groupId().value(), event.occurredAt()));
+		}
+	}
+
+	/**
+	 * The group's active members at the time the event is handled, without the person who
+	 * acted (none when {@code actor} is null) (design 2026-11-28 G6).
+	 */
+	private List<UserId> membersExcept(GroupId groupId, UserId actor) {
+		return groupMembers.members(groupId).stream().filter(member -> !member.equals(actor)).toList();
 	}
 
 	/** Tells the inviter that the invitation was turned down. */
@@ -133,13 +197,45 @@ public class NotificationService {
 	 */
 	@Transactional
 	public void recordExpenseRecorded(ExpenseRecorded event) {
+		notifyInvolved(NotificationType.EXPENSE_RECORDED, event.groupId(), event.recordedBy(), event.expenseId(),
+				event.occurredAt(), event.paidBy(), event.shares());
+	}
+
+	/**
+	 * Tells everybody involved in the old or the new version of a corrected expense,
+	 * except the person who corrected it (R7, design 2026-11-28 E8).
+	 */
+	@Transactional
+	public void recordExpenseCorrected(ExpenseCorrected event) {
+		var shares = new ArrayList<>(event.previousShares());
+		shares.addAll(event.shares());
+		notifyInvolved(NotificationType.EXPENSE_CORRECTED, event.groupId(), event.correctedBy(), event.expenseId(),
+				event.occurredAt(), event.previousPaidBy(), shares, event.paidBy());
+	}
+
+	/**
+	 * Tells everybody involved in a removed expense, except the person who removed it
+	 * (J6).
+	 */
+	@Transactional
+	public void recordExpenseRemoved(ExpenseRemoved event) {
+		notifyInvolved(NotificationType.EXPENSE_REMOVED, event.groupId(), event.removedBy(), event.expenseId(),
+				event.occurredAt(), event.paidBy(), event.shares());
+	}
+
+	/**
+	 * One entry per person among the participants and payers, without the actor, who
+	 * knows; a repeated event adds none.
+	 */
+	private void notifyInvolved(NotificationType type, GroupId groupId, UserId actor, ExpenseId expenseId,
+			Instant occurredAt, UserId paidBy, List<ExpenseShare> shares, UserId... morePayers) {
 		Set<UserId> involved = new LinkedHashSet<>();
-		event.shares().forEach(share -> involved.add(share.participantId()));
-		involved.add(event.paidBy());
-		involved.remove(event.recordedBy());
+		shares.forEach(share -> involved.add(share.participantId()));
+		involved.add(paidBy);
+		involved.addAll(List.of(morePayers));
+		involved.remove(actor);
 		for (UserId recipient : involved) {
-			record(Notification.notify(recipient, NotificationType.EXPENSE_RECORDED, event.groupId(),
-					event.recordedBy(), event.expenseId().value(), event.occurredAt()));
+			record(Notification.notify(recipient, type, groupId, actor, expenseId.value(), occurredAt));
 		}
 	}
 
@@ -153,14 +249,14 @@ public class NotificationService {
 	public NotificationList list(UserId caller, boolean unreadOnly, int limit) {
 		List<Notification> entries = notifications.findInbox(caller.value(), unreadOnly, PageRequest.of(0, limit));
 		Map<UserId, UserProfile> actors = profiles
-			.findProfiles(entries.stream().map(Notification::actor).collect(Collectors.toSet()))
+			.findProfiles(entries.stream().flatMap(n -> n.actor().stream()).collect(Collectors.toSet()))
 			.stream()
 			.collect(Collectors.toMap(UserProfile::userId, Function.identity(), (a, b) -> a));
 		Set<GroupId> groupIds = entries.stream().map(Notification::groupId).collect(Collectors.toSet());
 		Map<GroupId, String> names = groups.findNames(groupIds);
 		List<NotificationView> items = entries.stream()
-			.map(n -> new NotificationView(n.id(), n.type(), n.occurredAt(), n.readAt(), actors.get(n.actor()),
-					n.groupId(), names.get(n.groupId()), n.reference()))
+			.map(n -> new NotificationView(n.id(), n.type(), n.occurredAt(), n.readAt(),
+					n.actor().map(actors::get).orElse(null), n.groupId(), names.get(n.groupId()), n.reference()))
 			.toList();
 		return new NotificationList(notifications.countByRecipientIdAndReadAtIsNull(caller.value()), items);
 	}

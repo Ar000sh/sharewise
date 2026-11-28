@@ -43,17 +43,20 @@ export function GroupHero({
   const { lastChangedAt } = useGroupChange(group.id);
   const { updating } = useLookAgain(lastChangedAt, reload);
   const own = balances?.find((b) => b.userId === currentUserId);
+  const open = group.status === "OPEN";
 
   return (
     <section aria-label="Group" className="flex flex-col gap-4 rounded-3xl bg-surface-2 p-6 sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <h1 className="text-4xl sm:text-5xl">{group.name}</h1>
-        {/* The wrapper decides where it shows: btn-primary sets `display` itself. */}
-        <div className="hidden sm:block">
-          <Link href={`/groups/${group.id}/expenses/new`} className="btn-primary">
-            Add expense
-          </Link>
-        </div>
+        {/* The wrapper decides where it shows: btn-primary sets `display` itself. Only an open group takes expenses (R5). */}
+        {open && (
+          <div className="hidden sm:block">
+            <Link href={`/groups/${group.id}/expenses/new`} className="btn-primary">
+              Add expense
+            </Link>
+          </div>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
         <GroupStatusBadge status={group.status} />
@@ -69,11 +72,13 @@ export function GroupHero({
         </button>
       )}
       {/* On a phone the most frequent action stays in reach at the bottom of the screen (design U7). */}
-      <div className="fixed right-4 bottom-4 z-10 sm:hidden">
-        <Link href={`/groups/${group.id}/expenses/new`} className="btn-primary min-h-14 shadow-xl">
-          Add expense
-        </Link>
-      </div>
+      {open && (
+        <div className="fixed right-4 bottom-4 z-10 sm:hidden">
+          <Link href={`/groups/${group.id}/expenses/new`} className="btn-primary min-h-14 shadow-xl">
+            Add expense
+          </Link>
+        </div>
+      )}
     </section>
   );
 }

@@ -57,6 +57,14 @@ public class AccountFixture {
 			.withEmail("david@example.com");
 	}
 
+	/** The late joiner of the Mallorca example (R10). */
+	public static AccountFixture eve() {
+		return new AccountFixture().withId(seededId(5))
+			.withDisplayName("Eve")
+			.withUsername("eve")
+			.withEmail("eve@example.com");
+	}
+
 	/** A well-formed id that belongs to no account. */
 	public static UUID unknownId() {
 		return seededId(255);

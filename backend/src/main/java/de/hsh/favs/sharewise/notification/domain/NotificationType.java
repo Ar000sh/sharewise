@@ -1,10 +1,9 @@
 package de.hsh.favs.sharewise.notification.domain;
 
 /**
- * What an inbox entry is about. Each type is one event of another context. More types
- * arrive with later features (removal); a received invitation and a payment waiting for
- * the recipient's answer are not entries, they are state asked from the group and the
- * settlement context (I1).
+ * What an inbox entry is about. Each type is one event of another context; a received
+ * invitation and a payment waiting for the recipient's answer are not entries, they are
+ * state asked from the group and the settlement context (I1).
  */
 public enum NotificationType {
 
@@ -29,7 +28,30 @@ public enum NotificationType {
 	 */
 	EXPENSE_RECORDED,
 
+	/**
+	 * Somebody else corrected an expense the recipient is or was involved in (R7).
+	 */
+	EXPENSE_CORRECTED,
+
+	/** Somebody else removed an expense the recipient was involved in (J6). */
+	EXPENSE_REMOVED,
+
 	/** An admin made the recipient an admin. */
-	MEMBER_PROMOTED
+	MEMBER_PROMOTED,
+
+	/** An admin removed the recipient from the group (J11, design 2026-11-28 M7). */
+	MEMBER_REMOVED,
+
+	/** An admin closed the recipient's group for settlement (J12). */
+	GROUP_CLOSED,
+
+	/** An admin reopened the recipient's group (J12b). */
+	GROUP_REOPENED,
+
+	/**
+	 * The recipient's group was archived (J13), by an admin or automatically, then
+	 * without an actor.
+	 */
+	GROUP_ARCHIVED
 
 }

@@ -1,6 +1,8 @@
 package de.hsh.favs.sharewise.settlement.application;
 
+import de.hsh.favs.sharewise.expense.api.ExpenseCorrected;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.expense.api.ExpenseRemoved;
 import de.hsh.favs.sharewise.settlement.api.DebtWaived;
 import de.hsh.favs.sharewise.settlement.api.SettlementPaymentConfirmed;
 import de.hsh.favs.sharewise.settlement.domain.GroupLedger;
@@ -50,6 +52,25 @@ public class GroupLedgerService {
 	@Transactional
 	public void bookExpense(ExpenseRecorded expense) {
 		book(expense.groupId(), expense.expenseId().value(), (ledger, now) -> ledger.appendExpenseEntry(expense, now));
+	}
+
+	/**
+	 * Books a correction as the difference between the versions (R7, R14); idempotent,
+	 * because the entries reference the correction's own id.
+	 */
+	@Transactional
+	public void bookCorrection(ExpenseCorrected correction) {
+		book(correction.groupId(), correction.revisionId(),
+				(ledger, now) -> ledger.appendCorrectionReversal(correction, now));
+	}
+
+	/**
+	 * Takes a removed expense back (R8, R14); idempotent, because the entries reference
+	 * the removal's own id.
+	 */
+	@Transactional
+	public void bookRemoval(ExpenseRemoved removal) {
+		book(removal.groupId(), removal.removalId(), (ledger, now) -> ledger.appendRemovalReversal(removal, now));
 	}
 
 	/**

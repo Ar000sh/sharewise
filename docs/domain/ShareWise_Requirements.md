@@ -115,7 +115,7 @@ DDD slide 40: the **same person** plays a different role in each context. That i
 | **R1** | The amount of an expense is positive. | slide 69 |
 | **R2** | The payer is a member of the group at the moment the expense is recorded. | slide 69 |
 | **R3** | Every participant is a member of the group. An expense has at least 1 participant. The payer may or may not be a participant (the recorder must be one, see R18). ⚠ Slide 64 says 2..\*, see §8 | slide 69 + 🟢 |
-| **R4** | The shares add up exactly to the amount. With a percentage split, the percentages add up to 100 %. Remainder cents go to the first participant(s). | slide 69 + 🟢 rounding |
+| **R4** | The shares add up exactly to the amount. With a percentage split, the percentages add up to 100 %. Remainder cents go to the participants whose exact share lost the most to rounding; on a tie, to the first in the order given (so an equal split gives them to the first participants). | slide 69 + 🟢 rounding |
 | **R5** | Expenses can only be recorded, corrected or removed while the group is OPEN. | 🟢 |
 | **R6** | The recorder, the payer or an admin may correct or remove an expense. | 🟢 |
 | **R7** | A correction never overwrites silently. The old version stays in the history, the status becomes CORRECTED, and the participants are notified. | slide 69: "a finalized expense may not be changed directly" |
@@ -413,10 +413,10 @@ After these payments, everyone's balance is 0 (verified by script).
 - [ ] **How to check "payer belongs to the group"** (slide 69), when Expense only holds a GroupId (slide 67)? Either the application service checks it before the command, or Expense keeps a local membership copy fed by events.
 
 **Domain questions:**
-- [ ] **Correction after a settlement payment:** Bob already paid €202, then the hotel is corrected. Does Bob get a new debt or credit, and is he notified again?
+- [x] **Correction after a settlement payment:** Bob already paid €202, then the hotel is corrected. Does Bob get a new debt or credit, and is he notified again? Yes to both: the ledger books the difference, so Bob's balance moves by his change in share and the plan shows a new debt or credit; everybody involved gets EXPENSE_CORRECTED (design 2026-11-28-expense-correction E5, E8).
 - [ ] **Who may invite:** any member, or admins only?
-- [ ] **Rejoining:** can a former member be invited again, and do they keep their history?
-- [ ] **Auto-archive scope:** only from CLOSED_FOR_SETTLEMENT, or also an OPEN group whose balances happen to be 0?
+- [x] **Rejoining:** can a former member be invited again, and do they keep their history? Yes: an admin invites them like anybody else, and on accepting they get their old membership back with the new role; old expenses keep pointing at them (decided 25.11.26, design 2026-11-28-membership-exit M3).
+- [x] **Auto-archive scope:** only from CLOSED_FOR_SETTLEMENT, or also an OPEN group whose balances happen to be 0? Only from CLOSED_FOR_SETTLEMENT, as the lifecycle diagram draws it; a group whose balances are already 0 when it is closed stays closed until an admin archives it (decided 25.11.26, design 2026-11-28-group-lifecycle G1, G2).
 - [ ] **Deleting a group:** allowed for an OPEN group without expenses?
 - [ ] **Account deletion (GDPR):** the user still appears in a group's history.
 - [ ] **Placeholder members (J17) vs R9:** make an exception, or drop J17?

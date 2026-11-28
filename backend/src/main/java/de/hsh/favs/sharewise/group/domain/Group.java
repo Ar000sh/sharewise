@@ -1,14 +1,19 @@
 package de.hsh.favs.sharewise.group.domain;
 
+import de.hsh.favs.sharewise.group.api.GroupArchived;
+import de.hsh.favs.sharewise.group.api.GroupClosedForSettlement;
 import de.hsh.favs.sharewise.group.api.GroupCreated;
 import de.hsh.favs.sharewise.group.api.GroupMembershipView;
+import de.hsh.favs.sharewise.group.api.GroupReopened;
 import de.hsh.favs.sharewise.group.api.GroupRole;
 import de.hsh.favs.sharewise.group.api.GroupStatus;
 import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.InvitationId;
 import de.hsh.favs.sharewise.group.api.MemberInvited;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
+import de.hsh.favs.sharewise.group.api.MemberLeft;
 import de.hsh.favs.sharewise.group.api.MemberPromoted;
+import de.hsh.favs.sharewise.group.api.MemberRemoved;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;
@@ -28,6 +33,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Currency;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -117,10 +123,12 @@ public class Group {
 	 * The inviter is <em>not</em> checked here: the service calls {@link #requireAdmin}
 	 * first, as its own step, before it looks up the invitee.
 	 * @return the invitation and the {@link MemberInvited} event
-	 * @throws DomainException ALREADY_MEMBER when the invitee already is a member,
-	 * ALREADY_INVITED when the invitee has an open invitation to this group
+	 * @throws DomainException GROUP_NOT_OPEN when the group is closed or archived (J3),
+	 * ALREADY_MEMBER when the invitee already is a member, ALREADY_INVITED when the
+	 * invitee has an open invitation to this group
 	 */
 	public Invited inviteMember(UserId invitee, UserId inviter, GroupRole role, Instant now) {
+		requireOpenForNewMembers();
 		if (hasActiveMember(invitee)) {
 			throw new DomainException(ErrorCode.ALREADY_MEMBER, "This person is already a member of this group");
 		}
@@ -135,12 +143,14 @@ public class Group {
 	/**
 	 * Makes an active member an admin; one way, nobody is demoted. Only an admin may
 	 * promote (J10). The checks run in this order: the promoter is an admin
-	 * (NOT_A_MEMBER, NOT_AN_ADMIN), the user is an active member (MEMBER_NOT_FOUND), the
-	 * user is not an admin yet (ALREADY_ADMIN).
+	 * (NOT_A_MEMBER, NOT_AN_ADMIN), the group is not archived (GROUP_ARCHIVED, L6), the
+	 * user is an active member (MEMBER_NOT_FOUND), the user is not an admin yet
+	 * (ALREADY_ADMIN).
 	 * @return the {@link MemberPromoted} event
 	 */
 	public MemberPromoted promoteToAdmin(UserId user, UserId promotedBy, Instant now) {
 		requireAdmin(promotedBy);
+		requireNotArchived();
 		Membership membership = activeMemberships().stream()
 			.filter(m -> m.userId().equals(user))
 			.findFirst()
@@ -156,9 +166,10 @@ public class Group {
 	/**
 	 * Joins the user with the role the invitation carries (R9). The checks run in this
 	 * order: the invitation exists, is for this user and still pending
-	 * (INVITATION_NOT_FOUND), is not expired (INVITATION_EXPIRED), and the user is not a
-	 * member yet (ALREADY_MEMBER). The group's status is not checked yet because groups
-	 * cannot be closed before a later exercise.
+	 * (INVITATION_NOT_FOUND), is not expired (INVITATION_EXPIRED), the user is not a
+	 * member yet (ALREADY_MEMBER), and the group is OPEN (GROUP_NOT_OPEN, J3). A former
+	 * member gets their old membership back with the invitation's role (design 2026-11-28
+	 * M3).
 	 * @return the {@link MemberJoined} event, carrying who invited the user
 	 */
 	public MemberJoined acceptInvitation(InvitationId invitationId, UserId user, Instant now) {
@@ -167,9 +178,169 @@ public class Group {
 		if (hasActiveMember(user)) {
 			throw new DomainException(ErrorCode.ALREADY_MEMBER, "You are already a member of this group");
 		}
+		requireOpenForNewMembers();
 		invitation.accept();
-		memberships.add(new Membership(user, invitation.role(), now));
+		memberships.stream()
+			.filter(m -> m.userId().equals(user))
+			.findFirst()
+			.ifPresentOrElse(former -> former.rejoin(invitation.role(), now),
+					() -> memberships.add(new Membership(user, invitation.role(), now)));
 		return new MemberJoined(groupId(), user, invitation.role(), invitation.createdBy(), now);
+	}
+
+	/**
+	 * The member leaves the group and becomes a former member, still shown in old
+	 * expenses (J10, R13). Only at balance 0 (R11), as the ledger last reported it; the
+	 * last admin cannot leave while other members remain (R12). The checks run in this
+	 * order: the user is an active member (NOT_A_MEMBER), the group is not archived
+	 * (GROUP_ARCHIVED, L6), their balance is zero (BALANCE_NOT_ZERO), they are not the
+	 * last admin of a group with other members (LAST_ADMIN).
+	 * @return the {@link MemberLeft} event
+	 * @throws DomainException NOT_A_MEMBER, GROUP_ARCHIVED, BALANCE_NOT_ZERO, LAST_ADMIN
+	 */
+	public MemberLeft leaveGroup(UserId member, Instant now) {
+		Membership membership = activeMemberships().stream()
+			.filter(m -> m.userId().equals(member))
+			.findFirst()
+			.orElseThrow(() -> new DomainException(ErrorCode.NOT_A_MEMBER, "You are not a member of this group"));
+		requireNotArchived();
+		if (!membership.hasZeroBalance()) {
+			throw new DomainException(ErrorCode.BALANCE_NOT_ZERO, "Settle your balance before leaving the group");
+		}
+		boolean othersRemain = activeMemberships().size() > 1;
+		long admins = activeMemberships().stream().filter(m -> m.role() == GroupRole.ADMIN).count();
+		if (membership.role() == GroupRole.ADMIN && admins == 1 && othersRemain) {
+			throw new DomainException(ErrorCode.LAST_ADMIN, "Make another member an admin before you leave");
+		}
+		membership.leave();
+		return new MemberLeft(groupId(), member, now);
+	}
+
+	/**
+	 * An admin removes another member, who becomes a former member, still shown in old
+	 * expenses (J11, R13). Only at that member's balance 0 (R11). An admin cannot remove
+	 * themselves; leaving goes through {@link #leaveGroup}, where R12 applies (design
+	 * 2026-11-28 M5). The checks run in this order: the caller is an admin (NOT_A_MEMBER,
+	 * NOT_AN_ADMIN), the group is not archived (GROUP_ARCHIVED, L6), the target is not
+	 * the caller (CANNOT_REMOVE_YOURSELF), the target is an active member
+	 * (MEMBER_NOT_FOUND), the target's balance is zero (BALANCE_NOT_ZERO).
+	 * @return the {@link MemberRemoved} event
+	 * @throws DomainException NOT_A_MEMBER, NOT_AN_ADMIN, GROUP_ARCHIVED,
+	 * CANNOT_REMOVE_YOURSELF, MEMBER_NOT_FOUND, BALANCE_NOT_ZERO
+	 */
+	public MemberRemoved removeMember(UserId targetMember, UserId actingAdmin, Instant now) {
+		requireAdmin(actingAdmin);
+		requireNotArchived();
+		if (targetMember.equals(actingAdmin)) {
+			throw new DomainException(ErrorCode.CANNOT_REMOVE_YOURSELF, "Use Leave group to leave it yourself");
+		}
+		Membership membership = activeMemberships().stream()
+			.filter(m -> m.userId().equals(targetMember))
+			.findFirst()
+			.orElseThrow(
+					() -> new DomainException(ErrorCode.MEMBER_NOT_FOUND, "This person is not a member of this group"));
+		if (!membership.hasZeroBalance()) {
+			throw new DomainException(ErrorCode.BALANCE_NOT_ZERO, "This member's balance must be settled first");
+		}
+		membership.leave();
+		return new MemberRemoved(groupId(), targetMember, actingAdmin, now);
+	}
+
+	/**
+	 * An admin closes the group for settlement: expenses are frozen, settlement payments
+	 * stay possible (J12, L1 to L4). Balances need not be 0 (L4). The checks run in this
+	 * order: the caller is an admin (NOT_A_MEMBER, NOT_AN_ADMIN), the group is not
+	 * archived (GROUP_ARCHIVED), it is OPEN (GROUP_NOT_OPEN).
+	 * @return the {@link GroupClosedForSettlement} event
+	 * @throws DomainException NOT_A_MEMBER, NOT_AN_ADMIN, GROUP_ARCHIVED, GROUP_NOT_OPEN
+	 */
+	public GroupClosedForSettlement closeForSettlement(UserId actingAdmin, Instant now) {
+		requireAdmin(actingAdmin);
+		requireNotArchived();
+		if (status != GroupStatus.OPEN) {
+			throw new DomainException(ErrorCode.GROUP_NOT_OPEN, "Only an open group can be closed");
+		}
+		status = GroupStatus.CLOSED_FOR_SETTLEMENT;
+		return new GroupClosedForSettlement(groupId(), actingAdmin, now);
+	}
+
+	/**
+	 * An admin reopens a group that is closed for settlement, so expenses can be recorded
+	 * and corrected again (J12b, L1, L6). The checks run in this order: the caller is an
+	 * admin (NOT_A_MEMBER, NOT_AN_ADMIN), the group is not archived (GROUP_ARCHIVED), it
+	 * is closed (GROUP_NOT_CLOSED).
+	 * @return the {@link GroupReopened} event
+	 * @throws DomainException NOT_A_MEMBER, NOT_AN_ADMIN, GROUP_ARCHIVED,
+	 * GROUP_NOT_CLOSED
+	 */
+	public GroupReopened reopenGroup(UserId actingAdmin, Instant now) {
+		requireAdmin(actingAdmin);
+		requireNotArchived();
+		requireClosed();
+		status = GroupStatus.OPEN;
+		return new GroupReopened(groupId(), actingAdmin, now);
+	}
+
+	/**
+	 * An admin archives a closed group whose balances are all 0; archiving is final (J13,
+	 * L4 to L6). The balances are the group's flags as the ledger last reported them
+	 * (design 2026-11-28-group-lifecycle G3); former members are zero by R11. The checks
+	 * run in this order: the caller is an admin (NOT_A_MEMBER, NOT_AN_ADMIN), the group
+	 * is not archived (GROUP_ARCHIVED), it is closed (GROUP_NOT_CLOSED), every active
+	 * member's balance is zero (BALANCE_NOT_ZERO).
+	 * @return the {@link GroupArchived} event, carrying the admin
+	 * @throws DomainException NOT_A_MEMBER, NOT_AN_ADMIN, GROUP_ARCHIVED,
+	 * GROUP_NOT_CLOSED, BALANCE_NOT_ZERO
+	 */
+	public GroupArchived archiveGroup(UserId actingAdmin, Instant now) {
+		requireAdmin(actingAdmin);
+		requireNotArchived();
+		requireClosed();
+		if (!activeMemberships().stream().allMatch(Membership::hasZeroBalance)) {
+			throw new DomainException(ErrorCode.BALANCE_NOT_ZERO,
+					"Every balance must be 0 before the group is archived");
+		}
+		status = GroupStatus.ARCHIVED;
+		return new GroupArchived(groupId(), actingAdmin, now);
+	}
+
+	/**
+	 * Archives a closed group because the ledger reported that every balance is 0 (L5).
+	 * Reacts to {@code AllBalancesSettled}; an OPEN group whose balances happen to reach
+	 * 0 stays open, and an archived group stays as it is (design
+	 * 2026-11-28-group-lifecycle G1, G2).
+	 * @return the {@link GroupArchived} event without an acting admin, or empty when the
+	 * group was not closed
+	 */
+	public Optional<GroupArchived> archiveWhenAllBalancesSettled(Instant now) {
+		if (status != GroupStatus.CLOSED_FOR_SETTLEMENT) {
+			return Optional.empty();
+		}
+		status = GroupStatus.ARCHIVED;
+		return Optional.of(new GroupArchived(groupId(), null, now));
+	}
+
+	/** An archived group is read-only (L6). */
+	private void requireNotArchived() {
+		if (status == GroupStatus.ARCHIVED) {
+			throw new DomainException(ErrorCode.GROUP_ARCHIVED, "This group is archived and can no longer change");
+		}
+	}
+
+	private void requireClosed() {
+		if (status != GroupStatus.CLOSED_FOR_SETTLEMENT) {
+			throw new DomainException(ErrorCode.GROUP_NOT_CLOSED, "The group is not closed for settlement");
+		}
+	}
+
+	/**
+	 * Only an OPEN group takes new members: closed and archived groups cannot be joined
+	 * (J3).
+	 */
+	private void requireOpenForNewMembers() {
+		if (status != GroupStatus.OPEN) {
+			throw new DomainException(ErrorCode.GROUP_NOT_OPEN, "Only an open group takes new members");
+		}
 	}
 
 	/**
@@ -239,6 +410,11 @@ public class Group {
 	/** The memberships of people who are currently in the group. */
 	public List<Membership> activeMemberships() {
 		return memberships.stream().filter(Membership::isActiveMember).toList();
+	}
+
+	/** The memberships of people who left or were removed (R13). */
+	public List<Membership> formerMemberships() {
+		return memberships.stream().filter(m -> !m.isActiveMember()).toList();
 	}
 
 	/**

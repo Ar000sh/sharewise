@@ -68,6 +68,23 @@ public class Membership {
 		this.role = GroupRole.ADMIN;
 	}
 
+	/** The person is no longer in the group, but stays visible in old expenses (R13). */
+	void leave() {
+		this.status = MembershipStatus.FORMER_MEMBER;
+	}
+
+	/**
+	 * A former member joins again through a new invitation: the same row becomes active
+	 * with the invitation's role and the new join time (one membership per person and
+	 * group, design 2026-11-28 M3). The balance flag is kept: it was zero when they left
+	 * (R11) and only the ledger changes it.
+	 */
+	void rejoin(GroupRole role, Instant joinedAt) {
+		this.status = MembershipStatus.ACTIVE;
+		this.role = role;
+		this.joinedAt = joinedAt;
+	}
+
 	public UserId userId() {
 		return new UserId(userId);
 	}

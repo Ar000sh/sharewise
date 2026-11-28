@@ -2,6 +2,7 @@ package de.hsh.favs.sharewise.group.web;
 
 import de.hsh.favs.sharewise.ModuleIntegrationTest;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -11,9 +12,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
+import de.hsh.favs.sharewise.group.api.GroupArchived;
+import de.hsh.favs.sharewise.group.api.GroupClosedForSettlement;
 import de.hsh.favs.sharewise.group.api.GroupCreated;
+import de.hsh.favs.sharewise.group.api.GroupReopened;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
+import de.hsh.favs.sharewise.group.api.MemberLeft;
 import de.hsh.favs.sharewise.group.api.MemberPromoted;
+import de.hsh.favs.sharewise.group.api.MemberRemoved;
 import de.hsh.favs.sharewise.group.api.GroupRole;
 import de.hsh.favs.sharewise.shared.GroupId;
 import java.util.UUID;
@@ -183,6 +189,156 @@ class GroupControllerTest {
 		groups.detail(group, alice)
 			.andExpect(jsonPath("$.members[?(@.userId=='" + carol.idString() + "')].role").value("MEMBER"));
 		assertThat(events.stream(MemberPromoted.class).filter(e -> e.groupId().value().equals(group))).isEmpty();
+	}
+
+	@Test
+	void leavingIs204PublishesMemberLeftAndTheGroupListsThePersonAsFormerMember() throws Exception {
+		// given
+		UUID group = groups.groupWith(alice, "Leave me", bob);
+
+		// when
+		groups.leave(group, bob).andExpect(status().isNoContent());
+
+		// then Bob is no longer in the group, but its detail still names him (R13)
+		groups.detail(group, alice)
+			.andExpect(jsonPath("$.memberCount").value(1))
+			.andExpect(jsonPath("$.members[*].userId").value(contains(alice.idString())))
+			.andExpect(jsonPath("$.formerMembers[0].userId").value(bob.idString()))
+			.andExpect(jsonPath("$.formerMembers[0].displayName").value(bob.displayName()));
+		groups.detail(group, bob).andExpect(status().isForbidden());
+		assertThat(events.stream(MemberLeft.class).filter(e -> e.groupId().value().equals(group))).singleElement()
+			.satisfies(e -> assertThat(e.userId()).isEqualTo(bob.userId()));
+	}
+
+	@Test
+	void theLastAdminLeavingIs409LastAdminAndNothingChanges() throws Exception {
+		// given
+		UUID group = groups.groupWith(alice, "Who stays in charge", bob);
+
+		// when / then
+		groups.leave(group, alice).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("LAST_ADMIN"));
+		groups.detail(group, alice).andExpect(jsonPath("$.memberCount").value(2));
+		assertThat(events.stream(MemberLeft.class).filter(e -> e.groupId().value().equals(group))).isEmpty();
+	}
+
+	@Test
+	void anAdminRemovingAMemberIs204AndPublishesMemberRemoved() throws Exception {
+		// given
+		UUID group = groups.groupWith(alice, "Remove one", bob);
+
+		// when
+		groups.remove(group, alice, bob).andExpect(status().isNoContent());
+
+		// then
+		groups.detail(group, alice).andExpect(jsonPath("$.formerMembers[0].userId").value(bob.idString()));
+		assertThat(events.stream(MemberRemoved.class).filter(e -> e.groupId().value().equals(group))).singleElement()
+			.satisfies(e -> {
+				assertThat(e.userId()).isEqualTo(bob.userId());
+				assertThat(e.removedBy()).isEqualTo(alice.userId());
+			});
+	}
+
+	@Test
+	void removingAsAMemberWhoIsNotAdminIs403AndRemovingYourselfIs422() throws Exception {
+		// given
+		UUID group = groups.groupWith(alice, "Who may remove", bob, carol);
+
+		// when / then
+		groups.remove(group, bob, carol)
+			.andExpect(status().isForbidden())
+			.andExpect(jsonPath("$.code").value("NOT_AN_ADMIN"));
+		groups.remove(group, alice, alice)
+			.andExpect(status().isUnprocessableContent())
+			.andExpect(jsonPath("$.code").value("CANNOT_REMOVE_YOURSELF"));
+		groups.detail(group, alice).andExpect(jsonPath("$.memberCount").value(3));
+		assertThat(events.stream(MemberRemoved.class).filter(e -> e.groupId().value().equals(group))).isEmpty();
+	}
+
+	@Test
+	void aRemovedPersonWhoIsInvitedAgainAndAcceptsIsAMemberAgain() throws Exception {
+		// given
+		UUID group = groups.groupWith(alice, "Come back", bob);
+		groups.remove(group, alice, bob).andExpect(status().isNoContent());
+
+		// when
+		groups.accept(groups.invite(group, alice, bob), bob).andExpect(status().isOk());
+
+		// then
+		groups.detail(group, bob)
+			.andExpect(jsonPath("$.memberCount").value(2))
+			.andExpect(jsonPath("$.formerMembers").isEmpty());
+	}
+
+	@Test
+	void closingIs200ClosedPublishesTheEventAndNobodyCanBeInvitedAnyMore() throws Exception {
+		// given
+		UUID group = groups.groupWith(alice, "Close me", bob);
+
+		// when
+		groups.close(group, alice)
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.status").value("CLOSED_FOR_SETTLEMENT"));
+
+		// then
+		groups.createInvitation(group, alice, carol.username())
+			.andExpect(status().isUnprocessableContent())
+			.andExpect(jsonPath("$.code").value("GROUP_NOT_OPEN"));
+		assertThat(events.stream(GroupClosedForSettlement.class).filter(e -> e.groupId().value().equals(group)))
+			.singleElement()
+			.satisfies(e -> assertThat(e.closedBy()).isEqualTo(alice.userId()));
+	}
+
+	@Test
+	void closingAsAMemberWhoIsNotAdminIs403AndTheGroupStaysOpen() throws Exception {
+		// given
+		UUID group = groups.groupWith(alice, "Only admins close", bob);
+
+		// when / then
+		groups.close(group, bob).andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("NOT_AN_ADMIN"));
+		groups.detail(group, alice).andExpect(jsonPath("$.status").value("OPEN"));
+	}
+
+	@Test
+	void reopeningAClosedGroupIs200OpenAndReopeningAnOpenOneIs409() throws Exception {
+		// given
+		UUID group = groups.groupWith(alice, "Reopen me", bob);
+		groups.close(group, alice).andExpect(status().isOk());
+
+		// when / then
+		groups.reopen(group, alice).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("OPEN"));
+		groups.reopen(group, alice)
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("GROUP_NOT_CLOSED"));
+		assertThat(events.stream(GroupReopened.class).filter(e -> e.groupId().value().equals(group))).hasSize(1);
+	}
+
+	@Test
+	void archivingAClosedGroupIs200ArchivedAndAfterwardsEveryChangeIs409GroupArchived() throws Exception {
+		// given
+		UUID group = groups.groupWith(alice, "Archive me", bob);
+		groups.close(group, alice).andExpect(status().isOk());
+
+		// when
+		groups.archive(group, alice).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("ARCHIVED"));
+
+		// then
+		groups.reopen(group, alice)
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("GROUP_ARCHIVED"));
+		groups.leave(group, bob).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("GROUP_ARCHIVED"));
+		assertThat(events.stream(GroupArchived.class).filter(e -> e.groupId().value().equals(group))).singleElement()
+			.satisfies(e -> assertThat(e.archivedBy()).isEqualTo(alice.userId()));
+	}
+
+	@Test
+	void archivingAnOpenGroupIs409GroupNotClosed() throws Exception {
+		// given
+		UUID group = groups.createGroup(alice, "Still open");
+
+		// when / then
+		groups.archive(group, alice)
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("GROUP_NOT_CLOSED"));
 	}
 
 	@Test

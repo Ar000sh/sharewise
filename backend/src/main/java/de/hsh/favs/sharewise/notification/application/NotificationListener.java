@@ -1,9 +1,15 @@
 package de.hsh.favs.sharewise.notification.application;
 
+import de.hsh.favs.sharewise.expense.api.ExpenseCorrected;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.expense.api.ExpenseRemoved;
+import de.hsh.favs.sharewise.group.api.GroupArchived;
+import de.hsh.favs.sharewise.group.api.GroupClosedForSettlement;
+import de.hsh.favs.sharewise.group.api.GroupReopened;
 import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
 import de.hsh.favs.sharewise.group.api.MemberPromoted;
+import de.hsh.favs.sharewise.group.api.MemberRemoved;
 import de.hsh.favs.sharewise.settlement.api.DebtWaived;
 import de.hsh.favs.sharewise.settlement.api.SettlementPaymentConfirmed;
 import de.hsh.favs.sharewise.settlement.api.SettlementPaymentRejected;
@@ -36,6 +42,16 @@ class NotificationListener {
 	}
 
 	@ApplicationModuleListener
+	void on(ExpenseCorrected event) {
+		notifications.recordExpenseCorrected(event);
+	}
+
+	@ApplicationModuleListener
+	void on(ExpenseRemoved event) {
+		notifications.recordExpenseRemoved(event);
+	}
+
+	@ApplicationModuleListener
 	void on(InvitationDeclined event) {
 		notifications.recordInvitationDeclined(event);
 	}
@@ -43,6 +59,26 @@ class NotificationListener {
 	@ApplicationModuleListener
 	void on(MemberPromoted event) {
 		notifications.recordMemberPromoted(event);
+	}
+
+	@ApplicationModuleListener
+	void on(MemberRemoved event) {
+		notifications.recordMemberRemoved(event);
+	}
+
+	@ApplicationModuleListener
+	void on(GroupClosedForSettlement event) {
+		notifications.recordGroupClosed(event);
+	}
+
+	@ApplicationModuleListener
+	void on(GroupReopened event) {
+		notifications.recordGroupReopened(event);
+	}
+
+	@ApplicationModuleListener
+	void on(GroupArchived event) {
+		notifications.recordGroupArchived(event);
 	}
 
 	@ApplicationModuleListener

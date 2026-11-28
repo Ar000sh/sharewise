@@ -63,7 +63,7 @@ describe("NewExpense", () => {
     // given
     serve({ userId: "u2", displayName: "Bob" });
     const { client } = renderPage();
-    await userEvent.type(await screen.findByLabelText(/amount/i), "180");
+    await userEvent.type(await screen.findByLabelText("Amount (EUR)"), "180");
     await userEvent.type(screen.getByLabelText(/what was it for/i), "Dinner");
 
     // when

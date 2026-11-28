@@ -174,10 +174,10 @@ class MallorcaSliceTest {
 
 		// then the field names are the ones in docs/api/openapi.yaml
 		assertThat(fields(created)).containsExactly("id", "memberCount", "name", "status");
-		assertThat(fields(detail)).containsExactly("id", "memberCount", "members", "name", "status");
+		assertThat(fields(detail)).containsExactly("formerMembers", "id", "memberCount", "members", "name", "status");
 		assertThat(fields(detail.get("members").get(0))).containsExactly("displayName", "role", "userId");
-		assertThat(fields(expense)).containsExactly("date", "id", "paidBy", "recordedBy", "shares", "splitStrategy",
-				"status", "title", "totalAmount");
+		assertThat(fields(expense)).containsExactly("date", "id", "paidBy", "recordedBy", "revisions", "shares",
+				"splitStrategy", "status", "title", "totalAmount");
 		assertThat(fields(expense.get("shares").get(0))).containsExactly("owedShare", "participantId");
 		assertThat(fields(invitation)).containsExactly("expiresAt", "invitationId", "invitee");
 		assertThat(fields(invitation.get("invitee"))).containsExactly("displayName", "userId", "username");
@@ -218,6 +218,22 @@ class MallorcaSliceTest {
 		await().atMost(Duration.ofSeconds(10))
 			.untilAsserted(() -> assertThat(balances(group, alice))
 				.containsExactlyInAnyOrderEntriesOf(Map.of(alice, 6666L, bob, -3333L, carol, -3333L)));
+	}
+
+	@Test
+	void exactFarewellDinnerBooksTheTypedAmounts() throws Exception {
+		// given three members
+		UUID group = groupWith(alice, bob, carol);
+
+		// when Alice pays 250.00 and types 100.00, 100.00 and 50.00
+		recordExpense(group, alice, "Farewell dinner", 25000, alice, List.of(alice, bob, carol), "EXACT",
+				List.of("100.00", "100.00", "50.00"))
+			.andExpect(status().isCreated());
+
+		// then the balances follow the typed amounts
+		await().atMost(Duration.ofSeconds(10))
+			.untilAsserted(() -> assertThat(balances(group, alice))
+				.containsExactlyInAnyOrderEntriesOf(Map.of(alice, 15000L, bob, -10000L, carol, -5000L)));
 	}
 
 	@Test
@@ -302,13 +318,28 @@ class MallorcaSliceTest {
 
 	private ResultActions recordExpense(UUID group, String caller, String title, long cents, String payer,
 			List<String> participants) throws Exception {
+		return recordExpense(group, caller, title, cents, payer, participants, "EQUAL", List.of());
+	}
+
+	/** Values pair with the participants in order; none for an EQUAL split. */
+	private ResultActions recordExpense(UUID group, String caller, String title, long cents, String payer,
+			List<String> participants, String strategy, List<String> values) throws Exception {
 		Map<String, Object> body = new LinkedHashMap<>();
 		body.put("title", title);
 		body.put("totalAmount", java.math.BigDecimal.valueOf(cents, 2).toPlainString());
 		body.put("date", "2027-06-01");
 		body.put("paidBy", payer);
-		body.put("participantIds", participants);
-		body.put("splitStrategy", "EQUAL");
+		List<Map<String, Object>> entries = new java.util.ArrayList<>();
+		for (int i = 0; i < participants.size(); i++) {
+			Map<String, Object> entry = new LinkedHashMap<>();
+			entry.put("userId", participants.get(i));
+			if (!values.isEmpty()) {
+				entry.put("value", values.get(i));
+			}
+			entries.add(entry);
+		}
+		body.put("participants", entries);
+		body.put("splitStrategy", strategy);
 		return mvc.perform(post("/groups/" + group + "/expenses").header("Authorization", auth(caller))
 			.contentType(APPLICATION_JSON)
 			.content(json.writeValueAsString(body)));

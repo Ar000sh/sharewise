@@ -1,10 +1,14 @@
 package de.hsh.favs.sharewise.expense.web;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,6 +40,8 @@ public class ExpenseRequests {
 	private String paidBy;
 
 	private List<String> participants = List.of();
+
+	private List<String> values = List.of();
 
 	private String splitStrategy = "EQUAL";
 
@@ -74,22 +80,64 @@ public class ExpenseRequests {
 		return this;
 	}
 
+	/**
+	 * Types a value (amount or percentage) per participant, in the order of splitBetween.
+	 */
+	public ExpenseRequests withValues(String... values) {
+		this.values = Arrays.asList(values);
+		return this;
+	}
+
 	public ExpenseRequests withSplitStrategy(String splitStrategy) {
 		this.splitStrategy = splitStrategy;
 		return this;
 	}
 
 	public ResultActions record(AccountFixture caller) throws Exception {
+		return mvc.perform(post("/groups/{id}/expenses", groupId).header("Authorization", caller.bearer())
+			.contentType(APPLICATION_JSON)
+			.content(json.writeValueAsString(body())));
+	}
+
+	/** Corrects the expense to what this builder describes, with {@code reason}. */
+	public ResultActions correct(UUID expenseId, AccountFixture caller, String reason) throws Exception {
+		Map<String, Object> body = body();
+		body.put("reason", reason);
+		return mvc.perform(
+				put("/groups/{id}/expenses/{expenseId}", groupId, expenseId).header("Authorization", caller.bearer())
+					.contentType(APPLICATION_JSON)
+					.content(json.writeValueAsString(body)));
+	}
+
+	public ResultActions remove(UUID expenseId, AccountFixture caller) throws Exception {
+		return mvc.perform(delete("/groups/{id}/expenses/{expenseId}", groupId, expenseId).header("Authorization",
+				caller.bearer()));
+	}
+
+	/** Records what this builder describes (expects 201) and returns the expense id. */
+	public UUID recorded(AccountFixture caller) throws Exception {
+		String body = record(caller).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+		return UUID.fromString(json.readTree(body).get("id").asString());
+	}
+
+	private Map<String, Object> body() {
 		Map<String, Object> body = new LinkedHashMap<>();
 		body.put("title", title);
 		body.put("totalAmount", totalAmount);
 		body.put("date", date);
 		body.put("paidBy", paidBy != null ? paidBy : participants.get(0));
-		body.put("participantIds", participants);
+		List<Map<String, Object>> entries = new ArrayList<>();
+		for (int i = 0; i < participants.size(); i++) {
+			Map<String, Object> entry = new LinkedHashMap<>();
+			entry.put("userId", participants.get(i));
+			if (i < values.size()) {
+				entry.put("value", values.get(i));
+			}
+			entries.add(entry);
+		}
+		body.put("participants", entries);
 		body.put("splitStrategy", splitStrategy);
-		return mvc.perform(post("/groups/{id}/expenses", groupId).header("Authorization", caller.bearer())
-			.contentType(APPLICATION_JSON)
-			.content(json.writeValueAsString(body)));
+		return body;
 	}
 
 	public ResultActions list(AccountFixture caller) throws Exception {

@@ -2,9 +2,10 @@ package de.hsh.favs.sharewise.settlement.domain;
 
 /**
  * Why a ledger entry exists (domain model: LedgerEntryType). Expenses book the two
- * expense types (R14); confirmed settlement payments and waived debts book the payment
- * and waiver types (R16, R17, design D8). The reversal type arrives with corrections and
- * removals of expenses.
+ * expense types (R14), and so do their corrections and removals, as the difference with
+ * the correction's or removal's own reference (design 2026-11-28-expense-correction E5;
+ * the diagram's single EXPENSE_REVERSAL cannot tell paid from owed). Confirmed settlement
+ * payments and waived debts book the payment and waiver types (R16, R17, design D8).
  */
 public enum LedgerEntryType {
 

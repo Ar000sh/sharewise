@@ -12,6 +12,7 @@ import de.hsh.favs.sharewise.ModuleIntegrationTest;
 import de.hsh.favs.sharewise.MutableClock;
 import de.hsh.favs.sharewise.account.domain.AccountFixture;
 import de.hsh.favs.sharewise.expense.web.ExpenseRequests;
+import de.hsh.favs.sharewise.group.api.GroupArchived;
 import de.hsh.favs.sharewise.group.web.GroupRequests;
 import de.hsh.favs.sharewise.notification.application.NotificationService;
 import de.hsh.favs.sharewise.notification.domain.Notification;
@@ -21,6 +22,7 @@ import de.hsh.favs.sharewise.settlement.web.SettlementRequests;
 import de.hsh.favs.sharewise.shared.GroupId;
 import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -168,6 +170,83 @@ class NotificationControllerTest {
 		JsonNode alicesEntries = awaitEntries(alice, 1).get("items");
 		assertThat(alicesEntries).hasSize(1);
 		assertThat(alicesEntries.get(0).get("type").asString()).isEqualTo("MEMBER_JOINED");
+	}
+
+	@Test
+	void aRemovalShowsARemovedEntryToTheRemovedPerson() throws Exception {
+		// given Bob joined Alice's group
+		UUID group = groups.groupWith(alice, "Mallorca 2027", bob);
+
+		// when
+		groups.remove(group, alice, bob).andExpect(status().isNoContent());
+
+		// then
+		JsonNode entry = awaitEntries(bob, 1).get("items").get(0);
+		assertThat(entry.get("type").asString()).isEqualTo("MEMBER_REMOVED");
+		assertThat(entry.get("actor").get("userId").asString()).isEqualTo(alice.idString());
+		assertThat(entry.get("group").get("id").asString()).isEqualTo(group.toString());
+		assertThat(entry.get("reference").asString()).isEqualTo(bob.idString());
+	}
+
+	@Test
+	void closingAGroupShowsAClosedEntryToEveryMemberButTheAdmin() throws Exception {
+		// given
+		UUID group = groups.groupWith(alice, "Mallorca 2027", bob);
+
+		// when
+		groups.close(group, alice).andExpect(status().isOk());
+
+		// then Bob reads it; Alice, who closed it, has only Bob's join
+		JsonNode entry = awaitEntries(bob, 1).get("items").get(0);
+		assertThat(entry.get("type").asString()).isEqualTo("GROUP_CLOSED");
+		assertThat(entry.get("actor").get("userId").asString()).isEqualTo(alice.idString());
+		assertThat(entry.get("reference").asString()).isEqualTo(group.toString());
+		assertThat(awaitEntries(alice, 1).get("items").get(0).get("type").asString()).isEqualTo("MEMBER_JOINED");
+	}
+
+	@Test
+	void anAutomaticArchiveShowsAnEntryWithoutActorToEveryMember() throws Exception {
+		// given
+		UUID group = groups.groupWith(alice, "Mallorca 2027", bob);
+
+		// when the group archived itself (no admin did it)
+		notifications.recordGroupArchived(new GroupArchived(new GroupId(group), null, MutableClock.START));
+
+		// then both read it, without an actor; Alice also still has Bob's join
+		for (AccountFixture member : List.of(alice, bob)) {
+			JsonNode items = json.readTree(inbox(member, "").andReturn().getResponse().getContentAsString())
+				.get("items");
+			assertThat(items.valueStream().filter(i -> i.get("type").asString().equals("GROUP_ARCHIVED")))
+				.singleElement()
+				.satisfies(archived -> assertThat(archived.get("actor").isNull()).isTrue());
+		}
+	}
+
+	@Test
+	void aCorrectionShowsACorrectedEntryToEverybodyInvolvedButTheCorrector() throws Exception {
+		// given bob recorded a dinner that alice and he share
+		UUID group = groups.groupWith(alice, "Mallorca 2027", bob);
+		ExpenseRequests dinner = new ExpenseRequests(mvc, json).inGroup(group)
+			.withTotalAmount("40.00")
+			.paidBy(bob)
+			.splitBetween(alice, bob);
+		UUID expense = dinner.recorded(bob);
+		awaitEntries(alice, 2);
+
+		// when bob corrects it
+		dinner.withTotalAmount("50.00").correct(expense, bob, null).andExpect(status().isOk());
+
+		// then alice reads it (R7); bob, who corrected it, gets nothing (a frozen clock
+		// gives
+		// every entry the same time, so the entry is found by its type)
+		JsonNode entry = awaitEntries(alice, 3).get("items")
+			.valueStream()
+			.filter(i -> i.get("type").asString().equals("EXPENSE_CORRECTED"))
+			.findFirst()
+			.orElseThrow();
+		assertThat(entry.get("actor").get("userId").asString()).isEqualTo(bob.idString());
+		assertThat(entry.get("reference").asString()).isEqualTo(expense.toString());
+		inbox(bob, "").andExpect(jsonPath("$.items[?(@.type=='EXPENSE_CORRECTED')]").isEmpty());
 	}
 
 	@Test

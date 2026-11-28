@@ -127,12 +127,21 @@ class ExpenseTest {
 	}
 
 	@Test
-	void sharesThatDoNotAddUpToTheTotalAreAProgrammingError() {
+	void sharesThatDoNotAddUpToTheTotalAreRefusedWithSharesNotTotal() {
 		List<ExpenseShare> wrong = List.of(new ExpenseShare(ALICE, Money.eur("4.99")));
 
-		assertThatThrownBy(() -> Expense.record(new ExpenseFixture().groupView(), new ExpenseTitle("x"), ALICE, ALICE,
-				Money.eur("5.00"), LocalDate.parse("2027-06-01"), wrong, SplitStrategy.EQUAL, MutableClock.START))
-			.isInstanceOf(IllegalArgumentException.class);
+		assertRefusedWith(() -> Expense.record(new ExpenseFixture().groupView(), new ExpenseTitle("x"), ALICE, ALICE,
+				Money.eur("5.00"), LocalDate.parse("2027-06-01"), wrong, SplitStrategy.EQUAL, MutableClock.START),
+				ErrorCode.SHARES_NOT_TOTAL);
+	}
+
+	@Test
+	void aWrongSumIsCheckedAfterTheOtherRules() {
+		List<ExpenseShare> wrong = List.of(new ExpenseShare(ALICE, Money.eur("4.99")));
+
+		assertRefusedWith(() -> Expense.record(new ExpenseFixture().withClosedGroup().groupView(),
+				new ExpenseTitle("x"), ALICE, ALICE, Money.eur("5.00"), LocalDate.parse("2027-06-01"), wrong,
+				SplitStrategy.EQUAL, MutableClock.START), ErrorCode.GROUP_NOT_OPEN);
 	}
 
 	@Test

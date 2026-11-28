@@ -60,6 +60,20 @@ async function addExpense(page: Page, title: string, euros: string) {
   await expect(page.getByText(title).first()).toBeVisible();
 }
 
+/** Like addExpense, but split between the whole group as exact amounts, one per member ("Exact amounts" mode). */
+async function addExactExpense(page: Page, title: string, euros: string, amounts: Record<string, string>) {
+  await page.getByLabel("Amount (EUR)", { exact: true }).fill(euros);
+  await page.getByLabel("What was it for?").fill(title);
+  await page.getByRole("button", { name: "Select everyone" }).click();
+  await page.getByLabel("Exact amounts").check();
+  for (const [name, value] of Object.entries(amounts)) {
+    await page.getByLabel(`Amount for ${name}`, { exact: true }).fill(value);
+  }
+  await page.getByRole("button", { name: "Save expense" }).click();
+  await expect(page.getByRole("heading", { name: "Mallorca 2027" })).toBeVisible();
+  await expect(page.getByText(title).first()).toBeVisible();
+}
+
 test("three friends sign up, share a group, see who owes what and settle up", async ({ browser }) => {
   // Alice signs up, creates the group and an invite link.
   const alice = await signUp(browser, "Alice");
@@ -106,7 +120,7 @@ test("three friends sign up, share a group, see who owes what and settle up", as
     await expect(alice.getByText("Carol Tester joined Mallorca 2027")).toBeVisible({ timeout: 2000 });
   }).toPass();
 
-  // Alice pays the hotel (900 €, all three), Bob pays the dinner (180 €, all three).
+  // Alice pays the hotel (900 €, all three equally), Bob pays the dinner (180 €, all three as exact amounts of 60 €).
   await openGroup(alice);
   await openAddExpense(alice);
   await expect(alice.getByLabel("Paid by")).toContainText("Carol Tester");
@@ -116,7 +130,11 @@ test("three friends sign up, share a group, see who owes what and settle up", as
   await expect(bob.getByLabel("Paid by")).toContainText("Carol Tester");
   // Nobody has to pick themselves: the form already says who is recording.
   await expect(bob.getByLabel("Paid by").locator("option:checked")).toHaveText("Bob Tester");
-  await addExpense(bob, "Dinner", "180");
+  await addExactExpense(bob, "Dinner", "180", {
+    "Alice Tester": "60",
+    "Bob Tester": "60",
+    "Carol Tester": "60",
+  });
 
   // Balances come through an event, so they may need a moment: the assertions retry.
   await alice.getByRole("tab", { name: "Balances" }).click();

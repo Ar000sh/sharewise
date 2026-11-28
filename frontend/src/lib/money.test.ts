@@ -1,5 +1,58 @@
 import { describe, expect, it } from "vitest";
-import { amountToCents, centsToAmount, eurosToCents, formatEuro, formatSignedEuro, yourPartCents } from "@/lib/money";
+import {
+  amountToCents,
+  centsToAmount,
+  equalShares,
+  eurosToCents,
+  formatEuro,
+  formatPercent,
+  formatSignedEuro,
+  percentageShares,
+  percentToHundredths,
+  yourPartCents,
+} from "@/lib/money";
+
+describe("equalShares", () => {
+  it("remainderGoesToTheFirst", () => {
+    expect(equalShares(1000, 3)).toEqual([334, 333, 333]);
+  });
+});
+
+describe("percentToHundredths", () => {
+  it.each([
+    ["33,33", 3333],
+    ["33.33", 3333],
+    ["12.5", 1250],
+    ["50", 5000],
+  ])("parses %s as %i hundredths", (input, hundredths) => {
+    expect(percentToHundredths(input)).toBe(hundredths);
+  });
+
+  it.each(["33.333", "", "abc", "0", "-5", "1.000", ",", "."])("rejects %j", (input) => {
+    expect(percentToHundredths(input)).toBeNull();
+  });
+});
+
+describe("formatPercent", () => {
+  it("formatsHundredthsWithCommaAndTwoDecimals", () => {
+    expect(formatPercent(3333)).toBe("33,33 %");
+    expect(formatPercent(8000)).toBe("80,00 %");
+  });
+});
+
+describe("percentageShares", () => {
+  // Twin of PercentageSplitTest (backend); change both together
+  it.each([
+    [1000, [3333, 3333, 3334], [333, 333, 334]],
+    [1000, [3334, 3333, 3333], [334, 333, 333]],
+    [20000, [5000, 3000, 2000], [10000, 6000, 4000]],
+    [1000, [1250, 8750], [125, 875]],
+    [50, [9900, 100], [50, 0]],
+    [10000, [3333, 3333, 3334], [3333, 3333, 3334]],
+  ])("leftoverCentsGoToTheLargestDroppedFraction %#", (total, hundredths, expected) => {
+    expect(percentageShares(total, hundredths)).toEqual(expected);
+  });
+});
 
 describe("eurosToCents", () => {
   it.each([

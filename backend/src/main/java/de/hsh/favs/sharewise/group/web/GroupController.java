@@ -16,7 +16,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -56,8 +58,7 @@ class GroupController {
 	@GetMapping("/groups/{groupId}")
 	GroupDetailResponse getGroup(@PathVariable UUID groupId) {
 		GroupView group = groups.getGroup(new GroupId(groupId), caller());
-		Set<UserId> memberIds = group.memberships()
-			.stream()
+		Set<UserId> memberIds = Stream.concat(group.memberships().stream(), group.formerMemberships().stream())
 			.map(GroupService.MembershipView::userId)
 			.collect(Collectors.toSet());
 		Map<UserId, String> names = profiles.findProfiles(memberIds)
@@ -83,6 +84,33 @@ class GroupController {
 			.map(UserProfile::displayName)
 			.orElse(UNKNOWN_NAME);
 		return new GroupDetailResponse.MemberResponse(userId, name, promoted.role());
+	}
+
+	@PostMapping("/groups/{groupId}/leave")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	void leaveGroup(@PathVariable UUID groupId) {
+		groups.leaveGroup(new GroupId(groupId), caller());
+	}
+
+	@PostMapping("/groups/{groupId}/close")
+	GroupResponse closeForSettlement(@PathVariable UUID groupId) {
+		return GroupResponse.of(groups.closeForSettlement(new GroupId(groupId), caller()));
+	}
+
+	@PostMapping("/groups/{groupId}/reopen")
+	GroupResponse reopenGroup(@PathVariable UUID groupId) {
+		return GroupResponse.of(groups.reopenGroup(new GroupId(groupId), caller()));
+	}
+
+	@PostMapping("/groups/{groupId}/archive")
+	GroupResponse archiveGroup(@PathVariable UUID groupId) {
+		return GroupResponse.of(groups.archiveGroup(new GroupId(groupId), caller()));
+	}
+
+	@DeleteMapping("/groups/{groupId}/members/{userId}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	void removeMember(@PathVariable UUID groupId, @PathVariable UUID userId) {
+		groups.removeMember(new GroupId(groupId), caller(), new UserId(userId));
 	}
 
 	@GetMapping("/invitations")

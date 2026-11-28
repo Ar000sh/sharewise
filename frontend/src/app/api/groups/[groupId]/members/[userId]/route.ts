@@ -1,0 +1,10 @@
+import { connection } from "next/server";
+import { proxyToBackend } from "@/lib/backend";
+
+type Ctx = { params: Promise<{ groupId: string; userId: string }> };
+
+export async function DELETE(req: Request, { params }: Ctx) {
+  await connection();
+  const { groupId, userId } = await params;
+  return proxyToBackend(req, `/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`);
+}

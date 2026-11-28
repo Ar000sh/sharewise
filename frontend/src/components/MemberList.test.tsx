@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, api } from "@/lib/api";
@@ -44,6 +44,61 @@ describe("MemberList", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Only an admin can do this.");
     expect(onPromoted).not.toHaveBeenCalled();
+  });
+
+  it("offersRemoveOnlyToAnAdminAndNeverForThemselves", () => {
+    // given
+    const { rerender } = render(<MemberList members={members} currentUserId="u1" />);
+    expect(screen.queryByRole("button", { name: /^remove/i })).not.toBeInTheDocument();
+
+    // when
+    rerender(<MemberList members={members} currentUserId="u1" remove={{ groupId: "g1", onRemoved: () => {} }} />);
+
+    // then
+    expect(screen.getByRole("button", { name: "Remove Bob" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Remove Alice" })).not.toBeInTheDocument();
+  });
+
+  it("removesTheMemberOnlyAfterConfirmingAndTellsTheParent", async () => {
+    // given
+    apiMock.mockResolvedValue(undefined);
+    const onRemoved = vi.fn();
+    render(<MemberList members={members} currentUserId="u1" remove={{ groupId: "g1", onRemoved }} />);
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: "Remove Bob" }));
+    expect(apiMock).not.toHaveBeenCalled();
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Remove Bob" }));
+
+    // then
+    expect(apiMock).toHaveBeenCalledWith("/groups/g1/members/u2", { method: "DELETE" });
+    expect(onRemoved).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("showsWhyARemovalIsRefusedInTheDialogAndTellsNobody", async () => {
+    // given
+    apiMock.mockRejectedValue(new ApiError(409, "BALANCE_NOT_ZERO"));
+    const onRemoved = vi.fn();
+    render(<MemberList members={members} currentUserId="u1" remove={{ groupId: "g1", onRemoved }} />);
+
+    // when
+    await userEvent.click(screen.getByRole("button", { name: "Remove Bob" }));
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Remove Bob" }));
+
+    // then
+    expect(await within(screen.getByRole("dialog")).findByRole("alert")).toHaveTextContent(/balance must be 0/i);
+    expect(onRemoved).not.toHaveBeenCalled();
+  });
+
+  it("listsFormerMembersUnderTheMembers", () => {
+    // when
+    render(<MemberList members={members} formerMembers={[{ userId: "u4", displayName: "David", role: "MEMBER" }]} />);
+
+    // then
+    expect(screen.getByRole("heading", { name: "Former members" })).toBeInTheDocument();
+    expect(screen.getByText("David")).toBeInTheDocument();
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
   });
 
   it("showsMembersWithRoles", () => {

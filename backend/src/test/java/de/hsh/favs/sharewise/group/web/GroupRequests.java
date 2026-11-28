@@ -1,6 +1,7 @@
 package de.hsh.favs.sharewise.group.web;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -79,6 +80,32 @@ public class GroupRequests {
 	public ResultActions promote(UUID group, AccountFixture caller, AccountFixture user) throws Exception {
 		return mvc.perform(post("/groups/" + group + "/members/" + user.userId().value() + "/promote")
 			.header(USER_HEADER, caller.bearer()));
+	}
+
+	/** Closes the group for settlement, as {@code caller}. */
+	public ResultActions close(UUID group, AccountFixture caller) throws Exception {
+		return mvc.perform(post("/groups/" + group + "/close").header(USER_HEADER, caller.bearer()));
+	}
+
+	/** Reopens the group, as {@code caller}. */
+	public ResultActions reopen(UUID group, AccountFixture caller) throws Exception {
+		return mvc.perform(post("/groups/" + group + "/reopen").header(USER_HEADER, caller.bearer()));
+	}
+
+	/** Archives the group, as {@code caller}. */
+	public ResultActions archive(UUID group, AccountFixture caller) throws Exception {
+		return mvc.perform(post("/groups/" + group + "/archive").header(USER_HEADER, caller.bearer()));
+	}
+
+	/** The caller leaves the group. */
+	public ResultActions leave(UUID group, AccountFixture caller) throws Exception {
+		return mvc.perform(post("/groups/" + group + "/leave").header(USER_HEADER, caller.bearer()));
+	}
+
+	/** Removes {@code member} from the group, as {@code caller}. */
+	public ResultActions remove(UUID group, AccountFixture caller, AccountFixture member) throws Exception {
+		return mvc.perform(delete("/groups/" + group + "/members/" + member.userId().value()).header(USER_HEADER,
+				caller.bearer()));
 	}
 
 	/**
