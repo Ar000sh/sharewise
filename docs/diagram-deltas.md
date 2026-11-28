@@ -42,7 +42,7 @@ The team version of 17.10.26 drew these differently; the diagram now shows what 
 
 ## Known gaps (diagram is right, code comes later)
 
-- Group: `removeMember`, `leaveGroup`, `closeForSettlement`, `reopenGroup`, `archiveGroup`, and their events; the enums already have all their values.
+- Group: `closeForSettlement`, `reopenGroup`, `archiveGroup`, and their events; the enums already have all their values. (`leaveGroup` and `removeMember` with `MemberLeft` and `MemberRemoved` are built, design 2026-11-28-membership-exit; they take `Instant now` like every operation, row 7. A former member who accepts a new invitation gets the same `Membership` back, M3. `NotificationType` gains `MEMBER_REMOVED`, which the diagram already names as "later".)
 - Expense: `correct`, `remove`, `ExpenseCorrected`, `ExpenseRemoved`.
 - Settlement: `appendCorrectionReversal`, `appendRemovalReversal` (they follow `correct` and `remove` of the expense context). `AllBalancesSettled` is published but has no consumer yet (auto-archive L5 is parked).
 - Account: `deactivate` (email verification, password reset and lock-out are Keycloak's).

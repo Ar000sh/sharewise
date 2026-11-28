@@ -8,7 +8,9 @@ import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.InvitationId;
 import de.hsh.favs.sharewise.group.api.MemberInvited;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
+import de.hsh.favs.sharewise.group.api.MemberLeft;
 import de.hsh.favs.sharewise.group.api.MemberPromoted;
+import de.hsh.favs.sharewise.group.api.MemberRemoved;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.GroupId;
@@ -158,7 +160,8 @@ public class Group {
 	 * order: the invitation exists, is for this user and still pending
 	 * (INVITATION_NOT_FOUND), is not expired (INVITATION_EXPIRED), and the user is not a
 	 * member yet (ALREADY_MEMBER). The group's status is not checked yet because groups
-	 * cannot be closed before a later exercise.
+	 * cannot be closed before a later exercise. A former member gets their old membership
+	 * back with the invitation's role (design 2026-11-28 M3).
 	 * @return the {@link MemberJoined} event, carrying who invited the user
 	 */
 	public MemberJoined acceptInvitation(InvitationId invitationId, UserId user, Instant now) {
@@ -168,8 +171,68 @@ public class Group {
 			throw new DomainException(ErrorCode.ALREADY_MEMBER, "You are already a member of this group");
 		}
 		invitation.accept();
-		memberships.add(new Membership(user, invitation.role(), now));
+		memberships.stream()
+			.filter(m -> m.userId().equals(user))
+			.findFirst()
+			.ifPresentOrElse(former -> former.rejoin(invitation.role(), now),
+					() -> memberships.add(new Membership(user, invitation.role(), now)));
 		return new MemberJoined(groupId(), user, invitation.role(), invitation.createdBy(), now);
+	}
+
+	/**
+	 * The member leaves the group and becomes a former member, still shown in old
+	 * expenses (J10, R13). Only at balance 0 (R11), as the ledger last reported it; the
+	 * last admin cannot leave while other members remain (R12). The checks run in this
+	 * order: the user is an active member (NOT_A_MEMBER), their balance is zero
+	 * (BALANCE_NOT_ZERO), they are not the last admin of a group with other members
+	 * (LAST_ADMIN).
+	 * @return the {@link MemberLeft} event
+	 * @throws DomainException NOT_A_MEMBER, BALANCE_NOT_ZERO, LAST_ADMIN
+	 */
+	public MemberLeft leaveGroup(UserId member, Instant now) {
+		Membership membership = activeMemberships().stream()
+			.filter(m -> m.userId().equals(member))
+			.findFirst()
+			.orElseThrow(() -> new DomainException(ErrorCode.NOT_A_MEMBER, "You are not a member of this group"));
+		if (!membership.hasZeroBalance()) {
+			throw new DomainException(ErrorCode.BALANCE_NOT_ZERO, "Settle your balance before leaving the group");
+		}
+		boolean othersRemain = activeMemberships().size() > 1;
+		long admins = activeMemberships().stream().filter(m -> m.role() == GroupRole.ADMIN).count();
+		if (membership.role() == GroupRole.ADMIN && admins == 1 && othersRemain) {
+			throw new DomainException(ErrorCode.LAST_ADMIN, "Make another member an admin before you leave");
+		}
+		membership.leave();
+		return new MemberLeft(groupId(), member, now);
+	}
+
+	/**
+	 * An admin removes another member, who becomes a former member, still shown in old
+	 * expenses (J11, R13). Only at that member's balance 0 (R11). An admin cannot remove
+	 * themselves; leaving goes through {@link #leaveGroup}, where R12 applies (design
+	 * 2026-11-28 M5). The checks run in this order: the caller is an admin (NOT_A_MEMBER,
+	 * NOT_AN_ADMIN), the target is not the caller (CANNOT_REMOVE_YOURSELF), the target is
+	 * an active member (MEMBER_NOT_FOUND), the target's balance is zero
+	 * (BALANCE_NOT_ZERO).
+	 * @return the {@link MemberRemoved} event
+	 * @throws DomainException NOT_A_MEMBER, NOT_AN_ADMIN, CANNOT_REMOVE_YOURSELF,
+	 * MEMBER_NOT_FOUND, BALANCE_NOT_ZERO
+	 */
+	public MemberRemoved removeMember(UserId targetMember, UserId actingAdmin, Instant now) {
+		requireAdmin(actingAdmin);
+		if (targetMember.equals(actingAdmin)) {
+			throw new DomainException(ErrorCode.CANNOT_REMOVE_YOURSELF, "Use Leave group to leave it yourself");
+		}
+		Membership membership = activeMemberships().stream()
+			.filter(m -> m.userId().equals(targetMember))
+			.findFirst()
+			.orElseThrow(
+					() -> new DomainException(ErrorCode.MEMBER_NOT_FOUND, "This person is not a member of this group"));
+		if (!membership.hasZeroBalance()) {
+			throw new DomainException(ErrorCode.BALANCE_NOT_ZERO, "This member's balance must be settled first");
+		}
+		membership.leave();
+		return new MemberRemoved(groupId(), targetMember, actingAdmin, now);
 	}
 
 	/**
@@ -239,6 +302,11 @@ public class Group {
 	/** The memberships of people who are currently in the group. */
 	public List<Membership> activeMemberships() {
 		return memberships.stream().filter(Membership::isActiveMember).toList();
+	}
+
+	/** The memberships of people who left or were removed (R13). */
+	public List<Membership> formerMemberships() {
+		return memberships.stream().filter(m -> !m.isActiveMember()).toList();
 	}
 
 	/**

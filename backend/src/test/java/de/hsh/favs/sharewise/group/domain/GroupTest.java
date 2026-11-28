@@ -13,7 +13,9 @@ import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.InvitationId;
 import de.hsh.favs.sharewise.group.api.MemberInvited;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
+import de.hsh.favs.sharewise.group.api.MemberLeft;
 import de.hsh.favs.sharewise.group.api.MemberPromoted;
+import de.hsh.favs.sharewise.group.api.MemberRemoved;
 import de.hsh.favs.sharewise.shared.DomainException;
 import de.hsh.favs.sharewise.shared.ErrorCode;
 import de.hsh.favs.sharewise.shared.UserId;
@@ -25,8 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /**
- * The rules of the Group aggregate: creation, inviting, joining and declining. No Spring,
- * no database.
+ * The rules of the Group aggregate: creation, inviting, joining, declining, leaving and
+ * removal. No Spring, no database.
  */
 class GroupTest {
 
@@ -489,6 +491,166 @@ class GroupTest {
 				e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
 		assertThatThrownBy(() -> trip.promoteToAdmin(bob, alice, NOW)).isInstanceOfSatisfying(DomainException.class,
 				e -> assertThat(e.code()).isEqualTo(ErrorCode.MEMBER_NOT_FOUND));
+	}
+
+	@Test
+	void aMemberAtZeroBalanceLeavesBecomesAFormerMemberAndMemberLeftIsReturned() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+
+		// when
+		MemberLeft left = trip.leaveGroup(bob, NOW);
+
+		// then
+		assertThat(left).isEqualTo(new MemberLeft(trip.groupId(), bob, NOW));
+		assertThat(trip.hasActiveMember(bob)).isFalse();
+		assertThat(trip.formerMemberships()).extracting(Membership::userId).containsExactly(bob);
+		assertThat(trip.membershipView().activeMembers()).containsExactly(alice);
+	}
+
+	@Test
+	void aMemberWithABalanceCannotLeaveAndStaysActive() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+		trip.updateBalanceStatus(bob, false, NOW);
+
+		// when / then
+		assertThatThrownBy(() -> trip.leaveGroup(bob, NOW)).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.BALANCE_NOT_ZERO));
+		assertThat(trip.hasActiveMember(bob)).isTrue();
+	}
+
+	@Test
+	void theLastAdminCannotLeaveWhileOtherMembersRemain() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+
+		// when / then
+		assertThatThrownBy(() -> trip.leaveGroup(alice, NOW)).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.LAST_ADMIN));
+		assertThat(trip.hasActiveMember(alice)).isTrue();
+	}
+
+	@Test
+	void anAdminMayLeaveOnceAnotherMemberIsAdmin() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+		trip.promoteToAdmin(bob, alice, NOW);
+
+		// when
+		trip.leaveGroup(alice, NOW);
+
+		// then
+		assertThat(trip.membershipView().admins()).containsExactly(bob);
+	}
+
+	@Test
+	void theOnlyMemberMayLeave() {
+		// when
+		group.leaveGroup(alice, NOW);
+
+		// then
+		assertThat(group.activeMemberships()).isEmpty();
+	}
+
+	@Test
+	void somebodyWhoIsNotAMemberCannotLeave() {
+		// when / then
+		assertThatThrownBy(() -> group.leaveGroup(bob, NOW)).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_A_MEMBER));
+	}
+
+	@Test
+	void anAdminRemovesAMemberAtZeroBalanceAndMemberRemovedIsReturned() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+
+		// when
+		MemberRemoved removed = trip.removeMember(bob, alice, NOW);
+
+		// then
+		assertThat(removed).isEqualTo(new MemberRemoved(trip.groupId(), bob, alice, NOW));
+		assertThat(trip.hasActiveMember(bob)).isFalse();
+		assertThat(trip.formerMemberships()).extracting(Membership::userId).containsExactly(bob);
+	}
+
+	@Test
+	void aMemberWithABalanceCannotBeRemovedAndStays() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+		trip.updateBalanceStatus(bob, false, NOW);
+
+		// when / then
+		assertThatThrownBy(() -> trip.removeMember(bob, alice, NOW)).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.BALANCE_NOT_ZERO));
+		assertThat(trip.hasActiveMember(bob)).isTrue();
+	}
+
+	@Test
+	void anAdminCannotRemoveThemselves() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+
+		// when / then
+		assertThatThrownBy(() -> trip.removeMember(alice, alice, NOW)).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.CANNOT_REMOVE_YOURSELF));
+		assertThat(trip.hasActiveMember(alice)).isTrue();
+	}
+
+	@Test
+	void aMemberWhoIsNotAdminCannotRemoveAnybody() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).withMember(carol).build();
+
+		// when / then
+		assertThatThrownBy(() -> trip.removeMember(carol, bob, NOW)).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.NOT_AN_ADMIN));
+		assertThat(trip.hasActiveMember(carol)).isTrue();
+	}
+
+	@Test
+	void removingSomebodyWhoIsNotAnActiveMemberIsMemberNotFound() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+		trip.leaveGroup(bob, NOW);
+
+		// when / then
+		assertThatThrownBy(() -> trip.removeMember(bob, alice, NOW)).isInstanceOfSatisfying(DomainException.class,
+				e -> assertThat(e.code()).isEqualTo(ErrorCode.MEMBER_NOT_FOUND));
+	}
+
+	@Test
+	void anAdminMayRemoveAnotherAdmin() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+		trip.promoteToAdmin(bob, alice, NOW);
+
+		// when
+		trip.removeMember(bob, alice, NOW);
+
+		// then
+		assertThat(trip.membershipView().admins()).containsExactly(alice);
+	}
+
+	@Test
+	void aFormerMemberWhoAcceptsANewInvitationGetsTheSameMembershipBackWithTheNewRole() {
+		// given
+		Group trip = new GroupFixture().withCreator(alice).withMember(bob).build();
+		trip.leaveGroup(bob, NOW);
+		Instant later = NOW.plus(Duration.ofDays(2));
+		Invitation again = trip.inviteMember(bob, alice, GroupRole.ADMIN, later).invitation();
+
+		// when
+		trip.acceptInvitation(again.id(), bob, later);
+
+		// then one membership row for Bob, active again, with the role and time of the
+		// new invitation
+		assertThat(trip.memberships()).filteredOn(m -> m.userId().equals(bob)).singleElement().satisfies(m -> {
+			assertThat(m.status()).isEqualTo(MembershipStatus.ACTIVE);
+			assertThat(m.role()).isEqualTo(GroupRole.ADMIN);
+			assertThat(m.joinedAt()).isEqualTo(later);
+		});
+		assertThat(trip.formerMemberships()).isEmpty();
 	}
 
 	private static boolean hasZeroBalance(Group group, UserId user) {

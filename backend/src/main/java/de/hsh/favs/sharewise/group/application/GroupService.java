@@ -37,7 +37,8 @@ public class GroupService {
 	/**
 	 * A read snapshot taken inside the transaction, so callers never touch lazy state.
 	 */
-	public record GroupView(GroupId id, GroupName name, GroupStatus status, List<MembershipView> memberships) {
+	public record GroupView(GroupId id, GroupName name, GroupStatus status, List<MembershipView> memberships,
+			List<MembershipView> formerMemberships) {
 
 		public int memberCount() {
 			return memberships.size();
@@ -45,7 +46,8 @@ public class GroupService {
 
 		static GroupView of(Group group) {
 			return new GroupView(group.groupId(), group.name(), group.status(),
-					group.activeMemberships().stream().map(MembershipView::of).toList());
+					group.activeMemberships().stream().map(MembershipView::of).toList(),
+					group.formerMemberships().stream().map(MembershipView::of).toList());
 		}
 
 	}
@@ -153,6 +155,32 @@ public class GroupService {
 		var promoted = group.promoteToAdmin(user, caller, clock.instant());
 		events.publishEvent(promoted);
 		return new MembershipView(user, GroupRole.ADMIN);
+	}
+
+	/**
+	 * The caller leaves the group (J10). The group row is locked, so the balance flag and
+	 * the admin count cannot change between the checks and the save (R11, R12).
+	 * @throws DomainException GROUP_NOT_FOUND, NOT_A_MEMBER, BALANCE_NOT_ZERO or
+	 * LAST_ADMIN
+	 */
+	@Transactional
+	public void leaveGroup(GroupId groupId, UserId caller) {
+		Group group = lockedGroup(groupId.value());
+		var left = group.leaveGroup(caller, clock.instant());
+		events.publishEvent(left);
+	}
+
+	/**
+	 * An admin removes another member (J11). The group row is locked, so two admins
+	 * removing the same member are serialized and the second gets MEMBER_NOT_FOUND.
+	 * @throws DomainException GROUP_NOT_FOUND, NOT_A_MEMBER, NOT_AN_ADMIN,
+	 * CANNOT_REMOVE_YOURSELF, MEMBER_NOT_FOUND or BALANCE_NOT_ZERO
+	 */
+	@Transactional
+	public void removeMember(GroupId groupId, UserId caller, UserId member) {
+		Group group = lockedGroup(groupId.value());
+		var removed = group.removeMember(member, caller, clock.instant());
+		events.publishEvent(removed);
 	}
 
 	/**
