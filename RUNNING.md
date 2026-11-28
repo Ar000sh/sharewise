@@ -98,6 +98,11 @@ cookie is per browser.
    group disappears from her list, and the expense list shows her as "Carol Tester (left)". **Alice** can press
    **Remove** next to a member instead; the removed person's inbox says "… removed you from Mallorca 2027". With a
    balance the dialog says "The balance must be 0 first"; the last admin is told to make another member an admin first.
+9. **Closing and archiving** (L1 to L6): **Alice** presses **Close for settlement** under the group header and confirms.
+   Everybody sees "Closed for settlement" and no **Add expense** any more; settling up still works, and the others' inbox
+   says "Alice … closed Mallorca 2027 for settlement". **Reopen group** undoes it. When the last payment is confirmed
+   the group archives itself ("Mallorca 2027 was archived: everybody is settled"); with all balances at 0 already,
+   Alice presses **Archive group**. An archived group is read-only.
 
 ## Tests
 

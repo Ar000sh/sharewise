@@ -137,6 +137,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/groups/{groupId}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** An admin closes an OPEN group for settlement (J12, L1). Balances need not be 0 (L4). From now on expenses cannot be recorded, corrected or removed (L2, L3, R5); settlement payments stay possible. The other members get an inbox entry GROUP_CLOSED. */
+        post: operations["closeForSettlement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/groups/{groupId}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** An admin reopens a group that is CLOSED_FOR_SETTLEMENT (J12b, L1, L6): expenses can be recorded and corrected again. The other members get an inbox entry GROUP_REOPENED. */
+        post: operations["reopenGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/groups/{groupId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** An admin archives a group that is CLOSED_FOR_SETTLEMENT when every balance is 0 (J13, L4, L5). ARCHIVED is final and read-only (L6). A closed group is also archived automatically when its last balance reaches 0. The other members get an inbox entry GROUP_ARCHIVED. */
+        post: operations["archiveGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/invitations": {
         parameters: {
             query?: never;
@@ -421,7 +478,7 @@ export interface components {
             title?: string;
             status: number;
             /** @enum {string} */
-            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "RECORDER_NOT_PARTICIPANT" | "GROUP_NOT_OPEN" | "SHARES_NOT_TOTAL" | "PERCENTAGES_NOT_100" | "PAYMENT_EXCEEDS_OPEN_DEBT" | "SETTLEMENT_PAYMENT_NOT_FOUND" | "PAYMENT_NOT_PENDING" | "NOT_THE_CREDITOR" | "ACCOUNT_NOT_FOUND" | "ALREADY_INVITED" | "NOTIFICATION_NOT_FOUND" | "NOT_AN_ADMIN" | "MEMBER_NOT_FOUND" | "ALREADY_ADMIN" | "BALANCE_NOT_ZERO" | "LAST_ADMIN" | "CANNOT_REMOVE_YOURSELF";
+            code: "BAD_REQUEST" | "UNAUTHENTICATED" | "NOT_A_MEMBER" | "GROUP_NOT_FOUND" | "INVITATION_NOT_FOUND" | "ALREADY_MEMBER" | "INVITATION_EXPIRED" | "AMOUNT_NOT_POSITIVE" | "PAYER_NOT_IN_GROUP" | "PARTICIPANT_NOT_IN_GROUP" | "NO_PARTICIPANTS" | "RECORDER_NOT_PARTICIPANT" | "GROUP_NOT_OPEN" | "SHARES_NOT_TOTAL" | "PERCENTAGES_NOT_100" | "PAYMENT_EXCEEDS_OPEN_DEBT" | "SETTLEMENT_PAYMENT_NOT_FOUND" | "PAYMENT_NOT_PENDING" | "NOT_THE_CREDITOR" | "ACCOUNT_NOT_FOUND" | "ALREADY_INVITED" | "NOTIFICATION_NOT_FOUND" | "NOT_AN_ADMIN" | "MEMBER_NOT_FOUND" | "ALREADY_ADMIN" | "BALANCE_NOT_ZERO" | "LAST_ADMIN" | "CANNOT_REMOVE_YOURSELF" | "GROUP_NOT_CLOSED" | "GROUP_ARCHIVED";
             detail?: string;
         };
         User: {
@@ -500,10 +557,10 @@ export interface components {
             expiresAt: string;
         };
         /**
-         * @description PAYMENT_CONFIRMED and PAYMENT_REJECTED tell the payer how the creditor answered; DEBT_WAIVED tells the debtor that the creditor forgave part of the debt. The actor is the creditor and the reference is the settlement payment. EXPENSE_RECORDED tells everybody involved in an expense (the participants and the payer) that somebody recorded it, except the person who recorded it; the actor is the recorder and the reference is the expense. MEMBER_PROMOTED tells a member that an admin made them an admin; the actor is the promoting admin and the reference is the promoted member. MEMBER_REMOVED tells a person that an admin removed them from the group; the actor is the admin and the reference is the removed person. A payment waiting for an answer is not an entry (see GET /me/settlement-payments). More types arrive with later features (expense correction and removal).
+         * @description PAYMENT_CONFIRMED and PAYMENT_REJECTED tell the payer how the creditor answered; DEBT_WAIVED tells the debtor that the creditor forgave part of the debt. The actor is the creditor and the reference is the settlement payment. EXPENSE_RECORDED tells everybody involved in an expense (the participants and the payer) that somebody recorded it, except the person who recorded it; the actor is the recorder and the reference is the expense. MEMBER_PROMOTED tells a member that an admin made them an admin; the actor is the promoting admin and the reference is the promoted member. MEMBER_REMOVED tells a person that an admin removed them from the group; the actor is the admin and the reference is the removed person. GROUP_CLOSED, GROUP_REOPENED and GROUP_ARCHIVED tell every member except the acting admin that the group was closed for settlement, reopened or archived; the reference is the group. An archive that happened automatically, because the last balance reached 0, has no actor (null). A payment waiting for an answer is not an entry (see GET /me/settlement-payments). More types arrive with later features (expense correction and removal).
          * @enum {string}
          */
-        NotificationType: "MEMBER_JOINED" | "INVITATION_DECLINED" | "MEMBER_PROMOTED" | "MEMBER_REMOVED" | "PAYMENT_CONFIRMED" | "PAYMENT_REJECTED" | "DEBT_WAIVED" | "EXPENSE_RECORDED";
+        NotificationType: "MEMBER_JOINED" | "INVITATION_DECLINED" | "MEMBER_PROMOTED" | "MEMBER_REMOVED" | "PAYMENT_CONFIRMED" | "PAYMENT_REJECTED" | "DEBT_WAIVED" | "EXPENSE_RECORDED" | "GROUP_CLOSED" | "GROUP_REOPENED" | "GROUP_ARCHIVED";
         Notification: {
             /** Format: uuid */
             id: string;
@@ -512,7 +569,7 @@ export interface components {
             occurredAt: string;
             /** Format: date-time */
             readAt: string | null;
-            /** @description Who did it (the person who joined or declined); null when the account cannot be resolved. */
+            /** @description Who did it (the person who joined or declined); null when the account cannot be resolved, or when nobody did it (a group archived automatically). */
             actor: components["schemas"]["UserSummary"] | null;
             /** @description The group it is about; null when the group cannot be resolved. */
             group: components["schemas"]["GroupRef"] | null;
@@ -694,6 +751,33 @@ export interface components {
                  *       "status": 403,
                  *       "code": "NOT_A_MEMBER",
                  *       "detail": "You are not a member of this group"
+                 *     }
+                 */
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description The caller is not a member of the group, or is a member but not an admin */
+        NotAnAdmin: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description The group is archived (L6) and can no longer change */
+        GroupArchived: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "type": "about:blank",
+                 *       "title": "Conflict",
+                 *       "status": 409,
+                 *       "code": "GROUP_ARCHIVED",
+                 *       "detail": "This group is archived and can no longer change"
                  *     }
                  */
                 "application/problem+json": components["schemas"]["Problem"];
@@ -1151,6 +1235,24 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            /** @description The group is not OPEN (closed for settlement or archived); nobody can be invited (J3) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Unprocessable Entity",
+                     *       "status": 422,
+                     *       "code": "GROUP_NOT_OPEN",
+                     *       "detail": "Only an open group takes new members"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     promoteToAdmin: {
@@ -1200,21 +1302,12 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The member already is an admin */
+            /** @description The member already is an admin, or the group is archived */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "type": "about:blank",
-                     *       "title": "Conflict",
-                     *       "status": 409,
-                     *       "code": "ALREADY_ADMIN",
-                     *       "detail": "This member is already an admin"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
@@ -1241,7 +1334,7 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["NotAMember"];
             404: components["responses"]["GroupNotFound"];
-            /** @description The caller's balance is not zero, or the caller is the last admin and others remain */
+            /** @description The caller's balance is not zero, the caller is the last admin and others remain, or the group is archived */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1290,21 +1383,12 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description The member's balance is not zero */
+            /** @description The member's balance is not zero, or the group is archived */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "type": "about:blank",
-                     *       "title": "Conflict",
-                     *       "status": 409,
-                     *       "code": "BALANCE_NOT_ZERO",
-                     *       "detail": "This member's balance must be settled first"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
@@ -1323,6 +1407,142 @@ export interface operations {
                      *       "detail": "Use Leave group to leave it yourself"
                      *     }
                      */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    closeForSettlement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The group, now CLOSED_FOR_SETTLEMENT */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "bbbbbbbb-0000-0000-0000-000000000001",
+                     *       "name": "Mallorca 2027",
+                     *       "status": "CLOSED_FOR_SETTLEMENT",
+                     *       "memberCount": 4
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Group"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["NotAnAdmin"];
+            404: components["responses"]["GroupNotFound"];
+            409: components["responses"]["GroupArchived"];
+            /** @description The group is not OPEN (it is already closed) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Unprocessable Entity",
+                     *       "status": 422,
+                     *       "code": "GROUP_NOT_OPEN",
+                     *       "detail": "Only an open group can be closed"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    reopenGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The group, now OPEN */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "bbbbbbbb-0000-0000-0000-000000000001",
+                     *       "name": "Mallorca 2027",
+                     *       "status": "OPEN",
+                     *       "memberCount": 4
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Group"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["NotAnAdmin"];
+            404: components["responses"]["GroupNotFound"];
+            /** @description The group is archived, or it is not closed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    archiveGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                groupId: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The group, now ARCHIVED */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "bbbbbbbb-0000-0000-0000-000000000001",
+                     *       "name": "Mallorca 2027",
+                     *       "status": "ARCHIVED",
+                     *       "memberCount": 4
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Group"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["NotAnAdmin"];
+            404: components["responses"]["GroupNotFound"];
+            /** @description The group is archived already, it is not closed, or a balance is not 0 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
@@ -1399,6 +1619,24 @@ export interface operations {
             404: components["responses"]["InvitationNotFound"];
             409: components["responses"]["AlreadyMember"];
             410: components["responses"]["InvitationExpired"];
+            /** @description The group is not OPEN (closed for settlement or archived); joining is not possible (J3) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "about:blank",
+                     *       "title": "Unprocessable Entity",
+                     *       "status": 422,
+                     *       "code": "GROUP_NOT_OPEN",
+                     *       "detail": "Only an open group takes new members"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     declineInvitation: {

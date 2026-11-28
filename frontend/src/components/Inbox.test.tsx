@@ -300,6 +300,30 @@ describe("Inbox", () => {
     expect(screen.getByRole("listitem")).toHaveTextContent("Bob Tester removed you from Mallorca 2027");
   });
 
+  it("saysWhoClosedAGroupAndThatAnAutomaticArchiveMeansEverybodyIsSettled", async () => {
+    // given
+    inbox = {
+      invitations: [],
+      notifications: {
+        unreadCount: 2,
+        items: [
+          { ...entry, id: "n5", type: "GROUP_CLOSED" },
+          { ...entry, id: "n6", type: "GROUP_ARCHIVED", actor: null },
+        ],
+      },
+      payments: [],
+    };
+    backend();
+
+    // when
+    await renderOpened();
+
+    // then
+    const items = screen.getAllByRole("listitem");
+    expect(items[0]).toHaveTextContent("Bob Tester closed Mallorca 2027 for settlement");
+    expect(items[1]).toHaveTextContent("Mallorca 2027 was archived: everybody is settled");
+  });
+
   it("describesADeclinedInvitationAndFallsBackWhenNamesAreMissing", async () => {
     inbox = {
       invitations: [],

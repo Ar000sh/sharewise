@@ -36,10 +36,10 @@ const group = {
 };
 
 /** Answers the calls the page makes. `me` may be a promise so a test decides when "who am I" arrives. */
-function serve(me: Promise<unknown> | unknown) {
+function serve(me: Promise<unknown> | unknown, theGroup: object = group) {
   apiMock.mockImplementation(async (path: string) => {
     if (path === "/me") return me;
-    if (path === "/groups/g1") return group;
+    if (path === "/groups/g1") return theGroup;
     if (path === "/groups/g1/expenses") return [];
     if (path === "/groups/g1/balances") return [];
     if (path === "/groups/g1/settlement-plan") return [];
@@ -66,6 +66,21 @@ function clientAfterAChange() {
 }
 
 describe("GroupDetail", () => {
+  it("aClosedGroupOffersNoAddExpenseAndNoInviteFormButShowsTheBanner", async () => {
+    // given Alice, an admin, opens a group that is closed for settlement
+    serve({ userId: "u1", displayName: "Alice" }, { ...group, status: "CLOSED_FOR_SETTLEMENT" });
+
+    // when
+    renderPage();
+    await userEvent.click(await screen.findByRole("tab", { name: "Members" }));
+
+    // then (R5, J3)
+    expect(screen.getByRole("status", { name: "" })).toHaveTextContent("Closed for settlement.");
+    expect(screen.queryByRole("link", { name: "Add expense" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Username or email")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reopen group" })).toBeInTheDocument();
+  });
+
   it("leadsToTheAddExpensePageInsteadOfShowingTheFormOnTheList", async () => {
     // given
     serve({ userId: "u2", displayName: "Bob" });

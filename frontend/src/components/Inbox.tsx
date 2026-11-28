@@ -27,6 +27,13 @@ function describe(entry: Notification): string {
       return `${who} made you an admin of ${group}`;
     case "MEMBER_REMOVED":
       return `${who} removed you from ${group}`;
+    case "GROUP_CLOSED":
+      return `${who} closed ${group} for settlement`;
+    case "GROUP_REOPENED":
+      return `${who} reopened ${group}`;
+    case "GROUP_ARCHIVED":
+      // An automatic archive has no actor: the last balance reached 0.
+      return entry.actor ? `${who} archived ${group}` : `${group} was archived: everybody is settled`;
     case "PAYMENT_CONFIRMED":
       return `${who} confirmed your payment in ${group}`;
     case "PAYMENT_REJECTED":
