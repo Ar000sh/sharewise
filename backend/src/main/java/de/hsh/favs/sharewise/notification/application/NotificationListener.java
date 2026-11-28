@@ -1,6 +1,9 @@
 package de.hsh.favs.sharewise.notification.application;
 
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.group.api.GroupArchived;
+import de.hsh.favs.sharewise.group.api.GroupClosedForSettlement;
+import de.hsh.favs.sharewise.group.api.GroupReopened;
 import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
 import de.hsh.favs.sharewise.group.api.MemberPromoted;
@@ -49,6 +52,21 @@ class NotificationListener {
 	@ApplicationModuleListener
 	void on(MemberRemoved event) {
 		notifications.recordMemberRemoved(event);
+	}
+
+	@ApplicationModuleListener
+	void on(GroupClosedForSettlement event) {
+		notifications.recordGroupClosed(event);
+	}
+
+	@ApplicationModuleListener
+	void on(GroupReopened event) {
+		notifications.recordGroupReopened(event);
+	}
+
+	@ApplicationModuleListener
+	void on(GroupArchived event) {
+		notifications.recordGroupArchived(event);
 	}
 
 	@ApplicationModuleListener

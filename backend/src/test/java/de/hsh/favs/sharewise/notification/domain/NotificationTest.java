@@ -45,7 +45,7 @@ class NotificationTest {
 	@Test
 	void theFactoryKeepsWhatHappenedAndToWhom() {
 		assertThat(entry.recipient()).isEqualTo(AccountFixture.alice().userId());
-		assertThat(entry.actor()).isEqualTo(AccountFixture.bob().userId());
+		assertThat(entry.actor()).contains(AccountFixture.bob().userId());
 		assertThat(entry.type()).isEqualTo(NotificationType.MEMBER_JOINED);
 		assertThat(entry.occurredAt()).isEqualTo(NOW);
 	}

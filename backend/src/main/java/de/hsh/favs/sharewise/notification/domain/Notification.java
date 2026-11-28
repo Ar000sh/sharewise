@@ -9,6 +9,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -34,7 +35,8 @@ public class Notification {
 	@Column(name = "group_id", nullable = false)
 	private UUID groupId;
 
-	@Column(name = "actor_id", nullable = false)
+	/** Null when nobody did it: a group archived automatically (design 2026-11-28 G5). */
+	@Column(name = "actor_id")
 	private UUID actorId;
 
 	/**
@@ -56,12 +58,22 @@ public class Notification {
 	/** A new, unread entry for {@code recipient} about something {@code actor} did. */
 	public static Notification notify(UserId recipient, NotificationType type, GroupId groupId, UserId actor,
 			UUID reference, Instant occurredAt) {
+		Notification notification = withoutActor(recipient, type, groupId, reference, occurredAt);
+		notification.actorId = actor.value();
+		return notification;
+	}
+
+	/**
+	 * A new, unread entry about something nobody did: a group archived automatically
+	 * because its last balance reached 0 (L5).
+	 */
+	public static Notification withoutActor(UserId recipient, NotificationType type, GroupId groupId, UUID reference,
+			Instant occurredAt) {
 		Notification notification = new Notification();
 		notification.id = UUID.randomUUID();
 		notification.recipientId = recipient.value();
 		notification.type = type;
 		notification.groupId = groupId.value();
-		notification.actorId = actor.value();
 		notification.reference = reference;
 		notification.occurredAt = occurredAt;
 		return notification;
@@ -94,9 +106,12 @@ public class Notification {
 		return new GroupId(groupId);
 	}
 
-	/** Who did it: the person who joined or declined. */
-	public UserId actor() {
-		return new UserId(actorId);
+	/**
+	 * Who did it: the person who joined or declined; empty for a group archived
+	 * automatically.
+	 */
+	public Optional<UserId> actor() {
+		return Optional.ofNullable(actorId).map(UserId::new);
 	}
 
 	public UUID reference() {

@@ -33,6 +33,18 @@ public enum NotificationType {
 	MEMBER_PROMOTED,
 
 	/** An admin removed the recipient from the group (J11, design 2026-11-28 M7). */
-	MEMBER_REMOVED
+	MEMBER_REMOVED,
+
+	/** An admin closed the recipient's group for settlement (J12). */
+	GROUP_CLOSED,
+
+	/** An admin reopened the recipient's group (J12b). */
+	GROUP_REOPENED,
+
+	/**
+	 * The recipient's group was archived (J13), by an admin or automatically, then
+	 * without an actor.
+	 */
+	GROUP_ARCHIVED
 
 }

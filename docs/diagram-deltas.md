@@ -28,6 +28,8 @@ The code follows the diagram `docs/domain/ShareWise_Domain_Model.drawio` for eve
 | 20 | `Invitation`, `MemberInvited`, `MemberPromoted` | `Invitation` has no role; `MemberInvited` has no role | `Invitation.role: GroupRole` (MEMBER by default) is applied when the invitee accepts; `MemberInvited.role`; `Group.inviteMember(invitee, inviter, role, now)`; only an admin may invite; `promoteToAdmin(user, promotedBy, now)` returns `MemberPromoted(groupId, userId, promotedBy, occurredAt)`; promotion is one way | design 2026-11-09: admins decide who joins and with which role; the diagram needs the field and the event's fields |
 | 21 | `NotificationType` | `MEMBER_JOINED`, `INVITATION_DECLINED` | adds `MEMBER_PROMOTED` (consumes `MemberPromoted`, recipient the promoted person) | design 2026-11-09, A6 |
 | 22 | `ExactSplit`, `PercentageSplit`, `SplitEntry` | the strategies `EXACT` and `PERCENTAGE` of `SplitStrategy`; no classes for them | domain functions `ExactSplit` and `PercentageSplit` (like `EqualSplit`) that turn the entries into shares, and the input record `SplitEntry(participantId, value)`; none of the three is drawn | they compute the `shares` that `Expense.record` takes, they are not entities; design 2026-11-17, D4 |
+| 23 | `Group.archiveWhenAllBalancesSettled` | auto-archive drawn as a transition from CLOSED_FOR_SETTLEMENT, no operation | `archiveWhenAllBalancesSettled(now): Optional<GroupArchived>`, called by the group's listener for `AllBalancesSettled`; it ignores a group that is not closed. `GroupArchived` carries `archivedBy`, null for this path | `archiveGroup(actingAdmin)` needs an admin; the automatic path has none and must not fail for an open group (design 2026-11-28-group-lifecycle G1, G2) |
+| 24 | `Notification.actor`, `NotificationType` | `actor: UserId` always set | `actor` is optional (column nullable, migration `V502`); types `GROUP_CLOSED`, `GROUP_REOPENED`, `GROUP_ARCHIVED` for every member but the acting admin | an automatic archive has no actor (design 2026-11-28-group-lifecycle G5) |
 
 ## Deliberate changes made in the diagram (settlements, 03.11.26)
 
@@ -42,8 +44,8 @@ The team version of 17.10.26 drew these differently; the diagram now shows what 
 
 ## Known gaps (diagram is right, code comes later)
 
-- Group: `closeForSettlement`, `reopenGroup`, `archiveGroup`, and their events; the enums already have all their values. (`leaveGroup` and `removeMember` with `MemberLeft` and `MemberRemoved` are built, design 2026-11-28-membership-exit; they take `Instant now` like every operation, row 7. A former member who accepts a new invitation gets the same `Membership` back, M3. `NotificationType` gains `MEMBER_REMOVED`, which the diagram already names as "later".)
+- Group: nothing left. (`leaveGroup` and `removeMember` with `MemberLeft` and `MemberRemoved` are built, design 2026-11-28-membership-exit; they take `Instant now` like every operation, row 7. A former member who accepts a new invitation gets the same `Membership` back, M3. `NotificationType` gains `MEMBER_REMOVED`, which the diagram already names as "later". `closeForSettlement`, `reopenGroup` and `archiveGroup` with their three events are built, design 2026-11-28-group-lifecycle; see rows 23 and 24 for what the diagram does not draw.)
 - Expense: `correct`, `remove`, `ExpenseCorrected`, `ExpenseRemoved`.
-- Settlement: `appendCorrectionReversal`, `appendRemovalReversal` (they follow `correct` and `remove` of the expense context). `AllBalancesSettled` is published but has no consumer yet (auto-archive L5 is parked).
+- Settlement: `appendCorrectionReversal`, `appendRemovalReversal` (they follow `correct` and `remove` of the expense context).
 - Account: `deactivate` (email verification, password reset and lock-out are Keycloak's).
 - Notification context (the in-app inbox): built with the `notification` module of design 2026-11-03.

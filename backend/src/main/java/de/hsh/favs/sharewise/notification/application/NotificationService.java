@@ -3,7 +3,11 @@ package de.hsh.favs.sharewise.notification.application;
 import de.hsh.favs.sharewise.account.api.UserProfile;
 import de.hsh.favs.sharewise.account.api.UserProfiles;
 import de.hsh.favs.sharewise.expense.api.ExpenseRecorded;
+import de.hsh.favs.sharewise.group.api.GroupArchived;
+import de.hsh.favs.sharewise.group.api.GroupClosedForSettlement;
 import de.hsh.favs.sharewise.group.api.GroupDirectory;
+import de.hsh.favs.sharewise.group.api.GroupMembership;
+import de.hsh.favs.sharewise.group.api.GroupReopened;
 import de.hsh.favs.sharewise.group.api.InvitationDeclined;
 import de.hsh.favs.sharewise.group.api.MemberJoined;
 import de.hsh.favs.sharewise.group.api.MemberPromoted;
@@ -60,13 +64,16 @@ public class NotificationService {
 
 	private final GroupDirectory groups;
 
+	private final GroupMembership groupMembers;
+
 	private final Clock clock;
 
 	NotificationService(NotificationRepository notifications, UserProfiles profiles, GroupDirectory groups,
-			Clock clock) {
+			GroupMembership groupMembers, Clock clock) {
 		this.notifications = notifications;
 		this.profiles = profiles;
 		this.groups = groups;
+		this.groupMembers = groupMembers;
 		this.clock = clock;
 	}
 
@@ -104,6 +111,50 @@ public class NotificationService {
 	public void recordMemberRemoved(MemberRemoved event) {
 		record(Notification.notify(event.userId(), NotificationType.MEMBER_REMOVED, event.groupId(), event.removedBy(),
 				event.userId().value(), event.occurredAt()));
+	}
+
+	/**
+	 * Tells every member except the admin that the group was closed for settlement (J12).
+	 */
+	@Transactional
+	public void recordGroupClosed(GroupClosedForSettlement event) {
+		for (UserId member : membersExcept(event.groupId(), event.closedBy())) {
+			record(Notification.notify(member, NotificationType.GROUP_CLOSED, event.groupId(), event.closedBy(),
+					event.groupId().value(), event.occurredAt()));
+		}
+	}
+
+	/** Tells every member except the admin that the group is open again (J12b). */
+	@Transactional
+	public void recordGroupReopened(GroupReopened event) {
+		for (UserId member : membersExcept(event.groupId(), event.reopenedBy())) {
+			record(Notification.notify(member, NotificationType.GROUP_REOPENED, event.groupId(), event.reopenedBy(),
+					event.groupId().value(), event.occurredAt()));
+		}
+	}
+
+	/**
+	 * Tells every member except the admin that the group was archived (J13). An automatic
+	 * archive has no admin: everybody gets an entry without an actor (design 2026-11-28
+	 * G5).
+	 */
+	@Transactional
+	public void recordGroupArchived(GroupArchived event) {
+		for (UserId member : membersExcept(event.groupId(), event.archivedBy())) {
+			record(event.archivedBy() == null
+					? Notification.withoutActor(member, NotificationType.GROUP_ARCHIVED, event.groupId(),
+							event.groupId().value(), event.occurredAt())
+					: Notification.notify(member, NotificationType.GROUP_ARCHIVED, event.groupId(), event.archivedBy(),
+							event.groupId().value(), event.occurredAt()));
+		}
+	}
+
+	/**
+	 * The group's active members at the time the event is handled, without the person who
+	 * acted (none when {@code actor} is null) (design 2026-11-28 G6).
+	 */
+	private List<UserId> membersExcept(GroupId groupId, UserId actor) {
+		return groupMembers.members(groupId).stream().filter(member -> !member.equals(actor)).toList();
 	}
 
 	/** Tells the inviter that the invitation was turned down. */
@@ -161,14 +212,14 @@ public class NotificationService {
 	public NotificationList list(UserId caller, boolean unreadOnly, int limit) {
 		List<Notification> entries = notifications.findInbox(caller.value(), unreadOnly, PageRequest.of(0, limit));
 		Map<UserId, UserProfile> actors = profiles
-			.findProfiles(entries.stream().map(Notification::actor).collect(Collectors.toSet()))
+			.findProfiles(entries.stream().flatMap(n -> n.actor().stream()).collect(Collectors.toSet()))
 			.stream()
 			.collect(Collectors.toMap(UserProfile::userId, Function.identity(), (a, b) -> a));
 		Set<GroupId> groupIds = entries.stream().map(Notification::groupId).collect(Collectors.toSet());
 		Map<GroupId, String> names = groups.findNames(groupIds);
 		List<NotificationView> items = entries.stream()
-			.map(n -> new NotificationView(n.id(), n.type(), n.occurredAt(), n.readAt(), actors.get(n.actor()),
-					n.groupId(), names.get(n.groupId()), n.reference()))
+			.map(n -> new NotificationView(n.id(), n.type(), n.occurredAt(), n.readAt(),
+					n.actor().map(actors::get).orElse(null), n.groupId(), names.get(n.groupId()), n.reference()))
 			.toList();
 		return new NotificationList(notifications.countByRecipientIdAndReadAtIsNull(caller.value()), items);
 	}

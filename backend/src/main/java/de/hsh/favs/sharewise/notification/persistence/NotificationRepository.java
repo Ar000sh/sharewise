@@ -1,6 +1,7 @@
 package de.hsh.favs.sharewise.notification.persistence;
 
 import de.hsh.favs.sharewise.notification.domain.Notification;
+import de.hsh.favs.sharewise.shared.UserId;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -23,14 +24,14 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
 	 */
 	default boolean insertIfAbsent(Notification notification) {
 		return insertIfAbsent(notification.id().value(), notification.recipient().value(), notification.type().name(),
-				notification.groupId().value(), notification.actor().value(), notification.reference(),
-				notification.occurredAt()) == 1;
+				notification.groupId().value(), notification.actor().map(UserId::value).orElse(null),
+				notification.reference(), notification.occurredAt()) == 1;
 	}
 
 	@Modifying
 	@Query(value = """
 			INSERT INTO notifications (id, recipient_id, type, group_id, actor_id, reference, occurred_at)
-			VALUES (:id, :recipient, :type, :groupId, :actor, :reference, :occurredAt)
+			VALUES (:id, :recipient, :type, :groupId, CAST(:actor AS UUID), :reference, :occurredAt)
 			ON CONFLICT DO NOTHING""", nativeQuery = true)
 	int insertIfAbsent(@Param("id") UUID id, @Param("recipient") UUID recipient, @Param("type") String type,
 			@Param("groupId") UUID groupId, @Param("actor") UUID actor, @Param("reference") UUID reference,
