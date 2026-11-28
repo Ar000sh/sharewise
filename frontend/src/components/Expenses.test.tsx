@@ -431,6 +431,25 @@ describe("ExpenseList", () => {
     expect(taxi).toHaveTextContent("your part -3,33 €");
   });
 
+  it("namesTheSplitOfEachExpenseAsTheFormDoes", () => {
+    // when Bob looks at an exact and a percentage split
+    render(
+      <ExpenseList
+        members={members}
+        currentUserId="u2"
+        expenses={[
+          { ...expense("e5", "Boat", "90.00", "2027-07-19", "u1"), splitStrategy: "EXACT" },
+          { ...expense("e6", "Museum", "30.00", "2027-07-19", "u1"), splitStrategy: "PERCENTAGE" },
+        ]}
+      />,
+    );
+
+    // then
+    const [boat, museum] = screen.getAllByRole("listitem");
+    expect(boat).toHaveTextContent("Alice paid · exact amounts between 3");
+    expect(museum).toHaveTextContent("Alice paid · by percentages between 3");
+  });
+
   it("namesAPayerWhoLeftAsLeft", () => {
     // when Bob looks at a taxi that David paid before he left the group
     render(

@@ -6,6 +6,13 @@ import { amountToCents, formatEuro, formatSignedEuro, yourPartCents } from "@/li
 type Expense = components["schemas"]["Expense"];
 type Member = components["schemas"]["Member"];
 
+/** How the row names the split, in the words of the form's three modes. */
+const SPLIT_WORDS: Record<Expense["splitStrategy"], string> = {
+  EQUAL: "equally",
+  EXACT: "exact amounts",
+  PERCENTAGE: "by percentages",
+};
+
 /** Consecutive expenses of the same date, in the order the API gives them (newest first). */
 function byDay(expenses: Expense[]): { date: string; expenses: Expense[] }[] {
   const days: { date: string; expenses: Expense[] }[] = [];
@@ -63,7 +70,8 @@ export function ExpenseList({
                   <div className="flex min-w-0 flex-1 flex-col">
                     <span className="font-bold">{e.title}</span>
                     <span className="text-sm text-muted">
-                      {e.paidBy === currentUserId ? "You" : nameOf(e.paidBy)} paid · equally between {e.shares.length}
+                      {e.paidBy === currentUserId ? "You" : nameOf(e.paidBy)} paid · {SPLIT_WORDS[e.splitStrategy]} between{" "}
+                      {e.shares.length}
                     </span>
                   </div>
                   <div className="flex flex-col items-end">
