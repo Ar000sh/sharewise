@@ -114,6 +114,8 @@ paths:
                 members:
                   - { userId: "aaaaaaaa-0000-0000-0000-000000000001", displayName: Alice, role: ADMIN }
                   - { userId: "aaaaaaaa-0000-0000-0000-000000000002", displayName: Bob, role: MEMBER }
+                formerMembers:
+                  - { userId: "aaaaaaaa-0000-0000-0000-000000000004", displayName: David, role: MEMBER }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthenticated" }
         "403": { $ref: "#/components/responses/NotAMember" }
@@ -222,6 +224,78 @@ paths:
             application/problem+json:
               schema: { $ref: "#/components/schemas/Problem" }
               example: { type: "about:blank", title: Conflict, status: 409, code: ALREADY_ADMIN, detail: "This member is already an admin" }
+
+  /groups/{groupId}/leave:
+    parameters:
+      - { $ref: "#/components/parameters/GroupId" }
+    post:
+      tags: [group]
+      operationId: leaveGroup
+      summary: >
+        The caller leaves the group (J10). Only at balance 0 (R11); the last admin cannot leave while other members
+        remain (R12). The caller becomes a former member and stays visible in old expenses (R13).
+      responses:
+        "204": { description: Left the group }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403": { $ref: "#/components/responses/NotAMember" }
+        "404": { $ref: "#/components/responses/GroupNotFound" }
+        "409":
+          description: The caller's balance is not zero, or the caller is the last admin and others remain
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                balanceNotZero:
+                  value: { type: "about:blank", title: Conflict, status: 409, code: BALANCE_NOT_ZERO, detail: "Settle the balance before leaving the group" }
+                lastAdmin:
+                  value: { type: "about:blank", title: Conflict, status: 409, code: LAST_ADMIN, detail: "Make another member an admin before you leave" }
+
+  /groups/{groupId}/members/{userId}:
+    parameters:
+      - { $ref: "#/components/parameters/GroupId" }
+      - { $ref: "#/components/parameters/UserId" }
+    delete:
+      tags: [group]
+      operationId: removeMember
+      summary: >
+        An admin removes another member (J11), only at that member's balance 0 (R11). Removing oneself is refused: the
+        way out is POST /groups/{groupId}/leave. The removed person becomes a former member (R13) and gets an inbox
+        entry MEMBER_REMOVED.
+      responses:
+        "204": { description: Removed }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+        "403":
+          description: The caller is not a member of the group, or is a member but not an admin
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                notAMember:
+                  value: { type: "about:blank", title: Forbidden, status: 403, code: NOT_A_MEMBER, detail: "You are not a member of this group" }
+                notAnAdmin:
+                  value: { type: "about:blank", title: Forbidden, status: 403, code: NOT_AN_ADMIN, detail: "Only an admin can do this" }
+        "404":
+          description: Unknown group, or the person is not an active member of it
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                groupNotFound:
+                  value: { type: "about:blank", title: Not Found, status: 404, code: GROUP_NOT_FOUND, detail: "Group not found" }
+                memberNotFound:
+                  value: { type: "about:blank", title: Not Found, status: 404, code: MEMBER_NOT_FOUND, detail: "This person is not a member of this group" }
+        "409":
+          description: The member's balance is not zero
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example: { type: "about:blank", title: Conflict, status: 409, code: BALANCE_NOT_ZERO, detail: "This member's balance must be settled first" }
+        "422":
+          description: The admin tried to remove themselves
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              example: { type: "about:blank", title: Unprocessable Entity, status: 422, code: CANNOT_REMOVE_YOURSELF, detail: "Use Leave group to leave it yourself" }
 
   /invitations:
     get:
@@ -870,6 +944,9 @@ components:
             - NOT_AN_ADMIN
             - MEMBER_NOT_FOUND
             - ALREADY_ADMIN
+            - BALANCE_NOT_ZERO
+            - LAST_ADMIN
+            - CANNOT_REMOVE_YOURSELF
         detail: { type: string }
 
     User:
@@ -928,10 +1005,17 @@ components:
       allOf:
         - $ref: "#/components/schemas/Group"
         - type: object
-          required: [members]
+          required: [members, formerMembers]
           properties:
             members:
               type: array
+              description: The people currently in the group (the only ones who can pay, take part or be invited again).
+              items: { $ref: "#/components/schemas/Member" }
+            formerMembers:
+              type: array
+              description: >
+                People who left or were removed (R13). Old expenses still name them, shown as "Bob (left)"; their role is
+                the one they had when they left.
               items: { $ref: "#/components/schemas/Member" }
 
     InviteMemberRequest:
@@ -971,15 +1055,17 @@ components:
 
     NotificationType:
       type: string
-      enum: [MEMBER_JOINED, INVITATION_DECLINED, MEMBER_PROMOTED, PAYMENT_CONFIRMED, PAYMENT_REJECTED, DEBT_WAIVED, EXPENSE_RECORDED]
+      enum: [MEMBER_JOINED, INVITATION_DECLINED, MEMBER_PROMOTED, MEMBER_REMOVED, PAYMENT_CONFIRMED, PAYMENT_REJECTED, DEBT_WAIVED, EXPENSE_RECORDED]
       description: >
         PAYMENT_CONFIRMED and PAYMENT_REJECTED tell the payer how the creditor answered; DEBT_WAIVED tells the
         debtor that the creditor forgave part of the debt. The actor is the creditor and the reference is the
         settlement payment. EXPENSE_RECORDED tells everybody involved in an expense (the participants and the
         payer) that somebody recorded it, except the person who recorded it; the actor is the recorder and the
         reference is the expense. MEMBER_PROMOTED tells a member that an admin made them an admin; the actor is the
-        promoting admin and the reference is the promoted member. A payment waiting for an answer is not an entry (see GET /me/settlement-payments).
-        More types arrive with later features (removal).
+        promoting admin and the reference is the promoted member. MEMBER_REMOVED tells a person that an admin removed
+        them from the group; the actor is the admin and the reference is the removed person. A payment waiting for an
+        answer is not an entry (see GET /me/settlement-payments). More types arrive with later features (expense
+        correction and removal).
 
     Notification:
       type: object
